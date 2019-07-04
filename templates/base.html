@@ -1,0 +1,27 @@
+<!doctype html>
+<title>{% block title %}{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<section class="content">
+<body>
+  <div class="topbar">
+    <div class="header">
+      {% block header %}{% endblock %}
+    </div>
+    <div class="topnav">
+      <a href="/jobs">Job Browser</A>
+      <a href="/jobs2">Alternate Jobs</A>
+    </div>
+  </div>
+  <div class="content">
+  <div class="sidenav">
+    <a href="#">1</a>
+    <a href="#">2</a>
+    <a href="#">3</a>
+    <a href="#">4</a>
+  </div>
+  <div class="main">
+  {% block content %}{% endblock %}
+  </div>
+  <div>
+</body>
+</section>

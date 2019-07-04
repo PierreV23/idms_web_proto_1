@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block header %}
+<h2>{% block title %}Header{% endblock %}</h2>
+{% endblock %}
+
+{% block content %}
+<TABLE style="width:60%" border=2>
+{% for entry in objects %}
+  <TR><TD>{{ entry }}</TD></TR>
+{% endfor %}
+</TABLE>
+{% endblock %}
