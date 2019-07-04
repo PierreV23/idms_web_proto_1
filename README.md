@@ -8,5 +8,4 @@ Maakt gebruik van
 * bootstrap library [https://getbootstrap.com/](https://getbootstrap.com/)
 * conda
 
-
 Start de applicatie met behulp van het script start.sh
