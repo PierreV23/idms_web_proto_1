@@ -7,8 +7,6 @@ import time
 import yaml
 from fs_base import factory
 import fs_irods
-import sys
-import subprocess
 
 from flask import Flask, request, render_template
 app = Flask(__name__)
@@ -23,22 +21,6 @@ ifs = factory.getfs('irods')
 
 def sortKey(X):
     return(X['startTime'])
-
-def test_if_lsf_installed():
-    try:
-       subprocess.getoutput("xbhosts -h")
-    except:
-       sys.exit("LFS is not installed")
-
-def getinfo(command, splitchar):
-    z=subprocess.getoutput(command)
-    output=[]
-    for regel in z.split("\n"):
-        if splitchar=="":
-            output.append(regel.split())
-        else:
-            output.append(regel.split(splitchar))
-    return(output)
 
 def joblist(state):
     a = []
@@ -118,39 +100,9 @@ def show_jobs2():
 
 @app.route('/clusterinfo')
 def show_clusterinfo():
-    test_if_lsf_installed()
-    bhosts=getinfo("bhosts -w bioinfo", "")
-    bhostsh=bhosts[0]
-    bhosts.pop(0)
-
-    busers=getinfo("busers all", "")
-    busers_active=[]
-    for teller in range(len(busers)):
-        if busers[teller][3] != "0" and busers[teller][3] != "-":
-            busers_active.append((busers[teller]))
-    busersh=busers[0]
-    busers.pop(0)
-    busers_active.pop(0)
-
-    bjobs=getinfo("bjobs -o \"JOBID USER STAT QUEUE FROM_HOST EXEC_HOST JOB_NAME   SUBMIT_TIME: delimiter='^'\"", "^")
-    bjobsh=bjobs[0]
-    bjobs.pop(0)
-
-    lsload=getinfo("lsload -w| grep -e rivm.ssc-campus.nl -e HOST_NAME| sort -n","")
-    lsloadh=lsload[0]
-    lsload.pop(0)
-
-    return render_template('clusterinfo.html', bhostsh=bhostsh, bhosts=bhosts, busersh=busersh, busers=busers_active, bjobsh=bjobsh, bjobs=bjobs, lsloadh=lsloadh, lsload=lsload, items="all")
-
-@app.route('/hpcinfo')
-def show_hpcinfo():
+    l=[["1","2","3"]]
     x=1
-    with open('/data/BioGrid/verhager/HPCrapport/rapport_twohago.txt', encoding='utf8') as f:
-            text = f.read()
-            if x==1:
-                print(text)
-            x+=1
-    return render_template('hpcinfo.html', text=text)
+    return render_template('clusterinfo.html', joblist=l, items=x)
 
 @app.route('/list', methods=['GET', 'POST'])
 def login():
