@@ -48,7 +48,6 @@ def joblist(state):
             txt = f.read();
             yy = yaml.load(txt)
         md = job.metadata
-        print(md.items())
         try: 
             ec = md.get_one('RUN::exit_code').value
         except KeyError:
@@ -70,6 +69,7 @@ def joblist(state):
         a.append({'name':job.name, 'repo' : yy['repo'], 'tag': yy['tag'], 'state': state,
             'exit_code': ec, 'startTime': strSt, 'endTime': strEt, 'output_dir': od})
         a.sort(key = sortKey, reverse = True)
+        print(a)
     return a
 
 def collist(path):
@@ -132,7 +132,7 @@ def show_clusterinfo():
     busers.pop(0)
     busers_active.pop(0)
 
-    bjobs=getinfo("bjobs -o \"JOBID USER STAT QUEUE FROM_HOST EXEC_HOST JOB_NAME   SUBMIT_TIME: delimiter='^'\"", "^")
+    bjobs=getinfo("bjobs -u all -o \"JOBID USER STAT QUEUE FROM_HOST EXEC_HOST JOB_NAME   SUBMIT_TIME: delimiter='^'\"", "^")
     bjobsh=bjobs[0]
     bjobs.pop(0)
 
