@@ -78,12 +78,19 @@ def collist(path):
     for obj in ifs.ls(path):
         objdict = {'name': obj.shortname(), 'path': obj.path}
         if obj.isdir():
+            #objdict['create_time'] = obj.create_time()
+            #objdict['owner_name'] = obj.owner_name()
             cols.append(objdict)
         else:
             objdict['size'] = obj.filesize()
+            objdict['create_time'] = obj.create_time()
+            objdict['owner_name'] = obj.owner_name()
             objs.append(objdict)
+    print("path: ", path)
+    print("ifs.ls(path): ", ifs.ls(path))
+    print("cols: ", cols)
+    print("objs: ", objs)
     return cols, objs
-
 
 @app.route('/')
 def home():
@@ -99,6 +106,17 @@ def collbrowser():
     c, o = collist(path)
     return render_template('collbrowser.html', cols = c, objs = o, path=path)
 
+@app.route('/docviewer')
+def docviewer():
+    path = request.args.get('path', '/', type=str)
+    action = request.args.get('action', 'none', type=str)
+        
+    print("path: ", path)
+    obj = fs_irods.fs_irods( path ).getfile( path )
+    with obj.open('r') as f:
+        a = f.read(100000)
+    #print (a)
+    return render_template('docviewer.html', doc = a.decode('utf-8'), path=path)
 
 @app.route('/jobs')
 def show_jobs():
@@ -132,7 +150,7 @@ def show_clusterinfo():
     busers.pop(0)
     busers_active.pop(0)
 
-    bjobs=getinfo("bjobs -u all -o \"JOBID USER STAT QUEUE FROM_HOST EXEC_HOST JOB_NAME   SUBMIT_TIME: delimiter='^'\"", "^")
+    bjobs=getinfo("bjobs -u svc-sscc-irods -o \"JOBID USER STAT QUEUE FROM_HOST EXEC_HOST JOB_NAME   SUBMIT_TIME: delimiter='^'\"", "^")
     bjobsh=bjobs[0]
     bjobs.pop(0)
 

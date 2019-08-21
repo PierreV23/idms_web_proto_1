@@ -13,6 +13,8 @@ Collection browser : {{ path }}
 <tr>
 <th>Name</th>
 <th>Size</th>
+<th>Create_Date</th>
+<th>Owner_Name</th>
 </tr>
 </thead>
 <tbody>
@@ -29,7 +31,14 @@ Collection browser : {{ path }}
 </td>
 <td>
 {{ entry.size}}
-</td></tr>
+</td>
+<td>
+{{ entry.create_time}}
+</td>
+<td>
+{{ entry.owner_name}}
+</td>
+</tr>
 {% endfor %}
 </tbody>
 </table>
