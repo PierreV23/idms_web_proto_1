@@ -16,7 +16,7 @@ document viewer : {{ path }}
    <br><br><hr>(code:)<br><br>
 
    <pre>
-   {{ doc }}
+{{ doc }}
    </pre>
 
 {% elif file_extension in [ ".jpg", ".jpeg", ".gif", ".png" ] %}
@@ -26,12 +26,12 @@ document viewer : {{ path }}
 {% else %}
 
    <pre>
-   {{ doc }}
+{{ doc }}
    </pre>
    
 {% endif %}
 
-<br><br><hr><br>
+<br><hr><br>
 
 {% endblock %}
 
