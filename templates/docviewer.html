@@ -7,12 +7,31 @@ document viewer : {{ path }}
 {% block content %}
 
 <a class="btn-btn-primary" href="/collbrowser?action=up&path={{ path }} role="button">UP</a>
-<pre>
 
-{{ doc }}
+<br><br><hr><br>
 
-</pre>
+{% if file_extension in [ ".html", ".htm", ".xml" ] %}
+   {{ doc|safe }}
 
+   <br><br><hr>(code:)<br><br>
+
+   <pre>
+   {{ doc }}
+   </pre>
+
+{% elif file_extension in [ ".jpg", ".jpeg", ".gif", ".png" ] %}
+<img src="static/images/pic_trulli{{ file_extension }}?name={{ fn }}" alt="{{ fn }}"></img>
+   <br>
+
+{% else %}
+
+   <pre>
+   {{ doc }}
+   </pre>
+   
+{% endif %}
+
+<br><br><hr><br>
 
 {% endblock %}
 

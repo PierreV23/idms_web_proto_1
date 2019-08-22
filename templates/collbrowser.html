@@ -20,9 +20,10 @@ Collection browser : {{ path }}
 <tbody>
 
 {% for entry in cols %}
-<tr><td>
-<a href="/collbrowser?path={{ entry.path }}">{{ entry.name }}</a>
-</td></tr>
+<tr>
+    <td> <a href="/collbrowser?path={{ entry.path }}">{{ entry.name }}</a> </td>
+    <td> DIR </td>
+</tr>
 {% endfor %}
 
 {% for entry in objs %}
