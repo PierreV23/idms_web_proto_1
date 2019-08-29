@@ -43,9 +43,21 @@ class file_irods(fsobject_base):
 
     def filesize(self):
         return self.irods_object.size
-    
+
+    def create_time(self):
+        return self.irods_object.create_time
+
+    def owner_name(self):
+        return self.irods_object.owner_name
+
     def isfile(self):
         return True
+
+    def _getfile(self, path):
+        return session.data_objects.get( path)
+        #with obj.open('r+') as f:
+        #    for line in f:
+        #        print(line)
 
     def open(self, mode):
         return self.irods_object.open(mode[:1])
@@ -92,6 +104,12 @@ class folder_irods(fsobject_base):
         if not self.irods_object.metadata.get_all(name):
             self.setmeta(name, default, '')
         return self.getmeta(name)
+
+    #def create_time(self2):
+    #    return self.irods_object.create_time
+
+    #def owner_name(self2):
+    #    return self.irods_object.owner_name
 
 
 class fs_irods(fs_base):

@@ -20,7 +20,7 @@ Cluster information items = {{ items }}
 </div>
 
 
-{% if request.args.get('items') == "all" or request.args.get('items') == "bhosts" %}
+{% if request.args.get('items') in ["all", "bhosts"] %}
     <table class="table">
         <thead>
             <tr bgcolor=gray height=50>

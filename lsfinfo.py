@@ -32,7 +32,7 @@ def main():
     test_if_lsf_installed()
     bhosts=getinfo("bhosts -w bioinfo", "")
     busers=getinfo("busers all", "")
-    bjobs=getinfo("bjobs -uall -o \"JOBID USER STAT QUEUE FROM_HOST EXEC_HOST JOB_NAME   SUBMIT_TIME: delimiter='^'\"", "^")
+    bjobs=getinfo("bjobs -u all -o \"JOBID USER STAT QUEUE FROM_HOST EXEC_HOST JOB_NAME   SUBMIT_TIME: delimiter='^'\"", "^")
     lsload=getinfo("lsload -w","")
     #sys.exit(1)
     
