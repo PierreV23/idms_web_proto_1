@@ -1,0 +1,32 @@
+{% extends 'base2.html' %}
+
+  
+{% block header %}
+<h2>{% block title %}iRODS Users{% endblock %}</h2>
+{% endblock %}
+
+{% block content %}
+<TABLE style="width:60%" border=0>
+<TR bgcolor=darkgray height=50>
+<TH>Username</TH>
+<TH>Full Name</TH>
+</TR>
+{% for entry in groups %}
+ {% if loop.index is divisibleby(2) %} 
+   <TR bgcolor=lightblue height=30>
+ {% else %}
+   <TR bgcolor=white height=30>
+ {% endif %}
+
+   <TD>{{ entry }}</TD>
+
+     <TD>{{ entry.state }}</TD>
+     <TD>{{ entry.repo }}</TD>
+     <TD>{{ entry.tag }}</TD>
+     <TD>{{ entry.startTime }}</TD>
+     <TD>{{ entry.endTime }}</TD>
+     <TD>{{ entry.exit_code }} </TD>
+   </TR>
+{% endfor %}
+ </TABLE>
+{% endblock %}
