@@ -1,0 +1,23 @@
+{% extends 'base2.html' %}
+  
+{% block content %}
+<H3>Job details for {{ jobnaam }} </H3>
+<TABLE class="table table-striped table-hover table-sm">
+<thead class="thead-dark">
+<TR bgcolor=cyan height=50>
+<TH scope="col">Attribute</TH>
+<TH scope="col">Value</TH>
+<TH scope="col">Xtra</TH>
+</TR>
+</thead>
+<tbody>
+{% for entry in details %}
+   <TD>{{ entry }}</TD>
+   <TD>{{ details[entry] | safe }}</TD>
+   <TD></TD>
+</TR>
+{% endfor %}
+</tbody>
+ </TABLE>
+{% endblock %}
+

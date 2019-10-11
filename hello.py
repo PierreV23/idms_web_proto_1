@@ -10,17 +10,27 @@ from fs_base import factory
 import fs_irods
 import sys
 import subprocess
+import ssl
 
 from flask import Flask, request, render_template
 app = Flask(__name__)
 
-try:
-    env_file = os.environ['IRODS_ENVIRONMENT_FILE']
-except KeyError:
-    env_file = os.path.expanduser('~/.irods/irods_environment.json')
-irods_session = iRODSSession(irods_env_file=env_file)
+f = open("secret","r")
+rodspassword = f.readline()
+f.close()
 
-ifs = factory.getfs('irods')
+context = ssl._create_unverified_context(purpose=ssl.Purpose.SERVER_AUTH,
+                                     cafile=None, capath=None, cadata=None)
+ssl_settings = {'irods_ssl_ca_certificate_file': '/etc/irods/ssl/irods.crt',
+                'ssl_context': context }
+irods_session = iRODSSession(host='rivm-bioir-l01p.rivm.ssc-campus.nl',
+                             port=1247,
+                             user='rods',
+                             password=rodspassword,
+                             zone='rivmZone',
+                             **ssl_settings)
+
+ifs = factory.getfs('irods', session = irods_session)
 
 def sortKey(X):
     return(X['startTime'])
@@ -41,36 +51,44 @@ def getinfo(command, splitchar):
             output.append(regel.split(splitchar))
     return(output)
 
+def jobdetails(jobfileObject):
+    with jobfileObject.open('r+') as f:
+        txt = f.read();
+        yy = yaml.load(txt)
+    md = jobfileObject.metadata
+    try: 
+        ec = md.get_one('RUN::exit_code').value
+    except KeyError:
+        ec = -1
+    try:
+        st = int(md.get_one('TIME::startTime').value)
+        strSt = datetime.utcfromtimestamp(st).strftime('%Y-%m-%d %H:%M:%S')
+    except KeyError:
+        strSt = "-"
+    try:
+        et = int(md.get_one('TIME::finishTime').value)
+        strEt = datetime.utcfromtimestamp(et).strftime('%Y-%m-%d %H:%M:%S')
+    except KeyError:
+        strEt = "-"
+    try:
+        ic = md.get_one('RUN::input_coll').value
+    except KeyError:
+        ic = ''
+    try:
+        oc = md.get_one('RUN::output_coll').value
+    except KeyError:
+        oc = ''
+    details = {'name':jobfileObject.name, 'repo' : yy['repo'], 'tag': yy['tag'],
+            'exit_code': ec, 'startTime': strSt, 'endTime': strEt, 'input_coll': ic, 'output_coll': oc}
+    return details
+
 def joblist(state):
     a = []
-    coll = irods_session.collections.get('/rivmZone/home/rods/runsheet/' + state)
+    coll = irods_session.collections.get('/rivmZone/system/runsheet/' + state)
     for job in coll.data_objects:
-        with job.open('r+') as f:
-            txt = f.read();
-            yy = yaml.load(txt)
-        md = job.metadata
-        try: 
-            ec = md.get_one('RUN::exit_code').value
-        except KeyError:
-            ec = -1
-        try:
-            st = int(md.get_one('TIME::startTime').value)
-            strSt = datetime.utcfromtimestamp(st).strftime('%Y-%m-%d %H:%M:%S')
-        except KeyError:
-            strSt = "-"
-        try:
-            et = int(md.get_one('TIME::finishTime').value)
-            strEt = datetime.utcfromtimestamp(et).strftime('%Y-%m-%d %H:%M:%S')
-        except KeyError:
-            strEt = "-"
-        try:
-            od = md.get_one('RUN::output_dir').value
-        except KeyError:
-            od = ''
-        a.append({'name':job.name, 'repo' : yy['repo'], 'tag': yy['tag'], 'state': state,
-            'exit_code': ec, 'startTime': strSt, 'endTime': strEt, 'output_dir': od})
-        a.sort(key = sortKey, reverse = True)
-        print(a)
+        jd = jobdetails(job)
+        jd['state'] = state
+        a.append(jd)
     return a
 
 def collist(path):
@@ -99,7 +117,7 @@ def home():
 
 @app.route('/collbrowser')
 def collbrowser():
-    path = request.args.get('path', '/', type=str)
+    path = request.args.get('path', '/rivmZone/projects', type=str)
     action = request.args.get('action', 'none', type=str)
     if action == "up":
         path = '/' + '/'.join(path.split('/')[1:-1])
@@ -115,7 +133,8 @@ def docviewer():
     fn = os.path.basename( path.lower() )
         
     print("path, filename, file_extension: ", path, fn, file_extension)
-    obj = fs_irods.fs_irods( path ).getfile( path )
+    #obj = fs_irods.fs_irods( path ).getfile( path )
+    obj = ifs.getfile(path)
     with obj.open('r') as f:
         a = f.read( 500000 )
     #print (a)
@@ -213,3 +232,24 @@ def show_groups():
         ig = user_metadata(g)
         print(ig)
     return render_template('grouplist.html', groups=G)
+
+@app.route('/jobdetails')
+def show_jobdetails():
+    jobnaam = request.args.get('name', '', type=str)
+    # We want the full path to the job runsheet object
+    query = irods_session.query(Collection.name).filter(Criterion('=', DataObject.name, jobnaam))
+    jobpath = [ coll[Collection.name] for coll in query]
+    runsheet = jobpath[0] + '/' + jobnaam
+    jobObj = irods_session.data_objects.get(runsheet)
+    jd = jobdetails(jobObj)
+    D = {}
+    D['Runsheet File'] = "<a href='/docviewer?path=" + runsheet + "'>" + jobnaam + "</a>"
+    D['Job Start Time'] = jd['startTime']
+    D['Job End   Time'] = jd['endTime']
+    D['Input  collection'] = "<a href='/collbrowser?path={0}'>{0}</a>".format(jd['input_coll'])
+    D['Output collection'] = "<a href='/collbrowser?path={0}'>{0}</a>".format(jd['output_coll'])
+    D['Git repository'] = "<a href='{0}'>{0} TAG {1}</a>".format(jd['repo'].replace('.git',''), jd['tag'])
+    return render_template('jobdetails.html', details=D, jobnaam = jobnaam)
+
+#    details = {'name':jobfileObject.name, 'repo' : yy['repo'], 'tag': yy['tag'],
+#            'exit_code': ec, 'startTime': strSt, 'endTime': strEt, 'output_coll': oc}

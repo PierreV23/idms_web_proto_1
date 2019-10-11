@@ -21,6 +21,7 @@ Job queue overview
 <TABLE class="table table-striped table-hover table-sm">
 <thead class="thead-dark">
 <TR bgcolor=cyan height=50>
+<TH scope="col"></TH>
 <TH scope="col">Name</TH>
 <TH scope="col">State</TH>
 <TH scope="col">GIT Repo</TH>
@@ -28,7 +29,7 @@ Job queue overview
 <TH scope="col">Start</TH>
 <TH scope="col">Finish</TH>
 <TH scope="col">Result</TH>
-<TH scope="col">Output folder</TH>
+<TH scope="col">Output collection</TH>
 </TR>
 </thead>
 <tbody>
@@ -46,6 +47,7 @@ Job queue overview
    <TR class="table-success">
 {% endif %}
 {% endif %}
+<TD><a href="/jobdetails?name={{ entry.name }}" class="btn btn-outline-dark" role="button">Details</a></TD>
    <TD>{{ entry.name }}</TD>
 
      <TD>{{ entry.state }}</TD>
@@ -54,7 +56,7 @@ Job queue overview
      <TD>{{ entry.startTime }}</TD>
      <TD>{{ entry.endTime }}</TD>
      <TD>{{ entry.exit_code }} </TD>
-     <TD>{{ entry.output_dir }}</TD>
+     <TD>{{ entry.output_coll }}</TD>
    </TR>
 {% endfor %}
 </tbody>

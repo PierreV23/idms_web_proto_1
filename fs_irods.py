@@ -113,14 +113,17 @@ class folder_irods(fsobject_base):
 
 
 class fs_irods(fs_base):
-    def __init__(self, resource=''):
+    def __init__(self, resource='', session=None):
         super().__init__(supportsopen=True)
-        try:
-            env_file = os.environ['IRODS_ENVIRONMENT_FILE']
-        except KeyError:
-            env_file = os.path.expanduser('~/.irods/irods_environment.json')
+        if not session:
+            try:
+                env_file = os.environ['IRODS_ENVIRONMENT_FILE']
+            except KeyError:
+                env_file = os.path.expanduser('~/.irods/irods_environment.json')
 
-        self.irods_session = iRODSSession(irods_env_file=env_file)
+            self.irods_session = iRODSSession(irods_env_file=env_file)
+        else:
+            self.irods_session = session
         self.resource = resource
 
     def cleanup(self):
