@@ -6,27 +6,18 @@
 {% endblock %}
 
 {% block content %}
-<TABLE style="width:60%" border=0>
-<TR bgcolor=darkgray height=50>
-<TH>Username</TH>
-<TH>Full Name</TH>
+<H2>Group List</H2>
+<TABLE class="table table-striped table-hover table-sm">
+<TR>
+<TH>Group name</TH>
 </TR>
 {% for entry in groups %}
- {% if loop.index is divisibleby(2) %} 
-   <TR bgcolor=lightblue height=30>
- {% else %}
-   <TR bgcolor=white height=30>
- {% endif %}
-
-   <TD>{{ entry }}</TD>
-
-     <TD>{{ entry.state }}</TD>
-     <TD>{{ entry.repo }}</TD>
-     <TD>{{ entry.tag }}</TD>
-     <TD>{{ entry.startTime }}</TD>
-     <TD>{{ entry.endTime }}</TD>
-     <TD>{{ entry.exit_code }} </TD>
-   </TR>
+   <td>
+   <a href="/groupdetails?group={{ entry }}">
+   {{ entry }}
+   </a>
+   </TD>
+</TR>
 {% endfor %}
  </TABLE>
 {% endblock %}

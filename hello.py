@@ -1,11 +1,12 @@
 from irods.column import Criterion
 from irods.session import iRODSSession
-from irods.models import Collection, CollectionMeta, DataObject, User, UserGroup
+from irods.models import Collection, CollectionMeta, DataObject, User, UserGroup, UserMeta
 from irods.query import SpecificQuery
 import os
 from datetime import datetime
 import time
 import yaml
+import json
 from fs_base import factory
 import fs_irods
 import sys
@@ -65,11 +66,13 @@ def jobdetails(jobfileObject):
         strSt = datetime.utcfromtimestamp(st).strftime('%Y-%m-%d %H:%M:%S')
     except KeyError:
         strSt = "-"
+        st = 0
     try:
         et = int(md.get_one('TIME::finishTime').value)
         strEt = datetime.utcfromtimestamp(et).strftime('%Y-%m-%d %H:%M:%S')
     except KeyError:
         strEt = "-"
+        et = 0
     try:
         ic = md.get_one('RUN::input_coll').value
     except KeyError:
@@ -78,18 +81,25 @@ def jobdetails(jobfileObject):
         oc = md.get_one('RUN::output_coll').value
     except KeyError:
         oc = ''
+    try:
+        nextproj = yy['next_projectID']
+    except:
+        nextproj = ''
     details = {'name':jobfileObject.name, 'repo' : yy['repo'], 'tag': yy['tag'],
-            'exit_code': ec, 'startTime': strSt, 'endTime': strEt, 'input_coll': ic, 'output_coll': oc}
+            'exit_code': ec, 'startTime': strSt, 'endTime': strEt, 'input_coll': ic, 'output_coll': oc, 'startTimestamp': st, 'next_projectID': nextproj}
     return details
 
 def joblist(state):
     a = []
+    b = []
     coll = irods_session.collections.get('/rivmZone/system/runsheet/' + state)
     for job in coll.data_objects:
         jd = jobdetails(job)
         jd['state'] = state
-        a.append(jd)
-    return a
+        a.append({'start':jd['startTimestamp'], 'details':jd})
+    for job  in sorted(a, key = lambda x: x['start'], reverse = True):    
+        b.append(job['details'])
+    return b
 
 def collist(path):
     cols = []
@@ -191,15 +201,18 @@ def show_clusterinfo():
 
 def user_metadata(username):
     r = {}
-    sql = "select META_USER_ATTR_NAME, META_USER_ATTR_VALUE where USER_NAME = '" + username + "'"
-    print(sql)
-    query = SpecificQuery(irods_session, sql=sql)
-    _ = query.register()
-    for result in query:
-        print(result)
-#        r[result['META_USER_ATTR_NAME']] = result['META_USER_ATTR_VALUE']
-    _ = query.remove()
+    meta = irods_session.query(UserMeta.name, UserMeta.value).filter(Criterion('=', User.name, username))
+    for m in meta:
+        r[m[UserMeta.name]] = m[UserMeta.value]
     return r
+
+def coll_metadata(coll):
+    r = {}
+    meta = irods_session.query(CollectionMeta.name, CollectionMeta.value).filter(Criterion('=', Collection.name, coll))
+    for m in meta:
+        r[m[CollectionMeta.name]] = m[CollectionMeta.value]
+    return r
+
 
 @app.route('/hpcinfo')
 def show_hpcinfo():
@@ -226,12 +239,30 @@ def show_users():
 
 @app.route('/groups')
 def show_groups():
-    groupq = irods_session.query(UserGroup.name).order_by(UserGroup.name).filter(Criterion('=', User.type, "rodsgroup"))
-    G = [ group[UserGroup.name] for group in groupq ]
-    for g in G:
-        ig = user_metadata(g)
-        print(ig)
+    groupq = irods_session.query(User.name).order_by(User.name).filter(Criterion('!=', User.type, "rodsuser"))
+    G = [ group[User.name] for group in groupq ]
+    print(G)
+    
+#    for g in G:
+#        ig = user_metadata(g)
+#        print(ig)
     return render_template('grouplist.html', groups=G)
+
+@app.route('/groupdetails')
+def show_groupdetails():
+    groupnaam = request.args.get('group', '', type=str)
+    group = irods_session.query(User.name).filter(Criterion('=', User.name, groupnaam))
+    D = {}
+    D['name'] = groupnaam
+    meta = user_metadata(groupnaam)
+    if 'projectID' in meta:
+        D['projectID'] = meta['projectID']
+    try:
+        D['adgroup'] = meta['SYNC::adgroup']
+    except:
+        D['adgroup'] = ''
+        
+    return render_template('groupdetails.html', details=D)
 
 @app.route('/jobdetails')
 def show_jobdetails():
@@ -249,7 +280,64 @@ def show_jobdetails():
     D['Input  collection'] = "<a href='/collbrowser?path={0}'>{0}</a>".format(jd['input_coll'])
     D['Output collection'] = "<a href='/collbrowser?path={0}'>{0}</a>".format(jd['output_coll'])
     D['Git repository'] = "<a href='{0}'>{0} TAG {1}</a>".format(jd['repo'].replace('.git',''), jd['tag'])
+    D['Next projectID'] = "<a href='/projectdetails?name={0}'>{0}</a>".format(jd['next_projectID'])
     return render_template('jobdetails.html', details=D, jobnaam = jobnaam)
 
-#    details = {'name':jobfileObject.name, 'repo' : yy['repo'], 'tag': yy['tag'],
-#            'exit_code': ec, 'startTime': strSt, 'endTime': strEt, 'output_coll': oc}
+@app.route('/projects')
+def show_projects():
+    P = {}
+    obj = ifs.getfile('/rivmZone/system/files/pipelinesettings.json')
+    with obj.open('r') as f:
+        pl = json.load(f)
+    for project in sorted(pl):
+        P[project] = {'name': project, 'details': pl[project]}   
+    return render_template('projects.html', projects=P)
+
+@app.route('/datasets')
+def show_datasets():
+    ds = []
+    query = irods_session.query(Collection.name).filter(
+            Criterion('=',CollectionMeta.name, 'projectID'))
+    for q in query:
+        X = {'name': q[Collection.name]}
+        meta = coll_metadata(X['name'])
+        X.update(meta)
+        print(X)
+        ds.append(X)
+    return render_template('datasets.html', datasets=ds)
+    
+@app.route('/datasetdetails')
+def show_datasetdetails():
+    details = {}
+    dataset = request.args.get('path', '', type=str)
+    details['name'] = dataset
+    meta = coll_metadata(dataset)
+    details.update(meta)
+    query = irods_session.query(Collection.name).filter(
+            Criterion('=', CollectionMeta.name, 'RUN::input_coll')).filter(
+                    Criterion('=', CollectionMeta.value, dataset))
+    rel_colls = [ c[Collection.name] for c in query]
+    print(rel_colls)
+    details['related_colls'] = rel_colls
+    return render_template('datasetdetails.html', details=details)
+
+@app.route('/projectdetails')
+def show_projectdetails():
+    PD = {}
+    projectnaam = request.args.get('name', '', type=str)
+    obj = ifs.getfile('/rivmZone/system/files/pipelinesettings.json')
+    with obj.open('r') as f:
+        pl = json.load(f)
+    query = irods_session.query(User.name).filter(
+            Criterion('!=', User.type, "rodsuser")).filter(
+                    Criterion('=', UserMeta.name, "projectID")).filter(
+                            Criterion('=', UserMeta.value, projectnaam)).order_by(User.name)
+    groups = [u[User.name] for u in query]    
+    PD['name'] = projectnaam
+    PD['groups'] = groups
+    PD['details'] = pl[projectnaam]
+    query = irods_session.query(Collection.name).filter(
+            Criterion('=',CollectionMeta.name, 'projectID')).filter(
+                    Criterion('=',CollectionMeta.value, projectnaam))
+    PD['colls'] = [q[Collection.name] for q in query]
+    return render_template('projectdetails.html', details = PD)
