@@ -5,10 +5,29 @@
 {% endblock %}
 
 {% block content %}
+<!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script> -->
+<script>
+function update_proces(sourceElem, destElem) {
+    $.post("/get_proces",
+    { project: $(sourceElem+" option:selected").text() },
+        function(response) { 
+            select = $(destElem) 
+            if(select.prop) {
+                var options = select.prop('options');
+            }
+            else {
+                var options = select.attr('options');
+            }
+            $('option', select).remove();
+            $.each(response, function(index, val) {
+    options[options.length] = new Option(val, val);
+});
+        }    
+    );    
+}
 
+</script>
 <!-- PROJECT SETTINGS --!>
-
-
 <div class="card card-body">
 <H2>Processes</H2>
 {% for proces in details.details %}
@@ -35,14 +54,24 @@
   </div>
   <div class="form-group">
     <label for="nextproject_{{proces}}">Next ProjectID</label>
-    <select class="custom-select" name="next_projectID" id="nextproject_{{proces}}">
+    <select class="custom-select" name="next_projectID" id="nextproject_{{proces}}" onchange="update_proces('#nextproject_{{proces}}', '#nextproces_{{proces}}')">
 {% for project in conf|sort %}
-<option 
-{% if project in details.details[proces]['next_projectID'] %} selected {% endif %}
->{{project}}</option>
+<option{% if project in details.details[proces]['next_projectID'] %} selected {% endif %}>{{project}}</option>
 {% endfor %}
     </select>
   </div> 
+
+  <div class="form-group">
+    <label for="nextproces_{{proces}}">Next ProcessID</label>
+    <select class="custom-select" name="next_processID" id="nextproces_{{proces}}">
+{% for nextproces in conf[details.name]|sort %}
+
+<option {% if nextproces == details.details[proces]['next_processID'] %} selected {% endif %}>{{nextproces}}</option>
+{% endfor %}
+    </select>
+  </div> 
+  
+
 <div class="form-group">  
 <button type="submit" class="btn btn-primary">Submit</button>
 </div>

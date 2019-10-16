@@ -14,6 +14,7 @@ import subprocess
 import ssl
 
 from flask import Flask, request, render_template
+from flask import jsonify
 app = Flask(__name__)
 
 f = open("secret","r")
@@ -369,17 +370,27 @@ def read_jsonfile(filepath):
 @app.route('/update_project', methods=['GET','POST'])
 def update_projectsettings():
     data = request.form.to_dict()
+    proces=''
     pl = read_jsonfile('/rivmZone/system/files/pipelinesettings.json')
     if data['action'] == 'update_proces':
         PD = pl[data['project']][data['proces']]
-        for attr in ['repo', 'tag', 'output_prefix', 'next_projectID' ]:
+        for attr in ['repo', 'tag', 'output_prefix', 'next_projectID', 'next_processID' ]:
             PD[attr]= data[attr]
+        print(pl)
         proces = data['proces']
     elif data['action'] == 'add_proces':
-        pl[data['project']][data['proces']] = {'next_projectID': 'none', 'next_processID': 'none'}
-        proces = data['proces']
+        if data['proces']:
+            pl[data['project']][data['proces']] = {'next_projectID': 'none', 'next_processID': 'none'}
+            proces = data['proces']
     elif data['action'] == 'delete_proces':
         del pl[data['project']][data['proces']]
         proces = 'none'
     write_jsonfile('/rivmZone/system/files/pipelinesettings.json', pl)
     return("<script> window.location.href ='/projectdetails?name={0}&proces={1}'; </script>".format(data['project'], proces))
+
+@app.route('/get_proces', methods=['GET','POST'])
+def get_proces():
+    data = request.form.to_dict()
+    pl = read_jsonfile('/rivmZone/system/files/pipelinesettings.json')
+    processes = [p for p in pl.get(data['project'])]
+    return(jsonify(processes))
