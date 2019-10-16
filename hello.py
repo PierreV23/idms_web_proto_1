@@ -24,7 +24,7 @@ context = ssl._create_unverified_context(purpose=ssl.Purpose.SERVER_AUTH,
                                      cafile=None, capath=None, cadata=None)
 ssl_settings = {'irods_ssl_ca_certificate_file': '/etc/irods/ssl/irods.crt',
                 'ssl_context': context }
-irods_session = iRODSSession(host='rivm-bioir-l01p.rivm.ssc-campus.nl',
+irods_session = iRODSSession(host='rivm-bioir-l01a.rivm.ssc-campus.nl',
                              port=1247,
                              user='rods',
                              password=rodspassword,
@@ -85,7 +85,15 @@ def jobdetails(jobfileObject):
         nextproj = yy['next_projectID']
     except:
         nextproj = ''
-    details = {'name':jobfileObject.name, 'repo' : yy['repo'], 'tag': yy['tag'],
+    try:
+        repo = yy['repo']
+    except:
+        repo = ''
+    try:
+        tag = yy['tag']
+    except:
+        tag = ''    
+    details = {'name':jobfileObject.name, 'repo' : repo, 'tag': tag,
             'exit_code': ec, 'startTime': strSt, 'endTime': strEt, 'input_coll': ic, 'output_coll': oc, 'startTimestamp': st, 'next_projectID': nextproj}
     return details
 
@@ -325,6 +333,7 @@ def show_datasetdetails():
 def show_projectdetails():
     PD = {}
     projectnaam = request.args.get('name', '', type=str)
+    procesnaam = request.args.get('proces', '', type=str)
     obj = ifs.getfile('/rivmZone/system/files/pipelinesettings.json')
     with obj.open('r') as f:
         pl = json.load(f)
@@ -336,8 +345,41 @@ def show_projectdetails():
     PD['name'] = projectnaam
     PD['groups'] = groups
     PD['details'] = pl[projectnaam]
+    PD['processes'] = [proc for proc in sorted(pl[projectnaam])]
+    
     query = irods_session.query(Collection.name).filter(
             Criterion('=',CollectionMeta.name, 'projectID')).filter(
                     Criterion('=',CollectionMeta.value, projectnaam))
     PD['colls'] = [q[Collection.name] for q in query]
-    return render_template('projectdetails.html', details = PD)
+    return render_template('projectdetails.html', details = PD, conf = pl, procesnaam = procesnaam)
+
+def write_jsonfile(filepath, jsondict):
+    jsonstr = json.dumps(jsondict, sort_keys = True, indent = 4)
+    obj = ifs.getfile(filepath)
+    with obj.open('w') as f:
+            f.write(jsonstr.encode())
+
+def read_jsonfile(filepath):
+    obj = ifs.getfile(filepath)
+    with obj.open('r') as f:
+            pl = json.load(f)
+    return pl
+
+
+@app.route('/update_project', methods=['GET','POST'])
+def update_projectsettings():
+    data = request.form.to_dict()
+    pl = read_jsonfile('/rivmZone/system/files/pipelinesettings.json')
+    if data['action'] == 'update_proces':
+        PD = pl[data['project']][data['proces']]
+        for attr in ['repo', 'tag', 'output_prefix', 'next_projectID' ]:
+            PD[attr]= data[attr]
+        proces = data['proces']
+    elif data['action'] == 'add_proces':
+        pl[data['project']][data['proces']] = {'next_projectID': 'none', 'next_processID': 'none'}
+        proces = data['proces']
+    elif data['action'] == 'delete_proces':
+        del pl[data['project']][data['proces']]
+        proces = 'none'
+    write_jsonfile('/rivmZone/system/files/pipelinesettings.json', pl)
+    return("<script> window.location.href ='/projectdetails?name={0}&proces={1}'; </script>".format(data['project'], proces))
