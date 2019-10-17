@@ -62,11 +62,11 @@ function update_proces(sourceElem, destElem) {
   </div> 
 
   <div class="form-group">
-    <label for="nextproces_{{proces}}">Next ProcessID</label>
-    <select class="custom-select" name="next_processID" id="nextproces_{{proces}}">
+    <label for="nextproces_{{proces}}">Next ProcesID</label>
+    <select class="custom-select" name="next_procesID" id="nextproces_{{proces}}">
 {% for nextproces in conf[details.name]|sort %}
 
-<option {% if nextproces == details.details[proces]['next_processID'] %} selected {% endif %}>{{nextproces}}</option>
+<option {% if nextproces == details.details[proces]['next_procesID'] %} selected {% endif %}>{{nextproces}}</option>
 {% endfor %}
     </select>
   </div> 

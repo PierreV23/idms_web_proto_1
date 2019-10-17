@@ -374,13 +374,13 @@ def update_projectsettings():
     pl = read_jsonfile('/rivmZone/system/files/pipelinesettings.json')
     if data['action'] == 'update_proces':
         PD = pl[data['project']][data['proces']]
-        for attr in ['repo', 'tag', 'output_prefix', 'next_projectID', 'next_processID' ]:
+        for attr in ['repo', 'tag', 'output_prefix', 'next_projectID', 'next_procesID' ]:
             PD[attr]= data[attr]
         print(pl)
         proces = data['proces']
     elif data['action'] == 'add_proces':
         if data['proces']:
-            pl[data['project']][data['proces']] = {'next_projectID': 'none', 'next_processID': 'none'}
+            pl[data['project']][data['proces']] = {'next_projectID': 'none', 'next_procesID': 'none'}
             proces = data['proces']
     elif data['action'] == 'delete_proces':
         del pl[data['project']][data['proces']]
