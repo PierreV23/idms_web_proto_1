@@ -334,7 +334,7 @@ def show_datasetdetails():
 def show_projectdetails():
     PD = {}
     projectnaam = request.args.get('name', '', type=str)
-    procesnaam = request.args.get('proces', '', type=str)
+    processnaam = request.args.get('process', '', type=str)
     obj = ifs.getfile('/rivmZone/system/files/pipelinesettings.json')
     with obj.open('r') as f:
         pl = json.load(f)
@@ -352,7 +352,7 @@ def show_projectdetails():
             Criterion('=',CollectionMeta.name, 'projectID')).filter(
                     Criterion('=',CollectionMeta.value, projectnaam))
     PD['colls'] = [q[Collection.name] for q in query]
-    return render_template('projectdetails.html', details = PD, conf = pl, procesnaam = procesnaam)
+    return render_template('projectdetails.html', details = PD, conf = pl, processnaam = processnaam)
 
 def write_jsonfile(filepath, jsondict):
     jsonstr = json.dumps(jsondict, sort_keys = True, indent = 4)
@@ -369,27 +369,38 @@ def read_jsonfile(filepath):
 
 @app.route('/update_project', methods=['GET','POST'])
 def update_projectsettings():
+    
+    def add_checkbox(data, attr, name):
+        if name in attr:
+            data[name] = 'true'
+        else:
+            data[name] = 'false'
+        return data
+    
     data = request.form.to_dict()
-    proces=''
-    pl = read_jsonfile('/rivmZone/system/files/pipelinesettings.json')
-    if data['action'] == 'update_proces':
-        PD = pl[data['project']][data['proces']]
-        for attr in ['repo', 'tag', 'output_prefix', 'next_projectID', 'next_procesID' ]:
-            PD[attr]= data[attr]
-        print(pl)
-        proces = data['proces']
-    elif data['action'] == 'add_proces':
-        if data['proces']:
-            pl[data['project']][data['proces']] = {'next_projectID': 'none', 'next_procesID': 'none'}
-            proces = data['proces']
-    elif data['action'] == 'delete_proces':
-        del pl[data['project']][data['proces']]
-        proces = 'none'
-    write_jsonfile('/rivmZone/system/files/pipelinesettings.json', pl)
-    return("<script> window.location.href ='/projectdetails?name={0}&proces={1}'; </script>".format(data['project'], proces))
+    process=''
 
-@app.route('/get_proces', methods=['GET','POST'])
-def get_proces():
+    print(data)
+    pl = read_jsonfile('/rivmZone/system/files/pipelinesettings.json')
+    if data['action'] == 'update_process':
+        PD = pl[data['project']][data['process']]
+        for attr in ['repo', 'tag', 'output_prefix', 'next_projectID', 'next_processID' ]:
+            PD[attr] = data[attr]
+        add_checkbox(PD, data, 'modify_in_place')
+        add_checkbox(PD, data, 'restartable')
+        process = data['process']
+    elif data['action'] == 'add_process':
+        if data['process']:
+            pl[data['project']][data['process']] = {'next_projectID': 'none', 'next_processID': 'none'}
+            process = data['process']
+    elif data['action'] == 'delete_process':
+        del pl[data['project']][data['process']]
+        process = 'none'
+    write_jsonfile('/rivmZone/system/files/pipelinesettings.json', pl)
+    return("<script> window.location.href ='/projectdetails?name={0}&process={1}'; </script>".format(data['project'], process))
+
+@app.route('/get_process', methods=['GET','POST'])
+def get_process():
     data = request.form.to_dict()
     pl = read_jsonfile('/rivmZone/system/files/pipelinesettings.json')
     processes = [p for p in pl.get(data['project'])]

@@ -7,8 +7,8 @@
 {% block content %}
 <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script> -->
 <script>
-function update_proces(sourceElem, destElem) {
-    $.post("/get_proces",
+function update_process(sourceElem, destElem) {
+    $.post("/get_process",
     { project: $(sourceElem+" option:selected").text() },
         function(response) { 
             select = $(destElem) 
@@ -30,56 +30,77 @@ function update_proces(sourceElem, destElem) {
 <!-- PROJECT SETTINGS --!>
 <div class="card card-body">
 <H2>Processes</H2>
-{% for proces in details.details %}
-<a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse{{proces}}" role="button" aria-expanded="false" aria-controls="collapse{{proces}}">
-    {{proces}}
+{% for process in details.details %}
+<a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse{{process}}" role="button" aria-expanded="false" aria-controls="collapse{{process}}">
+    {{process}}
 </a>
-<div class="collapse {% if procesnaam == proces %}show{% endif %}" id="collapse{{proces}}">
+<div class="collapse {% if processnaam == process %}show{% endif %}" id="collapse{{process}}">
 <div class="card card-body" >
 <form action="update_project" method="post">
-  <input type="hidden" id="action" name="action" value="update_proces">
-  <input type="hidden" id="proces" name="project" value="{{details.name}}">
-  <input type="hidden" id="proces" name="proces" value="{{proces}}">
+  <input type="hidden" id="action" name="action" value="update_process">
+  <input type="hidden" id="process" name="project" value="{{details.name}}">
+  <input type="hidden" id="process" name="process" value="{{process}}">
   <div class="form-group">
-    <label for="gitrepo_{{proces}}">GIT Repository</label>
-    <input type="text" class="form-control" name="repo" id="gitrepo_{{proces}}" placeholder="GIT Repo" value="{{ details.details[proces]['repo'] }}">
+    <label for="gitrepo_{{process}}">GIT Repository</label>
+    <input type="text" class="form-control" name="repo" id="gitrepo_{{process}}" placeholder="GIT Repo" value="{{ details.details[process]['repo'] }}">
   </div>
   <div class="form-group">
-    <label for="gittag_{{proces}}">GIT Tag</label>
-    <input type="text" class="form-control" name="tag" id="gittag_{{proces}}" placeholder="GIT Tag" value="{{ details.details[proces]['tag'] }}">
+    <label for="gittag_{{process}}">GIT Tag</label>
+    <input type="text" class="form-control" name="tag" id="gittag_{{process}}" placeholder="GIT Tag" value="{{ details.details[process]['tag'] }}">
   </div>
   <div class="form-group">
-    <label for="outprefix_{{proces}}">Output Prefix</label>
-    <input type="text" class="form-control" name="output_prefix" id="outprefix_{{proces}}" placeholder="Output prefix" value="{{ details.details[proces]['output_prefix'] }}">
+    <label for="outprefix_{{process}}">Output Prefix</label>
+    <input type="text" class="form-control" name="output_prefix" id="outprefix_{{process}}" placeholder="Output prefix" value="{{ details.details[process]['output_prefix'] }}">
   </div>
   <div class="form-group">
-    <label for="nextproject_{{proces}}">Next ProjectID</label>
-    <select class="custom-select" name="next_projectID" id="nextproject_{{proces}}" onchange="update_proces('#nextproject_{{proces}}', '#nextproces_{{proces}}')">
+    <label for="nextproject_{{process}}">Next ProjectID</label>
+    <select class="custom-select" name="next_projectID" id="nextproject_{{process}}" onchange="update_process('#nextproject_{{process}}', '#nextprocess_{{process}}')">
 {% for project in conf|sort %}
-<option{% if project in details.details[proces]['next_projectID'] %} selected {% endif %}>{{project}}</option>
+<option{% if project in details.details[process]['next_projectID'] %} selected {% endif %}>{{project}}</option>
 {% endfor %}
     </select>
   </div> 
 
   <div class="form-group">
-    <label for="nextproces_{{proces}}">Next ProcesID</label>
-    <select class="custom-select" name="next_procesID" id="nextproces_{{proces}}">
-{% for nextproces in conf[details.name]|sort %}
+    <label for="nextprocess_{{process}}">Next ProcessID</label>
+    <select class="custom-select" name="next_processID" id="nextprocess_{{process}}">
+{% for nextprocess in conf[details.name]|sort %}
 
-<option {% if nextproces == details.details[proces]['next_procesID'] %} selected {% endif %}>{{nextproces}}</option>
+<option {% if nextprocess == details.details[process]['next_processID'] %} selected {% endif %}>{{nextprocess}}</option>
 {% endfor %}
     </select>
   </div> 
-  
+
+<div class="form-check">
+  <input class="form-check-input" type="checkbox" 
+      name="modify_in_place" 
+      value="true" 
+      {% if details.details[process]['modify_in_place'] == 'true' %}checked{% endif %} 
+      id="modify_in_place_{{process}}">
+  <label class="form-check-label" for="modify_in_place_{{process}}">
+    Modifes input collection, no output
+  </label>
+</div>  
+
+<div class="form-check">
+  <input class="form-check-input" type="checkbox" 
+      name="restartable" 
+      value="true" 
+      {% if details.details[process]['restartable'] == 'true' %}checked{% endif %} 
+      id="restartable_{{process}}">
+  <label class="form-check-label" for="restartable_{{process}}">
+    Restarts on error
+  </label>
+</div>  
 
 <div class="form-group">  
 <button type="submit" class="btn btn-primary">Submit</button>
 </div>
 </form>
 <form action="update_project" method="post">
-  <input type="hidden" id="action" name="action" value="delete_proces">
-  <input type="hidden" id="proces" name="project" value="{{details.name}}">
-  <input type="hidden" id="proces" name="proces" value="{{proces}}">
+  <input type="hidden" id="action" name="action" value="delete_process">
+  <input type="hidden" id="process" name="project" value="{{details.name}}">
+  <input type="hidden" id="process" name="process" value="{{process}}">
 <button type="submit" class="btn btn-secondary">Delete</button>
 </form>
 
@@ -88,13 +109,13 @@ function update_proces(sourceElem, destElem) {
 {% endfor %}
 
 <form class="form-inline" action="update_project" method="post">
-  <input type="hidden" id="action" name="action" value="add_proces">
-  <input type="hidden" id="proces" name="project" value="{{details.name}}">
+  <input type="hidden" id="action" name="action" value="add_process">
+  <input type="hidden" id="process" name="project" value="{{details.name}}">
   <div class="form-group mx-sm-3 mb-2">
 <!--    <label for="inputPassword2" class="sr-only">Dummy</label> --!>
-    <input type="text" class="form-control" name="proces" id="inputProces" placeholder="Proces">
+    <input type="text" class="form-control" name="process" id="inputProcess" placeholder="Process">
   </div>
-  <button type="submit" class="btn btn-primary mb-2">Add new proces</button>
+  <button type="submit" class="btn btn-primary mb-2">Add new process</button>
 </form>
 </div>
 
