@@ -388,6 +388,7 @@ def update_projectsettings():
             PD[attr] = data[attr]
         add_checkbox(PD, data, 'modify_in_place')
         add_checkbox(PD, data, 'restartable')
+        add_checkbox(PD, data, 'distribution')
         process = data['process']
     elif data['action'] == 'add_process':
         if data['process']:
