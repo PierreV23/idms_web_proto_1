@@ -87,6 +87,10 @@ def jobdetails(jobfileObject):
     except:
         nextproj = ''
     try:
+        description = yy['description']
+    except:
+        description = ''
+    try:
         repo = yy['repo']
     except:
         repo = ''
@@ -94,7 +98,7 @@ def jobdetails(jobfileObject):
         tag = yy['tag']
     except:
         tag = ''    
-    details = {'name':jobfileObject.name, 'repo' : repo, 'tag': tag,
+    details = {'name':jobfileObject.name, 'description': description, 'repo' : repo, 'tag': tag,
             'exit_code': ec, 'startTime': strSt, 'endTime': strEt, 'input_coll': ic, 'output_coll': oc, 'startTimestamp': st, 'next_projectID': nextproj}
     return details
 
@@ -384,7 +388,7 @@ def update_projectsettings():
     pl = read_jsonfile('/rivmZone/system/files/pipelinesettings.json')
     if data['action'] == 'update_process':
         PD = pl[data['project']][data['process']]
-        for attr in ['repo', 'tag', 'output_prefix', 'next_projectID', 'next_processID' ]:
+        for attr in ['description', 'repo', 'tag', 'output_prefix', 'next_projectID', 'next_processID' ]:
             PD[attr] = data[attr]
         add_checkbox(PD, data, 'modify_in_place')
         add_checkbox(PD, data, 'restartable')
