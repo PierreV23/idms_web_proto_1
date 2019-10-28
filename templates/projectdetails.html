@@ -41,6 +41,10 @@ function update_process(sourceElem, destElem) {
   <input type="hidden" id="process" name="project" value="{{details.name}}">
   <input type="hidden" id="process" name="process" value="{{process}}">
   <div class="form-group">
+    <label for="description_{{process}}">Description</label>
+    <input type="text" class="form-control" name="description" id="description_{{process}}" placeholder="Description" value="{{ details.details[process]['description'] }}">
+  </div>
+  <div class="form-group">
     <label for="gitrepo_{{process}}">GIT Repository</label>
     <input type="text" class="form-control" name="repo" id="gitrepo_{{process}}" placeholder="GIT Repo" value="{{ details.details[process]['repo'] }}">
   </div>
