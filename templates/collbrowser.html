@@ -22,7 +22,7 @@ Collection browser : {{ path }}
 {% for entry in cols %}
 <tr>
     <td> <a href="/collbrowser?path={{ entry.path }}">{{ entry.name }}</a> </td>
-    <td> DIR </td>
+    <td> DIR </td> <td> {{ entry.datetime }} </td> <td> {{ entry.ownername }} </td>
 </tr>
 {% endfor %}
 

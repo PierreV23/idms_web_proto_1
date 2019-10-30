@@ -120,9 +120,14 @@ def collist(path):
     for obj in ifs.ls(path):
         objdict = {'name': obj.shortname(), 'path': obj.path}
         if obj.isdir():
-            #objdict['create_time'] = obj.create_time()
-            #objdict['owner_name'] = obj.owner_name()
+            query = irods_session.query(Collection.create_time, Collection.owner_name).filter(Criterion('=', Collection.name, obj.path))
+            for result in query:
+                ct = result[Collection.create_time]
+                on = result[Collection.owner_name]
+                objdict['datetime'] = ct
+                objdict['ownername'] = on
             cols.append(objdict)
+            #print ("cols is nu:", cols)
         else:
             objdict['size'] = obj.filesize()
             objdict['create_time'] = obj.create_time()
