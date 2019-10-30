@@ -7,6 +7,27 @@ Collection browser : {{ path }}
 {% block content %}
 
 <a class="btn-btn-primary" href="/collbrowser?action=up&path={{ path }} role="button">UP</a>
+<table class="table">
+<thead>
+<tr>
+<th>Attribute</th>
+<th>Value</th>
+<th>Unit</th>
+</tr>
+</thead>
+<tbody>
+
+
+{% for entry in avu %}
+<tr>
+    <td> {{ entry.name }} </td>
+    <td> {{ entry.value }} </td>
+    <td> {{ entry.units }} </td>
+</tr>
+{% endfor %}
+
+</tbody>
+
 
 <table class="table">
 <thead>
