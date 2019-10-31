@@ -178,7 +178,7 @@ def docviewer():
 @app.route('/jobs')
 def show_jobs():
     l = []
-    for a in [ 'incoming', 'queued', 'active', 'done' ]:
+    for a in [ 'incoming', 'queued', 'active', 'done', 'waiting']:
         l = l + joblist(a)
     return render_template('jobs.html', joblist=l)
 
@@ -186,7 +186,7 @@ def show_jobs():
 def show_jobs2():
     x = request.args.get('items', 'all', type=str)
     l = []
-    for a in [ 'incoming', 'queued', 'active', 'done' ]:
+    for a in [ 'incoming', 'queued', 'active', 'done', 'waiting' ]:
         if x in [ 'all', a]:
             l = l + joblist(a)
     return render_template('jobs2.html', joblist=l, items=x)

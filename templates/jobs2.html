@@ -15,6 +15,7 @@ Job queue overview
  <a class="dropdown-item" href="/jobs2?items=queued">Queued</a>
  <a class="dropdown-item" href="/jobs2?items=active">Active</a>
  <a class="dropdown-item" href="/jobs2?items=done">Done</a>
+ <a class="dropdown-item" href="/jobs2?items=waiting">Waiting</a>
  <a class="dropdown-item" href="/jobs2?items=all">All</a>
  </div>
 </div>
@@ -39,6 +40,8 @@ Job queue overview
   <TR class="table-active">
 {% elif entry.state == "active" %}
   <TR class="table-primary">
+{% elif entry.state == "waiting" %}
+  <TR class="table-info">
 {% else %}
 {% if entry.exit_code != "0" %}
    <TR class="table-danger">
