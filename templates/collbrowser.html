@@ -6,13 +6,15 @@ Collection browser : {{ path }}
 
 {% block content %}
 
-<a class="btn-btn-primary" href="/collbrowser?action=up&path={{ path }} role="button">UP</a>
+<a href="/collbrowser?action=up&path={{ path }}"><button type="button" class="btn btn-outline-secondary">UP</button></a>
 
 {% if avu|length > 0 %}
 
-<table class="table">
+<div class="card card-body" >
+<h3>Collection metadata</h3>
+<table class="table table-hover table-striped table-sm">
 <thead>
-<tr bgcolor="lightgreen">
+<tr>
 <th>Attribute</th>
 <th>Value</th>
 <th>Unit</th>
@@ -22,7 +24,7 @@ Collection browser : {{ path }}
 
 
 {% for entry in avu %}
-<tr bgcolor="lightgreen">
+<tr>
     <td> {{ entry.name }} </td>
     <td> {{ entry.value }} </td>
     <td> {{ entry.units }} </td>
@@ -30,11 +32,14 @@ Collection browser : {{ path }}
 {% endfor %}
 
 </tbody>
+</table>
+</div>
 
 {% endif %}
 
-
-<table class="table">
+<div class="card card-body">
+<h3>Collection contents</h3>
+<table class="table table-sm table-striped">
 <thead>
 <tr>
 <th>Name</th>
