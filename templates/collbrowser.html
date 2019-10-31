@@ -7,9 +7,12 @@ Collection browser : {{ path }}
 {% block content %}
 
 <a class="btn-btn-primary" href="/collbrowser?action=up&path={{ path }} role="button">UP</a>
+
+{% if avu|length > 0 %}
+
 <table class="table">
 <thead>
-<tr>
+<tr bgcolor="lightgreen">
 <th>Attribute</th>
 <th>Value</th>
 <th>Unit</th>
@@ -19,7 +22,7 @@ Collection browser : {{ path }}
 
 
 {% for entry in avu %}
-<tr>
+<tr bgcolor="lightgreen">
     <td> {{ entry.name }} </td>
     <td> {{ entry.value }} </td>
     <td> {{ entry.units }} </td>
@@ -27,6 +30,8 @@ Collection browser : {{ path }}
 {% endfor %}
 
 </tbody>
+
+{% endif %}
 
 
 <table class="table">
