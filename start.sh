@@ -8,5 +8,6 @@ fi
 
 export FLASK_APP=hello.py
 export FLASK_ENV=development
-flask run --host=0.0.0.0 --port=5009
+PORT=5${UID: -3}
+flask run --host=0.0.0.0 --port=$PORT
 source deactivate
