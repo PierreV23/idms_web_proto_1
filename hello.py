@@ -25,7 +25,7 @@ context = ssl._create_unverified_context(purpose=ssl.Purpose.SERVER_AUTH,
                                      cafile=None, capath=None, cadata=None)
 ssl_settings = {'irods_ssl_ca_certificate_file': '/etc/irods/ssl/irods.crt',
                 'ssl_context': context }
-irods_session = iRODSSession(host='rivm-bioir-l01a.rivm.ssc-campus.nl',
+irods_session = iRODSSession(host='rivm-bioir-l01p.rivm.ssc-campus.nl',
                              port=1247,
                              user='rods',
                              password=rodspassword,
@@ -115,6 +115,14 @@ def joblist(state):
     return b
 
 def collist(path):
+    avu=[]
+    query = irods_session.query(CollectionMeta.name, CollectionMeta.value, CollectionMeta.units).filter(Criterion('=', Collection.name, path))
+    for result in query:
+         name = result[CollectionMeta.name]
+         value = result[CollectionMeta.value]
+         units = result[CollectionMeta.units]
+         avu.append({'name': name, 'value': value,'units': units})
+         print(name,value,units)
     cols = []
     objs = []
     for obj in ifs.ls(path):
@@ -134,10 +142,10 @@ def collist(path):
             objdict['owner_name'] = obj.owner_name()
             objs.append(objdict)
     print("path: ", path)
-    print("ifs.ls(path): ", ifs.ls(path))
+    #print("ifs.ls(path): ", ifs.ls(path))
     print("cols: ", cols)
     print("objs: ", objs)
-    return cols, objs
+    return cols, objs, avu
 
 @app.route('/')
 def home():
@@ -150,8 +158,8 @@ def collbrowser():
     if action == "up":
         path = '/' + '/'.join(path.split('/')[1:-1])
         
-    c, o = collist(path)
-    return render_template('collbrowser.html', cols = c, objs = o, path=path)
+    c, o, a = collist(path)
+    return render_template('collbrowser.html', cols = c, objs = o, avu = a, path=path)
 
 @app.route('/docviewer')
 def docviewer():
