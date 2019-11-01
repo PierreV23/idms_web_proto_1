@@ -3,3 +3,4 @@ secret
 secret.acc
 secret.prod
 static/images/*
+.nfs*
