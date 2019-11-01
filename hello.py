@@ -443,7 +443,7 @@ def submit_runsheet():
     fd, temppath = tempfile.mkstemp()
     with open(fd, 'w') as f:
         f.write(yaml.dump(data, explicit_start=True, default_flow_style=False))
-    runsheet_location = '/rivmZone/system/runsheet/incoming/runsheet.yml'
+    runsheet_location = '/rivmZone/system/runsheet/incoming/runsheet.yaml'
     irods_session.data_objects.put(temppath, runsheet_location)
     
     # Cleanup temp file.
