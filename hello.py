@@ -4,6 +4,7 @@ from irods.models import Collection, CollectionMeta, DataObject, User, UserGroup
 from irods.query import SpecificQuery
 import os
 from datetime import datetime
+import tempfile
 import time
 import yaml
 import json
@@ -13,7 +14,7 @@ import sys
 import subprocess
 import ssl
 
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, redirect
 from flask import jsonify
 app = Flask(__name__)
 
@@ -423,3 +424,30 @@ def get_process():
     pl = read_jsonfile('/rivmZone/system/files/pipelinesettings.json')
     processes = [p for p in pl.get(data['project'])]
     return(jsonify(processes))
+
+
+@app.route('/submit_runsheet', methods=['POST'])
+def submit_runsheet():
+    """Write a runsheet.yml file to the incoming collection with data from the
+    request (i.e. form submission)."""
+    data = request.form.to_dict()
+
+    # Handle checkboxes
+    for field in ('modify_in_place', 'restartable', 'distribution'):
+        if field not in data:
+            data[field] = 'false'
+
+    # Write runsheet to a temporary location. Note: we cannot write
+    # to the /incoming collection directly, as it renames the data
+    # object before we can write its contents.
+    fd, temppath = tempfile.mkstemp()
+    with open(fd, 'w') as f:
+        f.write(yaml.dump(data, explicit_start=True, default_flow_style=False))
+    runsheet_location = '/rivmZone/system/runsheet/incoming/runsheet.yaml'
+    irods_session.data_objects.put(temppath, runsheet_location)
+    
+    # Cleanup temp file.
+    os.unlink(temppath)
+
+    return redirect('/jobs2')
+
