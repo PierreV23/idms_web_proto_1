@@ -355,22 +355,29 @@ def show_projectdetails():
     processnaam = request.args.get('process', '', type=str)
     obj = ifs.getfile('/rivmZone/system/files/pipelinesettings.json')
     with obj.open('r') as f:
-        pl = json.load(f)
+        config = json.load(f)
+    # Retrieve grousp associated with project
     query = irods_session.query(User.name).filter(
             Criterion('!=', User.type, "rodsuser")).filter(
                     Criterion('=', UserMeta.name, "projectID")).filter(
                             Criterion('=', UserMeta.value, projectnaam)).order_by(User.name)
     groups = [u[User.name] for u in query]    
     PD['name'] = projectnaam
+    for attr in ['description', 'default_collection','service_account']:
+        try:
+            PD[attr] = config[projectnaam]['settings'][attr]
+        except:
+            PD[attr] = ''
     PD['groups'] = groups
-    PD['details'] = pl[projectnaam]
-    PD['processes'] = [proc for proc in sorted(pl[projectnaam])]
-    
+    PD['conf'] = config[projectnaam]
+    PD['processes'] = [proc for proc in sorted(config[projectnaam]['processes'])]
+
+    # Retrieve collections associated with project
     query = irods_session.query(Collection.name).filter(
             Criterion('=',CollectionMeta.name, 'projectID')).filter(
                     Criterion('=',CollectionMeta.value, projectnaam))
     PD['colls'] = [q[Collection.name] for q in query]
-    return render_template('projectdetails.html', details = PD, conf = pl, processnaam = processnaam)
+    return render_template('projectdetails.html', PD = PD, conf = config, processnaam = processnaam)
 
 def write_jsonfile(filepath, jsondict):
     jsonstr = json.dumps(jsondict, sort_keys = True, indent = 4)
@@ -395,28 +402,41 @@ def update_projectsettings():
             data[name] = 'false'
         return data
     
-    data = request.form.to_dict()
-    process=''
-
-    print(data)
-    pl = read_jsonfile('/rivmZone/system/files/pipelinesettings.json')
-    if data['action'] == 'update_process':
-        PD = pl[data['project']][data['process']]
-        for attr in ['description', 'repo', 'tag', 'output_prefix', 'next_projectID', 'next_processID' ]:
-            PD[attr] = data[attr]
-        add_checkbox(PD, data, 'modify_in_place')
-        add_checkbox(PD, data, 'restartable')
-        add_checkbox(PD, data, 'distribution')
-        process = data['process']
-    elif data['action'] == 'add_process':
-        if data['process']:
-            pl[data['project']][data['process']] = {'next_projectID': 'none', 'next_processID': 'none'}
-            process = data['process']
-    elif data['action'] == 'delete_process':
-        del pl[data['project']][data['process']]
+    requestdata = request.form.to_dict()
+    viewProcess=''
+    project = requestdata['project']
+    try:
+        process = requestdata['process']
+    except:
         process = 'none'
-    write_jsonfile('/rivmZone/system/files/pipelinesettings.json', pl)
-    return("<script> window.location.href ='/projectdetails?name={0}&process={1}'; </script>".format(data['project'], process))
+
+    print(requestdata)
+    config = read_jsonfile('/rivmZone/system/files/pipelinesettings.json')
+    if requestdata['action'] == 'update_process':
+        processConfig = config[project]['processes'][process]
+        for attr in ['description', 'repo', 'tag', 'output_prefix', 'next_projectID', 'next_processID' ]:
+            processConfig[attr] = requestdata[attr]
+        add_checkbox(processConfig, requestdata, 'modify_in_place')
+        add_checkbox(processConfig, requestdata, 'restartable')
+        add_checkbox(processConfig, requestdata, 'distribution')
+        viewProcess = process
+    elif requestdata['action'] == 'add_process':
+        if requestdata['process']:
+            newProcess = requestdata['process']
+            configl[project][newprocess] = {'next_projectID': 'none', 'next_processID': 'none'}
+            viewProcess = newProcess
+    elif requestdata['action'] == 'delete_process':
+        del config['project']['process']
+        viewProcess = 'none'
+    elif requestdata['action'] == 'update_project':
+        if not 'settings' in config[project]:
+            config[project]['settings'] = {}
+        projectSettings = config[project]['settings']
+        for attr in ['description', 'default_collection','service_account']:
+            projectSettings[attr] = requestdata[attr]
+    write_jsonfile('/rivmZone/system/files/pipelinesettings.json', config)
+    return("<script> window.location.href ='/projectdetails?name={0}&process={1}'; </script>".format(requestdata['project'], viewProcess))
+
 
 @app.route('/get_process', methods=['GET','POST'])
 def get_process():
