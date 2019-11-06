@@ -26,7 +26,7 @@ context = ssl._create_unverified_context(purpose=ssl.Purpose.SERVER_AUTH,
                                      cafile=None, capath=None, cadata=None)
 ssl_settings = {'irods_ssl_ca_certificate_file': '/etc/irods/ssl/irods.crt',
                 'ssl_context': context }
-irods_session = iRODSSession(host='rivm-bioir-l01p.rivm.ssc-campus.nl',
+irods_session = iRODSSession(host='rivm-bioir-l01a.rivm.ssc-campus.nl',
                              port=1247,
                              user='rods',
                              password=rodspassword,
@@ -423,10 +423,10 @@ def update_projectsettings():
     elif requestdata['action'] == 'add_process':
         if requestdata['process']:
             newProcess = requestdata['process']
-            configl[project][newprocess] = {'next_projectID': 'none', 'next_processID': 'none'}
+            config[project]['processes'][newProcess] = {'next_projectID': 'none', 'next_processID': 'none'}
             viewProcess = newProcess
     elif requestdata['action'] == 'delete_process':
-        del config['project']['process']
+        del config['project']['processes'][process]
         viewProcess = 'none'
     elif requestdata['action'] == 'update_project':
         if not 'settings' in config[project]:
