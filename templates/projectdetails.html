@@ -34,10 +34,20 @@ function update_process(sourceElem, destElem) {
 
 <form action="update_project" method="post">
   <input type="hidden" id="action" name="action" value="update_project">
-  <input type="hidden" id="process" name="project" value="{{PD.name}}">
+  <input type="hidden" id="project" name="project" value="{{PD.name}}">
   <div class="form-group">
     <label for="project_desc_{{PD.name}}">Description</label>
-    <input type="text" class="form-control" name="description" id="project_desc_{PD.name}}" placeholder="Description" value="{{ PD.name }}">
+    <input type="text" class="form-control" name="description" id="project_desc_{PD.name}}" placeholder="Description" value="{{ PD.description }}">
+  </div>
+
+  <div class="form-group">
+    <label for="project_coll_{{PD.name}}">Default Collection</label>
+    <input type="text" class="form-control" name="default_collection" id="default_collection_{PD.name}}" placeholder="Default collection" value="{{ PD.default_collection }}">
+  </div>
+
+  <div class="form-group">
+    <label for="project_svc_{{PD.name}}">Service Account</label>
+    <input type="text" class="form-control" name="service_account" id="service_account_{PD.name}}" placeholder="Service Account" value="{{ PD.service_account }}">
   </div>
 
   <button type="submit" class="btn btn-primary">Submit</button>
@@ -47,7 +57,7 @@ function update_process(sourceElem, destElem) {
 
 <div class="card card-body">
 <H3>Processes</H3>
-{% for process in PD.conf %}
+{% for process in PD.processes %}
 <a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse{{process}}" role="button" aria-expanded="false" aria-controls="collapse{{process}}">
     {{process}}
 </a>
@@ -55,29 +65,29 @@ function update_process(sourceElem, destElem) {
 <div class="card card-body" >
 <form action="update_project" method="post">
   <input type="hidden" id="action" name="action" value="update_process">
-  <input type="hidden" id="process" name="project" value="{{PD.name}}">
+  <input type="hidden" id="project" name="project" value="{{PD.name}}">
   <input type="hidden" id="process" name="process" value="{{process}}">
   <div class="form-group">
     <label for="description_{{process}}">Description</label>
-    <input type="text" class="form-control" name="description" id="description_{{process}}" placeholder="Description" value="{{ PD.conf[process]['description'] }}">
+    <input type="text" class="form-control" name="description" id="description_{{process}}" placeholder="Description" value="{{ PD.conf['processes'][process]['description'] }}">
   </div>
   <div class="form-group">
     <label for="gitrepo_{{process}}">GIT Repository</label>
-    <input type="text" class="form-control" name="repo" id="gitrepo_{{process}}" placeholder="GIT Repo" value="{{ PD.conf[process]['repo'] }}">
+    <input type="text" class="form-control" name="repo" id="gitrepo_{{process}}" placeholder="GIT Repo" value="{{ PD.conf['processes'][process]['repo'] }}">
   </div>
   <div class="form-group">
     <label for="gittag_{{process}}">GIT Tag</label>
-    <input type="text" class="form-control" name="tag" id="gittag_{{process}}" placeholder="GIT Tag" value="{{ PD.conf[process]['tag'] }}">
+    <input type="text" class="form-control" name="tag" id="gittag_{{process}}" placeholder="GIT Tag" value="{{ PD.conf['processes'][process]['tag'] }}">
   </div>
   <div class="form-group">
     <label for="outprefix_{{process}}">Output Prefix</label>
-    <input type="text" class="form-control" name="output_prefix" id="outprefix_{{process}}" placeholder="Output prefix" value="{{ PD.conf[process]['output_prefix'] }}">
+    <input type="text" class="form-control" name="output_prefix" id="outprefix_{{process}}" placeholder="Output prefix" value="{{ PD.conf['processes'][process]['output_prefix'] }}">
   </div>
   <div class="form-group">
     <label for="nextproject_{{process}}">Next ProjectID</label>
     <select class="custom-select" name="next_projectID" id="nextproject_{{process}}" onchange="update_process('#nextproject_{{process}}', '#nextprocess_{{process}}')">
 {% for project in conf|sort %}
-<option{% if project in PD.conf[process]['next_projectID'] %} selected {% endif %}>{{project}}</option>
+<option{% if project in PD.conf['processes'][process]['next_projectID'] %} selected {% endif %}>{{project}}</option>
 {% endfor %}
     </select>
   </div> 
@@ -87,7 +97,7 @@ function update_process(sourceElem, destElem) {
     <select class="custom-select" name="next_processID" id="nextprocess_{{process}}">
 {% for nextprocess in conf[PD.name]|sort %}
 
-<option {% if nextprocess == PD.conf[process]['next_processID'] %} selected {% endif %}>{{nextprocess}}</option>
+<option {% if nextprocess == PD.conf['processes'][process]['next_processID'] %} selected {% endif %}>{{nextprocess}}</option>
 {% endfor %}
     </select>
   </div> 
@@ -96,7 +106,7 @@ function update_process(sourceElem, destElem) {
   <input class="form-check-input" type="checkbox" 
       name="modify_in_place" 
       value="true" 
-      {% if PD.conf[process]['modify_in_place'] == 'true' %}checked{% endif %} 
+      {% if PD.conf['processes'][process]['modify_in_place'] == 'true' %}checked{% endif %} 
       id="modify_in_place_{{process}}">
   <label class="form-check-label" for="modify_in_place_{{process}}">
     Modifes input collection, no output
@@ -107,7 +117,7 @@ function update_process(sourceElem, destElem) {
   <input class="form-check-input" type="checkbox" 
       name="restartable" 
       value="true" 
-      {% if PD.conf[process]['restartable'] == 'true' %}checked{% endif %} 
+      {% if PD.conf['processes'][process]['restartable'] == 'true' %}checked{% endif %} 
       id="restartable_{{process}}">
   <label class="form-check-label" for="restartable_{{process}}">
     Restarts on error
@@ -118,7 +128,7 @@ function update_process(sourceElem, destElem) {
   <input class="form-check-input" type="checkbox" 
       name="distribution" 
       value="true" 
-      {% if PD.conf[process]['distribution'] == 'true' %}checked{% endif %} 
+      {% if PD.conf['processes'][process]['distribution'] == 'true' %}checked{% endif %} 
       id="distribution_{{process}}">
   <label class="form-check-label" for="distribution_{{process}}">
     Distribution pipeline

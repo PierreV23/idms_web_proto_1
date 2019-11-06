@@ -362,9 +362,14 @@ def show_projectdetails():
                             Criterion('=', UserMeta.value, projectnaam)).order_by(User.name)
     groups = [u[User.name] for u in query]    
     PD['name'] = projectnaam
+    for attr in ['description', 'default_collection','service_account']:
+        try:
+            PD[attr] = config[projectnaam]['settings'][attr]
+        except:
+            PD[attr] = ''
     PD['groups'] = groups
     PD['conf'] = config[projectnaam]
-    PD['processes'] = [proc for proc in sorted(config[projectnaam])]
+    PD['processes'] = [proc for proc in sorted(config[projectnaam]['processes'])]
 
     # Retrieve collections associated with project
     query = irods_session.query(Collection.name).filter(
@@ -399,12 +404,15 @@ def update_projectsettings():
     requestdata = request.form.to_dict()
     viewProcess=''
     project = requestdata['project']
-    process = requestdata['process']
+    try:
+        process = requestdata['process']
+    except:
+        process = 'none'
 
     print(requestdata)
     config = read_jsonfile('/rivmZone/system/files/pipelinesettings.json')
     if requestdata['action'] == 'update_process':
-        processConfig = config['project']['process']
+        processConfig = config[project]['processes'][process]
         for attr in ['description', 'repo', 'tag', 'output_prefix', 'next_projectID', 'next_processID' ]:
             processConfig[attr] = requestdata[attr]
         add_checkbox(processConfig, requestdata, 'modify_in_place')
@@ -419,7 +427,13 @@ def update_projectsettings():
     elif requestdata['action'] == 'delete_process':
         del config['project']['process']
         viewProcess = 'none'
-    write_jsonfile('/rivmZone/system/files/pipelinesettings.json', pl)
+    elif requestdata['action'] == 'update_project':
+        if not 'settings' in config[project]:
+            config[project]['settings'] = {}
+        projectSettings = config[project]['settings']
+        for attr in ['description', 'default_collection','service_account']:
+            projectSettings[attr] = requestdata[attr]
+    write_jsonfile('/rivmZone/system/files/pipelinesettings.json', config)
     return("<script> window.location.href ='/projectdetails?name={0}&process={1}'; </script>".format(requestdata['project'], viewProcess))
 
 
