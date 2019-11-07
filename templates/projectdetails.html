@@ -95,7 +95,7 @@ function update_process(sourceElem, destElem) {
   <div class="form-group">
     <label for="nextprocess_{{process}}">Next ProcessID</label>
     <select class="custom-select" name="next_processID" id="nextprocess_{{process}}">
-{% for nextprocess in conf[PD.name]|sort %}
+{% for nextprocess in conf[PD.name]['processes']|sort %}
 
 <option {% if nextprocess == PD.conf['processes'][process]['next_processID'] %} selected {% endif %}>{{nextprocess}}</option>
 {% endfor %}

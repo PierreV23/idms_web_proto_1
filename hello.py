@@ -26,7 +26,7 @@ context = ssl._create_unverified_context(purpose=ssl.Purpose.SERVER_AUTH,
                                      cafile=None, capath=None, cadata=None)
 ssl_settings = {'irods_ssl_ca_certificate_file': '/etc/irods/ssl/irods.crt',
                 'ssl_context': context }
-irods_session = iRODSSession(host='rivm-bioir-l01a.rivm.ssc-campus.nl',
+irods_session = iRODSSession(host='rivm-bioir-l01p.rivm.ssc-campus.nl',
                              port=1247,
                              user='rods',
                              password=rodspassword,
@@ -442,7 +442,7 @@ def update_projectsettings():
 def get_process():
     data = request.form.to_dict()
     pl = read_jsonfile('/rivmZone/system/files/pipelinesettings.json')
-    processes = [p for p in pl.get(data['project'])]
+    processes = [ p for p in pl.get(data['project']['processes']) ]
     return(jsonify(processes))
 
 
