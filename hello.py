@@ -26,6 +26,8 @@ context = ssl._create_unverified_context(purpose=ssl.Purpose.SERVER_AUTH,
                                      cafile=None, capath=None, cadata=None)
 ssl_settings = {'irods_ssl_ca_certificate_file': '/etc/irods/ssl/irods.crt',
                 'ssl_context': context }
+#ssl_settings = {'irods_ssl_ca_certificate_file': 'irods.test.crt',
+#                'ssl_context': context }
 irods_session = iRODSSession(host='rivm-bioir-l01p.rivm.ssc-campus.nl',
                              port=1247,
                              user='rods',
