@@ -2,5 +2,7 @@ __pycache__
 secret
 secret.acc
 secret.prod
+secret.test
 static/images/*
 .nfs*
+*.crt

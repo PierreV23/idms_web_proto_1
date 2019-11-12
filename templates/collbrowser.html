@@ -72,7 +72,32 @@ Collection browser : {{ path }}
 </td>
 </tr>
 {% endfor %}
+</table>
+</div>
+
+<!-- PROJECT GROUPS --!>
+<div class="card card-body">
+<H2>Related output collections groups</H2>
+<TABLE class="table table-striped table-hover table-sm" >
+<thead>
+<TR>
+<TH scope="col">Name</TH>
+</TR>
+</thead>
+<tbody>
+{% for coll in rel_colls %}
+<tr>
+<td>
+<a href="/collbrowser?path={{coll}}">
+{{ coll }}
+</a>
+</td>
+</tr>
+{% endfor %}
 </tbody>
+</table>
+</div>
+
 </table>
 
 {% endblock %}

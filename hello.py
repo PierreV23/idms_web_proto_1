@@ -26,6 +26,8 @@ context = ssl._create_unverified_context(purpose=ssl.Purpose.SERVER_AUTH,
                                      cafile=None, capath=None, cadata=None)
 ssl_settings = {'irods_ssl_ca_certificate_file': '/etc/irods/ssl/irods.crt',
                 'ssl_context': context }
+#ssl_settings = {'irods_ssl_ca_certificate_file': 'irods.test.crt',
+#                'ssl_context': context }
 irods_session = iRODSSession(host='rivm-bioir-l01p.rivm.ssc-campus.nl',
                              port=1247,
                              user='rods',
@@ -159,8 +161,14 @@ def collbrowser():
     if action == "up":
         path = '/' + '/'.join(path.split('/')[1:-1])
         
+    query = irods_session.query(Collection.name).filter(
+            Criterion('=', CollectionMeta.name, 'RUN::input_coll')).filter(
+                    Criterion('=', CollectionMeta.value, path))
+    rel_colls = [ c[Collection.name] for c in query]
+    print("rel_cols", rel_colls)
+
     c, o, a = collist(path)
-    return render_template('collbrowser.html', cols = c, objs = o, avu = a, path=path)
+    return render_template('collbrowser.html', cols = c, objs = o, avu = a, path=path, rel_colls = rel_colls)
 
 @app.route('/docviewer')
 def docviewer():
@@ -187,7 +195,7 @@ def docviewer():
 @app.route('/jobs')
 def show_jobs():
     l = []
-    for a in [ 'incoming', 'queued', 'active', 'done', 'waiting']:
+    for a in [ 'waiting', 'incoming', 'queued', 'active', 'done']:
         l = l + joblist(a)
     return render_template('jobs.html', joblist=l)
 
@@ -195,7 +203,7 @@ def show_jobs():
 def show_jobs2():
     x = request.args.get('items', 'all', type=str)
     l = []
-    for a in [ 'incoming', 'queued', 'active', 'done', 'waiting' ]:
+    for a in [ 'waiting', 'incoming', 'queued', 'active', 'done' ]:
         if x in [ 'all', a]:
             l = l + joblist(a)
     return render_template('jobs2.html', joblist=l, items=x)
@@ -333,21 +341,6 @@ def show_datasets():
         ds.append(X)
     return render_template('datasets.html', datasets=ds)
     
-@app.route('/datasetdetails')
-def show_datasetdetails():
-    details = {}
-    dataset = request.args.get('path', '', type=str)
-    details['name'] = dataset
-    meta = coll_metadata(dataset)
-    details.update(meta)
-    query = irods_session.query(Collection.name).filter(
-            Criterion('=', CollectionMeta.name, 'RUN::input_coll')).filter(
-                    Criterion('=', CollectionMeta.value, dataset))
-    rel_colls = [ c[Collection.name] for c in query]
-    print(rel_colls)
-    details['related_colls'] = rel_colls
-    return render_template('datasetdetails.html', details=details)
-
 @app.route('/projectdetails')
 def show_projectdetails():
     PD = {}
