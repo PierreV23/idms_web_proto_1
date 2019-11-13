@@ -14,9 +14,11 @@ import sys
 import subprocess
 import ssl
 
-from flask import Flask, request, render_template, redirect
+from flask import Flask, request, render_template, redirect, Blueprint
 from flask import jsonify
-app = Flask(__name__)
+#app = Flask(__name__)
+
+bp = Blueprint('old', __name__, url_prefix='/old')
 
 f = open("secret","r")
 rodspassword = f.readline()
@@ -150,11 +152,11 @@ def collist(path):
     print("objs: ", objs)
     return cols, objs, avu
 
-@app.route('/')
+@bp.route('/')
 def home():
     return render_template('home.html')
 
-@app.route('/collbrowser')
+@bp.route('/collbrowser')
 def collbrowser():
     path = request.args.get('path', '/rivmZone/projects', type=str)
     action = request.args.get('action', 'none', type=str)
@@ -170,7 +172,7 @@ def collbrowser():
     c, o, a = collist(path)
     return render_template('collbrowser.html', cols = c, objs = o, avu = a, path=path, rel_colls = rel_colls)
 
-@app.route('/docviewer')
+@bp.route('/docviewer')
 def docviewer():
     path = request.args.get('path', '/', type=str)
     action = request.args.get('action', 'none', type=str)
@@ -192,14 +194,14 @@ def docviewer():
         doc="Deze file kan niet gelezen worden"
     return render_template('docviewer.html', doc = doc, path = path, fn = fn, file_extension = file_extension)
 
-@app.route('/jobs')
+@bp.route('/jobs')
 def show_jobs():
     l = []
     for a in [ 'waiting', 'incoming', 'queued', 'active', 'done']:
         l = l + joblist(a)
     return render_template('jobs.html', joblist=l)
 
-@app.route('/jobs2')
+@bp.route('/jobs2')
 def show_jobs2():
     x = request.args.get('items', 'all', type=str)
     l = []
@@ -208,7 +210,7 @@ def show_jobs2():
             l = l + joblist(a)
     return render_template('jobs2.html', joblist=l, items=x)
 
-@app.route('/clusterinfo')
+@bp.route('/clusterinfo')
 def show_clusterinfo():
     test_if_lsf_installed()
     bhosts=getinfo("bhosts -w bioinfo", "")
@@ -249,7 +251,7 @@ def coll_metadata(coll):
     return r
 
 
-@app.route('/hpcinfo')
+@bp.route('/hpcinfo')
 def show_hpcinfo():
     x=1
     with open('/data/BioGrid/verhager/HPCrapport/rapport_twohago.txt', encoding='utf8') as f:
@@ -259,20 +261,20 @@ def show_hpcinfo():
             x+=1
     return render_template('hpcinfo.html', text=text)
 
-@app.route('/list', methods=['GET', 'POST'])
+@bp.route('/list', methods=['GET', 'POST'])
 def login():
     coll = irods_session.collections.get('/rivmZone/home/rods')
     A = [ entry.path for entry in coll.data_objects ]
     print(A)
     return render_template('hello.html', objects=A)
 
-@app.route('/users')
+@bp.route('/users')
 def show_users():
     query = irods_session.query(User.name).order_by(User.name).filter(Criterion('!=', User.type, "rodsgroup"))
     U = [u[User.name] for u in query]
     return render_template('userlist.html', users=U)
 
-@app.route('/groups')
+@bp.route('/groups')
 def show_groups():
     groupq = irods_session.query(User.name).order_by(User.name).filter(Criterion('!=', User.type, "rodsuser"))
     G = [ group[User.name] for group in groupq ]
@@ -283,7 +285,7 @@ def show_groups():
 #        print(ig)
     return render_template('grouplist.html', groups=G)
 
-@app.route('/groupdetails')
+@bp.route('/groupdetails')
 def show_groupdetails():
     groupnaam = request.args.get('group', '', type=str)
     group = irods_session.query(User.name).filter(Criterion('=', User.name, groupnaam))
@@ -299,7 +301,7 @@ def show_groupdetails():
         
     return render_template('groupdetails.html', details=D)
 
-@app.route('/jobdetails')
+@bp.route('/jobdetails')
 def show_jobdetails():
     jobnaam = request.args.get('name', '', type=str)
     # We want the full path to the job runsheet object
@@ -318,7 +320,7 @@ def show_jobdetails():
     D['Next projectID'] = "<a href='/projectdetails?name={0}'>{0}</a>".format(jd['next_projectID'])
     return render_template('jobdetails.html', details=D, jobnaam = jobnaam)
 
-@app.route('/projects')
+@bp.route('/projects')
 def show_projects():
     P = {}
     obj = ifs.getfile('/rivmZone/system/files/pipelinesettings.json')
@@ -328,7 +330,7 @@ def show_projects():
         P[project] = {'name': project, 'details': pl[project]}   
     return render_template('projects.html', projects=P)
 
-@app.route('/datasets')
+@bp.route('/datasets')
 def show_datasets():
     ds = []
     query = irods_session.query(Collection.name).filter(
@@ -341,7 +343,7 @@ def show_datasets():
         ds.append(X)
     return render_template('datasets.html', datasets=ds)
     
-@app.route('/projectdetails')
+@bp.route('/projectdetails')
 def show_projectdetails():
     PD = {}
     projectnaam = request.args.get('name', '', type=str)
@@ -385,7 +387,7 @@ def read_jsonfile(filepath):
     return pl
 
 
-@app.route('/update_project', methods=['GET','POST'])
+@bp.route('/update_project', methods=['GET','POST'])
 def update_projectsettings():
     
     def add_checkbox(data, attr, name):
@@ -431,7 +433,7 @@ def update_projectsettings():
     return("<script> window.location.href ='/projectdetails?name={0}&process={1}'; </script>".format(requestdata['project'], viewProcess))
 
 
-@app.route('/get_process', methods=['GET','POST'])
+@bp.route('/get_process', methods=['GET','POST'])
 def get_process():
     data = request.form.to_dict()
     pl = read_jsonfile('/rivmZone/system/files/pipelinesettings.json')
@@ -439,7 +441,7 @@ def get_process():
     return(jsonify(processes))
 
 
-@app.route('/submit_runsheet', methods=['POST'])
+@bp.route('/submit_runsheet', methods=['POST'])
 def submit_runsheet():
     """Write a runsheet.yml file to the incoming collection with data from the
     request (i.e. form submission)."""
@@ -462,5 +464,5 @@ def submit_runsheet():
     # Cleanup temp file.
     os.unlink(temppath)
 
-    return redirect('/jobs2')
+    return redirect('/old/jobs2')
 

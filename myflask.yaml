@@ -9,4 +9,6 @@ dependencies:
   - pyyaml=5.1=py37h7b6447c_0
   - pip:
     - python-irodsclient==0.8.1
+    - flask-login
+    - flask-wtf
 
