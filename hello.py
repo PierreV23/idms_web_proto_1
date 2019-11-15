@@ -62,7 +62,7 @@ def jobdetails(jobfileObject):
         yy = yaml.load(txt)
     md = jobfileObject.metadata
     try: 
-        ec = md.get_one('RUN::exit_code').value
+        ec = md.get_one('sys::runsheet::exit_code').value
     except KeyError:
         ec = -1
     try:
