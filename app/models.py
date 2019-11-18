@@ -15,6 +15,7 @@ class User(UserMixin):
     is_authenticated = False
     is_active = True
     is_anonymous = False
+    username = ''
     def __init__(self, username='', password='', environment=''):
         self.username = username
         if environment == 'Productie':
@@ -41,9 +42,25 @@ class User(UserMixin):
             self.is_authenticated = True
         except:
             print('NOT OK')
-            pass
+
+        if self.is_authenticated:
+            print('Add user to store')
+            Userstore.AddUser(self)
         
     def get_id(self):
         return self.username
 
+class clUserStore():
+    def __init__(self):
+        self.store = {}
 
+    def AddUser(self, User):
+        self.store[User.username] = User
+
+    def GetUser(self, Name):
+        if Name in self.store:
+            return self.store[Name]
+        else:
+            return None
+
+Userstore = clUserStore()

@@ -28,6 +28,6 @@ def login():
         else:
             print('Auth')
             login_user(user)
-            return redirect(url_for('hello'))
+            return redirect('/')
     else:    
         return render_template('login.html')
