@@ -46,6 +46,7 @@
       <a class="dropdown-item" href="/projects">Project List</a>
     </div>
   </li>
+{% if current_user.username == 'rods' %}
   <li class="nav-item dropdown">
     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
       Users
@@ -55,14 +56,16 @@
       <a class="dropdown-item" href="/groups">Groups</a>
     </div>
   </li>  
+{% endif %}
   <li class="nav-item dropdown">
     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
       Cluster
     </a>
     <div class="dropdown-menu" aria-labelledby="navbarDropwdown">
-      <a class="dropdown-item" href="/clusterinfo">Cluster Information</a>
+      <a class="dropdown-item" href="{{ url_for('cluster.info') }}">Cluster Information</a>
     </div>
   </li>
+<!--  
   <li class="nav-item dropdown">
     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
       HPCinfo
@@ -71,6 +74,7 @@
       <a class="dropdown-item" href="/hpcinfo">HPC Information</a>
     </div>
   </li>
+-->
    <li class="nav-item active">
      <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout<span class="sr-only">(current)</span></a>
    </li>

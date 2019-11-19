@@ -10,6 +10,7 @@ from flask import Blueprint, render_template, redirect, request, url_for
 from flask_login import login_user, logout_user, current_user, login_required
 from app.models import User, Userstore
 from irods.session import iRODSSession
+from datetime import timedelta
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -27,7 +28,7 @@ def login():
             return redirect(url_for('auth.login'))
         else:
             print('Auth')
-            login_user(user)
+            login_user(user, duration=timedelta(hours=24))
             return redirect(requestdata['next'])
     else:    
         next = request.args.get('next', default = '/', type = str)

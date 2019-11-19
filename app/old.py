@@ -44,7 +44,7 @@ def sortKey(X):
 
 def test_if_lsf_installed():
     try:
-       subprocess.getoutput("xbhosts -h")
+       subprocess.getoutput("bhosts -h")
     except:
        sys.exit("LFS is not installed")
 

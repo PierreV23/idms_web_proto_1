@@ -3,7 +3,7 @@ import os
 from flask import Flask, render_template
 from flask_login import LoginManager, login_required
 from app.models import Userstore
-from . import auth, collbrowser, jobs, docviewer, projects
+from . import auth, collbrowser, jobs, docviewer, projects, cluster
 
 app = Flask(__name__)
 
@@ -17,6 +17,7 @@ app.register_blueprint(collbrowser.bp)
 app.register_blueprint(jobs.bp)
 app.register_blueprint(docviewer.bp)
 app.register_blueprint(projects.bp)
+app.register_blueprint(cluster.bp)
 
    
 login_manager = LoginManager()

@@ -10,12 +10,13 @@ from flask import Blueprint, render_template, redirect, request, url_for
 from flask_login import login_user, current_user, login_required
 from irods.models import Collection, DataObject
 from irods.column import Criterion
+from datetime import datetime
 import yaml
 
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
 
 def jobdetails(jobfileObject):
-    with jobfileObject.open('r+') as f:
+    with jobfileObject.open('r') as f:
         txt = f.read();
         yy = yaml.load(txt)
     md = jobfileObject.metadata
@@ -63,6 +64,7 @@ def jobdetails(jobfileObject):
             'exit_code': ec, 'startTime': strSt, 'endTime': strEt, 'input_coll': ic, 'output_coll': oc, 'startTimestamp': st, 'next_projectID': nextproj}
     return details
 
+@login_required
 def joblist(state):
     a = []
     b = []
