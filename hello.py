@@ -28,7 +28,7 @@ ssl_settings = {'irods_ssl_ca_certificate_file': '/etc/irods/ssl/irods.crt',
                 'ssl_context': context }
 #ssl_settings = {'irods_ssl_ca_certificate_file': 'irods.test.crt',
 #                'ssl_context': context }
-irods_session = iRODSSession(host='rivm-bioir-l01p.rivm.ssc-campus.nl',
+irods_session = iRODSSession(host='rivm-bioir-l01a.rivm.ssc-campus.nl',
                              port=1247,
                              user='rods',
                              password=rodspassword,
@@ -62,27 +62,27 @@ def jobdetails(jobfileObject):
         yy = yaml.load(txt)
     md = jobfileObject.metadata
     try: 
-        ec = md.get_one('RUN::exit_code').value
+        ec = md.get_one('sys::runsheet::exit_code').value
     except KeyError:
         ec = -1
     try:
-        st = int(md.get_one('TIME::startTime').value)
+        st = int(md.get_one('sys::runsheet::start_time').value)
         strSt = datetime.utcfromtimestamp(st).strftime('%Y-%m-%d %H:%M:%S')
     except KeyError:
         strSt = "-"
         st = 0
     try:
-        et = int(md.get_one('TIME::finishTime').value)
+        et = int(md.get_one('sys::runsheet::finish_time').value)
         strEt = datetime.utcfromtimestamp(et).strftime('%Y-%m-%d %H:%M:%S')
     except KeyError:
         strEt = "-"
         et = 0
     try:
-        ic = md.get_one('RUN::input_coll').value
+        ic = md.get_one('sys::runsheet::input_collection').value
     except KeyError:
         ic = ''
     try:
-        oc = md.get_one('RUN::output_coll').value
+        oc = md.get_one('sys::runsheet::output_collection').value
     except KeyError:
         oc = ''
     try:
@@ -162,7 +162,7 @@ def collbrowser():
         path = '/' + '/'.join(path.split('/')[1:-1])
         
     query = irods_session.query(Collection.name).filter(
-            Criterion('=', CollectionMeta.name, 'RUN::input_coll')).filter(
+            Criterion('=', CollectionMeta.name, 'sys::pipeline::input_collection')).filter(
                     Criterion('=', CollectionMeta.value, path))
     rel_colls = [ c[Collection.name] for c in query]
     print("rel_cols", rel_colls)
