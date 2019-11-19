@@ -20,8 +20,6 @@ class User(UserMixin):
     
     @property
     def irods_session(self):
-        print('GET IRODSSESSION FOR {0} - {1}'.format(self.username, self._irods_session.username))
-        print(self._irods_session)
         return self._irods_session
     
     def __init__(self, username='', password='', environment=''):
@@ -55,9 +53,7 @@ class User(UserMixin):
 
         if self.is_authenticated:
             self.ifs = fs_irods(session = self.irods_session)
-            print('Add user to store')
             Userstore.AddUser(self)
-            print(Userstore)
         
     def get_id(self):
         return self.username

@@ -15,33 +15,34 @@ import yaml
 
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
 
+@login_required
 def jobdetails(jobfileObject):
     with jobfileObject.open('r') as f:
         txt = f.read();
         yy = yaml.load(txt)
     md = jobfileObject.metadata
     try: 
-        ec = md.get_one('RUN::exit_code').value
+        ec = md.get_one('sys::runsheet::exit_code').value
     except KeyError:
         ec = -1
     try:
-        st = int(md.get_one('TIME::startTime').value)
+        st = int(md.get_one('sys::runsheet::start_time').value)
         strSt = datetime.utcfromtimestamp(st).strftime('%Y-%m-%d %H:%M:%S')
     except KeyError:
         strSt = "-"
         st = 0
     try:
-        et = int(md.get_one('TIME::finishTime').value)
+        et = int(md.get_one('sys::runsheet::finish_time').value)
         strEt = datetime.utcfromtimestamp(et).strftime('%Y-%m-%d %H:%M:%S')
     except KeyError:
         strEt = "-"
         et = 0
     try:
-        ic = md.get_one('RUN::input_coll').value
+        ic = md.get_one('sys::runsheet::input_collection').value
     except KeyError:
         ic = ''
     try:
-        oc = md.get_one('RUN::output_coll').value
+        oc = md.get_one('sys::runsheet::output_collection').value
     except KeyError:
         oc = ''
     try:

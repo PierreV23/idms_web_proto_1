@@ -59,7 +59,7 @@ def collbrowser():
         
     irods_session = current_user.irods_session       
     query = irods_session.query(Collection.name).filter(
-            Criterion('=', CollectionMeta.name, 'RUN::input_coll')).filter(
+            Criterion('=', CollectionMeta.name, 'sys::pipeline::input_collection')).filter(
                     Criterion('=', CollectionMeta.value, path))
     rel_colls = [ c[Collection.name] for c in query]
     print("rel_cols", rel_colls)
