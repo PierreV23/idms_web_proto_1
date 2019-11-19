@@ -9,21 +9,29 @@ Created on Tue Nov 12 16:39:47 2019
 from flask_login import UserMixin
 from irods.session import iRODSSession
 import ssl
+from fs_irods import fs_irods
 
 class User(UserMixin):
-    irods_session = None
+    _irods_session = None
     is_authenticated = False
     is_active = True
     is_anonymous = False
     username = ''
+    
+    @property
+    def irods_session(self):
+        print('GET IRODSSESSION FOR {0} - {1}'.format(self.username, self._irods_session.username))
+        print(self._irods_session)
+        return self._irods_session
+    
     def __init__(self, username='', password='', environment=''):
         self.username = username
         if environment == 'Productie':
-            irodsServer = 'rivm-bioir-l01p.rivm.ssc-campus.nl'
+            self.irods_server = 'rivm-bioir-l01p.rivm.ssc-campus.nl'
         elif environment == 'Acceptatie':
-            irodsServer = 'rivm-bioir-l01a.rivm.ssc-campus.nl'
+            self.irods_server = 'rivm-bioir-l01a.rivm.ssc-campus.nl'
         elif environment == 'Test':
-            irodsServer = 'rivm-bioir-l01t.rivm.ssc-campus.nl'
+            self.irods_server = 'rivm-bioir-l01t.rivm.ssc-campus.nl'
         else:
             return None
         context = ssl._create_unverified_context(purpose=ssl.Purpose.SERVER_AUTH,
@@ -31,12 +39,14 @@ class User(UserMixin):
         
         ssl_settings = {'irods_ssl_ca_certificate_file': '/etc/irods/ssl/test/irods.crt',
                 'ssl_context': context }
-        self.irods_session = iRODSSession(host=irodsServer,
+        self._irods_session = iRODSSession(host=self.irods_server,
                              port=1247,
                              user=username,
                              password=password,
                              zone='rivmZone',
+                             authentication_scheme='pam',
                              **ssl_settings)    
+        
         try:
             self.irods_session.collections.get('/rivmZone')
             self.is_authenticated = True
@@ -44,8 +54,10 @@ class User(UserMixin):
             print('NOT OK')
 
         if self.is_authenticated:
+            self.ifs = fs_irods(session = self.irods_session)
             print('Add user to store')
             Userstore.AddUser(self)
+            print(Userstore)
         
     def get_id(self):
         return self.username
@@ -62,5 +74,9 @@ class clUserStore():
             return self.store[Name]
         else:
             return None
+        
+    def delete(self, username):
+        if username in self.store:
+            del self.store[username]
 
 Userstore = clUserStore()

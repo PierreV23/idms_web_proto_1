@@ -30,14 +30,14 @@ ssl_settings = {'irods_ssl_ca_certificate_file': '/etc/irods/ssl/irods.crt',
                 'ssl_context': context }
 #ssl_settings = {'irods_ssl_ca_certificate_file': 'irods.test.crt',
 #                'ssl_context': context }
-irods_session = iRODSSession(host='rivm-bioir-l01p.rivm.ssc-campus.nl',
-                             port=1247,
-                             user='rods',
-                             password=rodspassword,
-                             zone='rivmZone',
-                             **ssl_settings)
+#irods_session = iRODSSession(host='rivm-bioir-l01p.rivm.ssc-campus.nl',
+#                             port=1247,
+#                             user='rods',
+#                             password=rodspassword,
+#                             zone='rivmZone',
+#                             **ssl_settings)
 
-ifs = factory.getfs('irods', session = irods_session)
+#ifs = factory.getfs('irods', session = irods_session)
 
 def sortKey(X):
     return(X['startTime'])

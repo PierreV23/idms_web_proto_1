@@ -10,13 +10,13 @@ from flask import Blueprint, render_template, redirect, request, url_for
 from flask_login import login_user, current_user, login_required
 from irods.models import Collection, CollectionMeta
 from irods.column import Criterion
-from fs_base import factory
+import fs_irods
 
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
 
 def collist(path):
     irods_session = current_user.irods_session
-    ifs = factory.getfs('irods', session = irods_session)
+    ifs = current_user.ifs
     avu=[]
     query = irods_session.query(CollectionMeta.name, CollectionMeta.value, CollectionMeta.units).filter(Criterion('=', Collection.name, path))
     for result in query:
@@ -24,7 +24,7 @@ def collist(path):
          value = result[CollectionMeta.value]
          units = result[CollectionMeta.units]
          avu.append({'name': name, 'value': value,'units': units})
-         print(name,value,units)
+         print('AVU',name,value,units)
     cols = []
     objs = []
     for obj in ifs.ls(path):
@@ -44,7 +44,6 @@ def collist(path):
             objdict['owner_name'] = obj.owner_name()
             objs.append(objdict)
     print("path: ", path)
-    #print("ifs.ls(path): ", ifs.ls(path))
     print("cols: ", cols)
     print("objs: ", objs)
     return cols, objs, avu

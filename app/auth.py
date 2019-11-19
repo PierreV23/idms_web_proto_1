@@ -7,8 +7,8 @@ Created on Tue Nov 12 14:33:10 2019
 """
 
 from flask import Blueprint, render_template, redirect, request, url_for
-from flask_login import login_user
-from app.models import User
+from flask_login import login_user, logout_user, current_user, login_required
+from app.models import User, Userstore
 from irods.session import iRODSSession
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -28,6 +28,15 @@ def login():
         else:
             print('Auth')
             login_user(user)
-            return redirect('/')
+            return redirect(requestdata['next'])
     else:    
-        return render_template('login.html')
+        next = request.args.get('next', default = '/', type = str)
+        print('Next: {0}'.format(next))
+        return render_template('login.html', next = next)
+
+@bp.route('/logout')
+@login_required    
+def logout():
+    Userstore.delete(current_user)
+    logout_user()
+    return(redirect(url_for('auth.login')))
