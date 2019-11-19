@@ -76,6 +76,7 @@ Collection browser : {{ path }}
 </div>
 
 <!-- PROJECT GROUPS --!>
+{% if rel_colls|length > 0 %}
 <div class="card card-body">
 <H2>Related output collections groups</H2>
 <TABLE class="table table-striped table-hover table-sm" >
@@ -99,6 +100,7 @@ Collection browser : {{ path }}
 </div>
 
 </table>
+{% endif %}
 
 {% endblock %}
 
