@@ -129,7 +129,7 @@ Job queue overview
 {% endif %}
 
    <TD>
-   <a href="/jobdetails?name={{ entry.name }}">
+   <a href="{{ url_for('jobs.show_jobdetails') }}?name={{ entry.name }}">
    {{ entry.name }}
    </a></TD>
 

@@ -2,11 +2,13 @@ name: myflask
 channels:
   - conda-forge
   - defaults
+  - anaconda
 dependencies:
-  - flask=1.0.3=py_0
-  - pip=19.1.1=py37_0
-  - python=3.7.3=h5b0a415_0
-  - pyyaml=5.1=py37h7b6447c_0
+  - flask
+  - pip
+  - python
+  - pyyaml
+  - flask-login
   - pip:
-    - python-irodsclient==0.8.1
+    - python-irodsclient
 

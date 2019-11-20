@@ -11,11 +11,11 @@ Cluster information items = {{ items }}
 {{ request.args.get('items') }}
   </button>
  <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
- <a class="dropdown-item" href="/clusterinfo?items=all">All</a>
- <a class="dropdown-item" href="/clusterinfo?items=bhosts">bhosts</a>
- <a class="dropdown-item" href="/clusterinfo?items=busers">busers</a>
- <a class="dropdown-item" href="/clusterinfo?items=bjobs">bjobs</a>
- <a class="dropdown-item" href="/clusterinfo?items=load">Load servers</a>
+ <a class="dropdown-item" href="{{ url_for('cluster.info') }}?items=all">All</a>
+ <a class="dropdown-item" href="{{ url_for('cluster.info') }}?items=bhosts">bhosts</a>
+ <a class="dropdown-item" href="{{ url_for('cluster.info') }}?items=busers">busers</a>
+ <a class="dropdown-item" href="{{ url_for('cluster.info') }}?items=bjobs">bjobs</a>
+ <a class="dropdown-item" href="{{ url_for('cluster.info') }}?items=load">Load servers</a>
  </div>
 </div>
 

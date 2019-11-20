@@ -15,7 +15,7 @@
 {% for project in projects %}
 <tr>
 <td width="20%">
-<a href="/projectdetails?name={{ project }}">
+<a href="{{ url_for('projects.show_projectdetails') }}?name={{ project }}">
 {{ project }}
 </td></tr>
 {% endfor %}
