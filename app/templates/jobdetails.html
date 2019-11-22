@@ -30,10 +30,27 @@ Job Log
 <div class="collapse" id="collapse-joblog">
 <br>
    <pre>
-{{ log | safe}}
+{{ runlog | safe}}
    </pre>
 </div>
 </div>
+
+{% for log in logs %}
+{% set label = log | replace('.','_') %}
+
+<div class="card card-body">
+<a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse-{{ label }}" role="button" aria-expanded="false" aria-controls="collapse-{{ label }}">
+{{ log }}
+</a>
+<div class="collapse" id="collapse-{{ label }}">
+<br>
+   <pre>
+{{ logs[log] | safe}}
+   </pre>
+</div>
+</div>
+
+{% endfor %}
 
 {% endblock %}
 
