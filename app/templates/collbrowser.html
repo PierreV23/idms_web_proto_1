@@ -8,42 +8,48 @@ Collection browser : {{ path }}
 
 <a href="/collbrowser?action=up&path={{ path }}"><button type="button" class="btn btn-outline-secondary">UP</button></a>
 
-<div class="card card-body">
-<a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse-upload" role="button" aria-expanded="false" aria-controls="collapse-upload">
-Upload
-</a>
-<div class="collapse" id="collapse-upload">
-<form action = "{{ url_for('collbrowser.upload_file')}}" method = "POST" enctype = "multipart/form-data">
-<div class="form-group">  
-  <input type="hidden" id="collection" name="collection" value ="{{ path }}">
-</div>
-<div class="form-group">  
-  <input type = "file" class="form-control" name = "file" />
-</div>  
-
-<div class="form-group">  
-<button type="submit" class="btn btn-primary">Upload</button>
-</div>  
-</form>
-</div>
+<div class="card border-primary mb-3">
+    <div class="card-header">
+        <a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse-upload" role="button" aria-expanded="false" aria-controls="collapse-upload">
+        Upload
+        </a>
+    </div>
+    <div class="card card-body">
+        <div class="collapse" id="collapse-upload">
+            <form action = "{{ url_for('collbrowser.upload_file')}}" method = "POST" enctype = "multipart/form-data">
+                <div class="form-group">  
+                    <input type="hidden" id="collection" name="collection" value ="{{ path }}">
+                </div>
+                <div class="form-group">  
+                    <input type = "file" class="form-control" name = "file" />
+                </div>  
+                <div class="form-group">  
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                </div>  
+            </form>
+        </div>
+    </div>
 </div>
 
 {% if avu|length > 0 %}
 
-<div class="card card-body" >
-<a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse-meta" role="button" aria-expanded="false" aria-controls="collapse-meta">
-Collection metadata
-</a>
-<div class="collapse" id="collapse-meta">
-<table class="table table-hover table-striped table-sm">
-<thead>
-<tr>
-<th>Attribute</th>
-<th>Value</th>
-<th>Unit</th>
-</tr>
-</thead>
-<tbody>
+<div class="card border-primary mb-3">
+    <div class="card-header">
+        <a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse-meta" role="button" aria-expanded="false" aria-controls="collapse-meta">
+        Collection metadata
+        </a>
+    </div>
+    <div class="card card-body" >
+        <div class="collapse" id="collapse-meta">
+            <table class="table table-hover table-striped table-sm">
+                <thead>
+                    <tr>
+                        <th>Attribute</th>
+                        <th>Value</th>
+                        <th>Unit</th>
+                    </tr>
+                </thead>
+                <tbody>
 
 
 {% for entry in avu %}
@@ -54,88 +60,89 @@ Collection metadata
 </tr>
 {% endfor %}
 
-</tbody>
-</table>
-
-</div>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
 {% endif %}
 
 <!-- PROJECT GROUPS --!>
 {% if rel_colls|length > 0 %}
-<div class="card card-body">
-<a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse-related" role="button" aria-expanded="false" aria-controls="collapse-related">
-Related output collections groups
-</a>
-<div class="collapse" id="collapse-related">
-<TABLE class="table table-striped table-hover table-sm" >
-<thead>
-<TR>
-<TH scope="col">Name</TH>
-</TR>
-</thead>
-<tbody>
+
+<div class="card border-primary mb-3">
+    <div class="card-header">
+        <a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse-related" role="button" aria-expanded="false" aria-controls="collapse-related">
+        Related output collections groups
+        </a>
+    </div>
+    <div class="card card-body">
+        <div class="collapse" id="collapse-related">
+            <TABLE class="table table-striped table-hover table-sm" >
+                <thead>
+                    <TR>
+                        <TH scope="col">Name</TH>
+                    </TR>
+                </thead>
+                <tbody>
 {% for coll in rel_colls %}
-<tr>
-<td>
-<a href="/collbrowser?path={{coll}}">
+                    <tr>
+                        <td>
+                            <a href="/collbrowser?path={{coll}}">
 {{ coll }}
-</a>
-</td>
-</tr>
+                            </a>
+                        </td>
+                    </tr>
 {% endfor %}
-</tbody>
-</table>
-</div>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
-</table>
 {% endif %}
 
 
-<div class="card card-body">
-<a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse-contents" role="button" aria-expanded="false" aria-controls="collapse-contents">
-Collection contents
-</a>
-<div class="collapse show" id="collapse-contents">
-<table class="table table-sm table-striped">
-<thead>
-<tr>
-<th>Name</th>
-<th>Size</th>
-<th>Create_Date</th>
-<th>Owner_Name</th>
-</tr>
-</thead>
-<tbody>
+<div class="card border-primary mb-3">
+    <div class="card-header">
+        <a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse-contents" role="button" aria-expanded="false" aria-controls="collapse-contents">
+        Collection contents
+        </a>
+    </div>
+    <div class="card card-body">
+        <div class="collapse show" id="collapse-contents">
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Size</th>
+                        <th>Create_Date</th>
+                        <th>Owner_Name</th>
+                    </tr>
+                </thead>
+                <tbody>
 
 {% for entry in cols %}
-<tr>
-    <td> <a href="/collbrowser?path={{ entry.path }}">{{ entry.name }}</a> </td>
-    <td> DIR </td> <td> {{ entry.datetime }} </td> <td> {{ entry.ownername }} </td>
-</tr>
+                    <tr>
+                        <td> <a href="/collbrowser?path={{ entry.path }}">{{ entry.name }}</a> </td>
+                        <td> DIR </td> <td> {{ entry.datetime }} </td> <td> {{ entry.ownername }} </td>
+                    </tr>
 {% endfor %}
 
 {% for entry in objs %}
-<tr><td>
-<a href="/docviewer?path={{entry.path}}">{{ entry.name }}</a>
-</td>
-<td>
-{{ entry.size}}
-</td>
-<td>
-{{ entry.create_time}}
-</td>
-<td>
-{{ entry.owner_name}}
-</td>
-</tr>
+                    <tr>
+                        <td><a href="/docviewer?path={{entry.path}}">{{ entry.name }}</a></td>
+                        <td>{{ entry.size}}</td>
+                        <td>{{ entry.create_time}}</td>
+                        <td>{{ entry.owner_name}}</td>
+                    </tr>
 {% endfor %}
-</table>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
-</div>
-
 
 {% endblock %}
 
