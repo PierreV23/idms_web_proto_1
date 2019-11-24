@@ -60,7 +60,7 @@ class file_irods(fsobject_base):
         #        print(line)
 
     def open(self, mode):
-        return self.irods_object.open(mode[:1])
+        return self.irods_object.open(mode)
 
     def set_mtime(self, mtime):
         new_time = utc2local(mtime)

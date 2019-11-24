@@ -6,6 +6,24 @@ Collection browser : {{ path }}
 
 {% block content %}
 
+<script>
+function fillModal(path, name) {
+    var ModalHeader =  document.getElementById("DocTitle")
+    DocTitle.innerHTML = name
+    var ModalContent =  document.getElementById("DocText")
+    const Http = new XMLHttpRequest()
+    const url="{{ url_for('docviewer.docviewer') }}"
+    Http.open("GET", url + '?path=' + path)
+    Http.send()
+
+    Http.onreadystatechange = function() {
+        console.log(Http.responseText)
+        ModalContent.innerHTML = Http.responseText
+    }
+}
+
+</script>
+
 <a href="/collbrowser?action=up&path={{ path }}"><button type="button" class="btn btn-outline-secondary">UP</button></a>
 
 {% if avu|length > 0 %}
@@ -39,7 +57,7 @@ Collection browser : {{ path }}
 
 <div class="card card-body">
 <h3>Collection contents</h3>
-<table class="table table-sm table-striped">
+<table class="table table-sm table-striped table-hover">
 <thead>
 <tr>
 <th>Name</th>
@@ -59,7 +77,8 @@ Collection browser : {{ path }}
 
 {% for entry in objs %}
 <tr><td>
-<a href="/docviewer?path={{entry.path}}">{{ entry.name }}</a>
+<a data-toggle="modal" data-target="#myOutput" onclick="fillModal('{{ entry.path }}','{{ entry.name}}')">{{ entry.name }}</a>
+<!-- <a href="/docviewer?path={{entry.path}}">{{ entry.name }}</a> -->
 </td>
 <td>
 {{ entry.size}}
@@ -73,6 +92,27 @@ Collection browser : {{ path }}
 </tr>
 {% endfor %}
 </table>
+</div>
+
+<div class="modal modal-tall" id="myOutput" role="dialog" >
+    <div class="modal-dialog modal-xl" >
+
+      <!-- Modal content-->
+      <div class="modal-content">
+        <div class="modal-header">
+<!--          <button type="button" class="close" data-dismiss="modal">&times;</button> -->
+          <h4 class="modal-title" id="DocTitle">Modal Header</h4>
+        </div>
+        <div class="modal-body" id="DocText" height="100%">
+<!--          <p id="DocText">Frame</p> -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
 </div>
 
 <!-- PROJECT GROUPS --!>
