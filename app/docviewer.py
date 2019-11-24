@@ -18,13 +18,6 @@ def csvconvert(fobj):
     objCsv = csv.reader(a.split('\n'))
     hTable = '<table class="table table-sm table-striped">'
     return render_template('csvview.html', data = objCsv)
-    for row in objCsv:
-        hTable = hTable + '<tr>'
-        for col in row:
-            hTable = hTable + '<td>' + col + '</td>'
-        hTable = hTable + '</tr>'
-    hTable = hTable + '</table>'
-    return '<html><head><link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous"></head><body>{}</body></html>'.format(hTable)
 
 @bp.route('/serve_object')
 @login_required
