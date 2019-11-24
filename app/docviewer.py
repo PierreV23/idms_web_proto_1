@@ -17,6 +17,7 @@ def csvconvert(fobj):
     a = fobj.read().decode('utf-8')
     objCsv = csv.reader(a.split('\n'))
     hTable = '<table class="table table-sm table-striped">'
+    return render_template('csvview.html', data = objCsv)
     for row in objCsv:
         hTable = hTable + '<tr>'
         for col in row:
@@ -25,9 +26,9 @@ def csvconvert(fobj):
     hTable = hTable + '</table>'
     return '<html><head><link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous"></head><body>{}</body></html>'.format(hTable)
 
-@bp.route('/serve_image')
+@bp.route('/serve_object')
 @login_required
-def serve_image():
+def serve_object():
     path = request.args.get('path', '/', type=str)
     print("serve_image request for {}".format(path))
     filename, file_extension = os.path.splitext( path.lower() )
@@ -48,14 +49,3 @@ def serve_image():
         X = send_file(f, attachment_filename = os.path.split(path)[1], 
                       as_attachment = False)    
     return X
-
-@bp.route('/')
-@login_required
-def docviewer():
-    path = request.args.get('path', '/', type=str)
-#    filename, file_extension = os.path.splitext( path.lower() )
-#    fn = os.path.basename( path.lower() )        
-#    irods_session = current_user.irods_session
-#    ifs = current_user.ifs
-#    obj = ifs.getfile(path)
-    return '<embed width="100%" height="100%" src="{}?path={}">'.format(url_for('docviewer.serve_image'), path)

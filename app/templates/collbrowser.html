@@ -10,17 +10,14 @@ Collection browser : {{ path }}
 function fillModal(path, name) {
     var ModalHeader =  document.getElementById("DocTitle")
     DocTitle.innerHTML = name
-    var ModalContent =  document.getElementById("DocText")
-    const Http = new XMLHttpRequest()
-    const url="{{ url_for('docviewer.docviewer') }}"
-    Http.open("GET", url + '?path=' + path)
-    Http.send()
-
-    Http.onreadystatechange = function() {
-        console.log(Http.responseText)
-        ModalContent.innerHTML = Http.responseText
-    }
-}
+    var mBody = document.getElementById("mBody")
+    bodyheight = mBody.getAttribute("height")
+    var modalEmbed =  document.getElementById("DocText")
+    newEmbed = modalEmbed.cloneNode(true)
+    source = "{{ url_for('docviewer.serve_object') }}?path=" + path
+    newEmbed.setAttribute('src', source)
+    modalEmbed.parentNode.replaceChild(newEmbed, modalEmbed)
+}  
 
 </script>
 
@@ -99,12 +96,12 @@ function fillModal(path, name) {
 
       <!-- Modal content-->
       <div class="modal-content">
-        <div class="modal-header">
+        <div class="modal-header" height="30%">
 <!--          <button type="button" class="close" data-dismiss="modal">&times;</button> -->
           <h4 class="modal-title" id="DocTitle">Modal Header</h4>
         </div>
-        <div class="modal-body" id="DocText" height="100%">
-<!--          <p id="DocText">Frame</p> -->
+        <div class="modal-body" id="mBody">
+            <embed width="100%" height="75%" src="" id ="DocText">
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
