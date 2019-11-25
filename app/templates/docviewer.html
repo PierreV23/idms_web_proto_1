@@ -10,26 +10,24 @@ document viewer : {{ path }}
 
 <br><br><hr><br>
 
-{% if file_extension in [ ".html", ".htm", ".xml" ] %}
-   {{ doc|safe }}
-
-   <br><br><hr>(code:)<br><br>
-
-   <pre>
+<div class="card">
+{% if file_extension in [ ".xml" ] %}
+<pre>
 {{ doc }}
-   </pre>
+</pre>
+{% elif file_extension in [ ".html", ".htm", ".xml", ".pdf", ".txt", ".csv" ] %}
+<div class="card">
+<embed src="{{ url_for('docviewer.serve_image') + '?path=' + path }}" width="1280" height="1024"></embed>
+</div>
 
 {% elif file_extension in [ ".jpg", ".jpeg", ".gif", ".png" ] %}
-<img src="static/images/pic_trulli{{ file_extension }}?name={{ fn }}" alt="{{ fn }}"></img>
+<img src="{{ url_for('docviewer.serve_image') + '?path=' + path }}" width="1024"></img>
    <br>
 
 {% else %}
-
-   <pre>
-{{ doc }}
-   </pre>
-   
+ONLEESBAAR
 {% endif %}
+</div>
 
 <br><hr><br>
 

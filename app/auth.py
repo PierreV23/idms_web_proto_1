@@ -33,7 +33,7 @@ def login():
     else:    
         next = request.args.get('next', default = '/', type = str)
         print('Next: {0}'.format(next))
-        return render_template('login.html', next = next)
+        return render_template('login.html', next = next, debug = False)
 
 @bp.route('/logout')
 @login_required    

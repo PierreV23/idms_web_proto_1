@@ -1,6 +1,7 @@
 {% extends 'base2.html' %}
   
 {% block content %}
+<div class="card card-body">
 <H3>Job details for {{ jobnaam }} </H3>
 <TABLE class="table table-striped table-hover table-sm">
 <thead class="thead-dark">
@@ -19,5 +20,37 @@
 {% endfor %}
 </tbody>
  </TABLE>
+ 
+</div>
+
+<div class="card card-body">
+<a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse-joblog" role="button" aria-expanded="false" aria-controls="collapse-joblog">
+Job Log
+</a>
+<div class="collapse" id="collapse-joblog">
+<br>
+   <pre>
+{{ runlog | safe}}
+   </pre>
+</div>
+</div>
+
+{% for log in logs %}
+{% set label = log | replace('.','_') %}
+
+<div class="card card-body">
+<a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse-{{ label }}" role="button" aria-expanded="false" aria-controls="collapse-{{ label }}">
+{{ log }}
+</a>
+<div class="collapse" id="collapse-{{ label }}">
+<br>
+   <pre>
+{{ logs[log] | safe}}
+   </pre>
+</div>
+</div>
+
+{% endfor %}
+
 {% endblock %}
 

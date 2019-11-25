@@ -6,32 +6,51 @@ Created on Mon Nov 18 15:16:25 2019
 @author: wierinve
 """
 import os
-from flask import Blueprint, render_template, redirect, request, url_for
+from flask import Blueprint, render_template, redirect, request, url_for, send_file
 from flask_login import login_user, current_user, login_required
+import csv
+import base64
 
 bp = Blueprint('docviewer', __name__, url_prefix='/docviewer')
 
-@bp.route('/')
 @login_required
-def docviewer():
+def csvconvert(fobj):
+    a = fobj.read().decode('utf-8')
+    objCsv = csv.reader(a.split('\n'))
+    return render_template('csvview.html', data = objCsv)
+
+@bp.route('/serve_image')
+@login_required
+def serve_image():
     path = request.args.get('path', '/', type=str)
-    action = request.args.get('action', 'none', type=str)
-    filename, file_extension = os.path.splitext( path.lower() )
-    fn = os.path.basename( path.lower() )
-        
-    print("path, filename, file_extension: ", path, fn, file_extension)
-    #obj =fs_irods.fs_irods( path ).getfile( path )
-    irods_session = current_user.irods_session
     ifs = current_user.ifs
     obj = ifs.getfile(path)
-    with obj.open('r') as f:
-        a = f.read( 500000 )
-    #print (a)
-    try:
-        doc = a.decode('utf-8')
-    except:
-        f = open("static/images/pic_trulli" + file_extension, "wb")
-        f.write(a)
-        f.close()
-        doc="Deze file kan niet gelezen worden"
-    return render_template('docviewer.html', doc = doc, path = path, fn = fn, file_extension = file_extension)
+    f = obj.open('r')
+    return send_file(f, attachment_filename = os.path.split(path)[1], 
+                      as_attachment = False) 
+
+@bp.route('/serve_object')
+@login_required
+def serve_object():
+    path = request.args.get('path', '/', type=str)
+    filename, file_extension = os.path.splitext( path.lower() )
+    ifs = current_user.ifs
+    obj = ifs.getfile(path)
+    f = obj.open('r')
+    mimetype=''
+    if file_extension in [ ".re", ".cfg", ".xml", ".out" ]:
+        mimetype = "text/plain"
+    if file_extension in [ ".csv" ]:
+        output = csvconvert(f)
+        return output
+    if file_extension in [ ".jpg", ".png" ]:
+        output = '<IMG WIDTH="100%" SRC="' + url_for('docviewer.serve_image') +  "?path=" + path + '">'
+        return output
+
+    if mimetype:
+        X = send_file(f, attachment_filename = os.path.split(path)[1], 
+                      as_attachment = False, mimetype=mimetype)
+    else:
+        X = send_file(f, attachment_filename = os.path.split(path)[1], 
+                      as_attachment = False)    
+    return X

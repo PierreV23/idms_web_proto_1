@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <!-- Bootstrap CSS -->
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/mymodal.css') }}">
 <title>iRODS</title>
 </head>
 <body>
@@ -21,22 +22,15 @@
    <li class="nav-item active">
      <a class="nav-link" href="/">Home <span class="sr-only">(current)</span></a>
    </li>
-  <li class="nav-item dropdown">
-    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+  <li class="nav-item">
+    <a class="nav-link" href="{{ url_for('collbrowser.collbrowser') }}" id="navbarCollection" role="button">
       Data
     </a>
-    <div class="dropdown-menu" aria-labelledby="navbarDropwdown">
-      <a class="dropdown-item" href="/collbrowser">Collection Browser</a>
-      <a class="dropdown-item" href="/datasets">Datasets</a>      
-    </div>
   </li>
-  <li class="nav-item dropdown">
-    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+  <li class="nav-item">
+    <a class="nav-link" href="{{ url_for('jobs.show_jobs') }}" id="navbarCollection" role="button">
       Jobs
     </a>
-    <div class="dropdown-menu" aria-labbeledby="navbarDropdown">
-      <a class="dropdown-item" href="/jobs">Job List</a>
-    </div>
   </li>
   <li class="nav-item dropdown">
     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">

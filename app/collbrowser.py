@@ -68,4 +68,17 @@ def collbrowser():
     return render_template('collbrowser.html', cols = c, objs = o, avu = a, path=path, rel_colls = rel_colls)
 
 
+@bp.route('upload_file', methods = ['GET', 'POST'])
+@login_required
+def upload_file():
+    if request.method == 'POST':
+        requestdata = request.form.to_dict()
+        print('R ', requestdata)
+        f = request.files['file']
+        # Generate irods file object
+        iObjName = requestdata['collection'] + '/' + f.filename
+        iObj = current_user.ifs.open(iObjName, 'w')
+        f.save(iObj)
+        iObj.close
+    return redirect(url_for('collbrowser.collbrowser') + '?path=' + requestdata['collection'])
 

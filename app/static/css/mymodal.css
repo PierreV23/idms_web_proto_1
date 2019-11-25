@@ -1,0 +1,10 @@
+.modal-tall .modal-dialog {
+  height: 90%;
+}
+.modal-tall .modal-content {
+  height: 100%;
+}
+
+.modal-tall .modal-body {
+  height: 100%;
+}
