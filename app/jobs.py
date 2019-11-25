@@ -99,6 +99,29 @@ def show_jobdetails():
     runsheet = jobpath[0] + '/' + jobnaam
     jobObj = current_user.irods_session.data_objects.get(runsheet)
     jd = jobdetails(jobObj)
+    # Find the job log file
+    joblog = '/rivmZone/system/runsheet/log/' + jobnaam + '.log'
+    ifs = current_user.ifs
+    try:
+        obj = ifs.getfile(joblog)
+        with obj.open('r') as f:
+            a = f.read( 500000 )
+            log = a.decode('utf-8')
+    except:
+        log = ''
+    # Find the collection log
+    collOutlog = jd['output_coll'] + '/log'
+    L = {}
+    if ifs.folderexists(collOutlog):
+        logfiles = ifs.ls(collOutlog)
+        for logfile in logfiles:
+            try:
+                obj = ifs.getfile(logfile.path)
+                with obj.open('r') as f:
+                    a = f.read(500000)
+                    L[logfile.shortname()] = a.decode('utf-8')
+            except:
+                pass
     D = {}
     D['Runsheet File'] = "<a href='/docviewer?path=" + runsheet + "'>" + jobnaam + "</a>"
     D['Job Start Time'] = jd['startTime']
@@ -107,4 +130,4 @@ def show_jobdetails():
     D['Output collection'] = "<a href='/collbrowser?path={0}'>{0}</a>".format(jd['output_coll'])
     D['Git repository'] = "<a href='{0}'>{0} TAG {1}</a>".format(jd['repo'].replace('.git',''), jd['tag'])
     D['Next projectID'] = "<a href='/projectdetails?name={0}'>{0}</a>".format(jd['next_projectID'])
-    return render_template('jobdetails.html', details=D, jobnaam = jobnaam)
+    return render_template('jobdetails.html', details=D, jobnaam = jobnaam, runlog = log, logs = L)
