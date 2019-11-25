@@ -38,7 +38,7 @@ def serve_object():
     obj = ifs.getfile(path)
     f = obj.open('r')
     mimetype=''
-    if file_extension in [ ".re", ".cfg", ".xml" ]:
+    if file_extension in [ ".re", ".cfg", ".xml", ".out" ]:
         mimetype = "text/plain"
     if file_extension in [ ".csv" ]:
         output = csvconvert(f)
