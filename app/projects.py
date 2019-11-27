@@ -101,7 +101,7 @@ def update_projectsettings():
     config = read_jsonfile('/rivmZone/system/files/pipelinesettings.json')
     if requestdata['action'] == 'update_process':
         processConfig = config[project]['processes'][process]
-        for attr in ['description', 'repo', 'tag', 'output_prefix', 'next_projectID', 'next_processID' ]:
+        for attr in ['description', 'repo', 'tag', 'next_projectID', 'next_processID' ]:
             processConfig[attr] = requestdata[attr]
         add_checkbox(processConfig, requestdata, 'modify_in_place')
         add_checkbox(processConfig, requestdata, 'restartable')

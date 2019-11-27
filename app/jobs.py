@@ -22,17 +22,17 @@ def jobdetails(jobfileObject):
         yy = yaml.load(txt)
     md = jobfileObject.metadata
     try: 
-        ec = md.get_one('sys::runsheet::exit_code').value
+        ec = md.get_one('sys::run::exit_code').value
     except KeyError:
         ec = -1
     try:
-        st = int(md.get_one('sys::runsheet::start_time').value)
+        st = int(md.get_one('sys::run::start_time').value)
         strSt = datetime.utcfromtimestamp(st).strftime('%Y-%m-%d %H:%M:%S')
     except KeyError:
         strSt = "-"
         st = 0
     try:
-        et = int(md.get_one('sys::runsheet::finish_time').value)
+        et = int(md.get_one('sys::run::finish_time').value)
         strEt = datetime.utcfromtimestamp(et).strftime('%Y-%m-%d %H:%M:%S')
     except KeyError:
         strEt = "-"
@@ -42,7 +42,7 @@ def jobdetails(jobfileObject):
     except KeyError:
         ic = ''
     try:
-        oc = md.get_one('sys::runsheet::output_collection').value
+        oc = md.get_one('sys::run::output_collection').value
     except KeyError:
         oc = ''
     try:
@@ -123,7 +123,7 @@ def show_jobdetails():
             except:
                 pass
     D = {}
-    D['Runsheet File'] = "<a href='/docviewer?path=" + runsheet + "'>" + jobnaam + "</a>"
+    D['Runsheet File'] = '<a href="#" data-toggle="modal" data-target="#myOutput" onClick="fillModal(\'{0}\', \'{1}\')">{1}</a>'.format(runsheet, jobnaam)
     D['Job Start Time'] = jd['startTime']
     D['Job End   Time'] = jd['endTime']
     D['Input  collection'] = "<a href='/collbrowser?path={0}'>{0}</a>".format(jd['input_coll'])
