@@ -25,7 +25,6 @@ function update_process(sourceElem, destElem) {
         }    
     );    
 }
-
 </script>
 <!-- PROJECT SETTINGS --!>
 <div class="card card-body">
@@ -51,6 +50,35 @@ function update_process(sourceElem, destElem) {
   </div>
 
   <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+</div>
+
+<div class="modal fade" id="confirm-delete" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                Remove project
+            </div>
+            <div class="modal-body">
+                Are you sure you want to remove project {{PD.name}}
+            </div>
+            <div class="modal-footer">
+                <form method="post" action="update_project">
+                <input type="hidden" id="action" name="action" value="remove_project">
+                <input type="hidden" id="project" name="project" value="{{PD.name}}">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-danger btn-ok">Delete</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card card-body">
+<form>
+<button type="button" class="btn btn-primary" data-href="/remove_project?name={{PD.name}}" data-toggle="modal" data-target="#confirm-delete">
+    Remove project
+</button>
 </form>
 
 </div>

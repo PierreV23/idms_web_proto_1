@@ -99,6 +99,8 @@ def update_projectsettings():
 
     print(requestdata)
     config = read_jsonfile('/rivmZone/system/files/pipelinesettings.json')
+    redirectUrl = ''
+    
     if requestdata['action'] == 'update_process':
         processConfig = config[project]['processes'][process]
         for attr in ['description', 'repo', 'tag', 'next_projectID', 'next_processID' ]:
@@ -121,5 +123,16 @@ def update_projectsettings():
         projectSettings = config[project]['settings']
         for attr in ['description', 'default_collection','service_account']:
             projectSettings[attr] = requestdata[attr]
+    elif requestdata['action'] == 'add_project':
+        config[project] ={'processes' : {} , 'settings' : {}}
+    elif requestdata['action'] == 'remove_project':
+        del config[project]
+        redirectUrl = url_for('projects.show_projects')
+        
     write_jsonfile('/rivmZone/system/files/pipelinesettings.json', config)
-    return("<script> window.location.href ='" + url_for('projects.show_projectdetails') + "?name={0}&process={1}'; </script>".format(requestdata['project'], viewProcess))
+    
+    if redirectUrl:
+        return redirect(redirectUrl)
+    else:
+        return redirect(url_for('projects.show_projectdetails') + "?name={0}&process={1}'; </script>".format(project, viewProcess))
+
