@@ -2,7 +2,7 @@ import os
 
 from flask import Flask, render_template
 from flask_login import LoginManager, login_required
-from app.models import Userstore
+from app.models import User
 from . import auth, collbrowser, jobs, docviewer, projects, cluster
 
 app = Flask(__name__)
@@ -26,7 +26,7 @@ login_manager.login_view = "auth.login"
 
 @login_manager.user_loader
 def load_user(userid):
-    return Userstore.GetUser(userid)
+    return User.retrieve(userid)
 
 @app.route('/')
 @login_required

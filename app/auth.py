@@ -8,8 +8,7 @@ Created on Tue Nov 12 14:33:10 2019
 
 from flask import Blueprint, render_template, redirect, request, url_for
 from flask_login import login_user, logout_user, current_user, login_required
-from app.models import User, Userstore
-from irods.session import iRODSSession
+from app.models import User
 from datetime import timedelta
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -19,15 +18,17 @@ def login():
     if request.method == 'POST':
         requestdata = request.form.to_dict()
         user = User(username=requestdata['username'], 
-                        password=requestdata['password'],
-                        environment=requestdata['environment'])
-        if user.is_authenticated == False:
+                    password=requestdata['password'],
+                    environment=requestdata['environment'])
+        
+        if not user.validate_irods_session():
             print('Not auth')
             print(user.is_authenticated)
             print(user.irods_session)
             return redirect(url_for('auth.login'))
         else:
             print('Auth')
+            user.store()
             login_user(user, duration=timedelta(hours=24))
             return redirect(requestdata['next'])
     else:    
@@ -38,6 +39,6 @@ def login():
 @bp.route('/logout')
 @login_required    
 def logout():
-    Userstore.delete(current_user)
+    current_user.delete()
     logout_user()
     return(redirect(url_for('auth.login')))
