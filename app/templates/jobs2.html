@@ -133,7 +133,7 @@ Job queue overview
 {% elif entry.state == "waiting" %}
   <TR class="table-info">
 {% else %}
-{% if entry.exit_code != "0" %}
+{% if entry["sys::run::exit_code"] != "0" %}
    <TR class="table-danger">
 {% else %}
    <TR class="table-success">
@@ -146,13 +146,13 @@ Job queue overview
    </a></TD>
 
      <TD>{{ entry.state }}</TD>
-     <TD>{{ entry.description }}</TD>
-     <TD>{{ entry.tag }}</TD>
+     <TD>{{ entry["sys::runsheet::description"] }}</TD>
+     <TD>{{ entry["sys::runsheet::tag"] }}</TD>
      <TD>{{ entry.startTime }}</TD>
      <TD>{{ entry.endTime }}</TD>
-     <TD>{{ entry.exit_code }} </TD>
+     <TD>{{ entry["sys::run::exit_code"] }} </TD>
      <TD>
-     <a href="/collbrowser?path={{ entry.output_coll }}">{{ entry.output_coll }}</a></TD>
+     <a href="/collbrowser?path={{ entry['sys::run::output_collection'] }}">{{ entry["sys::run::output_collection"] }}</a></TD>
    </TR>
 {% endfor %}
 </tbody>

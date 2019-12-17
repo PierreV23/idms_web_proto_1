@@ -8,7 +8,7 @@ Created on Mon Nov 18 13:49:12 2019
 
 from flask import Blueprint, render_template, redirect, request, url_for
 from flask_login import login_user, current_user, login_required
-from irods.models import Collection, DataObject
+from irods.models import Collection, DataObject, DataObjectMeta
 from irods.column import Criterion
 from datetime import datetime
 import yaml
@@ -69,14 +69,25 @@ def jobdetails(jobfileObject):
 def joblist(state):
     a = []
     b = []
-    
-    coll = current_user.irods_session.collections.get('/rivmZone/system/runsheet/' + state)
-    for job in coll.data_objects:
-        jd = jobdetails(job)
-        jd['state'] = state
-        a.append({'start':jd['startTimestamp'], 'details':jd})
-    for job  in sorted(a, key = lambda x: x['start'], reverse = True):    
-        b.append(job['details'])
+
+    q1 = current_user.irods_session.query(DataObject.name, DataObject.id).filter ( \
+        Criterion('like', Collection.name, '/rivmZone/system/runsheet/' + state +  '%'))
+
+    for job in q1:
+        jd2 = {'name': job[DataObject.name], 'state': state}
+        q2 = current_user.irods_session.query(DataObjectMeta.name, DataObjectMeta.value).filter( \
+            Criterion('=', DataObject.id, job[DataObject.id] ))
+        for meta in q2:
+            jd2[meta[DataObjectMeta.name]] = meta[DataObjectMeta.value]
+        try:
+            jd2['startTime'] = datetime.utcfromtimestamp(int(jd2['sys::run::start_time'])).strftime('%Y-%m-%d %H:%M:%S')            
+        except:
+            jd2['startTime'] = "0"
+        try:
+            jd2['endTime'] = datetime.utcfromtimestamp(int(jd2['sys::run::finish_time'])).strftime('%Y-%m-%d %H:%M:%S')            
+        except:
+            jd2['endTime'] = "-"
+        b.append(jd2)
     return b
 
 @bp.route('/')
@@ -87,7 +98,8 @@ def show_jobs():
     for a in [ 'waiting', 'incoming', 'queued', 'active', 'done' ]:
         if x in [ 'all', a]:
             l = l + joblist(a)
-    return render_template('jobs2.html', joblist=l, items=x)
+    l2 = sorted(l, key = lambda x: x['sys::run::start_time'], reverse = True)
+    return render_template('jobs2.html', joblist=l2, items=x)
 
 @bp.route('/jobdetails')
 @login_required
