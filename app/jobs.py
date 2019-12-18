@@ -12,6 +12,7 @@ from irods.models import Collection, DataObject, DataObjectMeta
 from irods.column import Criterion
 from datetime import datetime
 import yaml
+import time
 
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
 
@@ -67,9 +68,7 @@ def jobdetails(jobfileObject):
 
 @login_required
 def joblist(state):
-    a = []
     b = []
-
     q1 = current_user.irods_session.query(DataObject.name, DataObject.id).filter ( \
         Criterion('like', Collection.name, '/rivmZone/system/runsheet/' + state +  '%'))
 
@@ -82,12 +81,17 @@ def joblist(state):
         try:
             jd2['startTime'] = datetime.utcfromtimestamp(int(jd2['sys::run::start_time'])).strftime('%Y-%m-%d %H:%M:%S')            
         except:
-            jd2['startTime'] = "0"
+            jd2['startTime'] = "-"
         try:
             jd2['endTime'] = datetime.utcfromtimestamp(int(jd2['sys::run::finish_time'])).strftime('%Y-%m-%d %H:%M:%S')            
         except:
             jd2['endTime'] = "-"
-        b.append(jd2)
+        if 'sys::run::finish_time' in jd2:
+            if time.time() - int(jd2['sys::run::finish_time']) <1000000:
+                b.append(jd2)
+        else:
+                b.append(jd2)
+
     return b
 
 @bp.route('/')
@@ -98,7 +102,8 @@ def show_jobs():
     for a in [ 'waiting', 'incoming', 'queued', 'active', 'done' ]:
         if x in [ 'all', a]:
             l = l + joblist(a)
-    l2 = sorted(l, key = lambda x: x['sys::run::start_time'], reverse = True)
+    print(l)
+    l2 = sorted(l, key = lambda x: int(x['sys::run::start_time']) if 'sys::run::start_time' in x else 1E15, reverse = True)
     return render_template('jobs2.html', joblist=l2, items=x)
 
 @bp.route('/jobdetails')
