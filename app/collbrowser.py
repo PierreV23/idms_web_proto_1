@@ -8,7 +8,7 @@ Created on Mon Nov 18 10:54:56 2019
 
 from flask import Blueprint, render_template, redirect, request, url_for
 from flask_login import login_user, current_user, login_required
-from irods.models import Collection, CollectionMeta
+from irods.models import Collection, CollectionMeta, DataObject
 from irods.column import Criterion
 import fs_irods
 
@@ -27,25 +27,28 @@ def collist(path):
          print('AVU',name,value,units)
     cols = []
     objs = []
-    for obj in ifs.ls(path):
-        objdict = {'name': obj.shortname(), 'path': obj.path}
-        if obj.isdir():
-            query = irods_session.query(Collection.create_time, Collection.owner_name).filter(Criterion('=', Collection.name, obj.path))
-            for result in query:
-                ct = result[Collection.create_time]
-                on = result[Collection.owner_name]
-                objdict['datetime'] = ct
-                objdict['ownername'] = on
-            cols.append(objdict)
-            #print ("cols is nu:", cols)
-        else:
-            objdict['size'] = obj.filesize()
-            objdict['create_time'] = obj.create_time()
-            objdict['owner_name'] = obj.owner_name()
-            objs.append(objdict)
-    print("path: ", path)
-    print("cols: ", cols)
-    print("objs: ", objs)
+    query = irods_session.query(Collection.id, Collection.name, Collection.create_time, Collection.owner_name).filter( \
+        Criterion('like', Collection.parent_name, path))
+    for obj in query:
+        objdict = {'name': obj[Collection.name].split('/')[-1], 'path': obj[Collection.name]}
+        objdict['datetime'] = obj[Collection.create_time]
+        objdict['ownername'] = obj[Collection.owner_name]
+        q2 = irods_session.query(CollectionMeta.value).filter( \
+            Criterion('=', Collection.id, obj[Collection.id])).filter( \
+            Criterion('=', CollectionMeta.name, 'sys::data::type'))
+        objdict['type'] = 'unknown'
+        for m in q2:
+            objdict['type'] = m[CollectionMeta.value]
+        cols.append(objdict)
+    query = irods_session.query(Collection.name, DataObject.name, DataObject.owner_name, DataObject.size).min(DataObject.create_time).filter( \
+        Criterion('like', Collection.name, path))
+    for obj in query:
+        objdict = {'name': obj[DataObject.name], 'path': '/'.join((obj[Collection.name], obj[DataObject.name])) }     
+        objdict['size'] = obj[DataObject.size]
+        objdict['create_time'] = obj[DataObject.create_time]
+        objdict['owner_name'] = obj[DataObject.owner_name]
+        objs.append(objdict)
+    print(cols)
     return cols, objs, avu
 
 @bp.route('/')
