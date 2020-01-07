@@ -81,7 +81,6 @@ function fillModal(path, name) {
 
 {% endif %}
 
-
 <div class="card border-primary mb-3">
    <div class="card-header">
       <a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse-contents" role="button" aria-expanded="false" aria-controls="collapse-contents">
@@ -93,10 +92,14 @@ function fillModal(path, name) {
          <table class="table table-sm table-striped table-hover">
             <thead>
                <tr>
-                  <th>Name</th>
-                  <th>Size</th>
-                  <th>Create_Date</th>
-                  <th>Owner_Name</th>
+               {% set datafields = ('Name', 'Size', 'Create_Date', 'Owner_name') %}
+               {% for field in datafields %}
+                  <th>
+                      {{ field }}
+                      <A href="/collbrowser?path={{ path }}&sortkey={{ field | lower }}"><img src="{{ url_for('static', filename='downarrow.gif') }}"></a>
+                      <A href="/collbrowser?path={{ path }}&sortkey={{ field | lower }}&reverse=true"><img src="{{ url_for('static', filename='uparrow.gif') }}"></a>
+                  </th>
+               {% endfor %}
                </tr>
             </thead>
             <tbody>
@@ -109,7 +112,7 @@ class="table-warning"
 class="table-danger"
 {% endif %}>
     <td> <a href="/collbrowser?path={{ entry.path }}">{{ entry.name }}</a> </td>
-    <td> DIR </td> <td> {{ entry.datetime }} </td> <td> {{ entry.ownername }} </td>
+    <td> DIR </td> <td> {{ entry.create_time }} </td> <td> {{ entry.owner_name }} </td>
 </tr>
 {% endfor %}
 
