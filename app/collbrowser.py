@@ -25,14 +25,15 @@ def collist(path):
          units = result[CollectionMeta.units]
          avu.append({'name': name, 'value': value,'units': units})
          print('AVU',name,value,units)
+    
     cols = []
     objs = []
     query = irods_session.query(Collection.id, Collection.name, Collection.create_time, Collection.owner_name).filter( \
         Criterion('like', Collection.parent_name, path))
     for obj in query:
         objdict = {'name': obj[Collection.name].split('/')[-1], 'path': obj[Collection.name]}
-        objdict['datetime'] = obj[Collection.create_time]
-        objdict['ownername'] = obj[Collection.owner_name]
+        objdict['create_time'] = obj[Collection.create_time]
+        objdict['owner_name'] = obj[Collection.owner_name]
         q2 = irods_session.query(CollectionMeta.value).filter( \
             Criterion('=', Collection.id, obj[Collection.id])).filter( \
             Criterion('=', CollectionMeta.name, 'sys::data::type'))
@@ -48,7 +49,6 @@ def collist(path):
         objdict['create_time'] = obj[DataObject.create_time]
         objdict['owner_name'] = obj[DataObject.owner_name]
         objs.append(objdict)
-    print(cols)
     return cols, objs, avu
 
 @bp.route('/')
@@ -57,6 +57,8 @@ def collbrowser():
     print(current_user)
     path = request.args.get('path', '/rivmZone/projects', type=str)
     action = request.args.get('action', 'none', type=str)
+    sortkey = request.args.get('sortkey', 'name', type=str)
+    reverse = request.args.get('reverse', 'false', type=str)
     if action == "up":
         path = '/' + '/'.join(path.split('/')[1:-1])
         
@@ -65,9 +67,18 @@ def collbrowser():
             Criterion('=', CollectionMeta.name, 'sys::pipeline::input_collection')).filter(
                     Criterion('=', CollectionMeta.value, path))
     rel_colls = [ c[Collection.name] for c in query]
-    print("rel_cols", rel_colls)
 
     c, o, a = collist(path)
+    if reverse == 'true':
+        breverse = True
+    else:
+        breverse = False
+    if len(c)>0:
+        if sortkey in c[0]:
+            c.sort(key =  lambda x: x[sortkey], reverse = breverse)
+    if len(o)>0:
+        if sortkey in o[0]:
+            o.sort(key =  lambda x: x[sortkey], reverse = breverse)
     return render_template('collbrowser.html', cols = c, objs = o, avu = a, path=path, rel_colls = rel_colls)
 
 

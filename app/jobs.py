@@ -102,7 +102,6 @@ def show_jobs():
     for a in [ 'waiting', 'incoming', 'queued', 'active', 'done' ]:
         if x in [ 'all', a]:
             l = l + joblist(a)
-    print(l)
     l2 = sorted(l, key = lambda x: int(x['sys::run::start_time']) if 'sys::run::start_time' in x else 1E15, reverse = True)
     return render_template('jobs2.html', joblist=l2, items=x)
 
