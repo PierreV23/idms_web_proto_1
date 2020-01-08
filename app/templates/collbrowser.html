@@ -92,12 +92,12 @@ function fillModal(path, name) {
          <table class="table table-sm table-striped table-hover">
             <thead>
                <tr>
-               {% set datafields = ('Name', 'Size', 'Create_Date', 'Owner_name') %}
+               {% set datafields = (('Name', 'name'), ('Size', 'size'), ('Create_Date', 'create_time'), ('Owner_name', 'owner_name')) %}
                {% for field in datafields %}
                   <th>
-                      {{ field }}
-                      <A href="/collbrowser?path={{ path }}&sortkey={{ field | lower }}"><img src="{{ url_for('static', filename='downarrow.gif') }}"></a>
-                      <A href="/collbrowser?path={{ path }}&sortkey={{ field | lower }}&reverse=true"><img src="{{ url_for('static', filename='uparrow.gif') }}"></a>
+                      {{ field[0] }}
+                      <A href="/collbrowser?path={{ path }}&sortkey={{ field[1] }}"><img src="{{ url_for('static', filename='downarrow.gif') }}"></a>
+                      <A href="/collbrowser?path={{ path }}&sortkey={{ field[1] }}&reverse=true"><img src="{{ url_for('static', filename='uparrow.gif') }}"></a>
                   </th>
                {% endfor %}
                </tr>
