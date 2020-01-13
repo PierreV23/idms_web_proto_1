@@ -11,8 +11,10 @@ from flask_login import login_user, current_user, login_required
 from irods.models import Collection, DataObject, DataObjectMeta
 from irods.column import Criterion
 from datetime import datetime
+from app.formatting import format_value
 import yaml
 import time
+import re
 
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
 
@@ -68,26 +70,28 @@ def jobdetails(jobfileObject):
 
 @login_required
 def joblist(state):
+    FIELDS = {
+            'sys::runsheet::description': ('Description', 'text'),
+            'sys::run::start_time': ('Start time', 'timestamp'),
+            'sys::run::finish_time': ('End time', 'timestamp'),
+            'sys::runsheet::projectID': ('projectID', 'projectid'),
+            'sys::run::exit_code': ('Result', 'exit_code')
+    }
     b = []
     q1 = current_user.irods_session.query(DataObject.name, DataObject.id).filter ( \
         Criterion('like', Collection.name, '/rivmZone/system/runsheet/' + state +  '%'))
 
     for job in q1:
-        jd2 = {'name': job[DataObject.name], 'state': state}
+        jd2 = {'Name': format_value(job[DataObject.name], 'runsheet')}
+        jd2['State'] = state
         q2 = current_user.irods_session.query(DataObjectMeta.name, DataObjectMeta.value).filter( \
             Criterion('=', DataObject.id, job[DataObject.id] ))
-        for meta in q2:
-            jd2[meta[DataObjectMeta.name]] = meta[DataObjectMeta.value]
-        try:
-            jd2['startTime'] = datetime.utcfromtimestamp(int(jd2['sys::run::start_time'])).strftime('%Y-%m-%d %H:%M:%S')            
-        except:
-            jd2['startTime'] = "-"
-        try:
-            jd2['endTime'] = datetime.utcfromtimestamp(int(jd2['sys::run::finish_time'])).strftime('%Y-%m-%d %H:%M:%S')            
-        except:
-            jd2['endTime'] = "-"
-        if 'sys::run::finish_time' in jd2:
-            if time.time() - int(jd2['sys::run::finish_time']) <1000000:
+        metadata = { meta[DataObjectMeta.name] : meta[DataObjectMeta.value] for meta in q2 }
+        for field in FIELDS:
+            if field in metadata:
+                jd2[FIELDS[field][0]] = format_value(metadata[field], FIELDS[field][1])
+        if 'sys::run::finish_time' in metadata:
+            if time.time() - int(metadata['sys::run::finish_time']) <2000000:
                 b.append(jd2)
         else:
                 b.append(jd2)
@@ -103,7 +107,8 @@ def show_jobs():
         if x in [ 'all', a]:
             l = l + joblist(a)
     l2 = sorted(l, key = lambda x: int(x['sys::run::start_time']) if 'sys::run::start_time' in x else 1E15, reverse = True)
-    return render_template('jobs2.html', joblist=l2, items=x)
+    columns = l2[0].keys()
+    return render_template('jobs2.html', joblist=l2, items=x, columns=columns)
 
 @bp.route('/jobdetails')
 @login_required
