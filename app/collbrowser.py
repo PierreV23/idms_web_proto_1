@@ -10,6 +10,7 @@ from flask import Blueprint, render_template, redirect, request, url_for
 from flask_login import login_user, current_user, login_required
 from irods.models import Collection, CollectionMeta, DataObject
 from irods.column import Criterion
+from app.formatting import format_value
 import fs_irods
 
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
@@ -18,16 +19,19 @@ def collist(path):
     irods_session = current_user.irods_session
     ifs = current_user.ifs
     avu=[]
+# Query for collection metadata
     query = irods_session.query(CollectionMeta.name, CollectionMeta.value, CollectionMeta.units).filter(Criterion('=', Collection.name, path))
-    for result in query:
-         name = result[CollectionMeta.name]
-         value = result[CollectionMeta.value]
-         units = result[CollectionMeta.units]
-         avu.append({'name': name, 'value': value,'units': units})
+    for coll_metadata in query:
+         name = coll_metadata[CollectionMeta.name]
+         value = coll_metadata[CollectionMeta.value]
+         units = coll_metadata[CollectionMeta.units]
+         avu.append({'name': name, 'value': value,'units': units, 'formatted_value': format_value(name, value, units)})
          print('AVU',name,value,units)
     
     cols = []
     objs = []
+
+# Query for collection subcollections
     query = irods_session.query(Collection.id, Collection.name, Collection.create_time, Collection.owner_name).filter( \
         Criterion('like', Collection.parent_name, path))
     for obj in query:
@@ -41,6 +45,8 @@ def collist(path):
         for m in q2:
             objdict['type'] = m[CollectionMeta.value]
         cols.append(objdict)
+
+# Query for dataobjects in collection
     query = irods_session.query(Collection.name, DataObject.name, DataObject.owner_name, DataObject.size).min(DataObject.create_time).filter( \
         Criterion('like', Collection.name, path))
     for obj in query:

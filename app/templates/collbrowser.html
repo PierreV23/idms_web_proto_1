@@ -68,7 +68,7 @@ function fillModal(path, name) {
 {% for entry in avu %}
 <tr>
     <td> {{ entry.name }} </td>
-    <td> {{ entry.value }} </td>
+    <td> {{ entry.formatted_value|safe }} </td>
     <td> {{ entry.units }} </td>
 </tr>
 {% endfor %}

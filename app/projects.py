@@ -26,6 +26,7 @@ def show_projects():
         pl = json.load(f)
     for project in sorted(pl):
         P[project] = {'name': project, 'details': pl[project]}   
+    print(P[project]['details'])
     return render_template('projects.html', projects=P)
 
 @bp.route('/details')

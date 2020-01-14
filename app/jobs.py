@@ -82,14 +82,14 @@ def joblist(state):
         Criterion('like', Collection.name, '/rivmZone/system/runsheet/' + state +  '%'))
 
     for job in q1:
-        jd2 = {'Name': format_value(job[DataObject.name], 'runsheet')}
+        jd2 = {'Name': format_value('runsheet', job[DataObject.name], 'runsheet')}
         jd2['State'] = state
         q2 = current_user.irods_session.query(DataObjectMeta.name, DataObjectMeta.value).filter( \
             Criterion('=', DataObject.id, job[DataObject.id] ))
         metadata = { meta[DataObjectMeta.name] : meta[DataObjectMeta.value] for meta in q2 }
         for field in FIELDS:
             if field in metadata:
-                jd2[FIELDS[field][0]] = format_value(metadata[field], FIELDS[field][1])
+                jd2[FIELDS[field][0]] = format_value(field, metadata[field], FIELDS[field][1])
         if 'sys::run::finish_time' in metadata:
             if time.time() - int(metadata['sys::run::finish_time']) <2000000:
                 b.append(jd2)

@@ -4,39 +4,52 @@
 {% endblock %}
 
 {% block content %}
-<nav class="navbar navbar-expand-lg navbar-light bg-light fixed-left">
-<a class="navbar-brand" href="#">Projects overview</a>
-</nav>
+
 <div class="card border-primary mb-3">
+    <div class="card-header">
+        Projects overview
+    </div>
     <div class="card-body">
-<TABLE class="table table-striped table-hover table-sm">
-<thead>
-<TR>
-<TH scope="col">Project Name</TH>
-</TR>
-</thead>
-<tbody>
+        <TABLE class="table table-striped table-hover table-sm">
+            <thead>
+                <TR>
+                    <TH scope="col">Project ID</TH>
+                    <TH scope="col">Project Description</TH>
+                </TR>
+            </thead>
+            <tbody>
 {% for project in projects %}
-<tr>
-<td width="20%">
-<a href="{{ url_for('projects.show_projectdetails') }}?name={{ project }}">
-{{ project }}
-</td></tr>
-{% endfor %}
-</tbody>
-</table>
+                <tr>
+                    <td width="20%">
+                        <a href="{{ url_for('projects.show_projectdetails') }}?name={{ project }}">
+                        {{ project }}
+                        </a>
+                    </td>
+                    <td>
+                    {{ projects[project]['details']['settings']['description'] }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
-<form class="form" action="update_project" method="post">
-<input type="hidden" id="action" name="action" value="add_project">
-<div class="form-group mx-sm-3 mb-2">
-  <label for="newProject">Project Name</label>
-  <input type="text" class="form-control" name="project" id="inputProject" placeholder="Project">
-</div>
-<div class="form-group mx-sm-3">
-  <button type="submit" class="btn btn-primary">Add new project</button>
-</div>
-</form>
+<div class="card border-primary mb-3">
+    <div class="card-header">
+        Add new project
+    </div>
+    <div class="card-body">
+        <form class="form" action="update_project" method="post">
+            <input type="hidden" id="action" name="action" value="add_project">
+            <div class="form-group mx-sm-3 mb-2">
+                <input type="text" class="form-control" name="project" id="inputProject" placeholder="Project">
+            </div>
+            <div class="form-group mx-sm-3">
+                <button type="submit" class="btn btn-primary">Add new project</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 {% endblock %}

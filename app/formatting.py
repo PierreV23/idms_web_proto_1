@@ -10,14 +10,25 @@ import re
 from flask import url_for
 from datetime import datetime
 
+KNOWN_ATTRIBUTES = {
+        'Date'                                  : 'date',
+        'import_timestamp'                      : 'timestamp',
+        'stage_time'                            : 'timestamp',
+        'sys::pipeline::input_collection_id'    : 'collection_id',
+        'sys::pipeline::used_by'                : 'runsheet'
+}
+
 def format_exit_code(value):
     if value == "0":
         return "OK"
     else:
         return "FAILED"
 
+def format_date(value):
+    return '{}-{}-20{}'.format(value[4:6], value[2:4], value[0:2])
+
 def format_timestamp(value):
-    return '<small>{}<small>'.format(datetime.fromtimestamp(float(value)).strftime("%d-%m-%Y %H:%M:%S"))
+    return '{}'.format(datetime.fromtimestamp(float(value)).strftime("%d-%m-%Y %H:%M:%S"))
 
 def format_runsheet(value):
     runsheet_id = re.sub('-runsheet.yaml','', value)
@@ -27,10 +38,15 @@ def format_runsheet(value):
 def format_irods_collection(value):
     return '<a href={0}?path={1}>{1}</a>'.format(url_for('collbrowser.collbrowser'), value)
 
-def format_value(value, units):
+def format_value(attr, value, units):
     formatted_value = value
+    data_unit = ''
     if units:
-        format_function_name = 'format_' + units
+        data_unit = units
+    elif attr in KNOWN_ATTRIBUTES:
+        data_unit = KNOWN_ATTRIBUTES[attr]
+    if data_unit:
+        format_function_name = 'format_' + data_unit
         if format_function_name in globals():
             formatted_value = globals()[format_function_name](value)
     return formatted_value
