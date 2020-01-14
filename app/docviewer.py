@@ -38,15 +38,15 @@ def serve_object():
     obj = ifs.getfile(path)
     f = obj.open('r')
     mimetype=''
-    if file_extension in [ ".re", ".cfg", ".xml", ".out", ".yml", ".yaml" ]:
-        mimetype = "text/plain"
     if file_extension in [ ".csv" ]:
         output = csvconvert(f)
         return output
-    if file_extension in [ ".jpg", ".png" ]:
-        output = '<IMG WIDTH="100%" SRC="' + url_for('docviewer.serve_image') +  "?path=" + path + '">'
+    elif file_extension in [ ".jpg", ".png" ]:
+        output = '<IMG HEIGHT="100%" SRC="' + url_for('docviewer.serve_image') +  "?path=" + path + '">'
         return output
-
+    elif file_extension in [ ".re", ".cfg", ".xml", ".out", ".yml", ".yaml", ".err" ]:
+        mimetype = "text/plain"
+        
     if mimetype:
         X = send_file(f, attachment_filename = os.path.split(path)[1], 
                       as_attachment = False, mimetype=mimetype)
