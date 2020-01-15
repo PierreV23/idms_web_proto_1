@@ -27,7 +27,7 @@ def collist(path):
          value = coll_metadata[CollectionMeta.value]
          units = coll_metadata[CollectionMeta.units]
          avu.append({'name': name, 'value': value,'units': units, 'formatted_value': format_value(name, value, units)})
-         print('AVU',name,value,units)
+         #print('AVU',name,value,units)
     
     cols = []
     objs = []
@@ -46,7 +46,7 @@ def collist(path):
         objdict['coll_description'] = ''
         for m in q1:
             objdict['coll_description'] = m[CollectionMeta.value]
-            print("m[CollectionMeta.value]:", m[CollectionMeta.value])
+            #print("m[CollectionMeta.value]:", m[CollectionMeta.value])
             if m[CollectionMeta.value]:
                show_description = True
 
@@ -72,7 +72,7 @@ def collist(path):
 @bp.route('/')
 @login_required
 def collbrowser():
-    print(current_user)
+    #print(current_user)
     path = request.args.get('path', '/rivmZone/projects', type=str)
     action = request.args.get('action', 'none', type=str)
     sortkey = request.args.get('sortkey', 'name', type=str)
@@ -86,9 +86,9 @@ def collbrowser():
                     Criterion('=', CollectionMeta.value, path))
     rel_colls = [ c[Collection.name] for c in query]
 
-    print("Path:", path)
+    #print("Path:", path)
     c, o, a , show = collist(path)
-    print("C: ", c)
+    #print("C: ", c)
 
     if reverse == 'true':
         breverse = True
