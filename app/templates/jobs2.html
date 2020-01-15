@@ -108,52 +108,45 @@ Job queue overview
 </div>
 </div>
 
+<!-- RUNSHEET JOB TABLE STARTS HERE -->
 
 <TABLE class="table table-striped table-hover table-sm">
 <thead class="thead-dark">
 <TR>
-<TH scope="col">Name</TH>
-<TH scope="col">State</TH>
-<TH scope="col">Description</TH>
-<TH scope="col">GIT Tag</TH>
-<TH scope="col">Start</TH>
-<TH scope="col">Finish</TH>
-<TH scope="col">Result</TH>
-<TH scope="col">Output collection</TH>
+{% for column in columns %}
+<TH scope="col">{{ column }}</TH>
+{% endfor %}
+<TH>Actions</TH>
 </TR>
 </thead>
 <tbody>
 {% for entry in joblist %}
-{% if entry.state == "incoming" %}
-  <TR class="table-light">
-{% elif entry.state == "queued" %}
-  <TR class="table-active">
-{% elif entry.state == "active" %}
-  <TR class="table-primary">
-{% elif entry.state == "waiting" %}
-  <TR class="table-info">
+    {% if entry.State == "incoming" %}
+      <TR class="table-light">
+    {% elif entry.State == "queued" %}
+      <TR class="table-active">
+    {% elif entry.State == "active" %}
+      <TR class="table-primary">
+    {% elif entry.State == "waiting" %}
+      <TR class="table-info">
+    {% else %}
+    {% if entry["Result"] != "OK" %}
+       <TR class="table-danger">
+    {% else %}
+       <TR class="table-success">
+    {% endif %}
+    {% endif %}
+    {% for column in columns %}
+        <TD>{{ entry[column]|safe}}</TD>
+    {% endfor %}
+    <td>
+{% if entry.State != 'done' %}
+        <button class="btn btn-secondary btn-sm" type="button" id="resubmitButton" aria-haspopup="true" aria-expanded="false">End</button>
 {% else %}
-{% if entry["sys::run::exit_code"] != "0" %}
-   <TR class="table-danger">
-{% else %}
-   <TR class="table-success">
-{% endif %}
-{% endif %}
-
-   <TD>
-   <a href="{{ url_for('jobs.show_jobdetails') }}?name={{ entry.name }}">
-   {{ entry.name }}
-   </a></TD>
-
-     <TD>{{ entry.state }}</TD>
-     <TD>{{ entry["sys::runsheet::description"] }}</TD>
-     <TD>{{ entry["sys::runsheet::tag"] }}</TD>
-     <TD>{{ entry.startTime }}</TD>
-     <TD>{{ entry.endTime }}</TD>
-     <TD>{{ entry["sys::run::exit_code"] }} </TD>
-     <TD>
-     <a href="/collbrowser?path={{ entry['sys::run::output_collection'] }}">{{ entry["sys::run::output_collection"] }}</a></TD>
-   </TR>
+        <button class="btn btn-secondary btn-sm" type="button" id="resubmitButton" aria-haspopup="true" aria-expanded="false">Resubmit</button>
+{% endif %}        
+    </td>
+    </TR>
 {% endfor %}
 </tbody>
  </TABLE>
