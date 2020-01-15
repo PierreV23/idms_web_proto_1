@@ -16,6 +16,7 @@ import fs_irods
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
 
 def collist(path):
+    show_description = False
     irods_session = current_user.irods_session
     ifs = current_user.ifs
     avu=[]
@@ -38,6 +39,17 @@ def collist(path):
         objdict = {'name': obj[Collection.name].split('/')[-1], 'path': obj[Collection.name]}
         objdict['create_time'] = obj[Collection.create_time]
         objdict['owner_name'] = obj[Collection.owner_name]
+
+        q1 = irods_session.query(CollectionMeta.value).filter( \
+            Criterion('=', Collection.id, obj[Collection.id])).filter( \
+            Criterion('=', CollectionMeta.name, 'coll_description'))
+        objdict['coll_description'] = ''
+        for m in q1:
+            objdict['coll_description'] = m[CollectionMeta.value]
+            print("m[CollectionMeta.value]:", m[CollectionMeta.value])
+            if m[CollectionMeta.value]:
+               show_description = True
+
         q2 = irods_session.query(CollectionMeta.value).filter( \
             Criterion('=', Collection.id, obj[Collection.id])).filter( \
             Criterion('=', CollectionMeta.name, 'sys::data::type'))
@@ -55,7 +67,7 @@ def collist(path):
         objdict['create_time'] = obj[DataObject.create_time]
         objdict['owner_name'] = obj[DataObject.owner_name]
         objs.append(objdict)
-    return cols, objs, avu
+    return cols, objs, avu, show_description
 
 @bp.route('/')
 @login_required
@@ -74,7 +86,10 @@ def collbrowser():
                     Criterion('=', CollectionMeta.value, path))
     rel_colls = [ c[Collection.name] for c in query]
 
-    c, o, a = collist(path)
+    print("Path:", path)
+    c, o, a , show = collist(path)
+    print("C: ", c)
+
     if reverse == 'true':
         breverse = True
     else:
@@ -85,7 +100,7 @@ def collbrowser():
     if len(o)>0:
         if sortkey in o[0]:
             o.sort(key =  lambda x: x[sortkey], reverse = breverse)
-    return render_template('collbrowser.html', cols = c, objs = o, avu = a, path=path, rel_colls = rel_colls)
+    return render_template('collbrowser.html', cols = c, objs = o, avu = a, path=path, rel_colls = rel_colls, show = show)
 
 
 @bp.route('upload_file', methods = ['GET', 'POST'])
