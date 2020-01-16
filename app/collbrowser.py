@@ -16,7 +16,6 @@ import fs_irods
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
 
 def collist(path):
-    show_description = False
     irods_session = current_user.irods_session
     ifs = current_user.ifs
     avu=[]
@@ -67,7 +66,7 @@ def collist(path):
         objdict['create_time'] = obj[DataObject.create_time]
         objdict['owner_name'] = obj[DataObject.owner_name]
         objs.append(objdict)
-    return cols, objs, avu, show_description
+    return cols, objs, avu
 
 @bp.route('/')
 @login_required
@@ -86,9 +85,9 @@ def collbrowser():
                     Criterion('=', CollectionMeta.value, path))
     rel_colls = [ c[Collection.name] for c in query]
 
-    #print("Path:", path)
-    c, o, a , show = collist(path)
-    #print("C: ", c)
+    c, o, a = collist(path)
+    
+    show_description = (max([len(i['coll_description']) for i in c]) > 0)
 
     if reverse == 'true':
         breverse = True
@@ -100,7 +99,7 @@ def collbrowser():
     if len(o)>0:
         if sortkey in o[0]:
             o.sort(key =  lambda x: x[sortkey], reverse = breverse)
-    return render_template('collbrowser.html', cols = c, objs = o, avu = a, path=path, rel_colls = rel_colls, show = show)
+    return render_template('collbrowser.html', cols = c, objs = o, avu = a, path=path, rel_colls = rel_colls, show = show_description)
 
 
 @bp.route('upload_file', methods = ['GET', 'POST'])

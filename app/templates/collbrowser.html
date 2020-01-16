@@ -93,7 +93,7 @@ function fillModal(path, name) {
             <thead>
                <tr>
                {% if show == True %}
-                  {% set datafields = (('Name', 'name'), ('Description', 'CollDesc'), ('Size', 'size'), ('Create_Date', 'create_time'), ('Owner_name', 'owner_name')) %}
+                  {% set datafields = (('Name', 'name'), ('Description', 'coll_description'), ('Size', 'size'), ('Create_Date', 'create_time'), ('Owner_name', 'owner_name')) %}
                {% else %}
                   {% set datafields = (('Name', 'name'), ('Size', 'size'), ('Create_Date', 'create_time'), ('Owner_name', 'owner_name')) %}
                {% endif %}
