@@ -65,6 +65,7 @@ def collbrowser():
     action = request.args.get('action', 'none', type=str)
     sortkey = request.args.get('sortkey', 'name', type=str)
     reverse = request.args.get('reverse', 'false', type=str)
+    metaview = request.args.get('metaformat', 'format', type=str)
     if action == "up":
         path = '/' + '/'.join(path.split('/')[1:-1])
         
@@ -75,6 +76,8 @@ def collbrowser():
     rel_colls = [ c[Collection.name] for c in query]
 
     c, o, a = collist(path)
+    if metaview == 'raw':
+        a = [{x:1} for avu in a]
     if reverse == 'true':
         breverse = True
     else:
@@ -85,7 +88,8 @@ def collbrowser():
     if len(o)>0:
         if sortkey in o[0]:
             o.sort(key =  lambda x: x[sortkey], reverse = breverse)
-    return render_template('collbrowser.html', cols = c, objs = o, avu = a, path=path, rel_colls = rel_colls)
+    return render_template('collbrowser.html', cols = c, objs = o, avu = a, path=path, 
+                           rel_colls = rel_colls, metaview = metaview)
 
 
 @bp.route('upload_file', methods = ['GET', 'POST'])
