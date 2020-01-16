@@ -17,6 +17,22 @@ function fillModal(path, name) {
     modalEmbed.parentNode.replaceChild(newEmbed, modalEmbed)
 }  
 
+function avu_table() {
+    if ($("#metatoggle").text() == 'Formatted') {
+        d1 = 'table-cell';
+        d2 = 'none'
+        text = 'Unformatted'
+    } else {
+        d2 = 'table-cell';
+        d1 = 'none'    
+        text = 'Formatted'
+    }
+    $('.rawvalues').css('display', d1);
+    $('.formatvalues').css('display', d2);
+    $('#metatoggle').html(text)
+}
+
+
 </script>
 
 <a href="/collbrowser?action=up&path={{ path }}"><button type="button" class="btn btn-outline-secondary">UP</button></a>
@@ -51,11 +67,9 @@ function fillModal(path, name) {
         <a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse-meta" role="button" aria-expanded="false" aria-controls="collapse-meta">
         Collection metadata
         </a>
-<!--        
-        <a class="btn btn-outline-secondary text-left float-right" href="{{ url_for('collbrowser.collbrowser') + '?path=' + path }}" role="button" >
-        {{ metaview }}
+        <a class="btn btn-outline-secondary text-left float-right" id="metatoggle" onclick='avu_table()'" role="button" >
+        RAW
         </a>
--->        
     </div>
     <div class="card card-body" >
         <div class="collapse" id="collapse-meta">
@@ -73,7 +87,8 @@ function fillModal(path, name) {
 {% for entry in avu %}
 <tr>
     <td> {{ entry.name }} </td>
-    <td> {{ entry.formatted_value|safe }} </td>
+    <td class="rawvalues" style="display:none;">{{ entry.value }}</td>    
+    <td class="formatvalues"> {{ entry.formatted_value|safe }} </td>
     <td> {{ entry.units }} </td>
 </tr>
 {% endfor %}
