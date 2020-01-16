@@ -25,8 +25,11 @@ def show_projects():
     with obj.open('r') as f:
         pl = json.load(f)
     for project in sorted(pl):
-        P[project] = {'name': project, 'details': pl[project]}   
-    print(P[project]['details'])
+        try:
+            description = pl[project]['settings']['description']
+        except KeyError:
+            description = ''
+        P[project] = {'name': project, 'description': description }   
     return render_template('projects.html', projects=P)
 
 @bp.route('/details')
