@@ -19,7 +19,7 @@ KNOWN_ATTRIBUTES = {
         'sys::pipeline::used_by'                : 'runsheet'
 }
 
-MAXLEN = 40
+MAXLEN = 35
 
 factory = ObjectFactory()
 
@@ -36,6 +36,10 @@ class AVU_base():
     def factory(**kwargs):
         return AVU_base(**kwargs)
     
+    @property
+    def htmlshort(self):
+        return self.htmlstring
+
     @property
     def htmlstring(self):
         return str(self.value)
@@ -70,6 +74,33 @@ class AVU_int(AVU_base):
     
 factory.register_builder('int', AVU_int.factory)
 
+class AVU_boolean(AVU_base):
+    def __init__(self, attr, value, unit = None):
+        super().__init__(attr = attr, value = value, unit = unit)
+        
+    def __str__(self):
+        return 'TRUE' if self.value else 'FALSE'
+
+    @property
+    def htmlstring(self):
+        return str(self.value)
+    
+    @staticmethod
+    def factory(**kwargs):
+        return AVU_boolean(**kwargs)
+
+    def __str__(self):
+        return str(self.value)
+
+    def __int__(self):
+        return self.value
+    
+    def __lt__(self, other):
+        return self.value < other.value
+    
+factory.register_builder('boolean', AVU_boolean.factory)
+
+
 class AVU_timestamp(AVU_base):
     def __init__(self, attr, value, unit = None):
         super().__init__(attr = attr, value = int(value), unit = unit)
@@ -94,18 +125,25 @@ factory.register_builder('timestamp', AVU_timestamp.factory)
 
 class AVU_irods_collection(AVU_base):
     
-    @property
-    def htmlstring(self, maxlength=MAXLEN):
+    def displaystring(self, maxlen=999):
         nameparts = self.value.split('/')
         shortname =  nameparts[-1]
         prefix = '/{}'.format('/'.join(nameparts[1:-1]))
-        if len(self.value) > maxlength:
+        if len(self.value) > maxlen:
             # LINE TOO LONG
-            prefixlen = max(1, maxlength - len(shortname) - 2)
-            print(len(self.value), len(shortname), prefixlen)
+            prefixlen = max(1, maxlen - len(shortname) - 2)
             prefix = '..' + prefix[-prefixlen:]
-            print(self.value, prefix, shortname)
-        return '<div class="container"><a href="#" data-toggle="tooltip" title="{}">{}/{}</A></div>'.format(self.value, prefix, shortname)        
+        return '{}/{}'.format(prefix, shortname)
+    
+    @property
+    def htmlstring(self):
+        displaystring = self.displaystring()
+        return '<a href="{0}?path={1}">{2}</A>'.format(format(url_for('collbrowser.collbrowser')), self.value, displaystring)
+    
+    @property
+    def htmlshort(self):
+        displaystring = self.displaystring(maxlen=MAXLEN)
+        return '<div class="container"><a href="{0}?path={1}" data-toggle="tooltip" title="{1}">{2}</A></div>'.format(format(url_for('collbrowser.collbrowser')), self.value, displaystring)
     
     @staticmethod
     def factory(**kwargs):

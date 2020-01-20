@@ -144,7 +144,7 @@ $(document).ready(function(){
     {% endif %}
     {% endif %}
     {% for column in columns %}
-        <TD>{{ entry[column].htmlstring|safe}}</TD>
+        <TD>{{ entry[column].htmlshort|safe}}</TD>
     {% endfor %}
     <td>
 {% if entry.State != 'done' %}

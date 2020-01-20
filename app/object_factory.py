@@ -19,10 +19,8 @@ class ObjectFactory:
 
     def create(self, key, **kwargs):
         if key in self._builders:
-#            print('Create class object with key {}'.format(key))
             builder = self._builders[key]
         else:
-#            print('Create default class object for key {}'.format(key))
             builder = self._defaultbuilder
         if builder is None:
             raise ValueError(key)

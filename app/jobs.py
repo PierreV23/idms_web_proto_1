@@ -127,7 +127,7 @@ def show_jobdetails():
     runsheet = jobpath[0] + '/' + jobnaam
     jobid = [ coll[DataObject.id] for coll in query][0]
     jobObj = current_user.irods_session.data_objects.get(runsheet)
-    jd = jobdetails(jobObj)
+#    jd = jobdetails(jobObj)
     q2 = current_user.irods_session.query(DataObjectMeta.name, DataObjectMeta.value).filter( \
             Criterion('=', DataObject.id, jobid ))
     metadata = { meta[DataObjectMeta.name] : meta[DataObjectMeta.value] for meta in q2 }
@@ -160,7 +160,9 @@ def show_jobdetails():
             'sys::run::start_time': ('Start time', 'timestamp'),
             'sys::run::finish_time': ('End time', 'timestamp'),
             'sys::runsheet::projectID': ('Project ID', 'projectid'),
-            'sys::runsheet::processID': ('Proces ID', 'processid'),
+            'sys::runsheet::processID': ('Process ID', 'processid'),
+            'sys::runsheet::next_projectID': ('Next Project ID', 'projectid'),
+            'sys::runsheet::next_processID': ('Next Process ID', 'processid'),
             'sys::run::exit_code': ('Result', 'int'),
             'sys::runsheet::input_collection': ('Input Collection', 'irods_collection'),
             'sys::run::output_collection': ('Output Collection', 'irods_collection'),
@@ -170,13 +172,14 @@ def show_jobdetails():
             'sys::run::pipeline_dir': ('Pipeline run directory', 'directory'),
             'sys::runsheet::repo': ('Git repository', 'git_repo'),
             'sys::runsheet::tag': ('Git tag', 'git_tag'),
-            
+            'sys::runsheet::distribution': ('Distribution pipeline', 'boolean'),
+            'sys::runsheet::restartable': ('Restarts on error', 'boolean')
     }            
     D = {}
     D['Runsheet file'] = AVU('runsheet',  runsheet, 'irods_object')
     for field in FIELDS:
         if field in metadata:
             D[FIELDS[field][0]] = AVU(field, metadata[field], FIELDS[field][1])
-    D['Git repository'] = "<a href='{0}'>{0} TAG {1}</a>".format(jd['repo'].replace('.git',''), jd['tag'])
-    D['Next projectID'] = "<a href='/projectdetails?name={0}'>{0}</a>".format(jd['next_projectID'])
+#    D['Git repository'] = "<a href='{0}'>{0} TAG {1}</a>".format(jd['repo'].replace('.git',''), jd['tag'])
+#    D['Next projectID'] = "<a href='/projectdetails?name={0}'>{0}</a>".format(jd['next_projectID'])
     return render_template('jobdetails.html', details=D, jobnaam = jobnaam, runlog = log, logs = L)
