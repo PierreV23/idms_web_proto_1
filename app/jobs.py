@@ -19,57 +19,6 @@ import re
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
 
 @login_required
-def jobdetails(jobfileObject):
-    with jobfileObject.open('r') as f:
-        txt = f.read();
-        yy = yaml.load(txt)
-    md = jobfileObject.metadata
-    try: 
-        ec = md.get_one('sys::run::exit_code').value
-    except KeyError:
-        ec = -1
-    try:
-        st = int(md.get_one('sys::run::start_time').value)
-        strSt = datetime.utcfromtimestamp(st).strftime('%Y-%m-%d %H:%M:%S')
-    except KeyError:
-        strSt = "-"
-        st = 0
-    try:
-        et = int(md.get_one('sys::run::finish_time').value)
-        strEt = datetime.utcfromtimestamp(et).strftime('%Y-%m-%d %H:%M:%S')
-    except KeyError:
-        strEt = "-"
-        et = 0
-    try:
-        ic = md.get_one('sys::runsheet::input_collection').value
-    except KeyError:
-        ic = ''
-    try:
-        oc = md.get_one('sys::run::output_collection').value
-    except KeyError:
-        oc = ''
-    try:
-        nextproj = yy['next_projectID']
-    except:
-        nextproj = ''
-    try:
-        description = yy['description']
-    except:
-        description = ''
-    try:
-        repo = yy['repo']
-    except:
-        repo = ''
-    try:
-        tag = yy['tag']
-    except:
-        tag = ''    
-    details = {'name':jobfileObject.name, 'description': description, 'repo' : repo, 'tag': tag,
-            'exit_code': ec, 'startTime': strSt, 'endTime': strEt, 'input_coll': ic, 'output_coll': oc, 'startTimestamp': st, 'next_projectID': nextproj}
-    return details
-
-
-@login_required
 def joblist(state):
     FIELDS = {
             'sys::runsheet::description': ('Description', 'text'),
@@ -127,7 +76,6 @@ def show_jobdetails():
     runsheet = jobpath[0] + '/' + jobnaam
     jobid = [ coll[DataObject.id] for coll in query][0]
     jobObj = current_user.irods_session.data_objects.get(runsheet)
-#    jd = jobdetails(jobObj)
     q2 = current_user.irods_session.query(DataObjectMeta.name, DataObjectMeta.value).filter( \
             Criterion('=', DataObject.id, jobid ))
     metadata = { meta[DataObjectMeta.name] : meta[DataObjectMeta.value] for meta in q2 }
@@ -164,7 +112,7 @@ def show_jobdetails():
             'sys::runsheet::next_projectID': ('Next Project ID', 'projectid'),
             'sys::runsheet::next_processID': ('Next Process ID', 'processid'),
             'sys::run::exit_code': ('Result', 'int'),
-            'sys::runsheet::input_collection': ('Input Collection', 'irods_collection'),
+##            'sys::runsheet::input_collection': ('Input Collection', 'irods_collection'),
             'sys::run::output_collection': ('Output Collection', 'irods_collection'),
             'sys::run::input_dir': ('Input directory', 'directory'),
             'sys::run::output_dir': ('Output directory', 'directory'),
