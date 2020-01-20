@@ -26,7 +26,7 @@ def joblist(state):
             'sys::run::finish_time': ('End time', 'timestamp'),
             'sys::runsheet::projectID': ('projectID', 'projectid'),
             'sys::run::exit_code': ('Result', 'int'),
-            'sys::runsheet::input_collection': ('Input Collection', 'irods_collection'),
+##            'sys::runsheet::input_collection': ('Input Collection', 'irods_collection'),
             'sys::run::output_collection': ('Output Collection', 'irods_collection')
     }
     b = []
@@ -112,7 +112,7 @@ def show_jobdetails():
             'sys::runsheet::next_projectID': ('Next Project ID', 'projectid'),
             'sys::runsheet::next_processID': ('Next Process ID', 'processid'),
             'sys::run::exit_code': ('Result', 'int'),
-##            'sys::runsheet::input_collection': ('Input Collection', 'irods_collection'),
+            'sys::runsheet::input_collection': ('Input Collection', 'irods_collection'),
             'sys::run::output_collection': ('Output Collection', 'irods_collection'),
             'sys::run::input_dir': ('Input directory', 'directory'),
             'sys::run::output_dir': ('Output directory', 'directory'),
