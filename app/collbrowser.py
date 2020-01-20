@@ -85,7 +85,7 @@ def collbrowser():
 
     c, o, a = collist(path)
     
-    show_description = (max([len(i['coll_description']) for i in c]) > 0)
+    show_description = (max([0] + [len(i['coll_description']) for i in c]) > 0)
 
     if reverse == 'true':
         breverse = True

@@ -18,9 +18,7 @@ import re
 
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
 
-@login_required
-def joblist(state):
-    FIELDS = {
+FIELDS = {
             'sys::runsheet::description': ('Description', 'text'),
             'sys::run::start_time': ('Start time', 'timestamp'),
             'sys::run::finish_time': ('End time', 'timestamp'),
@@ -29,13 +27,16 @@ def joblist(state):
 ##            'sys::runsheet::input_collection': ('Input Collection', 'irods_collection'),
             'sys::run::output_collection': ('Output Collection', 'irods_collection')
     }
+
+@login_required
+def joblist(state):
     b = []
     q1 = current_user.irods_session.query(DataObject.name, DataObject.id).filter ( \
         Criterion('like', Collection.name, '/rivmZone/system/runsheet/' + state +  '%'))
 
     for job in q1:
         jd2 = {'Name': AVU('runsheet', job[DataObject.name], 'runsheet')}
-        jd2['State'] = state
+        jd2['State'] = AVU('state', state, 'job_state')
         q2 = current_user.irods_session.query(DataObjectMeta.name, DataObjectMeta.value).filter( \
             Criterion('=', DataObject.id, job[DataObject.id] ))
         metadata = { meta[DataObjectMeta.name] : meta[DataObjectMeta.value] for meta in q2 }
@@ -59,11 +60,7 @@ def show_jobs():
         if x in [ 'all', a]:
             l = l + joblist(a)
     l2 = sorted(l, key = lambda x: x['Start time'] if 'Start time' in x else INFINITE_DATE , reverse = True)
-    columns = []
-    for a in l2:
-        for b in a:
-            if b not in columns:
-                columns.append(b)
+    columns = ['Name', 'State'] + [ FIELDS[a][0] for a in FIELDS]
     return render_template('jobs2.html', joblist=l2, items=x, columns=columns)
 
 @bp.route('/jobdetails')

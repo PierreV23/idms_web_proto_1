@@ -139,14 +139,20 @@ $(document).ready(function(){
     {% elif entry.State == "waiting" %}
       <TR class="table-info">
     {% else %}
+    {% if "Result" in entry %}
     {% if entry["Result"].value != 0 %}
        <TR class="table-danger">
     {% else %}
        <TR class="table-success">
     {% endif %}
     {% endif %}
-    {% for column in columns %}
-        <TD>{{ entry[column].htmlshort|safe}}</TD>
+    {% endif %}
+    {% for column in columns %}    
+        <TD>
+        {% if column in entry %}
+        {{ entry[column].htmlshort|safe}}
+        {% endif %}</TD>
+        
     {% endfor %}
 <!--    
     <td>
