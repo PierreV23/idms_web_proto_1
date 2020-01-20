@@ -28,7 +28,7 @@ function fillModal(path, name) {
 <tbody>
 {% for entry in details %}
    <TD>{{ entry }}</TD>
-   <TD>{{ details[entry] | safe }}</TD>
+   <TD>{{ details[entry].htmlstring | safe }}</TD>
    <TD></TD>
 </TR>
 {% endfor %}

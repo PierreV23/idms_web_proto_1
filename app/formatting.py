@@ -19,9 +19,14 @@ KNOWN_ATTRIBUTES = {
         'sys::pipeline::used_by'                : 'runsheet'
 }
 
+MAXLEN = 40
+
 factory = ObjectFactory()
 
-class AVUclass():
+def AVU(attr, value, unit):
+    return factory.create(unit, attr=attr, value=value, unit=unit)
+
+class AVU_base():
     def __init__(self, attr, value, unit = None):
         self.attr = attr
         self.value = value
@@ -29,7 +34,11 @@ class AVUclass():
     
     @staticmethod
     def factory(**kwargs):
-        return AVUclass(**kwargs)
+        return AVU_base(**kwargs)
+    
+    @property
+    def htmlstring(self):
+        return str(self.value)
     
     def __str__(self):
         return str(self.value)
@@ -37,26 +46,113 @@ class AVUclass():
     def __repr__(self):
         return f'{self.attr} = {self.value} {self.unit}'
     
-factory.register_default_builder(AVUclass.factory)    
+factory.register_default_builder(AVU_base.factory)    
 
-class timestamp_AVUclass(AVUclass):
+class AVU_int(AVU_base):
+    def __init__(self, attr, value, unit = None):
+        super().__init__(attr = attr, value = int(value), unit = unit)
+        
+    def __str__(self):
+        return str(self.value)
+    
+    @staticmethod
+    def factory(**kwargs):
+        return AVU_int(**kwargs)
+
+    def __str__(self):
+        return str(self.value)
+
+    def __int__(self):
+        return self.value
+    
+    def __lt__(self, other):
+        return self.value < other.value
+    
+factory.register_builder('int', AVU_int.factory)
+
+class AVU_timestamp(AVU_base):
     def __init__(self, attr, value, unit = None):
         super().__init__(attr = attr, value = int(value), unit = unit)
         
     def __str__(self):
         return '{}'.format(datetime.fromtimestamp(float(self.value)).strftime("%d-%m-%Y %H:%M:%S"))
     
+    @property 
+    def htmlstring(self):
+        return self.__str__()
+    
     @staticmethod
     def factory(**kwargs):
-        return timestamp_AVUclass(**kwargs)
+        return AVU_timestamp(**kwargs)
     
     def __lt__(self, other):
-#        print(self, other)
         return self.value < other.value
     
-INFINITE_DATE = timestamp_AVUclass(attr='none', value=1E11)    
+INFINITE_DATE = AVU_timestamp(attr='none', value=1E11)    
 
-factory.register_builder('timestamp', timestamp_AVUclass.factory)
+factory.register_builder('timestamp', AVU_timestamp.factory)
+
+class AVU_irods_collection(AVU_base):
+    
+    @property
+    def htmlstring(self, maxlength=MAXLEN):
+        nameparts = self.value.split('/')
+        shortname =  nameparts[-1]
+        prefix = '/{}'.format('/'.join(nameparts[1:-1]))
+        if len(self.value) > maxlength:
+            # LINE TOO LONG
+            prefixlen = max(1, maxlength - len(shortname) - 2)
+            print(len(self.value), len(shortname), prefixlen)
+            prefix = '..' + prefix[-prefixlen:]
+            print(self.value, prefix, shortname)
+        return '<div class="container"><a href="#" data-toggle="tooltip" title="{}">{}/{}</A></div>'.format(self.value, prefix, shortname)        
+    
+    @staticmethod
+    def factory(**kwargs):
+        return AVU_irods_collection(**kwargs)
+    
+    def __lt__(self, other):
+        return self.value < other.value
+    
+INFINITE_DATE = AVU_timestamp(attr='none', value=1E11)    
+
+factory.register_builder('irods_collection', AVU_irods_collection.factory)
+
+class AVU_runsheet(AVU_base):
+        
+    @property
+    def htmlstring(self):
+        runsheet_id = re.sub('-runsheet.yaml','', self.value)
+        return '<a href={0}?name={1} data-toggle="tooltip" title="{1}">{2}</a>'.format(url_for('jobs.show_jobdetails'), self.value, runsheet_id)    
+    
+    @staticmethod
+    def factory(**kwargs):
+        return AVU_runsheet(**kwargs)
+
+    def __str__(self):
+        return str(self.value)
+   
+    def __lt__(self, other):
+        return self.value < other.value
+    
+factory.register_builder('runsheet', AVU_runsheet.factory)
+
+class AVU_irods_object(AVU_base):
+        
+    @property
+    def htmlstring(self):
+        shortname = self.value.split('/')[-1]
+        return '<a href="#" data-toggle="modal" data-target="#myOutput" onClick="fillModal(\'{0}\', \'{1}\')">{1}</a>'.format(self.value, shortname)
+    
+    @staticmethod
+    def factory(**kwargs):
+        return AVU_irods_object(**kwargs)
+ 
+    def __lt__(self, other):
+        return self.value < other.value
+    
+factory.register_builder('irods_object', AVU_irods_object.factory)
+
 
 def format_exit_code(value):
     if value == "0":

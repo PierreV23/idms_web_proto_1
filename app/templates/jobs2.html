@@ -6,6 +6,13 @@ Job queue overview
 
 {% block content %}
 
+<script>
+$(document).ready(function(){
+  $('[data-toggle="tooltip"]').tooltip();   
+});
+</script>
+
+
 <div class="dropdown" style="display:inline">
 <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
  {{ items }} 
@@ -130,14 +137,14 @@ Job queue overview
     {% elif entry.State == "waiting" %}
       <TR class="table-info">
     {% else %}
-    {% if entry["Result"] != "OK" %}
+    {% if entry["Result"].value != 0 %}
        <TR class="table-danger">
     {% else %}
        <TR class="table-success">
     {% endif %}
     {% endif %}
     {% for column in columns %}
-        <TD>{{ entry[column]|safe}}</TD>
+        <TD>{{ entry[column].htmlstring|safe}}</TD>
     {% endfor %}
     <td>
 {% if entry.State != 'done' %}

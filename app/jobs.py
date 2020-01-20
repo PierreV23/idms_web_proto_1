@@ -11,7 +11,7 @@ from flask_login import login_user, current_user, login_required
 from irods.models import Collection, DataObject, DataObjectMeta
 from irods.column import Criterion
 from datetime import datetime
-from app.formatting import format_value, factory, INFINITE_DATE
+from app.formatting import AVU, INFINITE_DATE
 import yaml
 import time
 import re
@@ -76,14 +76,16 @@ def joblist(state):
             'sys::run::start_time': ('Start time', 'timestamp'),
             'sys::run::finish_time': ('End time', 'timestamp'),
             'sys::runsheet::projectID': ('projectID', 'projectid'),
-            'sys::run::exit_code': ('Result', 'exit_code')
+            'sys::run::exit_code': ('Result', 'int'),
+            'sys::runsheet::input_collection': ('Input Collection', 'irods_collection'),
+            'sys::run::output_collection': ('Output Collection', 'irods_collection')
     }
     b = []
     q1 = current_user.irods_session.query(DataObject.name, DataObject.id).filter ( \
         Criterion('like', Collection.name, '/rivmZone/system/runsheet/' + state +  '%'))
 
     for job in q1:
-        jd2 = {'Name': format_value('runsheet', job[DataObject.name], 'runsheet')}
+        jd2 = {'Name': AVU('runsheet', job[DataObject.name], 'runsheet')}
         jd2['State'] = state
         q2 = current_user.irods_session.query(DataObjectMeta.name, DataObjectMeta.value).filter( \
             Criterion('=', DataObject.id, job[DataObject.id] ))
@@ -91,8 +93,7 @@ def joblist(state):
         for field in FIELDS:
             if field in metadata:
 #                jd2[FIELDS[field][0]] = format_value(field, metadata[field], FIELDS[field][1])
-                jd2[FIELDS[field][0]] = factory.create(FIELDS[field][1],
-                       attr = field, value =  metadata[field])
+                jd2[FIELDS[field][0]] = AVU(field, metadata[field], FIELDS[field][1])
         if 'sys::run::finish_time' in metadata:
             if time.time() - int(metadata['sys::run::finish_time']) <2000000:
                 b.append(jd2)
@@ -121,11 +122,15 @@ def show_jobs():
 def show_jobdetails():
     jobnaam = request.args.get('name', '', type=str)
     # We want the full path to the job runsheet object
-    query = current_user.irods_session.query(Collection.name).filter(Criterion('=', DataObject.name, jobnaam))
+    query = current_user.irods_session.query(DataObject.id, Collection.name).filter(Criterion('=', DataObject.name, jobnaam))
     jobpath = [ coll[Collection.name] for coll in query]
     runsheet = jobpath[0] + '/' + jobnaam
+    jobid = [ coll[DataObject.id] for coll in query][0]
     jobObj = current_user.irods_session.data_objects.get(runsheet)
     jd = jobdetails(jobObj)
+    q2 = current_user.irods_session.query(DataObjectMeta.name, DataObjectMeta.value).filter( \
+            Criterion('=', DataObject.id, jobid ))
+    metadata = { meta[DataObjectMeta.name] : meta[DataObjectMeta.value] for meta in q2 }
     # Find the job log file
     joblog = '/rivmZone/system/runsheet/log/' + jobnaam + '.log'
     ifs = current_user.ifs
@@ -137,24 +142,41 @@ def show_jobdetails():
     except:
         log = ''
     # Find the collection log
-    collOutlog = jd['output_coll'] + '/log'
     L = {}
-    if ifs.folderexists(collOutlog):
-        logfiles = ifs.ls(collOutlog)
-        for logfile in logfiles:
-            try:
-                obj = ifs.getfile(logfile.path)
-                with obj.open('r') as f:
-                    a = f.read(500000)
-                    L[logfile.shortname()] = a.decode('utf-8')
-            except:
-                pass
+    if 'sys::run::output_collection' in metadata:
+        collOutlog = metadata['sys::run::output_collection'] + '/log'
+        if ifs.folderexists(collOutlog):
+            logfiles = ifs.ls(collOutlog)
+            for logfile in logfiles:
+                try:
+                    obj = ifs.getfile(logfile.path)
+                    with obj.open('r') as f:
+                        a = f.read(500000)
+                        L[logfile.shortname()] = a.decode('utf-8')
+                except:
+                    pass
+    FIELDS = {
+            'sys::runsheet::description': ('Description', 'text'),
+            'sys::run::start_time': ('Start time', 'timestamp'),
+            'sys::run::finish_time': ('End time', 'timestamp'),
+            'sys::runsheet::projectID': ('Project ID', 'projectid'),
+            'sys::runsheet::processID': ('Proces ID', 'processid'),
+            'sys::run::exit_code': ('Result', 'int'),
+            'sys::runsheet::input_collection': ('Input Collection', 'irods_collection'),
+            'sys::run::output_collection': ('Output Collection', 'irods_collection'),
+            'sys::run::input_dir': ('Input directory', 'directory'),
+            'sys::run::output_dir': ('Output directory', 'directory'),
+            'sys::run::owner': ('Job owner', 'irods_user'),
+            'sys::run::pipeline_dir': ('Pipeline run directory', 'directory'),
+            'sys::runsheet::repo': ('Git repository', 'git_repo'),
+            'sys::runsheet::tag': ('Git tag', 'git_tag'),
+            
+    }            
     D = {}
-    D['Runsheet File'] = '<a href="#" data-toggle="modal" data-target="#myOutput" onClick="fillModal(\'{0}\', \'{1}\')">{1}</a>'.format(runsheet, jobnaam)
-    D['Job Start Time'] = jd['startTime']
-    D['Job End   Time'] = jd['endTime']
-    D['Input  collection'] = "<a href='/collbrowser?path={0}'>{0}</a>".format(jd['input_coll'])
-    D['Output collection'] = "<a href='/collbrowser?path={0}'>{0}</a>".format(jd['output_coll'])
+    D['Runsheet file'] = AVU('runsheet',  runsheet, 'irods_object')
+    for field in FIELDS:
+        if field in metadata:
+            D[FIELDS[field][0]] = AVU(field, metadata[field], FIELDS[field][1])
     D['Git repository'] = "<a href='{0}'>{0} TAG {1}</a>".format(jd['repo'].replace('.git',''), jd['tag'])
     D['Next projectID'] = "<a href='/projectdetails?name={0}'>{0}</a>".format(jd['next_projectID'])
     return render_template('jobdetails.html', details=D, jobnaam = jobnaam, runlog = log, logs = L)
