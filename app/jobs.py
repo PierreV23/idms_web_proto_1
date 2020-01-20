@@ -11,7 +11,7 @@ from flask_login import login_user, current_user, login_required
 from irods.models import Collection, DataObject, DataObjectMeta
 from irods.column import Criterion
 from datetime import datetime
-from app.formatting import format_value
+from app.formatting import format_value, factory, INFINITE_DATE
 import yaml
 import time
 import re
@@ -68,6 +68,7 @@ def jobdetails(jobfileObject):
             'exit_code': ec, 'startTime': strSt, 'endTime': strEt, 'input_coll': ic, 'output_coll': oc, 'startTimestamp': st, 'next_projectID': nextproj}
     return details
 
+
 @login_required
 def joblist(state):
     FIELDS = {
@@ -89,13 +90,14 @@ def joblist(state):
         metadata = { meta[DataObjectMeta.name] : meta[DataObjectMeta.value] for meta in q2 }
         for field in FIELDS:
             if field in metadata:
-                jd2[FIELDS[field][0]] = format_value(field, metadata[field], FIELDS[field][1])
+#                jd2[FIELDS[field][0]] = format_value(field, metadata[field], FIELDS[field][1])
+                jd2[FIELDS[field][0]] = factory.create(FIELDS[field][1],
+                       attr = field, value =  metadata[field])
         if 'sys::run::finish_time' in metadata:
             if time.time() - int(metadata['sys::run::finish_time']) <2000000:
                 b.append(jd2)
         else:
                 b.append(jd2)
-
     return b
 
 @bp.route('/')
@@ -106,8 +108,12 @@ def show_jobs():
     for a in [ 'waiting', 'incoming', 'queued', 'active', 'done' ]:
         if x in [ 'all', a]:
             l = l + joblist(a)
-    l2 = sorted(l, key = lambda x: int(x['sys::run::start_time']) if 'sys::run::start_time' in x else 1E15, reverse = True)
-    columns = l2[0].keys()
+    l2 = sorted(l, key = lambda x: x['Start time'] if 'Start time' in x else INFINITE_DATE , reverse = True)
+    columns = []
+    for a in l2:
+        for b in a:
+            if b not in columns:
+                columns.append(b)
     return render_template('jobs2.html', joblist=l2, items=x, columns=columns)
 
 @bp.route('/jobdetails')

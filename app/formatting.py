@@ -9,6 +9,7 @@ Created on Fri Jan 10 15:22:06 2020
 import re
 from flask import url_for
 from datetime import datetime
+from app.object_factory import ObjectFactory
 
 KNOWN_ATTRIBUTES = {
         'Date'                                  : 'date',
@@ -17,6 +18,45 @@ KNOWN_ATTRIBUTES = {
         'sys::pipeline::input_collection_id'    : 'collection_id',
         'sys::pipeline::used_by'                : 'runsheet'
 }
+
+factory = ObjectFactory()
+
+class AVUclass():
+    def __init__(self, attr, value, unit = None):
+        self.attr = attr
+        self.value = value
+        self.unit = unit
+    
+    @staticmethod
+    def factory(**kwargs):
+        return AVUclass(**kwargs)
+    
+    def __str__(self):
+        return str(self.value)
+    
+    def __repr__(self):
+        return f'{self.attr} = {self.value} {self.unit}'
+    
+factory.register_default_builder(AVUclass.factory)    
+
+class timestamp_AVUclass(AVUclass):
+    def __init__(self, attr, value, unit = None):
+        super().__init__(attr = attr, value = int(value), unit = unit)
+        
+    def __str__(self):
+        return '{}'.format(datetime.fromtimestamp(float(self.value)).strftime("%d-%m-%Y %H:%M:%S"))
+    
+    @staticmethod
+    def factory(**kwargs):
+        return timestamp_AVUclass(**kwargs)
+    
+    def __lt__(self, other):
+#        print(self, other)
+        return self.value < other.value
+    
+INFINITE_DATE = timestamp_AVUclass(attr='none', value=1E11)    
+
+factory.register_builder('timestamp', timestamp_AVUclass.factory)
 
 def format_exit_code(value):
     if value == "0":
@@ -32,7 +72,6 @@ def format_timestamp(value):
 
 def format_runsheet(value):
     runsheet_id = re.sub('-runsheet.yaml','', value)
-    print(runsheet_id)
     return '<a href={0}?name={1}>{2}</a>'.format(url_for('jobs.show_jobdetails'), value, runsheet_id)    
 
 def format_irods_collection(value):
