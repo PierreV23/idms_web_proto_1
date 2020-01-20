@@ -19,7 +19,7 @@ KNOWN_ATTRIBUTES = {
         'sys::pipeline::used_by'                : 'runsheet'
 }
 
-MAXLEN = 35
+MAXLEN = 45
 
 factory = ObjectFactory()
 

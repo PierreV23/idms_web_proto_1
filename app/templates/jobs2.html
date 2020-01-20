@@ -123,8 +123,10 @@ $(document).ready(function(){
 {% for column in columns %}
 <TH scope="col">{{ column }}</TH>
 {% endfor %}
+<!--
 <TH>Actions</TH>
 </TR>
+-->
 </thead>
 <tbody>
 {% for entry in joblist %}
@@ -146,6 +148,7 @@ $(document).ready(function(){
     {% for column in columns %}
         <TD>{{ entry[column].htmlshort|safe}}</TD>
     {% endfor %}
+<!--    
     <td>
 {% if entry.State != 'done' %}
         <button class="btn btn-secondary btn-sm" type="button" id="resubmitButton" aria-haspopup="true" aria-expanded="false">End</button>
@@ -153,6 +156,7 @@ $(document).ready(function(){
         <button class="btn btn-secondary btn-sm" type="button" id="resubmitButton" aria-haspopup="true" aria-expanded="false">Resubmit</button>
 {% endif %}        
     </td>
+-->    
     </TR>
 {% endfor %}
 </tbody>
