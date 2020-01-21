@@ -109,7 +109,7 @@ class AVU_timestamp(AVU_base):
     def __init__(self, attr, value, unit = None):
         try:
             myvalue = float(value)
-            self._formatted_date = datetime.fromtimestamp(float(self.value)).strftime("%d-%m-%Y %H:%M:%S")
+            self._formatted_date = datetime.fromtimestamp(myvalue).strftime("%d-%m-%Y %H:%M:%S")
         except:
             myvalue = value
             self._formatted_date = value
@@ -187,7 +187,6 @@ class AVU_collection_id(AVU_base):
     
     @property
     def htmlstring(self):
-        print('HTMLSTRING ' + self.ref_col )
         if self.ref_col is None:
             return self.value
         else:
