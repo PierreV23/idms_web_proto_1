@@ -8,6 +8,9 @@ Created on Fri Jan 10 15:22:06 2020
 
 import re
 from flask import url_for
+from flask_login import current_user, login_required
+from irods.models import Collection, CollectionMeta
+from irods.column import Criterion
 from datetime import datetime
 from app.object_factory import ObjectFactory
 
@@ -207,6 +210,17 @@ def format_runsheet(value):
 
 def format_irods_collection(value):
     return '<a href={0}?path={1}>{1}</a>'.format(url_for('collbrowser.collbrowser'), value)
+
+@login_required
+def format_collection_id(value):
+    display_value = value
+    irods_session = current_user.irods_session
+    query = irods_session.query(Collection.name).filter( \
+                               Criterion('=', CollectionMeta.name, 'sys::dataset_id')).filter( \
+                               Criterion('=', CollectionMeta.value, value))
+    for coll in query:
+        display_value = format_irods_collection(coll[Collection.name])        
+    return display_value
 
 def format_value(attr, value, units):
     formatted_value = value

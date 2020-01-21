@@ -74,6 +74,7 @@ def collbrowser():
     action = request.args.get('action', 'none', type=str)
     sortkey = request.args.get('sortkey', 'name', type=str)
     reverse = request.args.get('reverse', 'false', type=str)
+
     if action == "up":
         path = '/' + '/'.join(path.split('/')[1:-1])
         
