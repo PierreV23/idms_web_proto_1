@@ -27,7 +27,14 @@ MAXLEN = 45
 factory = ObjectFactory()
 
 def AVU(attr, value, unit):
-    return factory.create(unit, attr=attr, value=value, unit=unit)
+    print('AVU {} {} {}'.format(attr, value, unit))
+    my_unit = unit
+    if my_unit is  None:
+        if attr in KNOWN_ATTRIBUTES:
+            print(attr)
+            my_unit = KNOWN_ATTRIBUTES[attr]
+            print('my_unit is {}'.format(my_unit))
+    return factory.create(my_unit, attr=attr, value=value, unit=my_unit)
 
 class AVU_base():
     def __init__(self, attr, value, unit = None):
@@ -156,6 +163,46 @@ INFINITE_DATE = AVU_timestamp(attr='none', value=1E11)
 
 factory.register_builder('irods_collection', AVU_irods_collection.factory)
 
+class AVU_collection_id(AVU_base):
+    def __init__(self, attr, value, unit = None):
+        self._ref_col = None
+        self._searched_for_ref_col = False
+        super().__init__(attr, value, unit)
+       
+    @property
+    def ref_col(self):
+        if self._searched_for_ref_col:
+            return self._ref_col
+        irods_session = current_user.irods_session
+        query = irods_session.query(Collection.name).filter( \
+                                   Criterion('=', CollectionMeta.name, 'sys::dataset_id')).filter( \
+                                   Criterion('=', CollectionMeta.value, self.value))
+        for coll in query:
+            self._ref_col = coll[Collection.name]
+        self._searched_for_ref_col = True
+        return self._ref_col
+    
+    @property
+    def htmlstring(self):
+        print('HTMLSTRING ' + self.ref_col )
+        if not self.ref_col is None:
+            return '<a href="{0}?path={1}">{1}</A>'.format(url_for('collbrowser.collbrowser'), self.ref_col)
+        else:
+            return self.ref_col
+    
+#    @property
+#    def htmlshort(self):
+#        displaystring = self.displaystring(maxlen=MAXLEN)
+#        return '<div class="container"><a href="{0}?path={1}" data-toggle="tooltip" title="{1}">{2}</A></div>'.format(format(url_for('collbrowser.collbrowser')), self.value, displaystring)
+    
+    @staticmethod
+    def factory(**kwargs):
+        return AVU_collection_id(**kwargs)
+    
+factory.register_builder('collection_id', AVU_collection_id.factory)
+
+    
+
 class AVU_runsheet(AVU_base):
         
     @property
@@ -191,46 +238,3 @@ class AVU_irods_object(AVU_base):
     
 factory.register_builder('irods_object', AVU_irods_object.factory)
 
-
-def format_exit_code(value):
-    if value == "0":
-        return "OK"
-    else:
-        return "FAILED"
-
-def format_date(value):
-    return '{}-{}-20{}'.format(value[4:6], value[2:4], value[0:2])
-
-def format_timestamp(value):
-    return '{}'.format(datetime.fromtimestamp(float(value)).strftime("%d-%m-%Y %H:%M:%S"))
-
-def format_runsheet(value):
-    runsheet_id = re.sub('-runsheet.yaml','', value)
-    return '<a href={0}?name={1}>{2}</a>'.format(url_for('jobs.show_jobdetails'), value, runsheet_id)    
-
-def format_irods_collection(value):
-    return '<a href={0}?path={1}>{1}</a>'.format(url_for('collbrowser.collbrowser'), value)
-
-@login_required
-def format_collection_id(value):
-    display_value = value
-    irods_session = current_user.irods_session
-    query = irods_session.query(Collection.name).filter( \
-                               Criterion('=', CollectionMeta.name, 'sys::dataset_id')).filter( \
-                               Criterion('=', CollectionMeta.value, value))
-    for coll in query:
-        display_value = format_irods_collection(coll[Collection.name])        
-    return display_value
-
-def format_value(attr, value, units):
-    formatted_value = value
-    data_unit = ''
-    if units:
-        data_unit = units
-    elif attr in KNOWN_ATTRIBUTES:
-        data_unit = KNOWN_ATTRIBUTES[attr]
-    if data_unit:
-        format_function_name = 'format_' + data_unit
-        if format_function_name in globals():
-            formatted_value = globals()[format_function_name](value)
-    return formatted_value

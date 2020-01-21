@@ -18,6 +18,7 @@ class ObjectFactory:
         self._builders[key] = builder
 
     def create(self, key, **kwargs):
+        print('Create instance of {}'.format(key))
         if key in self._builders:
             builder = self._builders[key]
         else:

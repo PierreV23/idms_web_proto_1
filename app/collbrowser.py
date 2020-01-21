@@ -10,7 +10,7 @@ from flask import Blueprint, render_template, redirect, request, url_for
 from flask_login import login_user, current_user, login_required
 from irods.models import Collection, CollectionMeta, DataObject
 from irods.column import Criterion
-from app.formatting import format_value
+from app.formatting import AVU
 import fs_irods
 
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
@@ -25,7 +25,8 @@ def collist(path):
          name = coll_metadata[CollectionMeta.name]
          value = coll_metadata[CollectionMeta.value]
          units = coll_metadata[CollectionMeta.units]
-         avu.append({'name': name, 'value': value,'units': units, 'formatted_value': format_value(name, value, units)})
+#         avu.append({'name': name, 'value': value,'units': units, 'formatted_value': format_value(name, value, units)})
+         avu.append(AVU(name, value, units))
          #print('AVU',name,value,units)
     
     cols = []

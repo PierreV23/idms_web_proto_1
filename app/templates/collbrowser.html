@@ -84,9 +84,9 @@ function avu_table() {
 
 {% for entry in avu %}
 <tr>
-    <td> {{ entry.name }} </td>
+    <td> {{ entry.attr }} </td>
     <td class="rawvalues" style="display:none;">{{ entry.value }}</td>    
-    <td class="formatvalues"> {{ entry.formatted_value|safe }} </td>
+    <td class="formatvalues"> {{ entry.htmlstring|safe }} </td>
     <td> {{ entry.units }} </td>
 </tr>
 {% endfor %}
