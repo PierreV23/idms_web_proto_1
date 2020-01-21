@@ -27,13 +27,10 @@ MAXLEN = 45
 factory = ObjectFactory()
 
 def AVU(attr, value, unit):
-    print('AVU {} {} {}'.format(attr, value, unit))
     my_unit = unit
     if my_unit is  None:
         if attr in KNOWN_ATTRIBUTES:
-            print(attr)
             my_unit = KNOWN_ATTRIBUTES[attr]
-            print('my_unit is {}'.format(my_unit))
     return factory.create(my_unit, attr=attr, value=value, unit=my_unit)
 
 class AVU_base():
@@ -185,11 +182,11 @@ class AVU_collection_id(AVU_base):
     @property
     def htmlstring(self):
         print('HTMLSTRING ' + self.ref_col )
-        if not self.ref_col is None:
-            return '<a href="{0}?path={1}">{1}</A>'.format(url_for('collbrowser.collbrowser'), self.ref_col)
+        if self.ref_col is None:
+            return self.value
         else:
-            return self.ref_col
-    
+            return '<a href="{0}?path={1}">{1}</A>'.format(url_for('collbrowser.collbrowser'), self.ref_col)
+
 #    @property
 #    def htmlshort(self):
 #        displaystring = self.displaystring(maxlen=MAXLEN)
