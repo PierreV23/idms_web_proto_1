@@ -110,7 +110,11 @@ function avu_table() {
          <table class="table table-sm table-striped table-hover">
             <thead>
                <tr>
-               {% set datafields = (('Name', 'name'), ('Size', 'size'), ('Create_Date', 'create_time'), ('Owner_name', 'owner_name')) %}
+               {% if show == True %}
+                  {% set datafields = (('Name', 'name'), ('Description', 'coll_description'), ('Size', 'size'), ('Create_Date', 'create_time'), ('Owner_name', 'owner_name')) %}
+               {% else %}
+                  {% set datafields = (('Name', 'name'), ('Size', 'size'), ('Create_Date', 'create_time'), ('Owner_name', 'owner_name')) %}
+               {% endif %}
                {% for field in datafields %}
                   <th>
                       {{ field[0] }}
@@ -130,6 +134,9 @@ class="table-warning"
 class="table-danger"
 {% endif %}>
     <td> <a href="/collbrowser?path={{ entry.path }}">{{ entry.name }}</a> </td>
+    {% if show == True %}
+       <td>  {{ entry.coll_description }} </td>
+    {% endif %}
     <td> DIR </td> <td> {{ entry.create_time }} </td> <td> {{ entry.owner_name }} </td>
 </tr>
 {% endfor %}
@@ -137,6 +144,9 @@ class="table-danger"
 {% for entry in objs %}
 <tr><td>
 <a data-toggle="modal" data-target="#myOutput" onclick="fillModal('{{ entry.path }}','{{ entry.name}}')">{{ entry.name }}</a>
+    {% if show == True %}
+       <td>  {{ entry.coll_description }} </td>
+    {% endif %}
 <!-- <a href="/docviewer?path={{entry.path}}">{{ entry.name }}</a> -->
 </td>
 <td>
