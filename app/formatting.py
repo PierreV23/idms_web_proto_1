@@ -107,10 +107,16 @@ factory.register_builder('boolean', AVU_boolean.factory)
 
 class AVU_timestamp(AVU_base):
     def __init__(self, attr, value, unit = None):
-        super().__init__(attr = attr, value = int(value), unit = unit)
+        try:
+            myvalue = float(value)
+            self._formatted_date = datetime.fromtimestamp(float(self.value)).strftime("%d-%m-%Y %H:%M:%S")
+        except:
+            myvalue = value
+            self._formatted_date = value
+        super().__init__(attr = attr, value = myvalue, unit = unit)
         
     def __str__(self):
-        return '{}'.format(datetime.fromtimestamp(float(self.value)).strftime("%d-%m-%Y %H:%M:%S"))
+        return self._formatted_date
     
     @property 
     def htmlstring(self):
