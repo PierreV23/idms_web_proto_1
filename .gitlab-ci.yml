@@ -1,0 +1,22 @@
+stages:
+  - deploy
+
+deploy:
+  stage: deploy
+  script:
+  - cp -r ${CI_PROJECT_DIR}/* /opt/ngsweb
+  - sudo /bin/systemctl restart ngsweb.service
+  only:
+    - master
+  tags:
+    - test
+
+deploy:
+  stage: deploy
+  script:
+  - cp -r ${CI_PROJECT_DIR}/* /opt/ngsweb
+  - sudo /bin/systemctl restart ngsweb.service
+  only:
+    - release
+  tags:
+    - production
