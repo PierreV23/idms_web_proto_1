@@ -6,7 +6,11 @@ Created on Mon Jan 20 11:09:54 2020
 @author: wierinve
 """
 
+
 class ObjectFactory:
+    """
+    Standard objectfactory class
+    """
     def __init__(self):
         self._builders = {}
         self._defaultbuilder = None
@@ -25,4 +29,3 @@ class ObjectFactory:
         if builder is None:
             raise ValueError(key)
         return builder(**kwargs)
-    
