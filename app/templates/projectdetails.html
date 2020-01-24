@@ -222,9 +222,7 @@ function update_process(sourceElem, destElem) {
 {% for coll in PD.colls %}
 <tr>
 <td>
-<a href="/collbrowser?path={{coll}}">
-{{ coll }}
-</a>
+{{ coll.htmlstring|safe}}
 </td>
 </tr>
 {% endfor %}

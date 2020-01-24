@@ -7,10 +7,10 @@ Created on Tue Nov 12 16:39:47 2019
 """
 
 import base64
+import ssl
 from flask_login import UserMixin
 from flask import session
 from irods.session import iRODSSession
-import ssl
 from fs_irods import fs_irods
 
 IRODS_ENVS = {
@@ -20,11 +20,11 @@ IRODS_ENVS = {
 }
 
 
-def obfuscate(input):
-    return base64.b64encode(input.encode('utf-8'))
+def obfuscate(data):
+    return base64.b64encode(data.encode('utf-8'))
 
-def deobfuscate(input):
-    return base64.b64decode(input).decode('utf-8')
+def deobfuscate(data):
+    return base64.b64decode(data).decode('utf-8')
 
 
 class User(UserMixin):
@@ -32,11 +32,11 @@ class User(UserMixin):
     @property
     def irods_session(self):
         return self._irods_session
-   
+
     @property
     def is_authenticated(self):
         return self._is_authenticated
- 
+
     def __init__(self, username='', password='', environment='', is_authenticated=False):
         self.username = username
         self.password = obfuscate(password)
@@ -51,16 +51,15 @@ class User(UserMixin):
             session['user_store'] = {}
         info = [self.username, self.password, self.environment, self.is_authenticated]
         session['user_store'][self.username] = info
-    
+
     @classmethod
     def retrieve(cls, username):
         """Retrieve previously stored user from Flask session."""
         if 'user_store' in session and username in session['user_store']:
             username, pass_obfuscated, env, is_auth = session['user_store'][username]
             return cls(username, deobfuscate(pass_obfuscated), env, is_auth)
-        else:
-            return None
-    
+        return None
+
     def delete(self):
         """Delete user from Flask session."""
         if 'user_store' in session and self.username in session['user_store']:
@@ -70,14 +69,14 @@ class User(UserMixin):
     def configure_irods_session(self, username, password):
         context = ssl._create_unverified_context(
             purpose=ssl.Purpose.SERVER_AUTH,
-            cafile=None, 
-            capath=None, 
+            cafile=None,
+            capath=None,
             cadata=None
         )
-        
+
         ssl_settings = {
             'irods_ssl_ca_certificate_file': '/etc/irods/ssl/test/irods.crt',
-            'ssl_context': context 
+            'ssl_context': context
         }
 
         # Creating an iRODS does not imply a connection is set up.
@@ -90,7 +89,7 @@ class User(UserMixin):
             authentication_scheme='pam',
             **ssl_settings
         )
-        self.ifs = fs_irods(session = self._irods_session)
+        self.ifs = fs_irods(session=self._irods_session)
 
     def validate_irods_session(self):
         try:
@@ -100,7 +99,6 @@ class User(UserMixin):
         except:
             print('Authentication failed.')
         return False
-    
+
     def get_id(self):
         return self.username
-
