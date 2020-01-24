@@ -1,7 +1,7 @@
 stages:
   - deploy
 
-deploy:
+deploy_test:
   stage: deploy
   script:
   - cp -r ${CI_PROJECT_DIR}/* /opt/ngsweb
@@ -11,7 +11,7 @@ deploy:
   tags:
     - test
 
-deploy:
+deploy_production:
   stage: deploy
   script:
   - cp -r ${CI_PROJECT_DIR}/* /opt/ngsweb
