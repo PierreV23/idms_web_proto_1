@@ -130,13 +130,13 @@ $(document).ready(function(){
 </thead>
 <tbody>
 {% for entry in joblist %}
-    {% if entry.State == "incoming" %}
+    {% if entry.State.value == "incoming" %}
       <TR class="table-light">
-    {% elif entry.State == "queued" %}
+    {% elif entry.State.value == "queued" %}
       <TR class="table-active">
-    {% elif entry.State == "active" %}
+    {% elif entry.State.value == "active" %}
       <TR class="table-primary">
-    {% elif entry.State == "waiting" %}
+    {% elif entry.State.value == "waiting" %}
       <TR class="table-info">
     {% else %}
     {% if "Result" in entry %}
