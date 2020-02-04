@@ -5,10 +5,12 @@ channels:
   - anaconda
 dependencies:
   - flask
+  - graphviz
   - pip
   - python
   - pyyaml
   - flask-login
   - pip:
     - python-irodsclient
+    - graphviz
 
