@@ -105,7 +105,7 @@ def collbrowser():
             o.sort(key=lambda x: x[sortkey], reverse=breverse)
     return render_template('collbrowser.html', cols=c, objs=o, avu=a,
                            path=path, rel_colls=rel_colls,
-                           show=show_description)
+                           show=show_description, sortkey=sortkey, reverse=breverse)
 
 
 @bp.route('upload_file', methods=['GET', 'POST'])
