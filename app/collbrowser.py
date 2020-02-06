@@ -17,6 +17,7 @@ import base64
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
 
 NAME_LENGTH = 20
+ATTR_DATASETID = 'sys::dataset_id'
 
 def collist(path):
     irods_session = current_user.irods_session
@@ -98,8 +99,14 @@ def generate_graph(coll, related_colls, meta):
         graph.node('G', git.split('/')[-1], shape='box', URL=git, fontsize='8')
         graph.edge('G', 'A')
         parent = 'G'
-    if 'sys::pipeline::input_collection' in meta:
-        inp = str(meta['sys::pipeline::input_collection'])
+    if 'sys::pipeline::input_collection_id' in meta:
+        inp = ''
+        inp_id = str(meta['sys::pipeline::input_collection_id'])
+        query = irods_session.query(Collection.name).filter(
+                Criterion('=', CollectionMeta.name, ATTR_DATASETID)).filter(
+                Criterion('=', CollectionMeta.value, inp_id))
+        for c in query:
+            inp = c[Collection.name]
         project = ''
         query = irods_session.query(CollectionMeta.value).filter(
                 Criterion('=', Collection.name, inp)).filter(
@@ -148,15 +155,19 @@ def collbrowser():
         path = '/' + '/'.join(path.split('/')[1:-1])
 
     irods_session = current_user.irods_session
-    
-    # Find related collections
-    query = irods_session.query(Collection.name).filter(
-        Criterion('=', CollectionMeta.name, 'sys::pipeline::input_collection')).filter(
-            Criterion('=', CollectionMeta.value, path))
-    rel_colls = [c[Collection.name] for c in query]
 
     # Find subcollections, objects and metadata
     c, o, a = collist(path)
+    
+    # Find related collections
+    rel_colls = []
+    if ATTR_DATASETID in a:
+        print('Search related collections')
+        query = irods_session.query(Collection.name).filter(
+            Criterion('=', CollectionMeta.name, 'sys::pipeline::input_collection_id')).filter(
+                Criterion('=', CollectionMeta.value, a[ATTR_DATASETID].value))
+        rel_colls = [c[Collection.name] for c in query]
+
 
     show_description = (max([0] + [len(i['coll_description']) for i in c]) > 0)
 
