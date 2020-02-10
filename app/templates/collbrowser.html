@@ -60,6 +60,21 @@ function avu_table() {
     </div>
 </div>
 
+<div class="card border-primary mb-3">
+    <div class="card-header">
+        <a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse-graph" role="button" aria-expanded="false" aria-controls="collapse-graph">
+        Data graph
+        </a>
+    </div>
+    <div class="card card-body">
+       <div class="collapse" id="collapse-graph">
+          <img src="data:image/png;base64,{{data_graph|safe}}" usemap="#datagraph" />
+       </div>
+    </div>
+</div>
+
+{{ data_map| safe }}
+
 {% if avu|length > 0 %}
 
 <div class="card border-primary mb-3">
@@ -84,10 +99,10 @@ function avu_table() {
 
 {% for entry in avu %}
 <tr>
-    <td> {{ entry.attr }} </td>
-    <td class="rawvalues" style="display:none;">{{ entry.value }}</td>    
-    <td class="formatvalues"> {{ entry.htmlstring|safe }} </td>
-    <td> {{ entry.units }} </td>
+    <td> {{ avu[entry].attr }} </td>
+    <td class="rawvalues" style="display:none;">{{ avu[entry].value }}</td>    
+    <td class="formatvalues"> {{ avu[entry].htmlstring|safe }} </td>
+    <td> {{ avu[entry].units }} </td>
 </tr>
 {% endfor %}
 
