@@ -172,9 +172,7 @@ def update_projectsettings():
 @BP.route('/get_process', methods=['GET','POST'])
 def get_process():
     data = request.form.to_dict()
-    print(data)
     pl = read_jsonfile('/rivmZone/system/files/pipelinesettings.json')
     processes = [ p for p in pl.get(data['project'])['processes'] ]
-    print(processes)
     return(jsonify(processes))
 
