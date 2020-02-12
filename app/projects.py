@@ -9,6 +9,7 @@ Created on Tue Nov 19 09:05:26 2019
 import json
 from flask import Blueprint, render_template, redirect, request, url_for
 from flask_login import current_user, login_required
+from flask import jsonify
 from irods.models import Collection, CollectionMeta, User, UserMeta
 from irods.column import Criterion
 from app.formatting import AVU
@@ -166,3 +167,12 @@ def update_projectsettings():
         return redirect(redirecturl)
 
     return redirect(url_for('projects.show_projectdetails') + "?name={0}&process={1}'; </script>".format(project, viewprocess))
+
+
+@BP.route('/get_process', methods=['GET','POST'])
+def get_process():
+    data = request.form.to_dict()
+    pl = read_jsonfile('/rivmZone/system/files/pipelinesettings.json')
+    processes = [ p for p in pl.get(data['project'])['processes'] ]
+    return(jsonify(processes))
+
