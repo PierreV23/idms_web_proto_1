@@ -18,6 +18,7 @@ KNOWN_ATTRIBUTES = {
     'Date': 'date',
     'import_timestamp': 'timestamp',
     'stage_time': 'timestamp',
+    'sys::access_time': 'timestamp',
     'sys::pipeline::input_collection_id': 'collection_id',
     'sys::pipeline::used_by': 'runsheet'
 }
