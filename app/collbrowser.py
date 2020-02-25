@@ -19,6 +19,17 @@ bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
 NAME_LENGTH = 20
 ATTR_DATASETID = 'sys::dataset_id'
 
+COLL_SHAPES = {
+    'valid':      ('box3d', 'springgreen1'),
+    'invalid':    ('box3d', 'tomato'),
+    'imported':   ('cylinder', 'skyblue1'),
+    'temporary':  ('note',  'gold2'),
+    'distributed':('box3d','springgreen1:gray'),
+    'unknown'    :('ellipse', 'gray')}
+
+PROCESS_SHAPE = 'cds'
+
+
 def collist(path):
     irods_session = current_user.irods_session
     avu = {}
@@ -84,6 +95,10 @@ def shortname(name,l):
         s = '...' + name[-l+4:]
     return s
 
+
+def coll_shape(coll_type):
+    return COLL_SHAPES.get(coll_type, ('cylinder', 'white'))
+
 @login_required
 def generate_graph(coll, related_colls, meta):
     irods_session = current_user.irods_session
@@ -91,14 +106,20 @@ def generate_graph(coll, related_colls, meta):
     graph.graph_attr['rankdir'] = 'LR'
     graph.graph_attr['fontsize'] = '15'
     projID = meta['projectID'].value + '\n' if 'projectID' in meta else '' 
-    graph.node('A', projID + shortname(coll,NAME_LENGTH), style='filled')
-    print(meta)
+    # Create the center node
+    data_type = meta['sys::data::type'].value if 'sys::data::type' in meta else 'unknown'
+    shape, shape_color = coll_shape(data_type)
+    graph.node('A', projID + shortname(coll,NAME_LENGTH), shape=shape, 
+               fillcolor=shape_color, style='filled')
+#    print(meta)
     parent = 'A'
+    # Find the process that created this collection
     if 'sys::pipeline::gitrepo' in meta:
         git = str(meta['sys::pipeline::gitrepo'])
-        graph.node('G', git.split('/')[-1], shape='box', URL=git, fontsize='8')
+        graph.node('G', git.split('/')[-1], shape=PROCESS_SHAPE, URL=git, fontsize='8')
         graph.edge('G', 'A')
         parent = 'G'
+    # Find the related input collection     
     if 'sys::pipeline::input_collection_id' in meta:
         inp = ''
         inp_id = str(meta['sys::pipeline::input_collection_id'])
@@ -113,31 +134,56 @@ def generate_graph(coll, related_colls, meta):
                         Criterion('=', CollectionMeta.name, 'projectID'))
         for c in query:
             project = c[CollectionMeta.value] + ':\n'
-        graph.node('S', project + shortname(inp, NAME_LENGTH), URL=url_for('collbrowser.collbrowser') + '?path=' + inp, fontsize='8')
+        query = irods_session.query(CollectionMeta.value).filter(
+                Criterion('=', Collection.name, inp)).filter(
+                        Criterion('=', CollectionMeta.name, 'sys::data::type'))
+        shape, shape_color = coll_shape('unknown')
+        for c in query:
+            shape, shape_color = coll_shape(c[CollectionMeta.value])
+            
+        graph.node('S', project + shortname(inp, NAME_LENGTH), URL=url_for('collbrowser.collbrowser') + '?path=' + inp, 
+                   shape=shape, fillcolor=shape_color, fontsize='8', style='filled')
         graph.edge('S', parent)
-    elif 'sourceid' in meta:        
-        inst = meta['Instrument'].value if 'Instrument' in meta else 'unknown'
-        graph.node('SEQ', '{}\n{}'.format(meta['sourceid'].value, inst), shape='hexagon', fontsize='8')
+    elif 'sequencing::brand' in meta:        
+        inst_brand = meta['sequencing::brand'].value if 'sequencing::brand' in meta else 'unknown'
+        inst_platform = meta['sequencing::platform'].value if 'sequencing::platform' in meta else 'unknown'
+        inst_serial = meta['sequencing::serial'].value if 'sequencing::serial' in meta else ''
+        graph.node('SEQ', '{}\n{}\n{}'.format(inst_brand, inst_platform, inst_serial), shape='hexagon', fontsize='8')
         graph.edge('SEQ', parent)
     i=0
     for rc in related_colls:
         print(rc)
         parent = 'A'
+        # Find if the process that created the related collection is known
         query = irods_session.query(CollectionMeta.value).filter(
                 Criterion('=', Collection.name, rc)).filter(
                         Criterion('=', CollectionMeta.name, 'sys::pipeline::gitrepo'))
+        # Add proces nodes to graph                    
         for c in query:
+            node_name = 'G'+ str(i)
             git = c[CollectionMeta.value]
-            graph.node('G2', git.split('/')[-1], shape='box', URL=git, fontsize='8')
-            graph.edge('A', 'G2')
-            parent = 'G2'
+            graph.node(node_name, git.split('/')[-1], shape=PROCESS_SHAPE, URL=git, fontsize='8')
+            graph.edge('A', node_name)
+            parent = node_name
         project = ''
+        # Find the type of output collection (data vs log)
+        coll_type = 'unknown'
+        query = irods_session.query(CollectionMeta.value).filter(
+                Criterion('=', Collection.name, rc)).filter(
+                        Criterion('=', CollectionMeta.name, 'sys::data::type'))
+        for c in query:
+            coll_type = c[CollectionMeta.value]
+        # Find the Output collection project id    
         query = irods_session.query(CollectionMeta.value).filter(
                 Criterion('=', Collection.name, rc)).filter(
                         Criterion('=', CollectionMeta.name, 'projectID'))
         for c in query:
             project = c[CollectionMeta.value] + ':\n'
-        graph.node(str(i), project + shortname(rc, NAME_LENGTH), URL=url_for('collbrowser.collbrowser') + '?path=' + rc, fontsize='8')
+            
+        shape, shape_color = coll_shape(coll_type)
+ 
+        graph.node(str(i), project + shortname(rc, NAME_LENGTH), URL=url_for('collbrowser.collbrowser') + '?path=' + rc, 
+                   shape=shape, style = 'filled', fillcolor= shape_color, fontsize='8')
         graph.edge(parent, str(i))
         i+=1
     return graph
