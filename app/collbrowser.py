@@ -10,6 +10,7 @@ from flask import Blueprint, render_template, redirect, request, url_for
 from flask_login import current_user, login_required
 from irods.models import Collection, CollectionMeta, DataObject
 from irods.column import Criterion
+import irods.query
 from app.formatting import AVU
 from graphviz import Graph, Digraph
 import base64
@@ -41,7 +42,8 @@ def collist(path):
         name = coll_metadata[CollectionMeta.name]
         value = coll_metadata[CollectionMeta.value]
         units = coll_metadata[CollectionMeta.units]
-        avu[name] = AVU(name, value, units)
+        avu_id = '{}_{}'.format(name, value)
+        avu[avu_id] = AVU(name, value, units)
 
     cols = []
     objs = []
