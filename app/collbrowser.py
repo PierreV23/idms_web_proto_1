@@ -6,14 +6,13 @@ Created on Mon Nov 18 10:54:56 2019
 @author: wierinve
 """
 
+import base64
 from flask import Blueprint, render_template, redirect, request, url_for
 from flask_login import current_user, login_required
 from irods.models import Collection, CollectionMeta, DataObject
 from irods.column import Criterion
 from app.datafield import AVU2data
 from graphviz import Digraph
-import base64
-import time
 
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
 
@@ -46,7 +45,7 @@ def collist(path):
         avu[name] = AVU2data(name, value, units)
 
 #    avu = { coll_metadata[CollectionMeta.name]: data_from_AVU(
-#            coll_metadata[CollectionMeta.name], 
+#            coll_metadata[CollectionMeta.name],
 #            coll_metadata[CollectionMeta.value],
 #            coll_metadata[CollectionMeta.units]) for coll_metadata in query}
     print(avu)
@@ -107,17 +106,17 @@ def coll_shape(coll_type):
     return COLL_SHAPES.get(coll_type, ('cylinder', 'white'))
 
 @login_required
-def generate_graph(coll, related_colls, meta):
+def generate_graph(coll):
     irods_session = current_user.irods_session
     graph = Digraph('datagraph')
-    
+
     def coll_node(coll, pre=None, center=None, levels=0):
         query = irods_session.query(CollectionMeta.name, CollectionMeta.value).filter(
                 Criterion('=', Collection.name, coll))
-        collmeta = { m[CollectionMeta.name]: m[CollectionMeta.value] for m in query}
+        collmeta = {m[CollectionMeta.name]: m[CollectionMeta.value] for m in query}
         coll_type = collmeta.get('sys::data::type', 'unknown')
         shape, shape_color = coll_shape(coll_type)
-        penwidth = '2' if coll==center else '1'
+        penwidth = '2' if coll == center else '1'
         projectid = collmeta.get('projectID', '') + '\n'
         graph.node(coll, projectid + shortname(coll,NAME_LENGTH), shape=shape, fillcolor=shape_color, style='filled', penwidth=penwidth,
                    URL=url_for('collbrowser.collbrowser') + '?path=' + coll, fontsize='8')
@@ -125,7 +124,7 @@ def generate_graph(coll, related_colls, meta):
             git = collmeta.get('sys::pipeline::gitrepo')
             githash = collmeta.get('sys::pipeline::githash')
             if git:
-                git_node = 'G-' + coll   
+                git_node = 'G-' + coll
                 git_url = '{url}/tree/{hash}'.format(url=git[:-4] if git.endswith('.git') else git, hash=githash)
                 graph.node(git_node, git.split('/')[-1], shape=PROCESS_SHAPE, URL=git_url, fontsize='8')
                 graph.edge(pre, git_node)
@@ -140,7 +139,7 @@ def generate_graph(coll, related_colls, meta):
                         Criterion('=', CollectionMeta.value, dataset_id))
                 for c in q:
                     coll_node(c[Collection.name], pre=coll, center=center, levels=levels-1)
-        
+
     def parent(coll):
         coll_parent = None
         parent_id = None
@@ -156,27 +155,27 @@ def generate_graph(coll, related_colls, meta):
             for n in q:
                 coll_parent = n[Collection.name]
         return coll_parent
-    
-    
+
+
     graph.graph_attr['rankdir'] = 'LR'
     graph.graph_attr['fontsize'] = '15'
     graph.graph_attr['size'] = '10,8'
-    
+
     base_coll = coll
-    levels=MAX_GRAPH_LEVELS
-    level=levels-1
+    levels = MAX_GRAPH_LEVELS
+    level = levels-1
     while level:
         p = parent(base_coll)
         if p:
-            base_coll=p
+            base_coll = p
         level -= 1
-    
+
     print(base_coll)
-    
-    coll_node(base_coll, center=coll, levels=levels)   
-    
+
+    coll_node(base_coll, center=coll, levels=levels)
+
     return graph
-    
+
 
 @bp.route('/')
 @login_required
@@ -190,26 +189,26 @@ def collbrowser():
     if action == "up":
         path = '/' + '/'.join(path.split('/')[1:-1])
 
-    irods_session = current_user.irods_session
+#    irods_session = current_user.irods_session
 
     # Find subcollections, objects and metadata
     c, o, a = collist(path)
-    
+
     # Find related collections
     rel_colls = []
-    if ATTR_DATASETID in a:
-        print('Search related collections')
-        query = irods_session.query(Collection.name).filter(
-            Criterion('=', CollectionMeta.name, 'sys::pipeline::input_collection_id')).filter(
-                Criterion('=', CollectionMeta.value, a[ATTR_DATASETID].value))
-        rel_colls = [c[Collection.name] for c in query]
+    # if ATTR_DATASETID in a:
+    #     print('Search related collections')
+    #     query = irods_session.query(Collection.name).filter(
+    #         Criterion('=', CollectionMeta.name, 'sys::pipeline::input_collection_id')).filter(
+    #             Criterion('=', CollectionMeta.value, a[ATTR_DATASETID].value))
+    #     rel_colls = [c[Collection.name] for c in query]
 
 
     show_description = (max([0] + [len(i['coll_description']) for i in c]) > 0)
 
     # Generate the graph
-    graph_data = generate_graph(path, rel_colls, a)
-    
+    graph_data = generate_graph(path)
+
     graph_output = graph_data.pipe(format='png')
     graph_imagemap = graph_data.pipe(format='cmapx').decode('utf-8')
     data_graph = base64.b64encode(graph_output).decode('utf-8')

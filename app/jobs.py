@@ -55,6 +55,7 @@ def show_jobs():
     l = []
     for a in ['waiting', 'incoming', 'queued', 'active', 'done', 'stage']:
         if x in ['all', a]:
+            print('{}: Add jobs in state {}'.format(time.time(), a))
             l = l + joblist(a)
     l2 = sorted(l, key=lambda x: x['Start time'] if 'Start time' in x else INFINITE_DATE, reverse=True)
     columns = ['Name', 'State'] + [JOB_FIELDS[a][0] for a in JOB_FIELDS]
