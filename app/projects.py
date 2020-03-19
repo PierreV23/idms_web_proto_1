@@ -12,7 +12,7 @@ from flask_login import current_user, login_required
 from flask import jsonify
 from irods.models import Collection, CollectionMeta, User, UserMeta
 from irods.column import Criterion
-from app.formatting import AVU
+from app.datafield import AVU2data, datafield
 
 
 BP = Blueprint('projects', __name__, url_prefix='/projects')
@@ -76,7 +76,7 @@ def show_projectdetails():
     query = irods_session.query(Collection.name).filter(
         Criterion('=', CollectionMeta.name, 'projectID')).filter(
             Criterion('=', CollectionMeta.value, projectnaam))
-    projectdetails['colls'] = [AVU('col', q[Collection.name], 'irods_collection') for q in query]
+    projectdetails['colls'] = [datafield('col', q[Collection.name], 'irods_collection') for q in query]
     return render_template('projectdetails.html', PD=projectdetails,
                            conf=config, processnaam=processnaam)
 

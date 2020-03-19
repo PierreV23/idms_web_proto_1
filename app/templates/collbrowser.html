@@ -67,7 +67,7 @@ function avu_table() {
         </a>
     </div>
     <div class="card card-body">
-       <div class="collapse" id="collapse-graph">
+       <div class="collapse show" id="collapse-graph">
           <img src="data:image/png;base64,{{data_graph|safe}}" usemap="#datagraph" />
        </div>
     </div>
@@ -99,10 +99,10 @@ function avu_table() {
 
 {% for entry in avu %}
 <tr>
-    <td> {{ avu[entry].attr }} </td>
+    <td> {{ avu[entry].name }} </td>
     <td class="rawvalues" style="display:none;">{{ avu[entry].value }}</td>    
     <td class="formatvalues"> {{ avu[entry].htmlstring|safe }} </td>
-    <td> {{ avu[entry].units }} </td>
+    <td> {{ avu[entry].datatype }} </td>
 </tr>
 {% endfor %}
 

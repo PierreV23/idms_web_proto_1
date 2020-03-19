@@ -28,19 +28,22 @@ MAXLEN = 45
 factory = ObjectFactory()
 
 
-def xAVU(attr, value, unit):
+def AVU2data(attr, value, unit):
     my_unit = KNOWN_ATTRIBUTES.get(attr) if unit is None else unit
-    return factory.create(my_unit, attr=attr, value=value, unit=my_unit)
+    return datafield(attr, value, my_unit)
 
-class AVU_base():
-    def __init__(self, attr, value, unit=None):
-        self.attr = attr
+def datafield(name, value, datatype):
+    return factory.create(datatype, name=name, value=value, datatype=datatype)
+
+class data_base():
+    def __init__(self, name, value, datatype=None):
+        self.name = name
         self.value = value
-        self.unit = unit
+        self.datatype = datatype
 
     @staticmethod
     def factory(**kwargs):
-        return AVU_base(**kwargs)
+        return data_base(**kwargs)
 
     @property
     def htmlshort(self):
@@ -54,20 +57,20 @@ class AVU_base():
         return str(self.value)
 
     def __repr__(self):
-        return f'{self.attr} = {self.value} {self.unit}'
+        return f'{self.name} = {self.value} {self.datatype}'
 
-factory.register_default_builder(AVU_base.factory)
+factory.register_default_builder(data_base.factory)
 
-class AVU_int(AVU_base):
-    def __init__(self, attr, value, unit=None):
-        super().__init__(attr, int(value), unit)
+class data_int(data_base):
+    def __init__(self, name, value, datatype=None):
+        super().__init__(name, int(value), datatype)
 
     def __str__(self):
         return str(self.value)
 
     @staticmethod
     def factory(**kwargs):
-        return AVU_int(**kwargs)
+        return data_int(**kwargs)
 
     def __int__(self):
         return self.value
@@ -76,7 +79,7 @@ class AVU_int(AVU_base):
         return self.value < other.value
 
 
-class AVU_boolean(AVU_base):
+class data_boolean(data_base):
 
     def __str__(self):
         return 'TRUE' if self.value else 'FALSE'
@@ -87,18 +90,18 @@ class AVU_boolean(AVU_base):
 
     @staticmethod
     def factory(**kwargs):
-        return AVU_boolean(**kwargs)
+        return data_boolean(**kwargs)
 
 
-class AVU_timestamp(AVU_base):
-    def __init__(self, attr, value, unit=None):
+class data_timestamp(data_base):
+    def __init__(self, name, value, datatype=None):
         try:
             myvalue = float(value)
             self._formatted_date = datetime.fromtimestamp(myvalue).strftime("%d-%m-%Y %H:%M:%S")
         except:
             myvalue = value
             self._formatted_date = value
-        super().__init__(attr, myvalue, unit)
+        super().__init__(name, myvalue, datatype)
 
     def __str__(self):
         return self._formatted_date
@@ -109,15 +112,15 @@ class AVU_timestamp(AVU_base):
 
     @staticmethod
     def factory(**kwargs):
-        return AVU_timestamp(**kwargs)
+        return data_timestamp(**kwargs)
 
     def __lt__(self, other):
         return self.value < other.value
 
-INFINITE_DATE = AVU_timestamp(attr='none', value=1E11)
+INFINITE_DATE = data_timestamp(name='none', value=1E11)
 
 
-class AVU_irods_collection(AVU_base):
+class data_irods_collection(data_base):
 
     def displaystring(self, maxlen=999):
         nameparts = self.value.split('/')
@@ -142,17 +145,17 @@ class AVU_irods_collection(AVU_base):
 
     @staticmethod
     def factory(**kwargs):
-        return AVU_irods_collection(**kwargs)
+        return data_irods_collection(**kwargs)
 
     def __lt__(self, other):
         return self.value < other.value
 
 
-class AVU_collection_id(AVU_base):
-    def __init__(self, attr, value, unit=None):
+class data_collection_id(data_base):
+    def __init__(self, name, value, datatype=None):
         self._ref_col = None
         self._searched_for_ref_col = False
-        super().__init__(attr, value, unit)
+        super().__init__(name, value, datatype)
 
     @property
     @login_required
@@ -177,10 +180,10 @@ class AVU_collection_id(AVU_base):
 
     @staticmethod
     def factory(**kwargs):
-        return AVU_collection_id(**kwargs)
+        return data_collection_id(**kwargs)
 
 
-class AVU_runsheet(AVU_base):
+class data_runsheet(data_base):
 
     @property
     def htmlstring(self):
@@ -189,7 +192,7 @@ class AVU_runsheet(AVU_base):
 
     @staticmethod
     def factory(**kwargs):
-        return AVU_runsheet(**kwargs)
+        return data_runsheet(**kwargs)
 
     def __str__(self):
         return str(self.value)
@@ -198,7 +201,7 @@ class AVU_runsheet(AVU_base):
         return self.value < other.value
 
 
-class AVU_irods_object(AVU_base):
+class data_irods_object(data_base):
 
     @property
     def htmlstring(self):
@@ -207,12 +210,12 @@ class AVU_irods_object(AVU_base):
 
     @staticmethod
     def factory(**kwargs):
-        return AVU_irods_object(**kwargs)
+        return data_irods_object(**kwargs)
 
     def __lt__(self, other):
         return self.value < other.value
 
 # Register all AVU objects
-for classname in [a for a in globals() if a[:4] == 'AVU_' and a != 'AVU_base']:
-    factory.register_builder(classname[4:], globals()[classname].factory)
+for classname in [a for a in globals() if a[:5] == 'data_' and a != 'data_base']:
+    factory.register_builder(classname[5:], globals()[classname].factory)
  
