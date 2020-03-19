@@ -91,7 +91,6 @@ def show_jobdetails():
         if ifs.folderexists(collOutlog):
             logfiles = ifs.ls(collOutlog)
             for logfile in logfiles[:10]:
-                print(logfile.path)
                 try:
                     obj = ifs.getfile(logfile.path)
                     with obj.open('r') as f:
