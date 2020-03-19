@@ -41,7 +41,8 @@ def collist(path):
         name = coll_metadata[CollectionMeta.name]
         value = coll_metadata[CollectionMeta.value]
         units = coll_metadata[CollectionMeta.units]
-        avu[name] = AVU(name, value, units)
+        avu_id = '{}_{}'.format(name, value)
+        avu[avu_id] = AVU(name, value, units)
 
     cols = []
     objs = []
