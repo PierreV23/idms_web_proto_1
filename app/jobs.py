@@ -21,8 +21,8 @@ JOB_FIELDS = {
     'sys::run::finish_time': ('End time', 'timestamp'),
     'sys::runsheet::projectID': ('projectID', 'projectid'),
     'sys::run::exit_code': ('Result', 'int'),
-    ##'sys::runsheet::input_collection': ('Input Collection', 'irods_collection'),
-    'sys::run::output_collection': ('Output Collection', 'irods_collection')
+    'sys::runsheet::input_collection': ('Input Collection', 'irods_collection'),
+    ##'sys::run::output_collection': ('Output Collection', 'irods_collection')
 }
 
 @login_required

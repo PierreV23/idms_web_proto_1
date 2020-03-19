@@ -42,7 +42,8 @@ def collist(path):
         name = coll_metadata[CollectionMeta.name]
         value = coll_metadata[CollectionMeta.value]
         units = coll_metadata[CollectionMeta.units]
-        avu[name] = AVU2data(name, value, units)
+        avu_id = '{}_{}'.format(name, value)
+        avu[avu_id] = AVU2data(name, value, units)
 
 #    avu = { coll_metadata[CollectionMeta.name]: data_from_AVU(
 #            coll_metadata[CollectionMeta.name],
