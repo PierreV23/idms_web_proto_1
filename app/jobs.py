@@ -10,7 +10,7 @@ from flask import Blueprint, render_template, request
 from flask_login import current_user, login_required
 from irods.models import Collection, DataObject, DataObjectMeta
 from irods.column import Criterion
-from app.formatting import AVU, INFINITE_DATE
+from app.datafield import datafield, AVU2data, INFINITE_DATE
 import time
 
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
@@ -32,15 +32,15 @@ def joblist(state):
         Criterion('like', Collection.name, '/rivmZone/system/runsheet/' + state +  '%'))
 
     for job in q1:
-        jd2 = {'Name': AVU('runsheet', job[DataObject.name], 'runsheet')}
-        jd2['State'] = AVU('state', state, 'job_state')
+        jd2 = {'Name': datafield('runsheet', job[DataObject.name], 'runsheet')}
+        jd2['State'] = datafield('state', state, 'job_state')
         q2 = current_user.irods_session.query(DataObjectMeta.name, DataObjectMeta.value).filter( \
             Criterion('=', DataObject.id, job[DataObject.id]))
         metadata = {meta[DataObjectMeta.name] : meta[DataObjectMeta.value] for meta in q2}
         for field in JOB_FIELDS:
             if field in metadata:
 #                jd2[FIELDS[field][0]] = format_value(field, metadata[field], FIELDS[field][1])
-                jd2[JOB_FIELDS[field][0]] = AVU(field, metadata[field], JOB_FIELDS[field][1])
+                jd2[JOB_FIELDS[field][0]] = datafield(field, metadata[field], JOB_FIELDS[field][1])
         if 'sys::run::finish_time' in metadata:
             if time.time() - int(metadata['sys::run::finish_time']) < 2000000:
                 b.append(jd2)
@@ -53,8 +53,9 @@ def joblist(state):
 def show_jobs():
     x = request.args.get('items', 'all', type=str)
     l = []
-    for a in ['waiting', 'incoming', 'queued', 'active', 'done']:
+    for a in ['waiting', 'incoming', 'queued', 'active', 'done', 'stage']:
         if x in ['all', a]:
+            print('{}: Add jobs in state {}'.format(time.time(), a))
             l = l + joblist(a)
     l2 = sorted(l, key=lambda x: x['Start time'] if 'Start time' in x else INFINITE_DATE, reverse=True)
     columns = ['Name', 'State'] + [JOB_FIELDS[a][0] for a in JOB_FIELDS]
@@ -89,11 +90,11 @@ def show_jobdetails():
         collOutlog = metadata['sys::run::output_collection'] + '/log'
         if ifs.folderexists(collOutlog):
             logfiles = ifs.ls(collOutlog)
-            for logfile in logfiles:
+            for logfile in logfiles[:10]:
                 try:
                     obj = ifs.getfile(logfile.path)
                     with obj.open('r') as f:
-                        a = f.read(500000)
+                        a = f.read(50000)
                         L[logfile.shortname()] = a.decode('utf-8')
                 except:
                     pass
@@ -118,10 +119,10 @@ def show_jobdetails():
         'sys::runsheet::restartable': ('Restarts on error', 'boolean')
     }
     D = {}
-    D['Runsheet file'] = AVU('runsheet',  runsheet, 'irods_object')
+    D['Runsheet file'] = datafield('runsheet',  runsheet, 'irods_object')
     for field in FIELDS:
         if field in metadata:
-            D[FIELDS[field][0]] = AVU(field, metadata[field], FIELDS[field][1])
+            D[FIELDS[field][0]] = datafield(field, metadata[field], FIELDS[field][1])
 #    D['Git repository'] = "<a href='{0}'>{0} TAG {1}</a>".format(jd['repo'].replace('.git',''), jd['tag'])
 #    D['Next projectID'] = "<a href='/projectdetails?name={0}'>{0}</a>".format(jd['next_projectID'])
     return render_template('jobdetails.html', details=D, jobnaam = jobnaam, runlog = log, logs = L)
