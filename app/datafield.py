@@ -215,6 +215,18 @@ class data_irods_object(data_base):
     def __lt__(self, other):
         return self.value < other.value
 
+
+class data_projectid(data_base):
+
+    @property
+    def htmlstring(self):
+        return '<a href="{0}">{1}</a>'.format(url_for('projects.show_projectdetails', name=self.value), self.value)
+
+    @staticmethod
+    def factory(**kwargs):
+        return data_projectid(**kwargs)
+
+
 # Register all AVU objects
 for classname in [a for a in globals() if a[:5] == 'data_' and a != 'data_base']:
     factory.register_builder(classname[5:], globals()[classname].factory)
