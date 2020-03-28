@@ -147,7 +147,7 @@ def update_projectsettings():
             config[project]['processes'][newProcess] = {'next_projectID': 'none', 'next_processID': 'none'}
             viewprocess = newProcess
     elif requestdata['action'] == 'delete_process':
-        del config['project']['processes'][process]
+        del config[project]['processes'][process]
         viewprocess = 'none'
     elif requestdata['action'] == 'update_project':
         if 'settings' not in config[project]:
