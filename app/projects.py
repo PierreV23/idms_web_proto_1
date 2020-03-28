@@ -7,9 +7,10 @@ Created on Tue Nov 19 09:05:26 2019
 """
 
 import json
-from flask import Blueprint, render_template, redirect, request, url_for
+from flask import abort, Blueprint, render_template, redirect, request, url_for
 from flask_login import current_user, login_required
 from flask import jsonify
+from irods.exception import CAT_NO_ACCESS_PERMISSION, OVERWRITE_WITHOUT_FORCE_FLAG
 from irods.models import Collection, CollectionMeta, User, UserMeta
 from irods.column import Criterion
 from app.datafield import AVU2data, datafield
@@ -161,7 +162,12 @@ def update_projectsettings():
         del config[project]
         redirecturl = url_for('projects.show_projects')
 
-    write_jsonfile('/rivmZone/system/files/pipelinesettings.json', config)
+    try:
+        write_jsonfile('/rivmZone/system/files/pipelinesettings.json', config)
+    except CAT_NO_ACCESS_PERMISSION:
+        abort(500, "CAT_NO_ACCESS_PERMISSION: You need write access to pipeline settings for this action.")
+    except OVERWRITE_WITHOUT_FORCE_FLAG:
+        abort(500, "OVERWRITE_WITHOUT_FORCE_FLAG: You need write access to pipeline settings for this action.")
 
     if redirecturl:
         return redirect(redirecturl)
