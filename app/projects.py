@@ -172,7 +172,7 @@ def update_projectsettings():
     if redirecturl:
         return redirect(redirecturl)
 
-    return redirect(url_for('projects.show_projectdetails') + "?name={0}&process={1}'; </script>".format(project, viewprocess))
+    return redirect(url_for('projects.show_projectdetails') + "?name={0}&process={1}".format(project, viewprocess))
 
 
 @BP.route('/get_process', methods=['GET','POST'])
