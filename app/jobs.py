@@ -8,9 +8,12 @@ Created on Mon Nov 18 13:49:12 2019
 
 from flask import Blueprint, render_template, request
 from flask_login import current_user, login_required
+from fs_irods import folder_irods
+from irods.exception import DataObjectDoesNotExist
 from irods.models import Collection, DataObject, DataObjectMeta
 from irods.column import Criterion
 from app.datafield import datafield, AVU2data, INFINITE_DATE
+import sys
 import time
 
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
@@ -24,6 +27,9 @@ JOB_FIELDS = {
     'sys::runsheet::input_collection': ('Input Collection', 'irods_collection'),
     ##'sys::run::output_collection': ('Output Collection', 'irods_collection')
 }
+
+MAX_READ_LOG_BYTES = 100000
+
 
 @login_required
 def joblist(state):
@@ -84,20 +90,17 @@ def show_jobdetails():
             log = a.decode('utf-8')
     except:
         log = ''
-    # Find the collection log
-    L = {}
-    if 'sys::run::output_collection' in metadata:
-        collOutlog = metadata['sys::run::output_collection'] + '/log'
-        if ifs.folderexists(collOutlog):
-            logfiles = ifs.ls(collOutlog)
-            for logfile in logfiles[:10]:
-                try:
-                    obj = ifs.getfile(logfile.path)
-                    with obj.open('r') as f:
-                        a = f.read(50000)
-                        L[logfile.shortname()] = a.decode('utf-8')
-                except:
-                    pass
+
+    # Find output logs
+    logfiles = {}
+    try:
+        log_location = '{}/log'.format(metadata['sys::run::output_collection'])
+        if current_user.ifs.folderexists(log_location):
+            logfiles = _get_logfiles(current_user.ifs.getfolder(log_location))
+    except KeyError:
+        # output collection not set as metadata. Ignore.
+        pass
+
     FIELDS = {
         'sys::runsheet::description': ('Description', 'text'),
         'sys::run::start_time': ('Start time', 'timestamp'),
@@ -125,4 +128,32 @@ def show_jobdetails():
             D[FIELDS[field][0]] = datafield(field, metadata[field], FIELDS[field][1])
 #    D['Git repository'] = "<a href='{0}'>{0} TAG {1}</a>".format(jd['repo'].replace('.git',''), jd['tag'])
 #    D['Next projectID'] = "<a href='/projectdetails?name={0}'>{0}</a>".format(jd['next_projectID'])
-    return render_template('jobdetails.html', details=D, jobnaam = jobnaam, runlog = log, logs = L)
+    return render_template('jobdetails.html', details=D, jobnaam = jobnaam, runlog = log, logs = logfiles)
+
+
+def _get_logfiles(location):
+    if isinstance(location, folder_irods):
+        sublogs = {}
+        for sublocation in current_user.ifs.ls(location.path):
+            sublogs.update(_get_logfiles(sublocation))
+        return sublogs
+    
+    # Otherwise return fs_file object.
+    return {location.shortname(): location.path}
+
+
+@bp.route('/_joblog')
+@login_required
+def show_logfile():
+    path = request.args.get('path', '', type=str)
+    try:
+        obj = current_user.ifs.getfile(path)
+    except DataObjectDoesNotExist:
+        return 'Could not read logfile at "{}"'.format(path)
+        
+    with obj.open('r') as f:
+        data = f.read(MAX_READ_LOG_BYTES)
+
+    if sys.getsizeof(data) >= MAX_READ_LOG_BYTES:
+        return '{}\n!!! log truncated to max {} bytes !!!'.format(data.decode('utf-8'), MAX_READ_LOG_BYTES)
+    return data.decode('utf-8')

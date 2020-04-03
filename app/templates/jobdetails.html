@@ -13,6 +13,26 @@ function fillModal(path, name) {
     modalEmbed.parentNode.replaceChild(newEmbed, modalEmbed)
 }  
 
+$SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+
+let loaded_logs = new Set()
+
+$(function() {
+  $('div.logcard > a').bind('click', function(e) {
+    containerid = 'logcontainer-' + $(this).data('loglabel')
+    if (!loaded_logs.has(containerid)) {
+      $.get($SCRIPT_ROOT + '/jobs/_joblog', {
+        path: $(this).data('logpath')
+      }, function(data) {
+        $('pre#' + containerid).text(data);
+      });
+      loaded_logs.add(containerid)
+      return true;
+    }
+  });
+});
+
+
 </script>
 
 <div class="card card-body">
@@ -49,17 +69,16 @@ Job Log
 </div>
 </div>
 
-{% for log in logs %}
-{% set label = log | replace('.','_') %}
+{% for logfile in logs %}
+{% set label = logfile | replace('.','_') %}
 
-<div class="card card-body">
-<a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse-{{ label }}" role="button" aria-expanded="false" aria-controls="collapse-{{ label }}">
-{{ log }}
+<div class="card card-body logcard">
+<a class="btn btn-outline-secondary text-left" data-toggle="collapse" data-logpath="{{ logs[logfile] }}" data-loglabel="{{ label }}" href="#collapse-{{ label }}" role="button" aria-expanded="false" aria-controls="collapse-{{ label }}">
+{{ logfile }}
 </a>
 <div class="collapse" id="collapse-{{ label }}">
 <br>
-   <pre>
-{{ logs[log] | safe}}
+   <pre id="logcontainer-{{ label }}">
    </pre>
 </div>
 </div>
