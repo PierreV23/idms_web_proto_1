@@ -70,7 +70,7 @@ Job Log
 </div>
 
 {% for logfile in logs %}
-{% set label = logfile | replace('.','_') %}
+{% set label = logfile | replace('.','_') | replace('/', '_') %}
 
 <div class="card card-body logcard">
 <a class="btn btn-outline-secondary text-left" data-toggle="collapse" data-logpath="{{ logs[logfile] }}" data-loglabel="{{ label }}" href="#collapse-{{ label }}" role="button" aria-expanded="false" aria-controls="collapse-{{ label }}">

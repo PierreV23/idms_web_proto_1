@@ -13,6 +13,7 @@ from irods.exception import DataObjectDoesNotExist
 from irods.models import Collection, DataObject, DataObjectMeta
 from irods.column import Criterion
 from app.datafield import datafield, AVU2data, INFINITE_DATE
+import os
 import sys
 import time
 
@@ -61,7 +62,6 @@ def show_jobs():
     l = []
     for a in ['waiting', 'incoming', 'queued', 'active', 'done', 'stage']:
         if x in ['all', a]:
-            print('{}: Add jobs in state {}'.format(time.time(), a))
             l = l + joblist(a)
     l2 = sorted(l, key=lambda x: x['Start time'] if 'Start time' in x else INFINITE_DATE, reverse=True)
     columns = ['Name', 'State'] + [JOB_FIELDS[a][0] for a in JOB_FIELDS]
@@ -96,7 +96,7 @@ def show_jobdetails():
     try:
         log_location = '{}/log'.format(metadata['sys::run::output_collection'])
         if current_user.ifs.folderexists(log_location):
-            logfiles = _get_logfiles(current_user.ifs.getfolder(log_location))
+            logfiles = _get_logfiles(log_location)
     except KeyError:
         # output collection not set as metadata. Ignore.
         pass
@@ -131,16 +131,13 @@ def show_jobdetails():
     return render_template('jobdetails.html', details=D, jobnaam = jobnaam, runlog = log, logs = logfiles)
 
 
-def _get_logfiles(location):
-    if isinstance(location, folder_irods):
-        sublogs = {}
-        for sublocation in current_user.ifs.ls(location.path):
-            sublogs.update(_get_logfiles(sublocation))
-        return sublogs
-    
-    # Otherwise return fs_file object.
-    return {location.shortname(): location.path}
-
+def _get_logfiles(location, subdir=''):
+    logs = {}
+    currentdir = os.path.join(location, subdir)
+    for subdir2 in current_user.ifs.lsdirnames(currentdir):
+        logs.update(_get_logfiles(location, subdir=os.path.join(subdir, subdir2)))
+    logs.update({ os.path.join(subdir, filename): os.path.join(currentdir, filename) for filename in current_user.ifs.lsfilenames(currentdir) }) 
+    return(logs)
 
 @bp.route('/_joblog')
 @login_required
