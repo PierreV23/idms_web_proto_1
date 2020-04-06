@@ -116,6 +116,14 @@ class fs_base(ABC):
     def ls(self, path):
         pass
 
+    def lsdirnames(self, path):
+        result = [a.shortname() for a in self.ls(path) if a.isdir()]
+        return result
+
+    def lsfilenames(self, path):
+        result = [a.shortname() for a in self.ls(path) if not a.isdir()]
+        return result
+
     def lsdirs(self, path):
         result = [ a for a in self.ls(path) if a.isdir() ]
         print('lsdirs %s' % path)

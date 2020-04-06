@@ -130,6 +130,20 @@ class fs_irods(fs_base):
         for entry in coll.data_objects:
             result.append(self.getfile(entry.path))
         return result
+    
+    def lsdirnames(self, path):
+        if path[-1] == '/':
+            path = path[:-1]
+        coll = self.irods_session.collections.get(path)
+        result = [ subcoll.name for subcoll in coll.subcollections]
+        return result
+
+    def lsfilenames(self, path):
+        if path[-1] == '/':
+            path = path[:-1]        
+        coll = self.irods_session.collections.get(path)
+        result = [ data_object.name for data_object in coll.data_objects]
+        return result
 
     def lsdirs(self, path):
         print("lsdirs not implemented")
