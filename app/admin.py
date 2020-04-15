@@ -7,15 +7,11 @@ Created on Wed Apr 15 10:46:50 2020
 """
 
 from flask import Blueprint, render_template, redirect, request, url_for
-from flask_login import login_user, current_user, login_required
+from flask_login import current_user, login_required
 from irods.meta import iRODSMeta
 from irods.models import Collection, CollectionMeta, DataObject
 from irods.column import Criterion
-from app.datafield import datafield
-import sys
-import subprocess
 
-from pprint import pprint
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
