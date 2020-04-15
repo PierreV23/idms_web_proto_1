@@ -21,7 +21,7 @@ def admin():
     if not current_user.is_admin:
         return render_template('denied.html')
     queues = {}
-    for q in ['incoming', 'stage', 'queued', 'active', 'waiting']:
+    for q in ['incoming', 'stage', 'queued', 'active']:
         enabled = True
         path = '/rivmZone/system/runsheet/' + q
         metaquery = current_user.irods_session.query(CollectionMeta.value).filter(
