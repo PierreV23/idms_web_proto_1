@@ -1,0 +1,50 @@
+{% extends 'base2.html' %}
+  
+{% block content %}
+
+
+<div class="card border-primary mb-3">
+<div class="card card-header">
+Queues
+</div>
+
+<div class="card card-body">
+<TABLE class="table table-striped table-hover table-sm">
+<thead class="thead-dark">
+<TH scope="col">Queue</TH>
+<TH scope="col">Items</TH>
+<TH scope="col">Action</TH>
+</TR>
+</thead>
+<tbody>
+{% for entry in queues %}
+   <TD>{{ entry }}</TD>
+   <TD>{{ queues[entry]['count'] }}</TD>
+   <TD>
+
+{% if queues[entry]['enabled'] == True %}
+<div class="btn-group">
+    <label class="btn btn-success">Enabled</label>
+    <label class="btn btn-secondary">
+        <a href="/admin/modify?action=disable&queue={{ entry }}">Disabled</a>
+    </label>
+</div>
+{% else %}
+<div class="btn-group">
+    <label class="btn btn-secondary">
+        <a href="/admin/modify?action=enable&queue={{ entry }}">Enabled</a>
+    </label>
+    <label class="btn btn-danger">Disabled</label>
+</div>
+{% endif %}
+
+
+</TR>
+{% endfor %}
+</tbody>
+ </TABLE>
+ 
+</div>
+</div>
+
+{% endblock %}
