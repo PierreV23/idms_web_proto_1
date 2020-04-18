@@ -2,8 +2,8 @@ import os
 
 from flask import Flask, render_template
 from flask_login import LoginManager, login_required
-from app.models import User
-from . import auth, collbrowser, jobs, docviewer, projects, cluster
+from app.models import WebUser
+from . import auth, collbrowser, jobs, docviewer, projects, cluster, admin
 
 app = Flask(__name__)
 
@@ -18,6 +18,7 @@ app.register_blueprint(jobs.bp)
 app.register_blueprint(docviewer.BP)
 app.register_blueprint(projects.BP)
 app.register_blueprint(cluster.bp)
+app.register_blueprint(admin.bp)
 
 
 login_manager = LoginManager()
@@ -26,7 +27,7 @@ login_manager.login_view = "auth.login"
 
 @login_manager.user_loader
 def load_user(userid):
-    return User.retrieve(userid)
+    return WebUser.retrieve(userid)
 
 @app.route('/')
 @login_required

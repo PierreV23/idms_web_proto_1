@@ -11,6 +11,8 @@ import ssl
 from flask_login import UserMixin
 from flask import session
 from irods.session import iRODSSession
+from irods.models import User, UserGroup
+from irods.column import Criterion
 from fs_irods import fs_irods
 
 IRODS_ENVS = {
@@ -27,7 +29,7 @@ def deobfuscate(data):
     return base64.b64decode(data).decode('utf-8')
 
 
-class User(UserMixin):
+class WebUser(UserMixin):
 
     @property
     def irods_session(self):
@@ -37,11 +39,24 @@ class User(UserMixin):
     def is_authenticated(self):
         return self._is_authenticated
 
+    @property
+    def is_admin(self):
+        if self._is_admin is None:
+            self._is_admin = False
+            if self._is_authenticated:
+                groups = self._irods_session.query(UserGroup).filter(
+                    Criterion('=', User.name, self.username)).filter(
+                        Criterion('=', UserGroup.name, 'rodsadmin'))
+                for q in groups:
+                    self._is_admin = True
+        return self._is_admin
+
     def __init__(self, username='', password='', environment='', is_authenticated=False):
         self.username = username
         self.password = obfuscate(password)
         self.environment = environment
         self._is_authenticated = is_authenticated
+        self._is_admin = None
         self.irods_server = IRODS_ENVS.get(environment, None)
         self.configure_irods_session(username, password)
 

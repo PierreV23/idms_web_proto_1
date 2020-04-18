@@ -47,14 +47,15 @@
       Projects
     </a>
   </li>
-{% if current_user.username == 'rods' %}
+{% if current_user.is_admin  %}
   <li class="nav-item dropdown">
     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-      Users
+      Admin
     </a>
     <div class="dropdown-menu" aria-labbeledby="navbarDropdown">
       <a class="dropdown-item" href="/users">Users</a>
       <a class="dropdown-item" href="/groups">Groups</a>
+      <a class="dropdown-item" href="/admin">Runsheet queues</a>
     </div>
   </li>  
 {% endif %}

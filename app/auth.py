@@ -8,7 +8,7 @@ Created on Tue Nov 12 14:33:10 2019
 from datetime import timedelta
 from flask import Blueprint, render_template, redirect, request, url_for
 from flask_login import login_user, logout_user, current_user, login_required
-from app.models import User
+from app.models import WebUser
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -17,7 +17,7 @@ bp = Blueprint('auth', __name__, url_prefix='/auth')
 def login():
     if request.method == 'POST':
         requestdata = request.form.to_dict()
-        user = User(username=requestdata['username'],
+        user = WebUser(username=requestdata['username'],
                     password=requestdata['password'],
                     environment=requestdata['environment'])
 
@@ -27,6 +27,7 @@ def login():
             print(user.irods_session)
             return redirect(url_for('auth.login'))
         print('Auth')
+        print(user.is_admin)
         user.store()
         login_user(user, duration=timedelta(hours=24))
         return redirect(requestdata['next'])

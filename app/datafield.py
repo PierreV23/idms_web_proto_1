@@ -84,6 +84,11 @@ class data_int(data_base):
 
 class data_boolean(data_base):
 
+    def __eq__(self, other):
+        if type(other) == bool:
+            return self.value == other
+        return self == other
+
     def __str__(self):
         return 'TRUE' if self.value else 'FALSE'
 
