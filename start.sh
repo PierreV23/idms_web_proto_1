@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 source activate myflask
 if [ $? -ne 0 ] ; then
