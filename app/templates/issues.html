@@ -1,0 +1,54 @@
+{% extends 'base2.html' %}
+  
+{% block content %}
+
+<script>
+
+$SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+
+let loaded_cards = new Set()
+
+$(function() {
+    $('.checksum-toggle').bind('click', function(e) {
+        cardid = $(this).data('label')
+        if (!loaded_cards.has(cardid)) {
+          $.get('{{ url_for('admin.query_issues') }}', 
+            function(data) {
+              $('#checksumtable').html(data);
+            })
+          loaded_cards.add(cardid)
+        }
+      }
+    )
+});
+
+</script>
+
+
+<div class="card border-primary mb-3">
+<div class="card card-header">
+<a class="btn btn-outline-secondary text-left checksum-toggle" data-toggle="collapse" data-label="checksum" href="#collapse-checksum" role="button" aria-expanded="false" aria-controls="collapse-checksum">
+Checksum issues
+</a>
+</div>
+
+<div class="card card-body">
+<div class="collapse" id="collapse-checksum">
+<TABLE class="table table-striped table-hover table-sm table-smallfont">
+<thead class="thead-dark">
+<TH scope="col">Object</TH>
+<TH scope="col">File</TH>
+<TH scope="col">Resource</TH>
+<TH scope="col">Size</TH>
+<TH scope="col">Checksum</TH>
+</TR>
+</thead>
+<tbody id=checksumtable>
+<TR><TD COLSPAN=3>Please wait ...</td></tr>
+</tbody>
+ </TABLE>
+ </div>
+</div>
+</div>
+
+{% endblock %}
