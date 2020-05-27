@@ -29,3 +29,12 @@
    max-width:1600px;
   }
 }
+
+.table-smallfont {
+        font-size: 10px;
+}
+
+.page-wrapper{
+    width: 90%;
+    margin: 0 auto;
+}
