@@ -5,17 +5,46 @@ Created on Wed Apr 15 10:46:50 2020
 
 @author: wierinve
 """
-
+import os
 from flask import Blueprint, render_template, redirect, request, url_for
 from flask_login import current_user, login_required
 from irods.meta import iRODSMeta
 from irods.models import Collection, CollectionMeta, DataObject
 from irods.column import Criterion
+from irods.query import SpecificQuery
 
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
-@bp.route('/')
+@bp.route('/_issues')
+def query_issues():
+    if not current_user.is_admin:
+        return('<TR><TD COLSPAN=3>Access denied</TD></TR>')
+    data = ''
+    query = SpecificQuery(current_user.irods_session, alias='checksums_differ')
+    for result in query:
+        base, name = os.path.split(result[0])
+        data = '{}<TR><TD COLSPAN=5><A HREF="{}?path={}">{}</A></TD></TR>'.format(data, url_for("collbrowser.collbrowser"), base, result[0])
+        q = current_user.irods_session.query(DataObject.path,
+                                             DataObject.resource_name,
+                                             DataObject.size, 
+                                             DataObject.checksum).filter(
+            Criterion('=', Collection.name, base)).filter(
+            Criterion('=', DataObject.name, name))
+        for objfile in q:
+            data = '{}<TR><td></td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></TR>'.format(data, 
+                                                            objfile[DataObject.path],
+                                                            objfile[DataObject.resource_name],
+                                                            objfile[DataObject.size],
+                                                            objfile[DataObject.checksum])
+    return data
+
+@bp.route('/issues')
+@login_required
+def issues():
+    return render_template('issues.html')
+
+@bp.route('/queues')
 @login_required
 def admin():
     if not current_user.is_admin:
@@ -35,7 +64,7 @@ def admin():
         print(count)
         #print(next(items.get_results()))
         queues[q] = {'enabled': enabled, 'count': count}
-    return render_template('admin.html', queues=queues)
+    return render_template('queues.html', queues=queues)
 
 @bp.route('/modify')
 @login_required
