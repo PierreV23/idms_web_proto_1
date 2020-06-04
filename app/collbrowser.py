@@ -7,6 +7,7 @@ Created on Mon Nov 18 10:54:56 2019
 """
 
 import base64
+import os
 from flask import Blueprint, render_template, redirect, request, url_for
 from flask_login import current_user, login_required
 from irods.models import Collection, CollectionMeta, DataObject
@@ -49,7 +50,6 @@ def collist(path):
 #            coll_metadata[CollectionMeta.name],
 #            coll_metadata[CollectionMeta.value],
 #            coll_metadata[CollectionMeta.units]) for coll_metadata in query}
-    print(avu)
     cols = []
     objs = []
 
@@ -70,7 +70,6 @@ def collist(path):
         objdict['coll_description'] = ''
         for m in q1:
             objdict['coll_description'] = m[CollectionMeta.value]
-            #print("m[CollectionMeta.value]:", m[CollectionMeta.value])
 
         q2 = irods_session.query(CollectionMeta.value).filter( \
             Criterion('=', Collection.id, obj[Collection.id])).filter( \
@@ -171,17 +170,71 @@ def generate_graph(coll):
             base_coll = p
         level -= 1
 
-    print(base_coll)
-
     coll_node(base_coll, center=coll, levels=levels)
 
     return graph
 
+@login_required
+def add_items(path, level, active):
+    
+    def subitems(path):
+        count = 0
+        query = irods_session.query(Collection.id).filter(
+            Criterion('=',Collection.parent_name, path)).count(Collection.id)
+        for a in query:
+            count = a[Collection.id]
+        return count
+        
+    
+    result = ''
+    print(path, level, active)
+    parts = active.split('/')
+    irods_session = current_user.irods_session
+    query = irods_session.query(Collection.name).filter(
+        Criterion('=', Collection.parent_name, path))
+    for coll in query:
+        collname = coll[Collection.name].split('/')[-1]
+        if collname:
+            if coll[Collection.name] == active:
+                c1='<b>{}</b>'.format(collname)
+            else:
+                c1=collname
+            link='<a href="{}?path={}">{}</a>'.format(url_for('collbrowser.collbrowser'), 
+                                                      coll[Collection.name], c1)
+            subtree=''
+            dummy=0
+            if len(parts)>level:
+                # Not the whole tree is expanded yet
+                if parts[level] == collname:
+                    # active path
+                    subtree = add_items(os.path.join(path, collname), level + 1, active)
+                else:
+                    dummy = subitems(os.path.join(path, collname))
+            if len(parts)==level:
+                dummy = subitems(os.path.join(path, collname))
+            if subtree:
+                result = '{}<li><span class="caret caret-down">{}</span></li>'.format(result, link)
+            elif dummy:
+                result = '{}<li><span class="caret">{}</span></li>'.format(result, link)
+            else:
+                result = '{}<li><span class="caret-nosub">{}</span></li>'.format(result, link)
+            if subtree:
+                result = '{}<ul>{}</ul>'.format(result, subtree)
+    return(result)
+    
+
+@bp.route('/_tree')
+@login_required
+def colltree():
+    active = request.args.get('active', '', type=str)
+    current = '/'
+    level = 1
+    rs = add_items(current, level, active)
+    return('<ul>{}</ul>'.format(rs))
 
 @bp.route('/')
 @login_required
 def collbrowser():
-    #print(current_user)
     path = request.args.get('path', '/rivmZone/projects', type=str)
     action = request.args.get('action', 'none', type=str)
     sortkey = request.args.get('sortkey', 'name', type=str)
@@ -232,7 +285,6 @@ def collbrowser():
 def upload_file():
     if request.method == 'POST':
         requestdata = request.form.to_dict()
-        print('R ', requestdata)
         f = request.files['file']
         # Generate irods file object
         iObjName = requestdata['collection'] + '/' + f.filename

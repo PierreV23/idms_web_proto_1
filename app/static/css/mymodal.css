@@ -38,3 +38,59 @@
     width: 90%;
     margin: 0 auto;
 }
+
+.wrapper {
+   display: flex;
+   width: 100%;
+   align-items: stretch;
+}
+
+#sidebar{
+  min-width: 350px;
+  max-width: 350px;
+  min-height: 100vh;
+  padding-right: 8px;
+}
+
+#content {
+  width:100%;
+}
+
+ul {
+  list-style-type: none;
+  padding-left: 10px;
+}
+
+.caret {
+  cursor: pointer;
+}
+
+
+.caret-nosub::before {
+  content: "\25B6";
+  color: white;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+/* Create the caret/arrow with a unicode, and style it */
+.caret::before {
+  content: "\25B6";
+  color: black;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.caret-down::before {
+  transform: rotate(90deg)
+}
+
+.scroll {
+  min-height: 70vh;
+  max-height: 70vh;
+  overflow-y: scroll;
+}
+
+.small-font {
+  font-size: 60%;
+}
