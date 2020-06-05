@@ -74,7 +74,7 @@ $('#sidebar').on('click', '.list-close', function() {
 $('#sidebar').on('click', '.list-open', function() {
   $(this).removeClass('caret-down list-open');
   $(this).addClass('list-close');
-  sublistid = $(this).data('path');
+  sublistid = $(this).attr('id').substr(2);
   $('#' + $.escapeSelector(sublistid)).html('');
 });
 </script>

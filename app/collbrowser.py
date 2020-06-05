@@ -233,7 +233,7 @@ def colltree():
     current = request.args.get('root', '/', type=str)
     level = 1
     rs = add_items(current, level, active)
-    return('<ul>{}</ul>'.format(rs))
+    return('<ul id="{}">{}</ul>'.format(current, rs))
 
 def clickable_path(path):
     p = path[1:].split('/')
