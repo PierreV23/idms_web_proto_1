@@ -46,8 +46,8 @@
 }
 
 #sidebar{
-  min-width: 350px;
-  max-width: 350px;
+  min-width: 300px;
+  max-width: 300px;
   min-height: 100vh;
   padding-right: 8px;
 }
@@ -93,4 +93,9 @@ ul {
 
 .small-font {
   font-size: 60%;
+}
+
+.mybutton {
+  width: 15px;
+  height: 15px;
 }

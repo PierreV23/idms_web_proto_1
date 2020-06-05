@@ -32,6 +32,14 @@ def serve_image():
                      as_attachment=False)
 
 
+@BP.route('/download_object')
+@login_required
+def download_object():
+    path = request.args.get('path', '/', type=str)
+    objectfile = current_user.ifs.getfile(path).open('r')
+    return send_file(objectfile, attachment_filename=os.path.split(path)[1],
+                     as_attachment=True)
+
 @BP.route('/serve_object')
 @login_required
 def serve_object():

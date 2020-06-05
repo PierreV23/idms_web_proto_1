@@ -7,6 +7,9 @@
 {% block content %}
 
 <script>
+
+collection="{{ path }}"
+
 function fillModal(path, name) {
     var ModalHeader =  document.getElementById("DocTitle")
     DocTitle.innerHTML = name 
@@ -188,6 +191,7 @@ $('#sidebar').on('click', '.list-open', function() {
                       {% endif %}
                   </th>
                {% endfor %}
+               <th></th>
                </tr>
             </thead>
             <tbody>
@@ -204,6 +208,7 @@ class="table-danger"
        <td>  {{ entry.coll_description }} </td>
     {% endif %}
     <td> DIR </td> <td> {{ entry.create_time }} </td> <td> {{ entry.owner_name }} </td>
+    <td></td>
 </tr>
 {% endfor %}
 
@@ -223,6 +228,11 @@ class="table-danger"
 </td>
 <td>
 {{ entry.owner_name}}
+</td>
+<td>
+<a href="{{ url_for('docviewer.download_object') }}?path={{entry.path}}">
+<IMG src="{{ url_for('static', filename='img/download-button.png' ) }}" class="mybutton">
+</a>
 </td>
 </tr>
 {% endfor %}
