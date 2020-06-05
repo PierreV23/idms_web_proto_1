@@ -1,7 +1,7 @@
 {% extends 'base2.html' %}
  
 {% block heading %}
-<H2><b>Collection browser:</b> {{ path }}</H2>
+<H3><b>Collection browser:</b> {{ path_title | safe }}</H3>
 {% endblock %}
 
 {% block content %}
@@ -32,6 +32,7 @@ function avu_table() {
     $('#metatoggle').html(text)
 }
 
+
 $(window).on('load', function() {
   $.get('{{ url_for('collbrowser.colltree') }}', {
     active: '{{ path }}'
@@ -40,12 +41,13 @@ $(window).on('load', function() {
   });
 });
 
+
 </script>
 
 <div class="wrapper">
 <nav id="sidebar">
 <div class="card border-primary mb-3">
-<div class="card-header sidebar-header">
+<div class="card-header sidebar-header list-pointer">
 <b>Collection tree</b>
 </div>
 <div class="card card-body scroll small-font">
@@ -56,7 +58,27 @@ $(window).on('load', function() {
 </nav>
 <div id="content">
 
-<a href="/collbrowser?action=up&path={{ path }}"><button type="button" class="btn btn-outline-secondary">UP</button></a>
+<script>
+$('#sidebar').on('click', '.list-close', function() {
+  $(this).addClass('caret-down list-open');
+  $(this).removeClass('list-close');
+  myid=$(this).attr('id')
+  $.get('{{ url_for('collbrowser.colltree') }}', {
+    active: '{{ path }}',
+    root: $(this).data('path')
+  }, function(data) {
+    $('#' + $.escapeSelector(myid)).parent().after(data);
+  });
+});
+
+$('#sidebar').on('click', '.list-open', function() {
+  $(this).removeClass('caret-down list-open');
+  $(this).addClass('list-close');
+  sublistid = $(this).data('path');
+  $('#' + $.escapeSelector(sublistid)).html('');
+});
+</script>
+
 
 <div class="card border-primary mb-3">
     <div class="card-header">

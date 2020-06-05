@@ -193,16 +193,19 @@ def add_items(path, level, active):
     query = irods_session.query(Collection.name).filter(
         Criterion('=', Collection.parent_name, path))
     for coll in query:
-        collname = coll[Collection.name].split('/')[-1]
+        collpath = coll[Collection.name]
+        collname = collpath.split('/')[-1]
         if collname:
-            if coll[Collection.name] == active:
+            if collpath == active:
                 c1='<b>{}</b>'.format(collname)
             else:
                 c1=collname
             link='<a href="{}?path={}">{}</a>'.format(url_for('collbrowser.collbrowser'), 
-                                                      coll[Collection.name], c1)
+                                                      collpath, c1)
+            #link=c1
             subtree=''
             dummy=0
+            collid=''.join(collpath.split('/'))
             if len(parts)>level:
                 # Not the whole tree is expanded yet
                 if parts[level] == collname:
@@ -213,13 +216,13 @@ def add_items(path, level, active):
             if len(parts)==level:
                 dummy = subitems(os.path.join(path, collname))
             if subtree:
-                result = '{}<li><span class="caret caret-down">{}</span></li>'.format(result, link)
+                result = '{0}<li><span class="caret caret-down list-open" data-path="{1}" id="TT{1}">{2}</span></li>'.format(result, collpath, link)
             elif dummy:
-                result = '{}<li><span class="caret">{}</span></li>'.format(result, link)
+                result = '{0}<li><span class="caret list-close" data-path="{1}" id="TT{1}">{2}</span></li>'.format(result, collpath, link)
             else:
                 result = '{}<li><span class="caret-nosub">{}</span></li>'.format(result, link)
             if subtree:
-                result = '{}<ul>{}</ul>'.format(result, subtree)
+                result = '{}<ul id="{}">{}</ul>'.format(result, collpath, subtree)
     return(result)
     
 
@@ -227,10 +230,22 @@ def add_items(path, level, active):
 @login_required
 def colltree():
     active = request.args.get('active', '', type=str)
-    current = '/'
+    current = request.args.get('root', '/', type=str)
     level = 1
     rs = add_items(current, level, active)
     return('<ul>{}</ul>'.format(rs))
+
+def clickable_path(path):
+    p = path[1:].split('/')
+    cp = ''
+    subpath = ''
+    for pe in p:
+        subpath = '{}/{}'.format(subpath, pe)
+        cp = '{}/<a href="{}?path={}">{}</a>'.format(cp, 
+                                                     url_for('collbrowser.collbrowser'),
+                                                     subpath,
+                                                     pe)
+    return cp
 
 @bp.route('/')
 @login_required
@@ -239,7 +254,8 @@ def collbrowser():
     action = request.args.get('action', 'none', type=str)
     sortkey = request.args.get('sortkey', 'name', type=str)
     reverse = request.args.get('reverse', 'false', type=str)
-
+    path_title = clickable_path(path) 
+    
     if action == "up":
         path = '/' + '/'.join(path.split('/')[1:-1])
 
@@ -274,7 +290,8 @@ def collbrowser():
     if o:
         if sortkey in o[0]:
             o.sort(key=lambda x: x[sortkey], reverse=breverse)
-    return render_template('collbrowser.html', cols=c, objs=o, avu=a,
+    return render_template('collbrowser.html', path_title=path_title,
+                           cols=c, objs=o, avu=a,
                            path=path, rel_colls=rel_colls,
                            show=show_description, sortkey=sortkey, reverse=breverse,
                            data_graph=data_graph, data_map=graph_imagemap)
