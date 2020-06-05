@@ -1,0 +1,20 @@
+<table class="table table-hover table-striped table-sm">
+    <thead>
+        <tr>
+            <th>Attribute</th>
+            <th>Value</th>
+            <th>Unit</th>
+        </tr>
+    </thead>
+    <tbody>
+
+{% for entry in avu %}
+    <tr>
+        <td> {{ avu[entry].name }} </td>
+        <td class="rawvalues" style="display:none;">{{ avu[entry].value }}</td>    
+        <td class="formatvalues"> {{ avu[entry].htmlstring|safe }} </td>
+        <td> {{ avu[entry].datatype }} </td>
+    </tr>
+{% endfor %}
+    </tbody>
+</table>

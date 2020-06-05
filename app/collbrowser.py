@@ -31,8 +31,10 @@ COLL_SHAPES = {
 
 PROCESS_SHAPE = 'cds'
 
-
-def collist(path):
+@bp.route('_meta')
+@login_required
+def coll_meta():
+    path = request.args.get('path','/', type=str)
     irods_session = current_user.irods_session
     avu = {}
 # Query for collection metadata
@@ -45,11 +47,18 @@ def collist(path):
         units = coll_metadata[CollectionMeta.units]
         avu_id = '{}_{}'.format(name, value)
         avu[avu_id] = AVU2data(name, value, units)
+        
+    return render_template('metadata.html', avu=avu)
 
-#    avu = { coll_metadata[CollectionMeta.name]: data_from_AVU(
-#            coll_metadata[CollectionMeta.name],
-#            coll_metadata[CollectionMeta.value],
-#            coll_metadata[CollectionMeta.units]) for coll_metadata in query}
+@bp.route('_collist')
+@login_required    
+def collist():
+    path = request.args.get('path','/', type=str)
+    sortkey = request.args.get('sortkey', 'name', type=str)
+    reverse = request.args.get('reverse', 'false', type=str)
+
+    irods_session = current_user.irods_session
+
     cols = []
     objs = []
 
@@ -93,7 +102,19 @@ def collist(path):
         objdict['create_time'] = obj[DataObject.create_time]
         objdict['owner_name'] = obj[DataObject.owner_name]
         objs.append(objdict)
-    return cols, objs, avu
+        
+    show_description = (max([0] + [len(i['coll_description']) for i in cols]) > 0)
+
+    breverse = bool(reverse == 'true')
+    if cols:
+        if sortkey in cols[0]:
+            cols.sort(key=lambda x: x[sortkey], reverse=breverse)
+    if objs:
+        if sortkey in objs[0]:
+            objs.sort(key=lambda x: x[sortkey], reverse=breverse)
+
+    return render_template('coll_contents.html', cols=cols, objs=objs, 
+                           show=show_description, sortkey=sortkey, reverse=breverse)
 
 def shortname(name,l):
     s = name
@@ -105,8 +126,10 @@ def shortname(name,l):
 def coll_shape(coll_type):
     return COLL_SHAPES.get(coll_type, ('cylinder', 'white'))
 
+@bp.route('/_graph')
 @login_required
-def generate_graph(coll):
+def generate_graph():
+    coll = request.args.get('path', '/', type=str)
     irods_session = current_user.irods_session
     graph = Digraph('datagraph')
 
@@ -172,7 +195,13 @@ def generate_graph(coll):
 
     coll_node(base_coll, center=coll, levels=levels)
 
-    return graph
+    graph_output = graph.pipe(format='png')
+    graph_imagemap = graph.pipe(format='cmapx').decode('utf-8')
+    data_graph = base64.b64encode(graph_output).decode('utf-8')
+    result = {}
+    result['graph'] = data_graph
+    result['map'] = graph_imagemap
+    return result
 
 @login_required
 def add_items(path, level, active):
@@ -196,13 +225,8 @@ def add_items(path, level, active):
         collpath = coll[Collection.name]
         collname = collpath.split('/')[-1]
         if collname:
-            if collpath == active:
-                c1='<b>{}</b>'.format(collname)
-            else:
-                c1=collname
-            link='<a href="{}?path={}">{}</a>'.format(url_for('collbrowser.collbrowser'), 
-                                                      collpath, c1)
-            #link=c1
+            c1=' path-active' if collpath == active else '';
+            link='<span class="tree-label path-change{}" data-path={}>{}</span>'.format(c1, collpath, collname)
             subtree=''
             dummy=0
             collid=''.join(collpath.split('/'))
@@ -251,18 +275,11 @@ def clickable_path(path):
 @login_required
 def collbrowser():
     path = request.args.get('path', '/rivmZone/projects', type=str)
-    action = request.args.get('action', 'none', type=str)
-    sortkey = request.args.get('sortkey', 'name', type=str)
-    reverse = request.args.get('reverse', 'false', type=str)
     path_title = clickable_path(path) 
     
-    if action == "up":
-        path = '/' + '/'.join(path.split('/')[1:-1])
 
-#    irods_session = current_user.irods_session
-
-    # Find subcollections, objects and metadata
-    c, o, a = collist(path)
+    # Find subcollections, objects
+    # c, o = collist(path)
 
     # Find related collections
     rel_colls = []
@@ -274,27 +291,15 @@ def collbrowser():
     #     rel_colls = [c[Collection.name] for c in query]
 
 
-    show_description = (max([0] + [len(i['coll_description']) for i in c]) > 0)
-
     # Generate the graph
-    graph_data = generate_graph(path)
+    #graph_data = generate_graph(path)
 
-    graph_output = graph_data.pipe(format='png')
-    graph_imagemap = graph_data.pipe(format='cmapx').decode('utf-8')
-    data_graph = base64.b64encode(graph_output).decode('utf-8')
+    #graph_output = graph_data.pipe(format='png')
+    #graph_imagemap = graph_data.pipe(format='cmapx').decode('utf-8')
+    #data_graph = base64.b64encode(graph_output).decode('utf-8')
 
-    breverse = bool(reverse == 'true')
-    if c:
-        if sortkey in c[0]:
-            c.sort(key=lambda x: x[sortkey], reverse=breverse)
-    if o:
-        if sortkey in o[0]:
-            o.sort(key=lambda x: x[sortkey], reverse=breverse)
     return render_template('collbrowser.html', path_title=path_title,
-                           cols=c, objs=o, avu=a,
-                           path=path, rel_colls=rel_colls,
-                           show=show_description, sortkey=sortkey, reverse=breverse,
-                           data_graph=data_graph, data_map=graph_imagemap)
+                           path=path)
 
 
 @bp.route('upload_file', methods=['GET', 'POST'])

@@ -46,10 +46,11 @@
 }
 
 #sidebar{
-  min-width: 300px;
-  max-width: 300px;
+  min-width: 275px;
+  max-width: 275px;
   min-height: 100vh;
   padding-right: 8px;
+  white-space: nowrap;
 }
 
 #content {
@@ -65,6 +66,14 @@ ul {
   cursor: pointer;
 }
 
+.path-change {
+  cursor: pointer;
+  color: blue;
+}
+
+.path-active {
+  font-weight: bold;
+}
 
 .caret-nosub::before {
   content: "\25B7";
@@ -88,11 +97,12 @@ ul {
 .scroll {
   min-height: 70vh;
   max-height: 70vh;
+  overflow-x: scroll;
   overflow-y: scroll;
 }
 
 .small-font {
-  font-size: 60%;
+  font-size: 65%;
 }
 
 .mybutton {
