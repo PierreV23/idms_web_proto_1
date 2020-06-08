@@ -95,6 +95,7 @@ function set_path() {
 }
 
 $(document).on('click', '.path-change', function() {
+  history.pushState({"coll": collection}, 'Browse ' + collection, '/collbrowser?path=' + collection);
   collection=$(this).data('path');
   set_path();
 });
@@ -104,6 +105,10 @@ $(window).on('load', function() {
   load_tree();
 });
 
+window.onpopstate = function(event) {
+  collection = event.state.coll;
+  set_path();
+}
 
 </script>
 
