@@ -8,7 +8,9 @@
 
 <script>
 
-collection="{{ path }}"
+var collection="{{ path }}";
+var sortkey="name";
+var reverse="true";
 
 function fillModal(path, name) {
     var ModalHeader =  document.getElementById("DocTitle")
@@ -65,13 +67,17 @@ function load_meta() {
   });
 }
 
+
 function load_list() {
   $.get('{{ url_for('collbrowser.collist') }}', {
-    path: collection
+    path: collection,
+    sortkey: sortkey,
+    reverse: reverse
   }, function(data) {
     $('#collapse-contents').html(data)
   });
 }
+
 
 function load_tree() {
   $.get('{{ url_for('collbrowser.colltree') }}', {
@@ -93,6 +99,13 @@ function set_path() {
   build_title();
   tree_active();
 }
+
+$(document).on('click', '.sort-change', function() {
+  console.log('change')
+  sortkey=$(this).data('key');
+  reverse=$(this).data('dir');
+  load_list();
+});
 
 $(document).on('click', '.path-change', function() {
   history.pushState({"coll": collection}, 'Browse ' + collection, '/collbrowser?path=' + collection);
@@ -124,7 +137,12 @@ window.onpopstate = function(event) {
 </div>
 </div>
 <div class="card border-primary mb-3">
-
+<div class="card-header">Tasks</div>
+<div class="card card-body">
+<a class="btn btn-outline-secondary" data-toggle="modal" data-target="#upload" href="#upload" role="button">
+Upload
+</a>
+</div>
 </div>
 </nav>
 
@@ -151,34 +169,15 @@ $('#sidebar').on('click', '.list-open', function() {
 });
 </script>
 
-<div class="card border-primary mb-3">
-    <div class="card-header">
-        <a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse-upload" role="button" aria-expanded="false" aria-controls="collapse-upload">
-        Upload
-        </a>
-    </div>
-    <div class="card card-body">
-        <div class="collapse" id="collapse-upload">
-            <form action = "{{ url_for('collbrowser.upload_file')}}" method = "POST" enctype = "multipart/form-data">
-                <div class="form-group">  
-                    <input type="hidden" id="collection" name="collection" value ="{{ path }}">
-                </div>
-                <div class="form-group">  
-                    <input type = "file" class="form-control" name = "file" />
-                </div>  
-                <div class="form-group">  
-                    <button type="submit" class="btn btn-primary">Upload</button>
-                </div>  
-            </form>
-        </div>
-    </div>
-</div>
+<div id="data_map"></div>
 
-<div class="card border-primary mb-3">
-    <div class="card-header">
-        <a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse-graph" role="button" aria-expanded="false" aria-controls="collapse-graph">
+<div class="container-wide">
+<div class="row">
+<div class="col-md-12">
+
+<div class="card border-primary mb-3 graph-height">
+    <div class="card-header myheader">
         Data graph
-        </a>
     </div>
     <div class="card card-body">
        <div class="collapse show" id="collapse-graph">
@@ -187,35 +186,38 @@ $('#sidebar').on('click', '.list-open', function() {
     </div>
 </div>
 
-<div id="data_map"></div>
-
-<div class="card border-primary mb-3">
-    <div class="card-header">
-        <a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse-meta" role="button" aria-expanded="false" aria-controls="collapse-meta">
-        Collection metadata
-        </a>
-        <a class="btn btn-outline-secondary text-left float-right" id="metatoggle" onclick='avu_table()'" role="button" >Formatted</a>
-    </div>
-    <div class="card card-body" >
-        <div class="collapse" id="collapse-meta">
-
-        </div>
-    </div>
+</div>
 </div>
 
+<div class="row">
+<div class="col-md-8">
 
 <div class="card border-primary mb-3">
-   <div class="card-header">
-      <a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse-contents" role="button" aria-expanded="false" aria-controls="collapse-contents">
+   <div class="card-header myheader">
         Collection contents
-      </a>
    </div>
-   <div class="card card-body">
-      <div class="collapse show" id="collapse-contents">
-
-       </div>
+   <div class="card card-body coll-content" id="collapse-contents">
     </div>   
 </div>
+
+
+</div>
+
+<div class="col-md-4">
+<div class="card border-primary mb-3">
+    <div class="card-header myheader">
+        Collection metadata
+        <a class="btn btn-outline-secondary text-left float-right" id="metatoggle" onclick='avu_table()'" role="button" >Formatted</a>
+    </div>
+    <div class="card card-body coll-meta" id="collapse-meta">
+    </div>
+</div>
+
+
+</div>
+</div>
+</div>
+
 
 <!-- Document viewer modal dialog -->
 <div class="modal modal-tall" id="myOutput" role="dialog" >
@@ -233,7 +235,30 @@ $('#sidebar').on('click', '.list-open', function() {
     </div>
 </div>
 
-
+<!-- Upload modal modal dialog -->
+<div class="modal" id="upload" role="dialog" >
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="DocTitle">Modal Header</h5>
+                <button type="button" class="btn btn-default btn-primary btn-sm" data-dismiss="modal">Close</button>
+            </div>
+            <div class="modal-body" id="mBody">
+                <form action = "{{ url_for('collbrowser.upload_file')}}" method = "POST" enctype = "multipart/form-data">
+                    <div class="form-group">  
+                        <input type="hidden" id="collection" name="collection" value ="{{ path }}">
+                    </div>
+                    <div class="form-group">  
+                        <input type = "file" class="form-control" name = "file" />
+                    </div>  
+                    <div class="form-group">  
+                        <button type="submit" class="btn btn-primary">Upload</button>
+                    </div>  
+                </form>
+            </div>
+        </div>
+    </div>            
+</div>
 
 </div>
 

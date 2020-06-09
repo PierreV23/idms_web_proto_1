@@ -1,3 +1,7 @@
+html {
+  font-size: 80%;
+}
+
 .modal-tall modal {
   width: 100%;
 }
@@ -35,7 +39,7 @@
 }
 
 .page-wrapper{
-    width: 90%;
+    width: 98%;
     margin: 0 auto;
 }
 
@@ -95,17 +99,49 @@ ul {
 }
 
 .scroll {
-  min-height: 70vh;
-  max-height: 70vh;
+  min-height: 71vh;
+  max-height: 71vh;
   overflow-x: scroll;
   overflow-y: scroll;
 }
 
 .small-font {
-  font-size: 65%;
+  font-size: 0.9rem;
 }
 
 .mybutton {
   width: 15px;
   height: 15px;
+}
+
+.graph-height {
+  min-height: 27vh;
+  max-height: 27vh;
+  overflow-y: scroll;
+}
+
+.coll-meta {
+#  min-width: 30vw;
+#  max-width: 40vw;
+  min-height: 55vh;
+  max-height: 55vh;
+  overflow-y: scroll;
+}
+
+.coll-content {
+  min-height: 55vh;
+  max-height: 55vh;
+#  min-width: 30vw;
+#  max-width: 70vw;
+  overflow-y: scroll;
+}
+
+.myheader {
+  min-height:42px;
+  max-height:42px;
+}
+
+.sort-change {
+  cursor: pointer;
+  color: blue;  
 }
