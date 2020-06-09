@@ -1,12 +1,17 @@
 {% extends 'base2.html' %}
  
 {% block heading %}
-<H2>Collection browser : {{ path }}</H2>
+<H3><b>Collection browser:</b> <span id="path_title">{{ path_title | safe }}</span></H3>
 {% endblock %}
 
 {% block content %}
 
 <script>
+
+var collection="{{ path }}";
+var sortkey="name";
+var reverse="true";
+
 function fillModal(path, name) {
     var ModalHeader =  document.getElementById("DocTitle")
     DocTitle.innerHTML = name 
@@ -32,162 +37,187 @@ function avu_table() {
     $('#metatoggle').html(text)
 }
 
+function build_title() {
+  path_elem = collection.split('/')
+  var i;
+  title = ''
+  path = ''
+  for (i = 1; i < path_elem.length; i++) {
+    path += '/' + path_elem[i];
+    title += '/' + '<span class="path-change" data-path="' + 
+            path + '">' + path_elem[i] + '</span>' 
+  } 
+  $("#path_title").html(title)
+}
+
+function load_graph() {
+  $.get('{{ url_for('collbrowser.generate_graph') }}', {
+    path: collection
+  }, function(data) {
+     $('#data_map').html(data.map)
+     $('#graphimg').attr('src', 'data:image/png;base64,' + data.graph)
+  });
+}
+
+function load_meta() {
+  $.get('{{ url_for('collbrowser.coll_meta') }}', {
+    path: collection
+  }, function(data) {
+    $('#collapse-meta').html(data)
+  });
+}
+
+
+function load_list() {
+  $.get('{{ url_for('collbrowser.collist') }}', {
+    path: collection,
+    sortkey: sortkey,
+    reverse: reverse
+  }, function(data) {
+    $('#collapse-contents').html(data)
+  });
+}
+
+
+function load_tree() {
+  $.get('{{ url_for('collbrowser.colltree') }}', {
+    active: collection
+  }, function(data) {
+     $('#treeview').html(data)
+  });
+}
+
+function tree_active() {
+  $('.path-active').removeClass('path-active');
+  $(".tree-label[data-path='" + collection +"']").addClass('path-active');
+}
+
+function set_path() {
+  load_list();
+  load_graph();
+  load_meta();
+  build_title();
+  tree_active();
+}
+
+$(document).on('click', '.sort-change', function() {
+  console.log('change')
+  sortkey=$(this).data('key');
+  reverse=$(this).data('dir');
+  load_list();
+});
+
+$(document).on('click', '.path-change', function() {
+  history.pushState({"coll": collection}, 'Browse ' + collection, '/collbrowser?path=' + collection);
+  collection=$(this).data('path');
+  set_path();
+});
+
+$(window).on('load', function() {
+  set_path();
+  load_tree();
+});
+
+window.onpopstate = function(event) {
+  collection = event.state.coll;
+  set_path();
+}
 
 </script>
 
-<a href="/collbrowser?action=up&path={{ path }}"><button type="button" class="btn btn-outline-secondary">UP</button></a>
-
+<div class="wrapper">
+<nav id="sidebar">
 <div class="card border-primary mb-3">
-    <div class="card-header">
-        <a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse-upload" role="button" aria-expanded="false" aria-controls="collapse-upload">
-        Upload
-        </a>
-    </div>
-    <div class="card card-body">
-        <div class="collapse" id="collapse-upload">
-            <form action = "{{ url_for('collbrowser.upload_file')}}" method = "POST" enctype = "multipart/form-data">
-                <div class="form-group">  
-                    <input type="hidden" id="collection" name="collection" value ="{{ path }}">
-                </div>
-                <div class="form-group">  
-                    <input type = "file" class="form-control" name = "file" />
-                </div>  
-                <div class="form-group">  
-                    <button type="submit" class="btn btn-primary">Upload</button>
-                </div>  
-            </form>
-        </div>
-    </div>
+<div class="card-header sidebar-header list-pointer">
+<b>Collection tree</b>
 </div>
-
+<div class="card card-body scroll small-font">
+<div id="treeview">
+</div>
+</div>
+</div>
 <div class="card border-primary mb-3">
-    <div class="card-header">
-        <a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse-graph" role="button" aria-expanded="false" aria-controls="collapse-graph">
+<div class="card-header">Tasks</div>
+<div class="card card-body">
+<a class="btn btn-outline-secondary" data-toggle="modal" data-target="#upload" href="#upload" role="button">
+Upload
+</a>
+</div>
+</div>
+</nav>
+
+<div id="content">
+
+<script>
+$('#sidebar').on('click', '.list-close', function() {
+  $(this).addClass('caret-down list-open');
+  $(this).removeClass('list-close');
+  myid=$(this).attr('id')
+  $.get('{{ url_for('collbrowser.colltree') }}', {
+    active: '{{ path }}',
+    root: $(this).data('path')
+  }, function(data) {
+    $('#' + $.escapeSelector(myid)).parent().after(data);
+  });
+});
+
+$('#sidebar').on('click', '.list-open', function() {
+  $(this).removeClass('caret-down list-open');
+  $(this).addClass('list-close');
+  sublistid = $(this).attr('id').substr(2);
+  $('#' + $.escapeSelector(sublistid)).html('');
+});
+</script>
+
+<div id="data_map"></div>
+
+<div class="container-wide">
+<div class="row">
+<div class="col-md-12">
+
+<div class="card border-primary mb-3 graph-height">
+    <div class="card-header myheader">
         Data graph
-        </a>
     </div>
     <div class="card card-body">
        <div class="collapse show" id="collapse-graph">
-          <img src="data:image/png;base64,{{data_graph|safe}}" usemap="#datagraph" />
+          <img src="" id="graphimg" usemap="#datagraph" />
        </div>
     </div>
 </div>
 
-{{ data_map| safe }}
-
-{% if avu|length > 0 %}
-
-<div class="card border-primary mb-3">
-    <div class="card-header">
-        <a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse-meta" role="button" aria-expanded="false" aria-controls="collapse-meta">
-        Collection metadata
-        </a>
-        <a class="btn btn-outline-secondary text-left float-right" id="metatoggle" onclick='avu_table()'" role="button" >Formatted</a>
-    </div>
-    <div class="card card-body" >
-        <div class="collapse" id="collapse-meta">
-            <table class="table table-hover table-striped table-sm">
-                <thead>
-                    <tr>
-                        <th>Attribute</th>
-                        <th>Value</th>
-                        <th>Unit</th>
-                    </tr>
-                </thead>
-                <tbody>
-
-
-{% for entry in avu %}
-<tr>
-    <td> {{ avu[entry].name }} </td>
-    <td class="rawvalues" style="display:none;">{{ avu[entry].value }}</td>    
-    <td class="formatvalues"> {{ avu[entry].htmlstring|safe }} </td>
-    <td> {{ avu[entry].datatype }} </td>
-</tr>
-{% endfor %}
-
-                </tbody>
-            </table>
-        </div>
-    </div>
+</div>
 </div>
 
-{% endif %}
+<div class="row">
+<div class="col-md-8">
 
 <div class="card border-primary mb-3">
-   <div class="card-header">
-      <a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse-contents" role="button" aria-expanded="false" aria-controls="collapse-contents">
+   <div class="card-header myheader">
         Collection contents
-      </a>
    </div>
-   <div class="card card-body">
-      <div class="collapse show" id="collapse-contents">
-         <table class="table table-sm table-striped table-hover">
-            <thead>
-               <tr>
-               {% if show == True %}
-                  {% set datafields = (('Name', 'name'), ('Description', 'coll_description'), ('Size', 'size'), ('Create_Date', 'create_time'), ('Owner_name', 'owner_name')) %}
-               {% else %}
-                  {% set datafields = (('Name', 'name'), ('Size', 'size'), ('Create_Date', 'create_time'), ('Owner_name', 'owner_name')) %}
-               {% endif %}
-               {% for field in datafields %}
-                  <th>
-                      {{ field[0] }}
-                      {% if sortkey == field[1] and reverse == False %}▲{% else %}
-                      <A href="/collbrowser?path={{ path }}&sortkey={{ field[1] }}">
-                        <span>▲</span>
-                      </A>
-                      {% endif %}
-                      {% if sortkey == field[1] and reverse == True %}▼{% else %}
-                      <A href="/collbrowser?path={{ path }}&sortkey={{ field[1] }}&reverse=true">
-                        <span>▼</span>
-                      </A>
-                      {% endif %}
-                  </th>
-               {% endfor %}
-               </tr>
-            </thead>
-            <tbody>
-
-{% for entry in cols %}
-<tr 
-{% if entry.type == "temporary" %}
-class="table-warning"
-{% elif entry.type == "invalid" %}
-class="table-danger"
-{% endif %}>
-    <td> <a href="/collbrowser?path={{ entry.path }}">{{ entry.name }}</a> </td>
-    {% if show == True %}
-       <td>  {{ entry.coll_description }} </td>
-    {% endif %}
-    <td> DIR </td> <td> {{ entry.create_time }} </td> <td> {{ entry.owner_name }} </td>
-</tr>
-{% endfor %}
-
-{% for entry in objs %}
-<tr><td>
-<a data-toggle="modal" data-target="#myOutput" onclick="fillModal('{{ entry.path }}','{{ entry.name}}')">{{ entry.name }}</a>
-    {% if show == True %}
-       <td>  {{ entry.coll_description }} </td>
-    {% endif %}
-<!-- <a href="/docviewer?path={{entry.path}}">{{ entry.name }}</a> -->
-</td>
-<td>
-{{ entry.size}}
-</td>
-<td>
-{{ entry.create_time}}
-</td>
-<td>
-{{ entry.owner_name}}
-</td>
-</tr>
-{% endfor %}
-            </tbody>
-          </table>
-       </div>
+   <div class="card card-body coll-content" id="collapse-contents">
     </div>   
 </div>
+
+
+</div>
+
+<div class="col-md-4">
+<div class="card border-primary mb-3">
+    <div class="card-header myheader">
+        Collection metadata
+        <a class="btn btn-outline-secondary text-left float-right" id="metatoggle" onclick='avu_table()'" role="button" >Formatted</a>
+    </div>
+    <div class="card card-body coll-meta" id="collapse-meta">
+    </div>
+</div>
+
+
+</div>
+</div>
+</div>
+
 
 <!-- Document viewer modal dialog -->
 <div class="modal modal-tall" id="myOutput" role="dialog" >
@@ -205,40 +235,32 @@ class="table-danger"
     </div>
 </div>
 
-<!-- PROJECT GROUPS --!>
-{% if rel_colls|length > 0 %}
-
-<div class="card border-primary mb-3">
-    <div class="card-header">
-        <a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse-related" role="button" aria-expanded="false" aria-controls="collapse-related">
-        Related output collections groups
-        </a>
-    </div>
-    <div class="card card-body">
-        <div class="collapse" id="collapse-related">
-            <TABLE class="table table-striped table-hover table-sm" >
-                <thead>
-                    <TR>
-                        <TH scope="col">Name</TH>
-                    </TR>
-                </thead>
-                <tbody>
-{% for coll in rel_colls %}
-                    <tr>
-                        <td>
-                            <a href="/collbrowser?path={{coll}}">
-{{ coll }}
-                            </a>
-                        </td>
-                    </tr>
-{% endfor %}
-                </tbody>
-            </table>
+<!-- Upload modal modal dialog -->
+<div class="modal" id="upload" role="dialog" >
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="DocTitle">Modal Header</h5>
+                <button type="button" class="btn btn-default btn-primary btn-sm" data-dismiss="modal">Close</button>
+            </div>
+            <div class="modal-body" id="mBody">
+                <form action = "{{ url_for('collbrowser.upload_file')}}" method = "POST" enctype = "multipart/form-data">
+                    <div class="form-group">  
+                        <input type="hidden" id="collection" name="collection" value ="{{ path }}">
+                    </div>
+                    <div class="form-group">  
+                        <input type = "file" class="form-control" name = "file" />
+                    </div>  
+                    <div class="form-group">  
+                        <button type="submit" class="btn btn-primary">Upload</button>
+                    </div>  
+                </form>
+            </div>
         </div>
-    </div>
+    </div>            
 </div>
 
-{% endif %}
+</div>
 
 {% endblock %}
 

@@ -1,3 +1,7 @@
+html {
+  font-size: 80%;
+}
+
 .modal-tall modal {
   width: 100%;
 }
@@ -35,6 +39,109 @@
 }
 
 .page-wrapper{
-    width: 90%;
+    width: 98%;
     margin: 0 auto;
+}
+
+.wrapper {
+   display: flex;
+   width: 100%;
+   align-items: stretch;
+}
+
+#sidebar{
+  min-width: 275px;
+  max-width: 275px;
+  min-height: 100vh;
+  padding-right: 8px;
+  white-space: nowrap;
+}
+
+#content {
+  width:100%;
+}
+
+ul {
+  list-style-type: none;
+  padding-left: 5px;
+}
+
+.caret {
+  cursor: pointer;
+}
+
+.path-change {
+  cursor: pointer;
+  color: blue;
+}
+
+.path-active {
+  font-weight: bold;
+}
+
+.caret-nosub::before {
+  content: "\25B7";
+  color: white;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+/* Create the caret/arrow with a unicode, and style it */
+.caret::before {
+  content: "\25B6";
+  color: black;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.caret-down::before {
+  transform: rotate(90deg)
+}
+
+.scroll {
+  min-height: 71vh;
+  max-height: 71vh;
+  overflow-x: scroll;
+  overflow-y: scroll;
+}
+
+.small-font {
+  font-size: 0.9rem;
+}
+
+.mybutton {
+  width: 15px;
+  height: 15px;
+}
+
+.graph-height {
+  min-height: 27vh;
+  max-height: 27vh;
+  overflow-y: scroll;
+}
+
+.coll-meta {
+#  min-width: 30vw;
+#  max-width: 40vw;
+  min-height: 55vh;
+  max-height: 55vh;
+  overflow-y: scroll;
+}
+
+.coll-content {
+  min-height: 55vh;
+  max-height: 55vh;
+#  min-width: 30vw;
+#  max-width: 70vw;
+  overflow-y: scroll;
+}
+
+.myheader {
+  min-height:42px;
+  max-height:42px;
+}
+
+.sort-change {
+  cursor: pointer;
+  color: blue;  
 }

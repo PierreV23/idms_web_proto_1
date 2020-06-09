@@ -7,6 +7,7 @@ Created on Mon Nov 18 10:54:56 2019
 """
 
 import base64
+import os
 from flask import Blueprint, render_template, redirect, request, url_for
 from flask_login import current_user, login_required
 from irods.models import Collection, CollectionMeta, DataObject
@@ -30,8 +31,10 @@ COLL_SHAPES = {
 
 PROCESS_SHAPE = 'cds'
 
-
-def collist(path):
+@bp.route('_meta')
+@login_required
+def coll_meta():
+    path = request.args.get('path','/', type=str)
     irods_session = current_user.irods_session
     avu = {}
 # Query for collection metadata
@@ -44,12 +47,18 @@ def collist(path):
         units = coll_metadata[CollectionMeta.units]
         avu_id = '{}_{}'.format(name, value)
         avu[avu_id] = AVU2data(name, value, units)
+        
+    return render_template('metadata.html', avu=avu)
 
-#    avu = { coll_metadata[CollectionMeta.name]: data_from_AVU(
-#            coll_metadata[CollectionMeta.name],
-#            coll_metadata[CollectionMeta.value],
-#            coll_metadata[CollectionMeta.units]) for coll_metadata in query}
-    print(avu)
+@bp.route('_collist')
+@login_required    
+def collist():
+    path = request.args.get('path','/', type=str)
+    sortkey = request.args.get('sortkey', 'name', type=str)
+    reverse = request.args.get('reverse', 'false', type=str)
+
+    irods_session = current_user.irods_session
+
     cols = []
     objs = []
 
@@ -70,7 +79,6 @@ def collist(path):
         objdict['coll_description'] = ''
         for m in q1:
             objdict['coll_description'] = m[CollectionMeta.value]
-            #print("m[CollectionMeta.value]:", m[CollectionMeta.value])
 
         q2 = irods_session.query(CollectionMeta.value).filter( \
             Criterion('=', Collection.id, obj[Collection.id])).filter( \
@@ -94,7 +102,19 @@ def collist(path):
         objdict['create_time'] = obj[DataObject.create_time]
         objdict['owner_name'] = obj[DataObject.owner_name]
         objs.append(objdict)
-    return cols, objs, avu
+        
+    show_description = (max([0] + [len(i['coll_description']) for i in cols]) > 0)
+
+    breverse = bool(reverse == 'true')
+    if cols:
+        if sortkey in cols[0]:
+            cols.sort(key=lambda x: x[sortkey], reverse=breverse)
+    if objs:
+        if sortkey in objs[0]:
+            objs.sort(key=lambda x: x[sortkey], reverse=breverse)
+
+    return render_template('coll_contents.html', cols=cols, objs=objs, 
+                           show=show_description, sortkey=sortkey, reverse=breverse)
 
 def shortname(name,l):
     s = name
@@ -106,8 +126,10 @@ def shortname(name,l):
 def coll_shape(coll_type):
     return COLL_SHAPES.get(coll_type, ('cylinder', 'white'))
 
+@bp.route('/_graph')
 @login_required
-def generate_graph(coll):
+def generate_graph():
+    coll = request.args.get('path', '/', type=str)
     irods_session = current_user.irods_session
     graph = Digraph('datagraph')
 
@@ -171,29 +193,93 @@ def generate_graph(coll):
             base_coll = p
         level -= 1
 
-    print(base_coll)
-
     coll_node(base_coll, center=coll, levels=levels)
 
-    return graph
+    graph_output = graph.pipe(format='png')
+    graph_imagemap = graph.pipe(format='cmapx').decode('utf-8')
+    data_graph = base64.b64encode(graph_output).decode('utf-8')
+    result = {}
+    result['graph'] = data_graph
+    result['map'] = graph_imagemap
+    return result
 
+@login_required
+def add_items(path, level, active):
+    
+    def subitems(path):
+        count = 0
+        query = irods_session.query(Collection.id).filter(
+            Criterion('=',Collection.parent_name, path)).count(Collection.id)
+        for a in query:
+            count = a[Collection.id]
+        return count
+        
+    
+    result = ''
+    print(path, level, active)
+    parts = active.split('/')
+    irods_session = current_user.irods_session
+    query = irods_session.query(Collection.name).filter(
+        Criterion('=', Collection.parent_name, path))
+    for coll in query:
+        collpath = coll[Collection.name]
+        collname = collpath.split('/')[-1]
+        if collname:
+            c1=' path-active' if collpath == active else '';
+            link='<span class="tree-label path-change{}" data-path={}>{}</span>'.format(c1, collpath, collname)
+            subtree=''
+            dummy=0
+            collid=''.join(collpath.split('/'))
+            if len(parts)>level:
+                # Not the whole tree is expanded yet
+                if parts[level] == collname:
+                    # active path
+                    subtree = add_items(os.path.join(path, collname), level + 1, active)
+                else:
+                    dummy = subitems(os.path.join(path, collname))
+            if len(parts)==level:
+                dummy = subitems(os.path.join(path, collname))
+            if subtree:
+                result = '{0}<li><span class="caret caret-down list-open" data-path="{1}" id="TT{1}">{2}</span></li>'.format(result, collpath, link)
+            elif dummy:
+                result = '{0}<li><span class="caret list-close" data-path="{1}" id="TT{1}">{2}</span></li>'.format(result, collpath, link)
+            else:
+                result = '{}<li><span class="caret-nosub">{}</span></li>'.format(result, link)
+            if subtree:
+                result = '{}<ul id="{}">{}</ul>'.format(result, collpath, subtree)
+    return(result)
+    
+
+@bp.route('/_tree')
+@login_required
+def colltree():
+    active = request.args.get('active', '', type=str)
+    current = request.args.get('root', '/', type=str)
+    level = 1
+    rs = add_items(current, level, active)
+    return('<ul id="{}">{}</ul>'.format(current, rs))
+
+def clickable_path(path):
+    p = path[1:].split('/')
+    cp = ''
+    subpath = ''
+    for pe in p:
+        subpath = '{}/{}'.format(subpath, pe)
+        cp = '{}/<a href="{}?path={}">{}</a>'.format(cp, 
+                                                     url_for('collbrowser.collbrowser'),
+                                                     subpath,
+                                                     pe)
+    return cp
 
 @bp.route('/')
 @login_required
 def collbrowser():
-    #print(current_user)
     path = request.args.get('path', '/rivmZone/projects', type=str)
-    action = request.args.get('action', 'none', type=str)
-    sortkey = request.args.get('sortkey', 'name', type=str)
-    reverse = request.args.get('reverse', 'false', type=str)
+    path_title = clickable_path(path) 
+    
 
-    if action == "up":
-        path = '/' + '/'.join(path.split('/')[1:-1])
-
-#    irods_session = current_user.irods_session
-
-    # Find subcollections, objects and metadata
-    c, o, a = collist(path)
+    # Find subcollections, objects
+    # c, o = collist(path)
 
     # Find related collections
     rel_colls = []
@@ -205,26 +291,15 @@ def collbrowser():
     #     rel_colls = [c[Collection.name] for c in query]
 
 
-    show_description = (max([0] + [len(i['coll_description']) for i in c]) > 0)
-
     # Generate the graph
-    graph_data = generate_graph(path)
+    #graph_data = generate_graph(path)
 
-    graph_output = graph_data.pipe(format='png')
-    graph_imagemap = graph_data.pipe(format='cmapx').decode('utf-8')
-    data_graph = base64.b64encode(graph_output).decode('utf-8')
+    #graph_output = graph_data.pipe(format='png')
+    #graph_imagemap = graph_data.pipe(format='cmapx').decode('utf-8')
+    #data_graph = base64.b64encode(graph_output).decode('utf-8')
 
-    breverse = bool(reverse == 'true')
-    if c:
-        if sortkey in c[0]:
-            c.sort(key=lambda x: x[sortkey], reverse=breverse)
-    if o:
-        if sortkey in o[0]:
-            o.sort(key=lambda x: x[sortkey], reverse=breverse)
-    return render_template('collbrowser.html', cols=c, objs=o, avu=a,
-                           path=path, rel_colls=rel_colls,
-                           show=show_description, sortkey=sortkey, reverse=breverse,
-                           data_graph=data_graph, data_map=graph_imagemap)
+    return render_template('collbrowser.html', path_title=path_title,
+                           path=path)
 
 
 @bp.route('upload_file', methods=['GET', 'POST'])
@@ -232,7 +307,6 @@ def collbrowser():
 def upload_file():
     if request.method == 'POST':
         requestdata = request.form.to_dict()
-        print('R ', requestdata)
         f = request.files['file']
         # Generate irods file object
         iObjName = requestdata['collection'] + '/' + f.filename

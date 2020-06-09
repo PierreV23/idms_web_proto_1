@@ -1,0 +1,66 @@
+         <table class="table table-sm table-striped table-hover">
+            <thead>
+               <tr>
+               {% if show == True %}
+                  {% set datafields = (('Name', 'name'), ('Description', 'coll_description'), ('Size', 'size'), ('Create_Date', 'create_time'), ('Owner_name', 'owner_name')) %}
+               {% else %}
+                  {% set datafields = (('Name', 'name'), ('Size', 'size'), ('Create_Date', 'create_time'), ('Owner_name', 'owner_name')) %}
+               {% endif %}
+               {% for field in datafields %}
+                  <th>
+                      {{ field[0] }}
+                      {% if sortkey == field[1] and reverse == False %}▲{% else %}
+                      <span class="sort-change" data-key="{{ field[1] }}" data-dir="false">▲</span>
+                      {% endif %}
+                      {% if sortkey == field[1] and reverse == True %}▼{% else %}
+                      <span class="sort-change" data-key="{{ field[1] }}" data-dir="true">▼</span>
+                      {% endif %}
+                  </th>
+               {% endfor %}
+               <th></th>
+               </tr>
+            </thead>
+            <tbody>
+
+{% for entry in cols %}
+<tr 
+{% if entry.type == "temporary" %}
+class="table-warning"
+{% elif entry.type == "invalid" %}
+class="table-danger"
+{% endif %}>
+    <td> <span class="path-change" data-path="{{ entry.path }}">{{ entry.name }}</div> </td>
+    {% if show == True %}
+       <td>  {{ entry.coll_description }} </td>
+    {% endif %}
+    <td> DIR </td> <td> {{ entry.create_time }} </td> <td> {{ entry.owner_name }} </td>
+    <td></td>
+</tr>
+{% endfor %}
+
+{% for entry in objs %}
+<tr><td>
+<a data-toggle="modal" data-target="#myOutput" onclick="fillModal('{{ entry.path }}','{{ entry.name}}')">{{ entry.name }}</a>
+    {% if show == True %}
+       <td>  {{ entry.coll_description }} </td>
+    {% endif %}
+<!-- <a href="/docviewer?path={{entry.path}}">{{ entry.name }}</a> -->
+</td>
+<td>
+{{ entry.size}}
+</td>
+<td>
+{{ entry.create_time}}
+</td>
+<td>
+{{ entry.owner_name}}
+</td>
+<td>
+<a href="{{ url_for('docviewer.download_object') }}?path={{entry.path}}">
+<IMG src="{{ url_for('static', filename='img/download-button.png' ) }}" class="mybutton">
+</a>
+</td>
+</tr>
+{% endfor %}
+            </tbody>
+          </table>
