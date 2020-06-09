@@ -37,7 +37,7 @@ def collection_size(coll, resource, timeout=86400):
             Criterion('=', CollectionMeta.name, size_attr))
     size = 0
     for q in query:
-        size += int(q[CollectionMeta.value])
+        size += int(round(float((q[CollectionMeta.value]))))
     return size
 
 @login_required
