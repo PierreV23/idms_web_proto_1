@@ -4,7 +4,8 @@
 
 <div class="card border-primary mb-3">
 <div class="card card-header">
-<span><H3>Disk space used by projects</H3>
+<span>
+<H3>Disk space used by projects</H3>
 <a class="btn btn-outline-secondary text-right float-right" href="{{ url_for('reports.download_report') }}">Download CSV</a>
 </span>
 </div>
@@ -14,9 +15,9 @@
 <tr>
 <td>Project id</td><td>Project name</td>
 {% for resource in resources %}
-<td>{{ resource }}</td>
+<td align="right">{{ resource }}</td>
 {% endfor %}
-<td>Total</td>
+<td align="right">Total</td>
 <tr>
 </thead>
 <tbody>
@@ -25,9 +26,9 @@
 <td>{{ project['id'] }}</td>
 <td>{{ project.name }}</id>
 {% for resource in resources %}
-<td> {{ project[resource]['formatted'] }} </td>
+<td align="right"> {{ project[resource]['formatted'] }} </td>
 {% endfor %}
-<td>{{ project.total['formatted']}}</td>
+<td align="right">{{ project.total['formatted']}}</td>
 </tr>
 {% endfor %}
 </tbody>

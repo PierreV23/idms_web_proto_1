@@ -6,17 +6,13 @@ Created on Mon Jun  8 11:01:32 2020
 @author: wierinve
 """
 
-import os
-import textwrap
 import math
 import io
-from flask import Blueprint, render_template, redirect, request, url_for, send_file
+from flask import Blueprint, render_template, url_for, send_file
 from flask_login import current_user, login_required
-from irods.meta import iRODSMeta
-from irods.models import Collection, CollectionMeta, DataObject, Resource
+from irods.models import Collection, CollectionMeta, Resource
 from irods.column import Criterion
-from irods.query import SpecificQuery
-from irods.rule import Rule
+from app.projects import get_projectlist
 
 
 bp = Blueprint('reports', __name__, url_prefix='/reports')
@@ -24,9 +20,9 @@ bp = Blueprint('reports', __name__, url_prefix='/reports')
 def format_diskspace(x):
     labels = ['B', 'kB', 'Mb', 'GB', 'TB', 'EB']
     if x==0:
-        return('0 B')
+        return('0')
     g = math.log10(x)//3
-    return '{0:.2f} {1}'.format(x/10**(g*3), labels[int(g)])
+    return '{0:.2f} {1}'.format(x/(1e3**g), labels[int(g)])
 
 @login_required
 def collection_size(coll, resource, timeout=86400):
@@ -78,6 +74,9 @@ def download_report():
 
 @login_required
 def get_space_usage():
+
+    #load projects
+    projectinfo = get_projectlist()
           
     #query resources
     irods_session = current_user.irods_session
@@ -93,7 +92,7 @@ def get_space_usage():
     projectlist = []
     for p in projects:
         projectdata = {'id': p}
-        projectdata['name'] = 'UNKNOWN'        
+        projectdata['name'] = projectinfo.get(p, {'name': p, 'description': ''})['description']      
         total = 0
         for r in resources:
             projectdata[r] = {}
