@@ -19,13 +19,8 @@ from app.datafield import AVU2data, datafield
 BP = Blueprint('projects', __name__, url_prefix='/projects')
 
 
-@BP.route('/')
 @login_required
-def show_projects():
-    """
-    Return a web page with a list of all projects defined in
-    pipelinesettings.json
-    """
+def get_projectlist():
     projectlist = {}
     ifs = current_user.ifs
     obj = ifs.getfile('/rivmZone/system/files/pipelinesettings.json')
@@ -37,6 +32,16 @@ def show_projects():
         except KeyError:
             description = ''
         projectlist[project] = {'name': project, 'description': description}
+    return projectlist    
+
+@BP.route('/')
+@login_required
+def show_projects():
+    """
+    Return a web page with a list of all projects defined in
+    pipelinesettings.json
+    """
+    projectlist = get_projectlist()
     return render_template('projects.html', projects=projectlist)
 
 
