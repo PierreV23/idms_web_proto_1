@@ -18,7 +18,7 @@ from app.projects import get_projectlist
 bp = Blueprint('reports', __name__, url_prefix='/reports')
 
 def format_diskspace(x):
-    labels = ['B', 'kB', 'Mb', 'GB', 'TB', 'EB']
+    labels = ['B', 'kB', 'Mb', 'GB', 'TB', 'PB', 'EB']
     if x==0:
         return('0')
     g = math.log10(x)//3
