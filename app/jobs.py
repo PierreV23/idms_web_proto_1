@@ -120,7 +120,8 @@ def show_jobdetails():
         'sys::runsheet::repo': ('Git repository', 'git_repo'),
         'sys::runsheet::tag': ('Git tag', 'git_tag'),
         'sys::runsheet::distribution': ('Distribution pipeline', 'boolean'),
-        'sys::runsheet::restartable': ('Restarts on error', 'boolean')
+        'sys::runsheet::restartable': ('Restarts on error', 'boolean'),
+        'sys::run::pid': ('Process PID', 'text')
     }
     D = {}
     D['Runsheet file'] = datafield('runsheet',  runsheet, 'irods_object')
