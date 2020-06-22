@@ -6,3 +6,4 @@ secret.test
 static/images/*
 .nfs*
 *.crt
+.vscode
