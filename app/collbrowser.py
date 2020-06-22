@@ -8,6 +8,7 @@ Created on Mon Nov 18 10:54:56 2019
 
 import base64
 import os
+from datetime import datetime, timezone
 from flask import Blueprint, render_template, redirect, request, url_for
 from flask_login import current_user, login_required
 from irods.models import Collection, CollectionMeta, DataObject
@@ -70,7 +71,9 @@ def collist():
         Criterion('like', Collection.parent_name, path))
     for obj in query:
         objdict = {'name': obj[Collection.name].split('/')[-1], 'path': obj[Collection.name]}
-        objdict['create_time'] = obj[Collection.create_time]
+        ctime = obj[Collection.create_time]
+        ctime = ctime.replace(tzinfo=timezone.utc).astimezone()
+        objdict['create_time'] = ctime.strftime('%d-%m-%Y %H:%M:%S')
         objdict['owner_name'] = obj[Collection.owner_name]
 
         q1 = irods_session.query(CollectionMeta.value).filter( \
@@ -99,7 +102,9 @@ def collist():
         objdict = {'name': obj[DataObject.name], 'path': '/'.join(
             (obj[Collection.name], obj[DataObject.name]))}
         objdict['size'] = obj[DataObject.size]
-        objdict['create_time'] = obj[DataObject.create_time]
+        ctime = obj[DataObject.create_time]
+        ctime = ctime.replace(tzinfo=timezone.utc).astimezone()
+        objdict['create_time'] = ctime.strftime('%d-%m-%Y %H:%M:%S')
         objdict['owner_name'] = obj[DataObject.owner_name]
         objs.append(objdict)
         
