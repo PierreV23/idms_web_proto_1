@@ -13,7 +13,7 @@ from flask import Blueprint, render_template, redirect, request, url_for
 from flask_login import current_user, login_required
 from irods.models import Collection, CollectionMeta, DataObject
 from irods.column import Criterion
-from app.datafield import AVU2data
+from app.datafield import AVU2data, datafield
 from graphviz import Digraph
 
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
@@ -73,7 +73,7 @@ def collist():
         objdict = {'name': obj[Collection.name].split('/')[-1], 'path': obj[Collection.name]}
         ctime = obj[Collection.create_time]
         ctime = ctime.replace(tzinfo=timezone.utc).astimezone()
-        objdict['create_time'] = ctime.strftime('%d-%m-%Y %H:%M:%S')
+        objdict['create_time'] = datafield('create_time', ctime.timestamp(), 'timestamp')
         objdict['owner_name'] = obj[Collection.owner_name]
 
         q1 = irods_session.query(CollectionMeta.value).filter( \
@@ -104,7 +104,7 @@ def collist():
         objdict['size'] = obj[DataObject.size]
         ctime = obj[DataObject.create_time]
         ctime = ctime.replace(tzinfo=timezone.utc).astimezone()
-        objdict['create_time'] = ctime.strftime('%d-%m-%Y %H:%M:%S')
+        objdict['create_time'] = datafield('create_time', ctime.timestamp(), 'timestamp')
         objdict['owner_name'] = obj[DataObject.owner_name]
         objs.append(objdict)
         
