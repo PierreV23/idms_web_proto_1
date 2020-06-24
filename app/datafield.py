@@ -125,6 +125,9 @@ class data_timestamp(data_base):
     def __lt__(self, other):
         return self.value < other.value
 
+    def __eq__(self, other):
+        return self.value == other.value
+
 INFINITE_DATE = data_timestamp(name='none', value=1E11)
 
 
