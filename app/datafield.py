@@ -93,7 +93,7 @@ class data_int(data_base):
     def __lt__(self, other):
         return self.value < other.value
 
-class data_bytes(data_base):
+class data_bytes(data_int):
     def _formatted(self):
         labels = ['B', 'kB', 'Mb', 'GB', 'TB', 'PB', 'EB']
         bytes = int(self)
@@ -112,9 +112,6 @@ class data_bytes(data_base):
 
     def __str__(self):
         return self._formatted()
-
-    def __int__(self):
-        return int(self.value)
 
 class data_boolean(data_base):
 

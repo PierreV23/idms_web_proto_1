@@ -26,9 +26,9 @@
 <td>{{ project['id'] }}</td>
 <td>{{ project.name }}</id>
 {% for resource in resources %}
-<td align="right"> {{ project[resource]['formatted'] }} </td>
+<td align="right"> {{ project[resource] }} </td>
 {% endfor %}
-<td align="right">{{ project.total['formatted']}}</td>
+<td align="right">{{ project.total.htmlstring|safe}}</td>
 </tr>
 {% endfor %}
 </tbody>

@@ -13,6 +13,7 @@ from flask_login import current_user, login_required
 from irods.models import Collection, CollectionMeta, Resource
 from irods.column import Criterion
 from app.projects import get_projectlist
+from app.datafield import datafield
 
 
 bp = Blueprint('reports', __name__, url_prefix='/reports')
@@ -60,8 +61,8 @@ def download_report():
     for project in projectlist:
         output.write('{id},{name}'.format(**project))
         for r in resources:
-            output.write(',{}'.format(project[r]['raw']))
-        output.write(',{}\n'.format(project['total']['raw']))
+            output.write(',{}'.format(int(project[r])))
+        output.write(',{}\n'.format(int(project['total'])))
     mem = io.BytesIO()
     mem.write(output.getvalue().encode('utf-8'))
     # seeking was necessary. Python 3.5.2, Flask 0.12.2
@@ -95,13 +96,9 @@ def get_space_usage():
         projectdata['name'] = projectinfo.get(p, {'name': p, 'description': ''})['description']      
         total = 0
         for r in resources:
-            projectdata[r] = {}
-            projectdata[r]['raw'] = projectdata_in_resource(p, r)
-            total += projectdata[r]['raw']
-            projectdata[r]['formatted'] = format_diskspace(projectdata[r]['raw'])
-        projectdata['total'] = {}
-        projectdata['total']['raw'] = total
-        projectdata['total']['formatted'] = format_diskspace(total)
+            projectdata[r] = datafield('usage', projectdata_in_resource(p, r), 'bytes')
+            total += int(projectdata[r])
+        projectdata['total'] = datafield('total', total, 'bytes')
         projectlist.append(projectdata)
     return projectlist, resources
 
