@@ -6,6 +6,7 @@ Created on Fri Jan 10 15:22:06 2020
 @author: wierinve
 """
 
+import math
 import re
 from datetime import datetime
 from flask import url_for
@@ -26,6 +27,11 @@ KNOWN_ATTRIBUTES = {
     'sys::pipeline::used_by': 'runsheet'
 }
 
+KNOWN_ATTRIBUTE_TEMPLATES = {
+    'sys::collection_size_time::.*' : 'timestamp',
+    'sys::collection_size::.*' : 'bytes'
+}
+
 MAXLEN = 45
 
 factory = ObjectFactory()
@@ -33,6 +39,12 @@ factory = ObjectFactory()
 
 def AVU2data(attr, value, unit):
     my_unit = KNOWN_ATTRIBUTES.get(attr) if unit is None else unit
+    if my_unit is None:
+        a = 1
+        for pattern in KNOWN_ATTRIBUTE_TEMPLATES:
+            if re.match(pattern, attr):
+                my_unit = KNOWN_ATTRIBUTE_TEMPLATES[pattern]
+                break
     return datafield(attr, value, my_unit)
 
 def datafield(name, value, datatype):
@@ -81,6 +93,28 @@ class data_int(data_base):
     def __lt__(self, other):
         return self.value < other.value
 
+class data_bytes(data_base):
+    def _formatted(self):
+        labels = ['B', 'kB', 'Mb', 'GB', 'TB', 'PB', 'EB']
+        bytes = int(self)
+        if bytes == 0:
+            return('0')
+        g = math.log10(bytes)//3
+        return '{0:.2f} {1}'.format(bytes/(1e3**g), labels[int(g)])
+
+    @staticmethod
+    def factory(**kwargs):
+        return data_bytes(**kwargs)
+
+    @property
+    def htmlstring(self):
+        return str(self)
+
+    def __str__(self):
+        return self._formatted()
+
+    def __int__(self):
+        return int(self.value)
 
 class data_boolean(data_base):
 
