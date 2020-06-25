@@ -18,13 +18,6 @@ from app.datafield import datafield
 
 bp = Blueprint('reports', __name__, url_prefix='/reports')
 
-def format_diskspace(x):
-    labels = ['B', 'kB', 'Mb', 'GB', 'TB', 'PB', 'EB']
-    if x==0:
-        return('0')
-    g = math.log10(x)//3
-    return '{0:.2f} {1}'.format(x/(1e3**g), labels[int(g)])
-
 @login_required
 def collection_size(coll, resource, timeout=86400):
     irods_session = current_user.irods_session

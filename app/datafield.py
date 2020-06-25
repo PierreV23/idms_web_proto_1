@@ -40,7 +40,6 @@ factory = ObjectFactory()
 def AVU2data(attr, value, unit):
     my_unit = KNOWN_ATTRIBUTES.get(attr) if unit is None else unit
     if my_unit is None:
-        a = 1
         for pattern in KNOWN_ATTRIBUTE_TEMPLATES:
             if re.match(pattern, attr):
                 my_unit = KNOWN_ATTRIBUTE_TEMPLATES[pattern]
