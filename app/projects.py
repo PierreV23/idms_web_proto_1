@@ -141,7 +141,7 @@ def update_projectsettings():
     if requestdata['action'] == 'update_process':
         processConfig = config[project]['processes'][process]
         for attr in ['description', 'repo', 'tag', 'next_projectID',
-                     'next_processID']:
+                     'next_processID', 'queue']:
             processConfig[attr] = requestdata[attr]
         add_checkbox(processConfig, requestdata, 'modify_in_place')
         add_checkbox(processConfig, requestdata, 'restartable')
