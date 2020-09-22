@@ -1,8 +1,9 @@
-from flask import Flask, render_template
-from flask_login import LoginManager, login_required
+from flask import Flask, redirect, render_template, url_for
+from flask_login import current_user, LoginManager, login_required, logout_user
 from app.models import WebUser
 from . import auth, collbrowser, jobs, docviewer
 from . import projects, cluster, admin, reports
+import irods.exception
 
 app = Flask(__name__)
 
@@ -33,3 +34,8 @@ def load_user(userid):
 @login_required
 def home():
     return render_template('home.html')
+
+@app.errorhandler(irods.exception.PAM_AUTH_PASSWORD_FAILED)
+def invalid_session(e):
+    """Session may be stale. Destroy it and redirect to login page."""
+    return auth.logout()
