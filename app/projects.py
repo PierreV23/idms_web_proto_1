@@ -7,6 +7,8 @@ Created on Tue Nov 19 09:05:26 2019
 """
 
 import json
+import requests
+from requests.auth import HTTPBasicAuth
 from flask import abort, Blueprint, render_template, redirect, request, url_for
 from flask_login import current_user, login_required
 from flask import jsonify
@@ -14,25 +16,21 @@ from irods.exception import CAT_NO_ACCESS_PERMISSION, OVERWRITE_WITHOUT_FORCE_FL
 from irods.models import Collection, CollectionMeta, User, UserMeta
 from irods.column import Criterion
 from app.datafield import AVU2data, datafield
+from app.models import deobfuscate
 
 
 BP = Blueprint('projects', __name__, url_prefix='/projects')
 
+PROJECT_URL = "http://127.0.0.1:5000/p2r/api/1.0/"
 
 @login_required
 def get_projectlist():
-    projectlist = {}
-    ifs = current_user.ifs
-    obj = ifs.getfile('/rivmZone/system/files/pipelinesettings.json')
-    with obj.open('r') as settingsfile:
-        settings = json.load(settingsfile)
-    for project in sorted(settings):
-        try:
-            description = settings[project]['settings']['description']
-        except KeyError:
-            description = ''
-        projectlist[project] = {'name': project, 'description': description}
-    return projectlist    
+    url = '{}{}'.format(PROJECT_URL, 'projects')
+    auth = HTTPBasicAuth('alt\\{}'.format(current_user.username), current_user.ntlm_hash)
+    response = requests.get(url, auth=auth)
+    pl = response.json()
+    projectlist = { p['name']: p for p in pl }
+    return projectlist
 
 @BP.route('/')
 @login_required
@@ -51,9 +49,15 @@ def show_projectdetails():
     """
     Shows page with project settings and processes belonging to a project
     """
-    projectdetails = {}
     projectnaam = request.args.get('name', '', type=str)
     processnaam = request.args.get('process', '', type=str)
+
+    url = '{}{}/{}'.format(PROJECT_URL, 'projects', projectnaam)
+    auth = HTTPBasicAuth('alt\\{}'.format(current_user.username), current_user.ntlm_hash)
+    response = requests.get(url, auth=auth)
+    pl = response.json()
+    projectdetails = {}
+
     irods_session = current_user.irods_session
     ifs = current_user.ifs
     obj = ifs.getfile('/rivmZone/system/files/pipelinesettings.json')
@@ -61,7 +65,7 @@ def show_projectdetails():
         config = json.load(settingsfile)
 
     projectdetails['name'] = projectnaam
-    # Retrieve grousp associated with project
+    # Retrieve groups associated with project
     query = irods_session.query(User.name).filter(
         Criterion('!=', User.type, "rodsuser")).filter(
             Criterion('=', UserMeta.name, "projectID")).filter(
