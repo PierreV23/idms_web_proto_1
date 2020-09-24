@@ -19,7 +19,7 @@ from graphviz import Digraph
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
 
 NAME_LENGTH = 20
-MAX_GRAPH_LEVELS = 4
+MAX_GRAPH_LEVELS = 3
 ATTR_DATASETID = 'sys::dataset_id'
 
 COLL_SHAPES = {
@@ -28,7 +28,8 @@ COLL_SHAPES = {
     'imported':   ('cylinder', 'skyblue1'),
     'temporary':  ('note',  'gold2'),
     'distributed':('box3d','springgreen1:gray'),
-    'unknown'    :('ellipse', 'gray')}
+    'unknown'    :('ellipse', 'gray'),
+    'qc_report'  :('box3d', 'yellow')}
 
 PROCESS_SHAPE = 'cds'
 
@@ -131,6 +132,26 @@ def shortname(name,l):
 def coll_shape(coll_type):
     return COLL_SHAPES.get(coll_type, ('cylinder', 'white'))
 
+class Dictlist(dict):
+    """ Custom dict class that allos storing multiple values under one key
+    get method will return fisrt value, so can be used as in-place dict replacement
+    get_all returns a list of all values
+    """
+    def __setitem__(self, key, value):
+        if not key in self:
+            super(Dictlist, self).__setitem__(key, [])
+        self[key].append(value)
+
+    def get(self, key, default=None):
+        if key in self:
+            return self[key][0]
+        return default
+
+    def get_all(self, key, default=None):
+        if key in self:
+            return self[key]
+        return default
+
 @bp.route('/_graph')
 @login_required
 def generate_graph():
@@ -138,16 +159,37 @@ def generate_graph():
     irods_session = current_user.irods_session
     graph = Digraph('datagraph')
 
-    def coll_node(coll, pre=None, center=None, levels=0):
+    def coll_node(coll, pre=None, center=None, levels=0, history=[]):
+        if coll in history:
+            return True
+        history.append(coll)
+        collmeta = Dictlist()
         query = irods_session.query(CollectionMeta.name, CollectionMeta.value).filter(
                 Criterion('=', Collection.name, coll))
-        collmeta = {m[CollectionMeta.name]: m[CollectionMeta.value] for m in query}
+        for m in query:
+            collmeta[m[CollectionMeta.name]] = m[CollectionMeta.value]
+
+        # create the collection graph node
         coll_type = collmeta.get('sys::data::type', 'unknown')
+        coll_type = collmeta.get('user::data::type', coll_type)
         shape, shape_color = coll_shape(coll_type)
-        penwidth = '2' if coll == center else '1'
+        penwidth = '3' if coll == center else '1'
+    
         projectid = collmeta.get('projectID', '') + '\n'
         graph.node(coll, projectid + shortname(coll,NAME_LENGTH), shape=shape, fillcolor=shape_color, style='filled', penwidth=penwidth,
                    URL=url_for('collbrowser.collbrowser') + '?path=' + coll, fontsize='8')
+        # Check if this collection was created from another collection
+        # draw the creating process (if present)
+        # and connect the previous graph node 
+        if not pre and levels:
+            input_id =  collmeta.get('sys::pipeline::input_collection_id')
+            if input_id:
+                q = irods_session.query(Collection.name).filter(
+                        Criterion('=', CollectionMeta.name, ATTR_DATASETID)).filter(
+                        Criterion('=', CollectionMeta.value, input_id))
+                for c in q:
+                    pre = c[Collection.name]
+                    coll_node(pre, center=center, levels=levels-1)      
         if pre:
             git = collmeta.get('sys::pipeline::gitrepo')
             githash = collmeta.get('sys::pipeline::githash')
@@ -159,46 +201,41 @@ def generate_graph():
                 graph.edge(git_node, coll)
             else:
                 graph.edge(pre, coll)
+
         if levels:
-            dataset_id = collmeta.get('sys::dataset_id')
+            dataset_id = collmeta.get(ATTR_DATASETID)
             if dataset_id:
                 q = irods_session.query(Collection.name).filter(
                         Criterion('=', CollectionMeta.name, 'sys::pipeline::input_collection_id')).filter(
                         Criterion('=', CollectionMeta.value, dataset_id))
                 for c in q:
                     coll_node(c[Collection.name], pre=coll, center=center, levels=levels-1)
+                # This query is now executed twice. Might be improved by supplying 
+                # a extra_pre_id var?
+                q = irods_session.query(Collection.name).filter(
+                        Criterion('=', CollectionMeta.name, 'user::pipeline::input_collection_id')).filter(
+                        Criterion('=', CollectionMeta.value, dataset_id))
+                for c in q:
+                    coll_node(c[Collection.name], pre=None, center=center, levels=levels-1)
 
-    def parent(coll):
-        coll_parent = None
-        parent_id = None
-        q = irods_session.query(CollectionMeta.value).filter(
-            Criterion('=', Collection.name, coll)).filter(
-            Criterion('=', CollectionMeta.name, 'sys::pipeline::input_collection_id'))
-        for p in q:
-            parent_id = p[CollectionMeta.value]
-        if parent_id:
-            q = irods_session.query(Collection.name).filter(
-                Criterion('=', CollectionMeta.name, 'sys::dataset_id')).filter(
-                Criterion('=', CollectionMeta.value, parent_id))
-            for n in q:
-                coll_parent = n[Collection.name]
-        return coll_parent
+        # Check for extra input collections by name or id
+            extra_colls = collmeta.get_all('user::pipeline::input_collection', [])
+            extra_coll_ids = collmeta.get_all('user::pipeline::input_collection_id', [])
+            for extra_coll_id in extra_coll_ids:
+                q = irods_session.query(Collection.name).filter(
+                    Criterion('=', CollectionMeta.name, ATTR_DATASETID)).filter(
+                    Criterion('=', CollectionMeta.value, extra_coll_id))
+                extra_colls += [ c[Collection.name] for c in q if not c[Collection.name] in extra_colls]
+            for extra_coll in extra_colls:
+                coll_node(extra_coll, levels=levels-1)
+                graph.edge(extra_coll, coll, style='dashed')
 
 
     graph.graph_attr['rankdir'] = 'LR'
     graph.graph_attr['fontsize'] = '15'
     graph.graph_attr['size'] = '10,8'
 
-    base_coll = coll
-    levels = MAX_GRAPH_LEVELS
-    level = levels-1
-    while level:
-        p = parent(base_coll)
-        if p:
-            base_coll = p
-        level -= 1
-
-    coll_node(base_coll, center=coll, levels=levels)
+    coll_node(coll, center=coll, levels=MAX_GRAPH_LEVELS)
 
     graph_output = graph.pipe(format='png')
     graph_imagemap = graph.pipe(format='cmapx').decode('utf-8')

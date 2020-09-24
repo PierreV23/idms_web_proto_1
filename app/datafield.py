@@ -24,7 +24,8 @@ KNOWN_ATTRIBUTES = {
     'sys::pipeline::input_collection_id': 'collection_id',
     'sys::pipeline::last_use': 'timestamp',
     'sys::pipeline::stage_time': 'timestamp',
-    'sys::pipeline::used_by': 'runsheet'
+    'sys::pipeline::used_by': 'runsheet',
+    'user::pipeline::input_collection_id': 'collection_id'
 }
 
 KNOWN_ATTRIBUTE_TEMPLATES = {
