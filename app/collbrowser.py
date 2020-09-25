@@ -19,7 +19,7 @@ from graphviz import Digraph
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
 
 NAME_LENGTH = 20
-MAX_GRAPH_LEVELS = 3
+MAX_GRAPH_LEVELS = 2
 ATTR_DATASETID = 'sys::dataset_id'
 
 COLL_SHAPES = {
@@ -181,15 +181,21 @@ def generate_graph():
         # Check if this collection was created from another collection
         # draw the creating process (if present)
         # and connect the previous graph node 
-        if not pre and levels:
-            input_id =  collmeta.get('sys::pipeline::input_collection_id')
-            if input_id:
-                q = irods_session.query(Collection.name).filter(
-                        Criterion('=', CollectionMeta.name, ATTR_DATASETID)).filter(
-                        Criterion('=', CollectionMeta.value, input_id))
-                for c in q:
-                    pre = c[Collection.name]
-                    coll_node(pre, center=center, levels=levels-1)      
+        if not pre:
+            if levels:
+                input_id =  collmeta.get('sys::pipeline::input_collection_id')
+                if input_id:
+                    q = irods_session.query(Collection.name).filter(
+                            Criterion('=', CollectionMeta.name, ATTR_DATASETID)).filter(
+                            Criterion('=', CollectionMeta.value, input_id))
+                    for c in q:
+                        pre = c[Collection.name]
+                        coll_node(pre, center=center, levels=levels-1)
+            else:
+                placeholder = '{}-b'.format(coll)
+                graph.node(placeholder, '', shape='none', width='0', height='0')
+                graph.edge(placeholder, coll, style='dotted', arrowhead='none')
+
         if pre:
             git = collmeta.get('sys::pipeline::gitrepo')
             githash = collmeta.get('sys::pipeline::githash')
@@ -217,6 +223,10 @@ def generate_graph():
                         Criterion('=', CollectionMeta.value, dataset_id))
                 for c in q:
                     coll_node(c[Collection.name], pre=None, center=center, levels=levels-1)
+        else:
+            placeholder = '{}-f'.format(coll)
+            graph.node(placeholder, '', shape='none', width='0', height='0')
+            graph.edge(coll, placeholder, style='dotted', arrowhead='none')
 
         # Check for extra input collections by name or id
             extra_colls = collmeta.get_all('user::pipeline::input_collection', [])
