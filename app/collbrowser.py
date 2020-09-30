@@ -19,7 +19,7 @@ from graphviz import Digraph
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
 
 NAME_LENGTH = 20
-MAX_GRAPH_LEVELS = 2
+MAX_GRAPH_LEVELS = 3
 ATTR_DATASETID = 'sys::dataset_id'
 
 COLL_SHAPES = {
@@ -159,7 +159,7 @@ def generate_graph():
     irods_session = current_user.irods_session
     graph = Digraph('datagraph')
 
-    def coll_node(coll, pre=None, center=None, levels=0, history=[]):
+    def coll_node(coll, pre=None, post=None, center=None, levels=0, history=[]):
         if coll in history:
             return True
         history.append(coll)
@@ -178,57 +178,62 @@ def generate_graph():
         projectid = collmeta.get('projectID', '') + '\n'
         graph.node(coll, projectid + shortname(coll,NAME_LENGTH), shape=shape, fillcolor=shape_color, style='filled', penwidth=penwidth,
                    URL=url_for('collbrowser.collbrowser') + '?path=' + coll, fontsize='8')
-        # Check if this collection was created from another collection
-        # draw the creating process (if present)
-        # and connect the previous graph node 
-        if not pre:
-            if levels:
-                input_id =  collmeta.get('sys::pipeline::input_collection_id')
-                if input_id:
-                    q = irods_session.query(Collection.name).filter(
-                            Criterion('=', CollectionMeta.name, ATTR_DATASETID)).filter(
-                            Criterion('=', CollectionMeta.value, input_id))
-                    for c in q:
-                        pre = c[Collection.name]
-                        coll_node(pre, center=center, levels=levels-1)
-            else:
-                placeholder = '{}-b'.format(coll)
-                graph.node(placeholder, '', shape='none', width='0', height='0')
-                graph.edge(placeholder, coll, style='dotted', arrowhead='none')
+        if post:
+            graph.edge(coll, post)
+        # Create the GIT node if present
+        left_edge = coll
+        git = collmeta.get('sys::pipeline::gitrepo')
+        githash = collmeta.get('sys::pipeline::githash')
+        if git:
+            git_node = 'G-' + coll
+            git_url = '{url}/tree/{hash}'.format(url=git[:-4] if git.endswith('.git') else git, hash=githash)
+            graph.node(git_node, git.split('/')[-1], shape=PROCESS_SHAPE, URL=git_url, fontsize='8')
+            graph.edge(git_node, coll)
+            left_edge = git_node
 
         if pre:
-            git = collmeta.get('sys::pipeline::gitrepo')
-            githash = collmeta.get('sys::pipeline::githash')
-            if git:
-                git_node = 'G-' + coll
-                git_url = '{url}/tree/{hash}'.format(url=git[:-4] if git.endswith('.git') else git, hash=githash)
-                graph.node(git_node, git.split('/')[-1], shape=PROCESS_SHAPE, URL=git_url, fontsize='8')
-                graph.edge(pre, git_node)
-                graph.edge(git_node, coll)
-            else:
-                graph.edge(pre, coll)
+            graph.edge(pre, left_edge)
 
-        if levels:
-            dataset_id = collmeta.get(ATTR_DATASETID)
-            if dataset_id:
-                q = irods_session.query(Collection.name).filter(
-                        Criterion('=', CollectionMeta.name, 'sys::pipeline::input_collection_id')).filter(
-                        Criterion('=', CollectionMeta.value, dataset_id))
-                for c in q:
-                    coll_node(c[Collection.name], pre=coll, center=center, levels=levels-1)
-                # This query is now executed twice. Might be improved by supplying 
-                # a extra_pre_id var?
-                q = irods_session.query(Collection.name).filter(
-                        Criterion('=', CollectionMeta.name, 'user::pipeline::input_collection_id')).filter(
-                        Criterion('=', CollectionMeta.value, dataset_id))
-                for c in q:
-                    coll_node(c[Collection.name], pre=None, center=center, levels=levels-1)
-        else:
-            placeholder = '{}-f'.format(coll)
-            graph.node(placeholder, '', shape='none', width='0', height='0')
-            graph.edge(coll, placeholder, style='dotted', arrowhead='none')
+            # FIND MY INPUT
+        input_id =  collmeta.get('sys::pipeline::input_collection_id')
+        if input_id:
+            q = irods_session.query(Collection.name).filter(
+                    Criterion('=', CollectionMeta.name, ATTR_DATASETID)).filter(
+                    Criterion('=', CollectionMeta.value, input_id))
+            for c in q:
+                input_coll = c[Collection.name]
+                if levels:
+                    coll_node(input_coll, center=center, post=left_edge, levels=levels-1)
+                elif not input_coll in history:
+                    placeholder = '{}-b'.format(input_coll)
+                    graph.node(placeholder, '', shape='none', width='0', height='0')
+                    graph.edge(placeholder, left_edge, style='dotted', arrowhead='none')
 
-        # Check for extra input collections by name or id
+
+        # FIND  OUTPUTS
+        dataset_id = collmeta.get(ATTR_DATASETID)
+        if dataset_id:
+            q = irods_session.query(Collection.name).filter(
+                    Criterion('=', CollectionMeta.name, 'sys::pipeline::input_collection_id')).filter(
+                    Criterion('=', CollectionMeta.value, dataset_id))
+            for c in q:
+                output_coll = c[Collection.name]
+                if levels:
+                    coll_node(output_coll, pre=coll, center=center, levels=levels-1)
+                elif not output_coll in history:
+                    placeholder = '{}-b'.format(output_coll)
+                    graph.node(placeholder, '', shape='none', width='0', height='0')
+                    graph.edge(coll, placeholder, style='dotted', arrowhead='none')
+
+
+
+            # q = irods_session.query(Collection.name).filter(
+            #         Criterion('=', CollectionMeta.name, 'user::pipeline::input_collection_id')).filter(
+            #         Criterion('=', CollectionMeta.value, dataset_id))
+            # for c in q:
+            #     coll_node(c[Collection.name], pre=None, center=center, levels=levels-1)           
+
+        if levels:            
             extra_colls = collmeta.get_all('user::pipeline::input_collection', [])
             extra_coll_ids = collmeta.get_all('user::pipeline::input_collection_id', [])
             for extra_coll_id in extra_coll_ids:
@@ -237,8 +242,9 @@ def generate_graph():
                     Criterion('=', CollectionMeta.value, extra_coll_id))
                 extra_colls += [ c[Collection.name] for c in q if not c[Collection.name] in extra_colls]
             for extra_coll in extra_colls:
-                coll_node(extra_coll, levels=levels-1)
+                coll_node(extra_coll, levels=0)
                 graph.edge(extra_coll, coll, style='dashed')
+
 
 
     graph.graph_attr['rankdir'] = 'LR'
