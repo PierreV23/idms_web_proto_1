@@ -60,7 +60,7 @@ def joblist(state):
 def show_jobs():
     x = request.args.get('items', 'all', type=str)
     l = []
-    for a in ['waiting', 'incoming', 'queued', 'active', 'done', 'stage', 'error']:
+    for a in ['waiting', 'incoming', 'queued', 'active', 'postprocessing', 'done', 'stage', 'error']:
         if x in ['all', a]:
             l = l + joblist(a)
     l2 = sorted(l, key=lambda x: x['Start time'] if 'Start time' in x else INFINITE_DATE, reverse=True)
