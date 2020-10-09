@@ -16,6 +16,7 @@ from app.datafield import datafield, AVU2data, INFINITE_DATE
 import os
 import sys
 import time
+from datetime import datetime, timezone
 
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
 
@@ -31,29 +32,28 @@ JOB_FIELDS = {
 
 MAX_READ_LOG_BYTES = 100000
 
+def utc_to_local(utc_dt):
+    return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=None)
 
 @login_required
 def joblist(state):
-    b = []
-    q1 = current_user.irods_session.query(DataObject.name, DataObject.id).filter( \
+    job_list = []
+    q1 = current_user.irods_session.query(DataObject.name, DataObject.id, DataObject.create_time).filter( \
         Criterion('like', Collection.name, '/rivmZone/system/runsheet/' + state +  '%'))
-
+    current_time = time.time()
     for job in q1:
-        jd2 = {'Name': datafield('runsheet', job[DataObject.name], 'runsheet')}
-        jd2['State'] = datafield('state', state, 'job_state')
-        q2 = current_user.irods_session.query(DataObjectMeta.name, DataObjectMeta.value).filter( \
-            Criterion('=', DataObject.id, job[DataObject.id]))
-        metadata = {meta[DataObjectMeta.name] : meta[DataObjectMeta.value] for meta in q2}
-        for field in JOB_FIELDS:
-            if field in metadata:
-#                jd2[FIELDS[field][0]] = format_value(field, metadata[field], FIELDS[field][1])
-                jd2[JOB_FIELDS[field][0]] = datafield(field, metadata[field], JOB_FIELDS[field][1])
-        if 'sys::run::finish_time' in metadata:
-            if time.time() - int(metadata['sys::run::finish_time']) < 2000000:
-                b.append(jd2)
-        else:
-            b.append(jd2)
-    return b
+        job_record = {'Name': datafield('runsheet', job[DataObject.name], 'runsheet')}
+        job_record['State'] = datafield('state', state, 'job_state')
+        job_record['Created'] = datafield('create_time', utc_to_local(job[DataObject.create_time]).timestamp(), 'timestamp')
+        if int(current_time) - int(job_record['Created']) < 200000:
+            q2 = current_user.irods_session.query(DataObjectMeta.name, DataObjectMeta.value).filter( \
+                Criterion('=', DataObject.id, job[DataObject.id]))
+            metadata = {meta[DataObjectMeta.name] : meta[DataObjectMeta.value] for meta in q2}
+            for field in JOB_FIELDS:
+                if field in metadata:
+                    job_record[JOB_FIELDS[field][0]] = datafield(field, metadata[field], JOB_FIELDS[field][1])
+            job_list.append(job_record)
+    return job_list
 
 @bp.route('/')
 @login_required
@@ -63,7 +63,7 @@ def show_jobs():
     for a in ['waiting', 'incoming', 'queued', 'active', 'postprocessing', 'done', 'stage', 'error']:
         if x in ['all', a]:
             l = l + joblist(a)
-    l2 = sorted(l, key=lambda x: x['Start time'] if 'Start time' in x else INFINITE_DATE, reverse=True)
+    l2 = sorted(l, key=lambda x: x['Start time'] if 'Start time' in x else x['Created'], reverse=True)
     columns = ['Name', 'State'] + [JOB_FIELDS[a][0] for a in JOB_FIELDS]
     return render_template('jobs2.html', joblist=l2, items=x, columns=columns)
 
@@ -72,10 +72,10 @@ def show_jobs():
 def show_jobdetails():
     jobnaam = request.args.get('name', '', type=str)
     # We want the full path to the job runsheet object
-    query = current_user.irods_session.query(DataObject.id, Collection.name).filter(Criterion('=', DataObject.name, jobnaam))
-    jobpath = [ coll[Collection.name] for coll in query]
-    runsheet = jobpath[0] + '/' + jobnaam
-    jobid = [coll[DataObject.id] for coll in query][0]
+    query = current_user.irods_session.query(DataObject.id, DataObject.create_time, Collection.name).filter(Criterion('=', DataObject.name, jobnaam))
+    job = next(query.get_results())
+    runsheet = job[Collection.name] + '/' + jobnaam
+    jobid = job[DataObject.id]
 #    jobObj = current_user.irods_session.data_objects.get(runsheet)
     q2 = current_user.irods_session.query(DataObjectMeta.name, DataObjectMeta.value).filter( \
             Criterion('=', DataObject.id, jobid ))
@@ -102,9 +102,9 @@ def show_jobdetails():
         pass
 
     FIELDS = {
-        'sys::runsheet::description': ('Description', 'text'),
         'sys::run::start_time': ('Start time', 'timestamp'),
         'sys::run::finish_time': ('End time', 'timestamp'),
+        'sys::runsheet::description': ('Description', 'text'),
         'sys::runsheet::projectID': ('Project ID', 'projectid'),
         'sys::runsheet::processID': ('Process ID', 'processid'),
         'sys::runsheet::next_projectID': ('Next Project ID', 'projectid'),
@@ -125,6 +125,7 @@ def show_jobdetails():
     }
     D = {}
     D['Runsheet file'] = datafield('runsheet',  runsheet, 'irods_object')
+    D['Create time'] = datafield('create_time', utc_to_local(job[DataObject.create_time]).timestamp(), 'timestamp')
     for field in FIELDS:
         if field in metadata:
             D[FIELDS[field][0]] = datafield(field, metadata[field], FIELDS[field][1])

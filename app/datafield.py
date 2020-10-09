@@ -145,6 +145,9 @@ class data_timestamp(data_base):
     def __str__(self):
         return self._formatted_date
 
+    def __int__(self):
+        return int(self.value)
+
     @property
     def htmlstring(self):
         return self.__str__()
