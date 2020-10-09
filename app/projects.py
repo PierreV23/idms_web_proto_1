@@ -21,7 +21,7 @@ from app.models import deobfuscate
 
 BP = Blueprint('projects', __name__, url_prefix='/projects')
 
-PROJECT_URL = "http://127.0.0.1:5000/p2r/api/1.0/"
+PROJECT_URL = "http://127.0.0.1:5000/api/1.0/"
 
 @login_required
 def get_projectlist():
@@ -29,7 +29,8 @@ def get_projectlist():
     auth = HTTPBasicAuth('alt\\{}'.format(current_user.username), current_user.ntlm_hash)
     response = requests.get(url, auth=auth)
     pl = response.json()
-    projectlist = { p['name']: p for p in pl }
+    print(pl)
+    projectlist = { p['name']: p for p in pl["data"] }
     return projectlist
 
 @BP.route('/')
@@ -56,16 +57,12 @@ def show_projectdetails():
     auth = HTTPBasicAuth('alt\\{}'.format(current_user.username), current_user.ntlm_hash)
     response = requests.get(url, auth=auth)
     pl = response.json()
+    print(pl)
     projectdetails = {}
-
-    irods_session = current_user.irods_session
-    ifs = current_user.ifs
-    obj = ifs.getfile('/rivmZone/system/files/pipelinesettings.json')
-    with obj.open('r') as settingsfile:
-        config = json.load(settingsfile)
 
     projectdetails['name'] = projectnaam
     # Retrieve groups associated with project
+    irods_session = current_user.irods_session
     query = irods_session.query(User.name).filter(
         Criterion('!=', User.type, "rodsuser")).filter(
             Criterion('=', UserMeta.name, "projectID")).filter(
