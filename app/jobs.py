@@ -45,7 +45,7 @@ def joblist(state):
         job_record = {'Name': datafield('runsheet', job[DataObject.name], 'runsheet')}
         job_record['State'] = datafield('state', state, 'job_state')
         job_record['Created'] = datafield('create_time', utc_to_local(job[DataObject.create_time]).timestamp(), 'timestamp')
-        if int(current_time) - int(job_record['Created']) < 200000:
+        if int(current_time) - int(job_record['Created']) < 2000000:
             q2 = current_user.irods_session.query(DataObjectMeta.name, DataObjectMeta.value).filter( \
                 Criterion('=', DataObject.id, job[DataObject.id]))
             metadata = {meta[DataObjectMeta.name] : meta[DataObjectMeta.value] for meta in q2}
