@@ -136,22 +136,22 @@ $(document).ready(function(){
 </thead>
 <tbody>
 {% for entry in joblist %}
-    {% if entry.State.value == "incoming" %}
+    {% if entry.State.value in ("incoming", "stage") %}
       <TR class="table-light">
     {% elif entry.State.value == "queued" %}
       <TR class="table-active">
     {% elif entry.State.value == "active" %}
       <TR class="table-primary">
-    {% elif entry.State.value == "waiting" %}
+    {% elif entry.State.value == "postprocessing" %}
       <TR class="table-info">
+    {% elif entry.State.value == "waiting" %}
+      <TR class="table-warning">
     {% else %}
-    {% if "Result" in entry %}
-    {% if entry["Result"].value != 0 %}
-       <TR class="table-danger">
-    {% else %}
-       <TR class="table-success">
-    {% endif %}
-    {% endif %}
+      {% if "Result" in entry and entry["Result"].value == 0 %}
+        <TR class="table-success">
+      {% else %}
+        <TR class="table-danger">
+      {% endif %}
     {% endif %}
     {% for column in columns %}    
         <TD>
