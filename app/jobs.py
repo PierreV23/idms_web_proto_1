@@ -117,8 +117,8 @@ def show_jobdetails():
         'sys::run::owner': ('Job owner', 'irods_user'),
         'sys::run::pipeline_dir': ('Pipeline run directory', 'directory'),
         'sys::run::run_dir': ('Pipeline run directory', 'directory'),
-        'sys::runsheet::repo': ('Git repository', 'git_repo'),
-        'sys::runsheet::tag': ('Git tag', 'git_tag'),
+        'sys::runsheet::repo': ('Git repository', 'repo'),
+        'sys::runsheet::tag': ('Git tag', 'tag'),
         'sys::runsheet::distribution': ('Distribution pipeline', 'boolean'),
         'sys::runsheet::restartable': ('Restarts on error', 'boolean'),
         'sys::run::pid': ('Process PID', 'text')

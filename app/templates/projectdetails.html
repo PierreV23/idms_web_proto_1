@@ -25,11 +25,26 @@ function update_process(sourceElem, destElem) {
         }    
     );    
 }
+
+$(window).on('load', function() {
+  $( ".toggle_next" ).each(function() {
+      var check=$(this).prop('checked')
+      var proc=$(this).data('process')
+      $("[id^=nextpro][data-process=" + proc + "]").prop('disabled', function(){
+          return !check
+      })
+    });
+});
+
 </script>
 <!-- PROJECT SETTINGS --!>
 <div class="card card-body">
 
 <H3>Project Settings</H3>
+
+
+
+<!-- SHOW PROJECT DETAILS --!>
 
 <form action="update_project" method="post">
   <input type="hidden" id="action" name="action" value="update_project">
@@ -52,6 +67,10 @@ function update_process(sourceElem, destElem) {
   <button type="submit" class="btn btn-primary">Submit</button>
 </form>
 </div>
+
+
+
+<!-- PROJECT DELETE CONFIMATION DIALOG --!>
 
 <div class="modal fade" id="confirm-delete" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -83,6 +102,10 @@ function update_process(sourceElem, destElem) {
 
 </div>
 
+
+
+<!-- PROCESS LIST --!>
+
 <div class="card card-body">
 <H3>Processes</H3>
 {% for process in PD.processes %}
@@ -97,45 +120,70 @@ function update_process(sourceElem, destElem) {
   <input type="hidden" id="process" name="process" value="{{process}}">
   <div class="form-group">
     <label for="description_{{process}}">Description</label>
-    <input type="text" class="form-control" name="description" id="description_{{process}}" placeholder="Description" value="{{ PD.conf['processes'][process]['description'] }}">
+    <input type="text" class="form-control" name="description" id="description_{{process}}" placeholder="Description" value="{{ PD['processes'][process]['description'] }}">
   </div>
+
+
   <div class="form-group">
     <label for="gitrepo_{{process}}">GIT Repository</label>
-    <input type="text" class="form-control" name="repo" id="gitrepo_{{process}}" placeholder="GIT Repo" value="{{ PD.conf['processes'][process]['repo'] }}">
+    <input type="text" class="form-control" name="repo" id="repo_{{process}}" placeholder="GIT Repo" value="{{ PD['processes'][process]['repo'] }}">
   </div>
   <div class="form-group">
     <label for="gittag_{{process}}">GIT Tag</label>
-    <input type="text" class="form-control" name="tag" id="gittag_{{process}}" placeholder="GIT Tag" value="{{ PD.conf['processes'][process]['tag'] }}">
+    <input type="text" class="form-control" name="tag" id="gittag_{{process}}" placeholder="GIT Tag" value="{{ PD['processes'][process]['tag'] }}">
   </div>
+
+  <div class="form-group">
+    <label for="queue_{{process}}">LSF Queue</label>
+    <input type="text" class="form-control" name="lsf_queue" id="queue_{{process}}" placeholder="LSF Queue" value="{{ PD['processes'][process]['lsf_queue'] }}">
+  </div>  
+
+  <div class="form-check">
+  <input class="form-check-input toggle_next" type="checkbox" 
+      name="next_process"
+      data-process="{{process}}" 
+      value="true" 
+      {% if PD['processes'][process]['next_processid'] != 0 %}checked{% endif %} 
+      id="next_process_{{process}}">
+  <label class="form-check-label" for="nextproc_{{process}}">
+    Enable next proces
+  </label>
+  </div>
+
+  <script>
+    $( ".toggle_next" ).change(function() {
+      var check=$(this).prop('checked')
+      var proc=$(this).data('process')
+      $("[id^=nextpro][data-process=" + proc + "]").prop('disabled', function(){
+          return !check
+      })
+    });
+  </script>
+
   <div class="form-group">
     <label for="nextproject_{{process}}">Next ProjectID</label>
-    <select class="custom-select" name="next_projectID" id="nextproject_{{process}}" onchange="update_process('#nextproject_{{process}}', '#nextprocess_{{process}}')">
-{% for project in conf|sort %}
-<option{% if project in PD.conf['processes'][process]['next_projectID'] %} selected {% endif %}>{{project}}</option>
+    <select class="custom-select" name="next_projectID" data-process="{{process}}" id="nextproject_{{process}}" onchange="update_process('#nextproject_{{process}}', '#nextprocess_{{process}}')">
+{% for project in all_projects|sort %}
+<option{% if project == PD['processes'][process]['next_projectID'] %} selected {% endif %}>{{project}}</option>
 {% endfor %}
     </select>
   </div> 
 
   <div class="form-group">
     <label for="nextprocess_{{process}}">Next ProcessID</label>
-    <select class="custom-select" name="next_processID" id="nextprocess_{{process}}">
-{% for nextprocess in conf[PD.name]['processes']|sort %}
+    <select class="custom-select" name="next_processID" data-process="{{process}}" id="nextprocess_{{process}}">
+{% for nextprocess in PD['processes'][process]['next_processes']|sort %}
 
-<option {% if nextprocess == PD.conf['processes'][process]['next_processID'] %} selected {% endif %}>{{nextprocess}}</option>
+<option {% if nextprocess == PD['processes'][process]['next_processID'] %} selected {% endif %}>{{nextprocess}}</option>
 {% endfor %}
     </select>
   </div> 
-
-  <div class="form-group">
-    <label for="queue_{{process}}">LSF Queue</label>
-    <input type="text" class="form-control" name="queue" id="queue_{{process}}" placeholder="LSF Queue" value="{{ PD.conf['processes'][process]['queue'] }}">
-  </div>  
 
 <div class="form-check">
   <input class="form-check-input" type="checkbox" 
       name="modify_in_place" 
       value="true" 
-      {% if PD.conf['processes'][process]['modify_in_place'] == 'true' %}checked{% endif %} 
+      {% if PD['processes'][process]['modify_in_place'] == 1 %}checked{% endif %} 
       id="modify_in_place_{{process}}">
   <label class="form-check-label" for="modify_in_place_{{process}}">
     Modifies input collection, no output
@@ -146,7 +194,7 @@ function update_process(sourceElem, destElem) {
   <input class="form-check-input" type="checkbox" 
       name="restartable" 
       value="true" 
-      {% if PD.conf['processes'][process]['restartable'] == 'true' %}checked{% endif %} 
+      {% if PD['processes'][process]['restartable'] == 1 %}checked{% endif %} 
       id="restartable_{{process}}">
   <label class="form-check-label" for="restartable_{{process}}">
     Restarts on error
@@ -157,7 +205,7 @@ function update_process(sourceElem, destElem) {
   <input class="form-check-input" type="checkbox" 
       name="distribution" 
       value="true" 
-      {% if PD.conf['processes'][process]['distribution'] == 'true' %}checked{% endif %} 
+      {% if PD['processes'][process]['distribution'] == 1 %}checked{% endif %} 
       id="distribution_{{process}}">
   <label class="form-check-label" for="distribution_{{process}}">
     Distribution pipeline
