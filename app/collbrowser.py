@@ -64,6 +64,16 @@ def collist():
     cols = []
     objs = []
 
+# Look for metadate attr display_field that defines extra data that is shown
+# on the subcollections
+    display_field = None
+
+    q1 = irods_session.query(CollectionMeta.value).filter( \
+        Criterion('=', Collection.name, path)).filter( \
+        Criterion('=', CollectionMeta.name, 'display_field'))
+    for obj in q1:
+        display_field = obj[CollectionMeta.value]
+
 # Query for collection subcollections
     query = irods_session.query(Collection.id,
                                 Collection.name,
@@ -77,12 +87,13 @@ def collist():
         objdict['create_time'] = datafield('create_time', ctime.timestamp(), 'timestamp')
         objdict['owner_name'] = obj[Collection.owner_name]
 
-        q1 = irods_session.query(CollectionMeta.value).filter( \
-            Criterion('=', Collection.id, obj[Collection.id])).filter( \
-            Criterion('=', CollectionMeta.name, 'coll_description'))
-        objdict['coll_description'] = ''
-        for m in q1:
-            objdict['coll_description'] = m[CollectionMeta.value]
+        objdict['display_field'] = ''
+        if display_field:
+            q1 = irods_session.query(CollectionMeta.value).filter( \
+                Criterion('=', Collection.id, obj[Collection.id])).filter( \
+                Criterion('=', CollectionMeta.name, display_field))
+            for m in q1:
+                objdict['display_field'] = m[CollectionMeta.value]
 
         q2 = irods_session.query(CollectionMeta.value).filter( \
             Criterion('=', Collection.id, obj[Collection.id])).filter( \
@@ -91,6 +102,7 @@ def collist():
         for m in q2:
             objdict['type'] = m[CollectionMeta.value]
         cols.append(objdict)
+
 
 # Query for dataobjects in collection
     query = irods_session.query(Collection.name,
@@ -108,8 +120,11 @@ def collist():
         objdict['create_time'] = datafield('create_time', ctime.timestamp(), 'timestamp')
         objdict['owner_name'] = obj[DataObject.owner_name]
         objs.append(objdict)
-        
-    show_description = (max([0] + [len(i['coll_description']) for i in cols]) > 0)
+    
+    show_display_field = False
+    for i in cols:
+        if i['display_field']:
+            show_display_field = True
 
     breverse = bool(reverse == 'true')
     if cols:
@@ -120,7 +135,7 @@ def collist():
             objs.sort(key=lambda x: x[sortkey], reverse=breverse)
 
     return render_template('coll_contents.html', cols=cols, objs=objs, 
-                           show=show_description, sortkey=sortkey, reverse=breverse)
+                           show=show_display_field, sortkey=sortkey, reverse=breverse)
 
 def shortname(name,l):
     s = name
