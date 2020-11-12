@@ -70,7 +70,7 @@ def collist():
 
     q1 = irods_session.query(CollectionMeta.value).filter( \
         Criterion('=', Collection.name, path)).filter( \
-        Criterion('=', CollectionMeta.name, 'display_field'))
+        Criterion('=', CollectionMeta.name, 'ngsweb::display_field'))
     for obj in q1:
         display_field = obj[CollectionMeta.value]
 
