@@ -56,13 +56,27 @@ def coll_meta():
 @login_required    
 def collist():
     path = request.args.get('path','/', type=str)
-    sortkey = request.args.get('sortkey', 'name', type=str)
-    reverse = request.args.get('reverse', 'false', type=str)
+    sortkey = request.args.get('sortkey', None, type=str)
+    reverse_str = request.args.get('reverse', 'false', type=str)
+    new_path_str = request.args.get('new_path', 'true', type=str)
 
     irods_session = current_user.irods_session
 
     cols = []
     objs = []
+
+# Look for metadate attrs starting with ngsweb:: on the collection
+    q1 = irods_session.query(CollectionMeta.name, CollectionMeta.value).filter( \
+        Criterion('=', Collection.name, path)).filter( \
+        Criterion('like', CollectionMeta.name, 'ngsweb::%'))
+    display_settings = { m[CollectionMeta.name][8:] : m[CollectionMeta.value] for m in q1 }
+
+    display_field = display_settings.get('display_field')
+    if new_path_str == 'true':
+        sortkey = display_settings.get('sort_order', 'name')
+        reverse = display_settings.get('sort_reverse', 'false') == 'true'
+    else:
+        reverse = reverse_str == 'true'
 
 # Query for collection subcollections
     query = irods_session.query(Collection.id,
@@ -77,12 +91,13 @@ def collist():
         objdict['create_time'] = datafield('create_time', ctime.timestamp(), 'timestamp')
         objdict['owner_name'] = obj[Collection.owner_name]
 
-        q1 = irods_session.query(CollectionMeta.value).filter( \
-            Criterion('=', Collection.id, obj[Collection.id])).filter( \
-            Criterion('=', CollectionMeta.name, 'coll_description'))
-        objdict['coll_description'] = ''
-        for m in q1:
-            objdict['coll_description'] = m[CollectionMeta.value]
+        objdict['display_field'] = ''
+        if display_field:
+            q1 = irods_session.query(CollectionMeta.value).filter( \
+                Criterion('=', Collection.id, obj[Collection.id])).filter( \
+                Criterion('=', CollectionMeta.name, display_field))
+            for m in q1:
+                objdict['display_field'] = m[CollectionMeta.value]
 
         q2 = irods_session.query(CollectionMeta.value).filter( \
             Criterion('=', Collection.id, obj[Collection.id])).filter( \
@@ -91,6 +106,7 @@ def collist():
         for m in q2:
             objdict['type'] = m[CollectionMeta.value]
         cols.append(objdict)
+
 
 # Query for dataobjects in collection
     query = irods_session.query(Collection.name,
@@ -108,19 +124,21 @@ def collist():
         objdict['create_time'] = datafield('create_time', ctime.timestamp(), 'timestamp')
         objdict['owner_name'] = obj[DataObject.owner_name]
         objs.append(objdict)
-        
-    show_description = (max([0] + [len(i['coll_description']) for i in cols]) > 0)
+    
+    show_display_field = False
+    for i in cols:
+        if i['display_field']:
+            show_display_field = True
 
-    breverse = bool(reverse == 'true')
     if cols:
         if sortkey in cols[0]:
-            cols.sort(key=lambda x: x[sortkey], reverse=breverse)
+            cols.sort(key=lambda x: x[sortkey], reverse=reverse)
     if objs:
         if sortkey in objs[0]:
-            objs.sort(key=lambda x: x[sortkey], reverse=breverse)
+            objs.sort(key=lambda x: x[sortkey], reverse=reverse)
 
     return render_template('coll_contents.html', cols=cols, objs=objs, 
-                           show=show_description, sortkey=sortkey, reverse=breverse)
+                           show=show_display_field, sortkey=sortkey, reverse=reverse)
 
 def shortname(name,l):
     s = name

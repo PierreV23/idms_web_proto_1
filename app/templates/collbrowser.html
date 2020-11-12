@@ -9,8 +9,8 @@
 <script>
 
 var collection="{{ path }}";
-var sortkey="name";
-var reverse="true";
+var sortkey="";
+var reverse="";
 
 function fillModal(path, name) {
     var ModalHeader =  document.getElementById("DocTitle")
@@ -68,11 +68,12 @@ function load_meta() {
 }
 
 
-function load_list() {
+function load_list(new_path) {
   $.get('{{ url_for('collbrowser.collist') }}', {
     path: collection,
     sortkey: sortkey,
-    reverse: reverse
+    reverse: reverse,
+    new_path: new_path
   }, function(data) {
     $('#collapse-contents').html(data)
   });
@@ -93,7 +94,7 @@ function tree_active() {
 }
 
 function set_path() {
-  load_list();
+  load_list(true);
   load_graph();
   load_meta();
   build_title();
@@ -104,7 +105,7 @@ $(document).on('click', '.sort-change', function() {
   console.log('change')
   sortkey=$(this).data('key');
   reverse=$(this).data('dir');
-  load_list();
+  load_list(false);
 });
 
 $(document).on('click', '.path-change', function() {

@@ -2,7 +2,7 @@
             <thead>
                <tr>
                {% if show == True %}
-                  {% set datafields = (('Name', 'name'), ('Description', 'coll_description'), ('Size', 'size'), ('Create_Date', 'create_time'), ('Owner_name', 'owner_name')) %}
+                  {% set datafields = (('Name', 'name'), ('Description', 'display_field'), ('Size', 'size'), ('Create_Date', 'create_time'), ('Owner_name', 'owner_name')) %}
                {% else %}
                   {% set datafields = (('Name', 'name'), ('Size', 'size'), ('Create_Date', 'create_time'), ('Owner_name', 'owner_name')) %}
                {% endif %}
@@ -31,7 +31,7 @@ class="table-danger"
 {% endif %}>
     <td> <span class="path-change" data-path="{{ entry.path }}">{{ entry.name }}</div> </td>
     {% if show == True %}
-       <td>  {{ entry.coll_description }} </td>
+       <td>  {{ entry.display_field }} </td>
     {% endif %}
     <td> DIR </td> <td> {{ entry.create_time }} </td> <td> {{ entry.owner_name }} </td>
     <td></td>
@@ -42,7 +42,7 @@ class="table-danger"
 <tr><td>
 <a data-toggle="modal" data-target="#myOutput" onclick="fillModal('{{ entry.path }}','{{ entry.name}}')">{{ entry.name }}</a>
     {% if show == True %}
-       <td>  {{ entry.coll_description }} </td>
+       <td>  {{ entry.display_field }} </td>
     {% endif %}
 <!-- <a href="/docviewer?path={{entry.path}}">{{ entry.name }}</a> -->
 </td>
