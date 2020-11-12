@@ -56,23 +56,27 @@ def coll_meta():
 @login_required    
 def collist():
     path = request.args.get('path','/', type=str)
-    sortkey = request.args.get('sortkey', 'name', type=str)
-    reverse = request.args.get('reverse', 'false', type=str)
+    sortkey = request.args.get('sortkey', None, type=str)
+    reverse_str = request.args.get('reverse', 'false', type=str)
+    new_path_str = request.args.get('new_path', 'true', type=str)
 
     irods_session = current_user.irods_session
 
     cols = []
     objs = []
 
-# Look for metadate attr display_field that defines extra data that is shown
-# on the subcollections
-    display_field = None
-
-    q1 = irods_session.query(CollectionMeta.value).filter( \
+# Look for metadate attrs starting with ngsweb:: on the collection
+    q1 = irods_session.query(CollectionMeta.name, CollectionMeta.value).filter( \
         Criterion('=', Collection.name, path)).filter( \
-        Criterion('=', CollectionMeta.name, 'ngsweb::display_field'))
-    for obj in q1:
-        display_field = obj[CollectionMeta.value]
+        Criterion('like', CollectionMeta.name, 'ngsweb::%'))
+    display_settings = { m[CollectionMeta.name][8:] : m[CollectionMeta.value] for m in q1 }
+
+    display_field = display_settings.get('display_field')
+    if new_path_str == 'true':
+        sortkey = display_settings.get('sort_order', 'name')
+        reverse = display_settings.get('sort_reverse', 'false') == 'true'
+    else:
+        reverse = reverse_str == 'true'
 
 # Query for collection subcollections
     query = irods_session.query(Collection.id,
@@ -126,16 +130,15 @@ def collist():
         if i['display_field']:
             show_display_field = True
 
-    breverse = bool(reverse == 'true')
     if cols:
         if sortkey in cols[0]:
-            cols.sort(key=lambda x: x[sortkey], reverse=breverse)
+            cols.sort(key=lambda x: x[sortkey], reverse=reverse)
     if objs:
         if sortkey in objs[0]:
-            objs.sort(key=lambda x: x[sortkey], reverse=breverse)
+            objs.sort(key=lambda x: x[sortkey], reverse=reverse)
 
     return render_template('coll_contents.html', cols=cols, objs=objs, 
-                           show=show_display_field, sortkey=sortkey, reverse=breverse)
+                           show=show_display_field, sortkey=sortkey, reverse=reverse)
 
 def shortname(name,l):
     s = name
