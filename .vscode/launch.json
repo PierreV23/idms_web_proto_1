@@ -21,7 +21,7 @@
                 "--port", "${input:flask-port-number}",
             ],
             "jinja": true,
-            "pythonPath": "/mnt/scratch_dir/${env:USER}/.conda/envs/myflask/bin/python"
+            "pythonPath": "/mnt/scratch_dir/${env:USER}/envs/myflask/bin/python"
         }
     ],
     "inputs": [
