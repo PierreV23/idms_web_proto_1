@@ -57,8 +57,8 @@ def get_complete(field):
 def get_import_state(flowcell, flowcell_attr):
     irods_session = current_user.irods_session
     q = irods_session.query(Collection.name).filter( \
-        Criterion(CollectionMeta.name, '=', flowcell_attr)).filter( \
-        Criterion(CollectionMeta.value, '=', flowcell))
+        Criterion('=', CollectionMeta.name, flowcell_attr)).filter( \
+        Criterion('=', CollectionMeta.value, flowcell))
     import_coll = None
     for collobj in q:
         coll = irods_session.collections.get(collobj[Collection.name])
@@ -74,6 +74,7 @@ def run_list():
     for run in data:
         if run['flowcell']:
             collstate = get_import_state(run['flowcell'], 'minion::flowcell_id')
+            run['datacoll'] = collstate
     return render_template('ngsruns.html', data=data)
 
 @bp.route('new', methods=['GET'])
