@@ -13,7 +13,7 @@ bp = Blueprint('ngsruns', __name__, url_prefix='/ngsruns')
 class NGSRun(db.Model):
     __tablename__ = 'ngsruns'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(128), nullable = True)
+    name = db.Column(db.String(128), nullable = False)
     flowcell = db.Column(db.String(30), default='', nullable = False)
     creation_date = db.Column(db.TIMESTAMP, server_default=db.func.current_timestamp(), nullable=False)
     description = db.Column(db.String(250), default='', nullable = False)
@@ -69,23 +69,48 @@ def get_import_state(flowcell, flowcell_attr):
 
 @bp.route('list', methods=['GET'])
 def run_list():
+    id = request.args.get('idrequest')
     all_runs = NGSRun.query.all()
+    all_barcodes = NGSBarcode.query.all()
     data = [ vars(f) for f in all_runs ]
+    barcodes = [ vars(f) for f in all_barcodes ]
     for run in data:
         if run['flowcell']:
             collstate = get_import_state(run['flowcell'], 'minion::flowcell_id')
             run['datacoll'] = collstate
-    return render_template('ngsruns.html', data=data)
+    return render_template('ngsruns.html', data=data, barcodes=barcodes, idrequest=id)
+
+@bp.route('edit', methods=['GET'])
+def edit_form():
+    id = request.args.get('idrequest', '', type=str)
+    run = NGSRun.query.filter(NGSRun.id == id).one_or_none()
+    barcode_obj = NGSBarcode.query.filter(NGSBarcode.ngsrun == id).all()
+    #barcodes = [ f.barcode for f in barcode_obj ] # maak een list van object
+    data = { barcode : None for barcode in barcodes }
+    for f in barcode_obj:
+        data[f.barcode] = f
+    print(run)
+    print(run.flowcell)
+    data.update({"flowcell": run.flowcell})
+    data.update({"name": run.name})
+    data.update({"description": run.description})
+    data.update({"project": run.project})
+    data.update({"owner": run.owner})
+    #data[name] = run.name
+    #data[description] = run.description
+    #data = { f.barcode: f for f in barcode_obj }
+    return render_template('ngsrun.html', data=data, barcodes=barcodes, id=id)
 
 @bp.route('new', methods=['GET'])
 def run_form():
     data = { barcode : None for barcode in barcodes }
-    return render_template('ngsrun.html', data=data, barcodes=barcodes)
+    return render_template('ngsrun.html', data=data, barcodes=barcodes, id=-1)
 
 @bp.route('new', methods=['POST'])
 def run_update():
     f = request.form.to_dict()
     new_run = NGSRun(f.get('flowcell', ''))
+    new_run.name = f.get('name', '')
     new_run.description = f.get('description', '')
     db.session.add(new_run)
     db.session.commit()
@@ -95,6 +120,7 @@ def run_update():
             new_barcode.unilab = f.get('unilab_{}'.format(barcode))
             new_barcode.virus_target = f.get('target_{}'.format(barcode))
             new_barcode.primer_set = f.get('primer_{}'.format(barcode))
+            new_barcode.description = f.get('description_{}'.format(barcode))
             db.session.add(new_barcode)
     db.session.commit()
     return redirect(url_for('ngsruns.run_list'))

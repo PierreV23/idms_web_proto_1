@@ -5,23 +5,69 @@
 {% endblock %}
 
 {% block content %}
+
+{% if idrequest %}
+<H2>List of run {{ data[idrequest|int -1].id }}: "{{ data[idrequest|int -1].name }}" ({{ data[idrequest|int -1].flowcell }}) 
+<form action="edit" method="get">
+   <input type="hidden" id="idrequest" name="idrequest" value="{{ idrequest }}">
+   <label class="col-sm-2 col-form-label"><button type="submit" class="btn btn-secondary">EDIT</button></label>
+</form></H2>
+
 <TABLE class="table table-striped table-hover table-sm">
     <thead class="thead-dark">
     <TR>
+        <TH scope="col">id</TH>
+        <TH scope="col">ngsrunid</TH>
+        <TH scope="col">Barcode</TH>
+        <TH scope="col">Unilab code</TH>
+        <TH scope="col">Virus target</TH>
+        <TH scope="col">Primer set Collection</TH>
         <TH scope="col">Description</TH>
-        <TH scope="col">Flowcell</TH>
-        <TH scope="col">Data Collection</TH>
-
+        <TH scope="col">Creation date</TH>
     </TR>
     </thead>
-    <tbody>
-
-{% for run in data %}
-<tr>
-<td>{{ run.description }}</td>
-<td>{{ run.flowcell }}</td>
-<td>{{ run.datacoll }}</td>
-</tr>
-{% endfor %}
+<tbody>
+   {% for code in barcodes %}
+      {% if code.ngsrun|int == idrequest|int %}
+      <tr>
+         <td>{{ code.id }}</td>
+         <td>{{ code.ngsrun }}</td>
+         <td>{{ code.barcode }}</td>
+         <td>{{ code.unilab }}</td>
+         <td>{{ code.virus_target }}</td>
+         <td>{{ code.primer_set }}</td>
+         <td>{{ code.description }}</td>
+         <td>{{ code.creation_date }}</td>
+      </tr>
+      {% endif %}
+   {% endfor %}
 </tbody>
+</TABLE>
+{% endif %}
+
+<H2>List of all runs</H2>
+<TABLE class="table table-striped table-hover table-sm">
+    <thead class="thead-dark">
+    <TR>
+        <TH scope="col">ID</TH>
+        <TH scope="col">Name</TH>
+        <TH scope="col">Flowcell</TH>
+        <TH scope="col">Data Collection</TH>
+    </TR>
+    </thead>
+
+<tbody>
+   {% for run in data %}
+   <tr>
+      <td>{{ run.id }}</td>
+      <td><a href="/ngsruns/list?idrequest={{ run.id }}">{{ run.name }}</a></td>
+      <td>{{ run.flowcell }}</td>
+      <td>{{ run.datacoll }}</td>
+   </tr>
+   {% endfor %}
+</tbody>
+</TABLE>
+
 {% endblock %}
+
+
