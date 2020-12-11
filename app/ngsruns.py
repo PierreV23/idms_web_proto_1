@@ -57,6 +57,7 @@ class NGSRunSchema(ma.Schema):
 class NGSBarcodesSchema(ma.Schema):
     barcode = fields.String()
     primer_set = fields.String()
+    unilab = fields.String()
     virus_target = fields.String()
     description = fields.String()
 

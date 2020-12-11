@@ -16,7 +16,7 @@
     <input type="hidden" id="id" name="id" value="{{ id }}">
     <div class="form-group row">
         <label for="ngs_name" class="col-sm-1 col-form label">Name</label>
-        <input type="text" class="form-control col-sm-2 input-sm" autocomplete="off" name="name" id="ngs_name" placeholder="Name" value="{{ data.name }}">
+        <input type="text" class="form-control col-sm-2 input-sm" autocomplete="off" name="name" id="ngs_name" placeholder="Run Name" value="{{ data.name }}">
         <label for="ngs_flowcell" class="col-sm-1 col-form-label">Flowcell:</label>
         <input type="text" class="form-control col-sm-1" autocomplete="off" name="flowcell" id="ngs_flowcell" placeholder="Flowcell" value="{{ data.flowcell }}">
       </div>
@@ -24,7 +24,7 @@
 <div class="form-group row">
     <label class="col-sm-1 col-form-label">Barcode</label>
     <label class="col-sm-1 col-form-label">Unilab ID</label>
-    <label class="col-sm-1 col-form-label">Target</label>
+    <label class="col-sm-1 col-form-label">Virus Target</label>
     <label class="col-sm-1 col-form-label">Primer Set</label>
     <label class="col-sm-1 col-form-label">Description</label>
 </div>
@@ -40,7 +40,7 @@
 <div class="form-group form-row">
     <input readonly type="text" tabindex=-1 class="form-control col-sm-1" name="bar_{{ barcode }}" id="bar_{{ barcode }}" value="{{ barcode }}">
     <input type="text" class="form-control col-sm-1" tabindex={{ loop.index }} autocomplete="off" name="unilab_{{ barcode }}" id="unilab_{{ barcode }}" placeholder="Unilab ID" value="{{ data[barcode].unilab }}">
-    <input type="text" class="form-control col-sm-2 targetAutocomplete targetfield" tabindex={{ loop.index + 24 }} autocomplete="off" name="target_{{ barcode }}" id="target_{{ barcode }}" placeholder="Target" value="{{ data[barcode].virus_target }}">
+    <input type="text" class="form-control col-sm-2 targetAutocomplete targetfield" tabindex={{ loop.index + 24 }} autocomplete="off" name="target_{{ barcode }}" id="target_{{ barcode }}" placeholder="Virus Target" value="{{ data[barcode].virus_target }}">
     <input type="text" class="form-control col-sm-2 primerAutocomplete primerfield" tabindex={{ loop.index + 48 }} autocomplete="off" name="primer_{{ barcode }}" id="primer_{{ barcode }}" placeholder="Primer Set" value="{{ data[barcode].primer_set }}">
     <input type="text" class="form-control col-sm-2" tabindex={{ loop.index + 72 }} autocomplete="off" name="description_{{ barcode }}" id="description_{{ barcode }}" placeholder="Description" value="{{ data[barcode].description }}">
 </div>
