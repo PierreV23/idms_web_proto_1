@@ -1,4 +1,6 @@
 __pycache__
+migrations
+instance
 secret
 secret.acc
 secret.prod

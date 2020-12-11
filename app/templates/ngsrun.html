@@ -1,0 +1,124 @@
+{% extends 'base2.html' %}
+ 
+{% block heading %}
+<H3><b>New NGS Run</b></H3>
+{% endblock %}
+
+{% block content %}
+
+<script>
+    var barcodes={{ barcodes | safe}}
+</script>
+
+<div class="container">
+    
+<form action="new" method="post">
+    <input type="hidden" id="id" name="id" value="{{ id }}">
+    <div class="form-group row">
+        <label for="ngs_name" class="col-sm-1 col-form label">Name</label>
+        <input type="text" class="form-control col-sm-2 input-sm" autocomplete="off" name="name" id="ngs_name" placeholder="Run Name" value="{{ data.name }}">
+        <label for="ngs_flowcell" class="col-sm-1 col-form-label">Flowcell:</label>
+        <input type="text" class="form-control col-sm-1" autocomplete="off" name="flowcell" id="ngs_flowcell" placeholder="Flowcell" value="{{ data.flowcell }}">
+      </div>
+
+<div class="form-group row">
+    <label class="col-sm-1 col-form-label">Barcode</label>
+    <label class="col-sm-1 col-form-label">Unilab ID</label>
+    <label class="col-sm-1 col-form-label">Virus Target</label>
+    <label class="col-sm-1 col-form-label">Primer Set</label>
+    <label class="col-sm-1 col-form-label">Description</label>
+</div>
+
+<div class="form-group row">
+<label class="col-sm-1 col-form-label"></label>
+<label class="col-sm-1 col-form-label"><button type="button" class="btn btn-secondary" id="databutton" data-toggle="modal" data-target="#unilab_list">Unilab List</button></label>
+<label class="col-sm-2 col-form-label"><button type="button" class="btn btn-secondary" id="targetbutton">Copy down</button></label>
+<label class="col-sm-2 col-form-label"><button type="button" class="btn btn-secondary" id="primerbutton">Copy down</button></label>
+</div>
+
+{% for barcode in barcodes %}
+<div class="form-group form-row">
+    <input readonly type="text" tabindex=-1 class="form-control col-sm-1" name="bar_{{ barcode }}" id="bar_{{ barcode }}" value="{{ barcode }}">
+    <input type="text" class="form-control col-sm-1" tabindex={{ loop.index }} autocomplete="off" name="unilab_{{ barcode }}" id="unilab_{{ barcode }}" placeholder="Unilab ID" value="{{ data[barcode].unilab }}">
+    <input type="text" class="form-control col-sm-2 targetAutocomplete targetfield" tabindex={{ loop.index + 24 }} autocomplete="off" name="target_{{ barcode }}" id="target_{{ barcode }}" placeholder="Virus Target" value="{{ data[barcode].virus_target }}">
+    <input type="text" class="form-control col-sm-2 primerAutocomplete primerfield" tabindex={{ loop.index + 48 }} autocomplete="off" name="primer_{{ barcode }}" id="primer_{{ barcode }}" placeholder="Primer Set" value="{{ data[barcode].primer_set }}">
+    <input type="text" class="form-control col-sm-2" tabindex={{ loop.index + 72 }} autocomplete="off" name="description_{{ barcode }}" id="description_{{ barcode }}" placeholder="Description" value="{{ data[barcode].description }}">
+</div>
+{% endfor %}
+<button type="submit" class="btn btn-primary">Submit</button>
+</form>
+
+</div>
+
+
+<script>
+        $('#targetbutton').click(function () {
+            $(".targetfield").val($("#target_barcode01").val());
+        });
+        $('#primerbutton').click(function () {
+            $(".primerfield").val($("#primer_barcode01").val());
+        });
+
+        $('.targetAutocomplete').autoComplete({
+            resolverSettings: {
+                url: 'complete/virus_target'
+            }
+        });
+
+        $('.primerAutocomplete').autoComplete({
+            resolverSettings: {
+                url: 'complete/primer_set'
+            }
+        });
+
+
+</script>
+
+<div class="modal" id="unilab_list" role="dialog" >
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="DocTitle">Paste or enter a list of unilab IDs</h5>
+            </div>
+            <div class="modal-body">
+                    <div class="form-group">  
+                        <textarea class="form-control" rows="24" name = "file" id="unilab_text" /></textarea>
+                    </div>  
+                    <div class="form-group">  
+                        <button type="button" class="btn btn-primary" data-dismiss="modal" id="modal_ok">OK</button>
+                        <button type="button" class="btn btn-default btn-primary" data-dismiss="modal">Cancel</button>
+                    </div>  
+            </div>
+        </div>
+    </div>            
+</div>
+
+<script>
+        $('#modal_ok').click(function () {
+            var linearray = document.getElementById("unilab_text").value.split(/\r?\n/)
+            linearray.forEach(copy_line)
+        });
+
+        function copy_line(value, index, array) {
+            var barcode = index + 1
+            var field_id="unilab_barcode" + ((barcode<10) ? "0" : "") + barcode.toString()
+            $('#'+field_id).val(value)
+        }
+
+        $('#databutton').click(function () {
+            var text = ""
+            var v = ""
+            for (barcode=1;barcode<25;barcode++) {
+                var field_id="unilab_barcode" + ((barcode<10) ? "0" : "") + barcode.toString()
+                v = $('#'+field_id).val()
+                if (v != "") {
+                    text = text + $('#'+field_id).val() + "\n"
+                } else {
+                    break
+                }
+            }
+            $('#unilab_text').val(text)
+        });
+</script>
+
+{% endblock %}

@@ -99,7 +99,7 @@ class WebUser(UserMixin):
         )
 
         ssl_settings = {
-            'irods_ssl_ca_certificate_file': '/etc/irods/ssl/test/irods.crt',
+            'irods_ssl_ca_certificate_file': '/etc/irods/ssl/acc/irods.crt',
             'ssl_context': context
         }
 

@@ -1,16 +1,23 @@
+import os
 from flask import Flask, redirect, render_template, url_for
 from flask_login import current_user, LoginManager, login_required, logout_user
+from flask_migrate import Migrate
 from app.models import WebUser
 from . import auth, collbrowser, jobs, docviewer
 from . import projects, cluster, admin, reports
+from . import ngsruns
 import irods.exception
 
 app = Flask(__name__)
 
 app.config.from_mapping(
     SECRET_KEY='58gqh)5&^&877838-_P[43889rv4&*F$%q5',
-    #DATABASE=os.path.join(app.instance_path, 'flaskr.sqlite'),
+    DATABASE=os.path.join(app.instance_path, 'ngsrun.sqlite'),
 )
+
+app.config.from_pyfile(os.path.join(app.instance_path, 'config.py'), silent=False)
+
+
 
 app.register_blueprint(auth.bp)
 app.register_blueprint(collbrowser.bp)
@@ -20,7 +27,11 @@ app.register_blueprint(projects.BP)
 app.register_blueprint(cluster.bp)
 app.register_blueprint(admin.bp)
 app.register_blueprint(reports.bp)
+app.register_blueprint(ngsruns.bp)
 
+from .ngsruns import db
+db.init_app(app)
+migrate = Migrate(app, db)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
