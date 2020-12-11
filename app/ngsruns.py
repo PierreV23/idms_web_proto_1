@@ -1,6 +1,8 @@
 from flask import Flask, Blueprint, render_template, request, jsonify, redirect, url_for
 from flask_login import current_user, login_required
 from flask_sqlalchemy import SQLAlchemy
+from flask_marshmallow import Marshmallow
+from marshmallow import Schema, fields, validate
 from sqlalchemy.orm import relationship, remote, foreign
 from sqlalchemy import ForeignKey, distinct
 from irods.models import Collection, CollectionMeta
@@ -9,6 +11,7 @@ from irods.column import Criterion
 db = SQLAlchemy()
 
 bp = Blueprint('ngsruns', __name__, url_prefix='/ngsruns')
+ma = Marshmallow(bp)
 
 class NGSRun(db.Model):
     __tablename__ = 'ngsruns'
@@ -38,6 +41,30 @@ class NGSBarcode(db.Model):
     def __init__(self, ngsrun, barcode):
         self.ngsrun = ngsrun
         self.barcode = barcode
+
+class NGSRunsSchema(ma.Schema):
+    id = fields.Integer(dump_only=True)
+    name = fields.String(required=True, validate=validate.Length(1))
+    flowcell = fields.String(required=True)
+
+class NGSRunSchema(ma.Schema):
+    id = fields.Integer(dump_only=True)
+    name = fields.String(required=True, validate=validate.Length(1))
+    flowcell = fields.String(required=True)
+    description = fields.String()
+    project = fields.String()
+
+class NGSBarcodesSchema(ma.Schema):
+    barcode = fields.String()
+    primer_set = fields.String()
+    virus_target = fields.String()
+    description = fields.String()
+
+
+ngsrun_schema = NGSRunSchema()
+ngsruns_schema = NGSRunsSchema(many=True)
+barcode_schema = NGSBarcodesSchema()
+barcodes_schema = NGSBarcodesSchema(many=True)
 
 barcodes = [ 'barcode{:02d}'.format(bar) for bar in range(1,25) ]
 
@@ -98,3 +125,31 @@ def run_update():
             db.session.add(new_barcode)
     db.session.commit()
     return redirect(url_for('ngsruns.run_list'))
+
+# GET
+
+@bp.route('/api/runs', methods=['GET'])
+@login_required
+def get_ngs_runs():
+    """Retrieve a list of all ngs runs
+    """
+    all_runs = NGSRun.query.all()
+    dump = ngsruns_schema.dump(all_runs)
+    return jsonify(dump)
+
+@bp.route('/api/runs/<flowcell>', methods=['GET'])
+@login_required
+def get_ngs_run(flowcell):
+    """Retrieve a single ngs runs
+    """
+    ngsrun = NGSRun.query.filter(NGSRun.flowcell == flowcell).one_or_none()
+    return jsonify(ngsrun_schema.dump(ngsrun))
+
+@bp.route('/api/runs/<flowcell>/barcode', methods=['GET'])
+@login_required
+def get_ngs_barcodes(flowcell):
+    """Retrieve barcodes for a single ngs runs
+    """
+    ngsrun = NGSRun.query.filter(NGSRun.flowcell == flowcell).one_or_none()
+    barcodes = NGSBarcode.query.filter(NGSBarcode.ngsrun == ngsrun.id)
+    return jsonify(barcode_schema.dump(barcodes))
