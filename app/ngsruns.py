@@ -155,7 +155,6 @@ def run_update():
 # GET
 
 @bp.route('/api/runs', methods=['GET'])
-@login_required
 def get_ngs_runs():
     """Retrieve a list of all ngs runs
     """
@@ -164,18 +163,16 @@ def get_ngs_runs():
     return jsonify(dump)
 
 @bp.route('/api/runs/<flowcell>', methods=['GET'])
-@login_required
 def get_ngs_run(flowcell):
     """Retrieve a single ngs runs
     """
     ngsrun = NGSRun.query.filter(NGSRun.flowcell == flowcell).one_or_none()
     return jsonify(ngsrun_schema.dump(ngsrun))
 
-@bp.route('/api/runs/<flowcell>/barcode', methods=['GET'])
-@login_required
+@bp.route('/api/runs/<flowcell>/barcodes', methods=['GET'])
 def get_ngs_barcodes(flowcell):
     """Retrieve barcodes for a single ngs runs
     """
     ngsrun = NGSRun.query.filter(NGSRun.flowcell == flowcell).one_or_none()
-    barcodes = NGSBarcode.query.filter(NGSBarcode.ngsrun == ngsrun.id)
-    return jsonify(barcode_schema.dump(barcodes))
+    barcodes = NGSBarcode.query.filter(NGSBarcode.ngsrun == ngsrun.id).all()
+    return jsonify(barcodes_schema.dump(barcodes))
