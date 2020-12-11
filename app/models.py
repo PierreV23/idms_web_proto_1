@@ -7,6 +7,8 @@ Created on Tue Nov 12 16:39:47 2019
 """
 
 import base64
+import binascii
+import hashlib
 import ssl
 from flask_login import UserMixin
 from flask import session
@@ -59,6 +61,13 @@ class WebUser(UserMixin):
         self._is_admin = None
         self.irods_server = IRODS_ENVS.get(environment, None)
         self.configure_irods_session(username, password)
+    
+    @property    
+    def ntlm_hash(self):
+        password = deobfuscate(self.password)
+        hash = binascii.hexlify(hashlib.new('md4', password.encode('utf-16le')).digest()).decode('ascii')
+        lmntlm = '{}:{}'.format('0' * 32, hash) 
+        return lmntlm
 
     def store(self):
         """Store user in Flask session."""

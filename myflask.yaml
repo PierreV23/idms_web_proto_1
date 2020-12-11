@@ -9,6 +9,7 @@ dependencies:
   - pip
   - python
   - pyyaml
+  - requests
   - flask-login
   - pip:
     - python-irodsclient
