@@ -8,7 +8,7 @@ Created on Fri Jan 10 15:22:06 2020
 
 import math
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import url_for
 from flask_login import current_user, login_required
 from irods.models import Collection, CollectionMeta
@@ -30,7 +30,10 @@ KNOWN_ATTRIBUTES = {
 
 KNOWN_ATTRIBUTE_TEMPLATES = {
     'sys::collection_size_time::.*' : 'timestamp',
-    'sys::collection_size::.*' : 'bytes'
+    'sys::collection_size::.*' : 'bytes',
+    'sys::lock::time::.*::valid_till': 'timestamp',
+    'sys::lock::time::.*::runtime': 'timedelta',
+    'sys::lock::time::.*::timeout': 'timedelta'
 }
 
 MAXLEN = 45
@@ -131,6 +134,21 @@ class data_boolean(data_base):
     def factory(**kwargs):
         return data_boolean(**kwargs)
 
+class data_timedelta(data_base):
+
+    def __str__(self):
+        if self.value.isnumeric():
+            return str(timedelta(seconds=int(self.value)))
+        else:
+            return self.value
+
+    @property
+    def htmlstring(self):
+        return str(self)
+
+    @staticmethod
+    def factory(**kwargs):
+        return data_timedelta(**kwargs)
 
 class data_timestamp(data_base):
     def __init__(self, name, value, datatype=None):
