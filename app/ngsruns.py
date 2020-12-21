@@ -107,7 +107,7 @@ def run_list():
             collstate = get_import_state(run['flowcell'], 'minion::flowcell_id')
             run['datacoll'] = collstate
     return render_template('ngsruns.html', data=data, barcodes=barcodes, idrequest=id)
-
+    
 @bp.route('edit', methods=['GET'])
 def edit_form():
     id = request.args.get('idrequest', '', type=str)
