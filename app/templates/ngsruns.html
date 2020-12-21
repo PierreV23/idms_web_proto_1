@@ -62,18 +62,24 @@
     </TR>
     </thead>
 
+{% set lflowcells=[] %}
+
 <tbody>
    {% for run in data %}
    <tr>
       <td>{{ run.id }}</td>
       <td><a href="/ngsruns/list?idrequest={{ run.id }}">{{ run.name }}</a></td>
+      {% if run.flowcell in lflowcells %}
+      <td><b>{{ run.flowcell }} !DUPLICATE!</b></td>
+      {% else %}
       <td>{{ run.flowcell }}</td>
+      {% endif %}
       <td>{{ run.datacoll }}</td>
+      <!--{{ lflowcells.append( run.flowcell ) }}-->
    </tr>
    {% endfor %}
 </tbody>
 </TABLE>
-
 {% endblock %}
 
 
