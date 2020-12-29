@@ -15,6 +15,7 @@ from irods.column import Criterion
 from app.projects import get_projectlist
 from app.datafield import datafield
 
+RESOURCES_OMIT = ('demoResc', 'bundleResc')
 
 bp = Blueprint('reports', __name__, url_prefix='/reports')
 
@@ -75,8 +76,7 @@ def get_space_usage():
     #query resources
     irods_session = current_user.irods_session
     query = irods_session.query(Resource.name)
-    resources = [ r[Resource.name] for r in query ]
-    resources = [ 'computeResc', 'storageResc' ]
+    resources = [ r[Resource.name] for r in query if not r[Resource.name] in RESOURCES_OMIT ]
     # query projects
     query =  irods_session.query(CollectionMeta.value).filter(
         Criterion('=', CollectionMeta.name, 'projectID'))
