@@ -1,4 +1,4 @@
-from flask import Flask, Blueprint, render_template, request, jsonify, redirect, url_for
+from flask import Flask, Blueprint, render_template, request, jsonify, redirect, url_for, session
 from flask_login import current_user, login_required
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
@@ -7,6 +7,7 @@ from sqlalchemy.orm import relationship, remote, foreign
 from sqlalchemy import ForeignKey, distinct
 from irods.models import Collection, CollectionMeta
 from irods.column import Criterion
+from app.datafield import datafield
 
 db = SQLAlchemy()
 
@@ -81,32 +82,28 @@ def get_complete(field):
     data1 = db.session.query(FIELDS[field]).filter(FIELDS[field].like('%{}%'.format(req))).distinct().all()
     return jsonify(data1)
 
-@login_required
-def get_import_state(flowcell, flowcell_attr):
-    irods_session = current_user.irods_session
-    q = irods_session.query(Collection.name).filter( \
-        Criterion('=', CollectionMeta.name, flowcell_attr)).filter( \
-        Criterion('=', CollectionMeta.value, flowcell))
-    import_coll = None
-    for collobj in q:
-        coll = irods_session.collections.get(collobj[Collection.name])
-        meta = coll.metadata.get_all('import_foldername')
-        if meta:
-            import_coll = collobj[Collection.name]
-    return import_coll
-
 @bp.route('list', methods=['GET'])
+@login_required
 def run_list():
     id = request.args.get('idrequest')
-    all_runs = NGSRun.query.all()
-    all_barcodes = NGSBarcode.query.all()
-    data = [ vars(f) for f in all_runs ]
-    barcodes = [ vars(f) for f in all_barcodes ]
+    data = [ vars(f) for f in NGSRun.query.all() ]
+    # Create a list of flowcells and collections in irods
+    q = current_user.irods_session.query(Collection.name, CollectionMeta.value).filter( \
+            Criterion('=', CollectionMeta.name, 'minion::flow_cell_id')).filter( \
+            Criterion('=', Collection.parent_name, '/rivmZone/projects/ngslab/minion'))
+    flowcell_list = { x[CollectionMeta.value] : x[Collection.name] for x in q }
     for run in data:
         if run['flowcell']:
-            collstate = get_import_state(run['flowcell'], 'minion::flowcell_id')
-            run['datacoll'] = collstate
-    return render_template('ngsruns.html', data=data, barcodes=barcodes, idrequest=id)
+            run['datacoll'] = datafield('collection', flowcell_list.get(run['flowcell']), 'irods_collection')
+    data.sort(key = lambda x: x["id"], reverse=True)
+    return render_template('ngsruns.html', data=data, idrequest=id)
+
+@bp.route('_barcodes', methods=['GET'])
+def run_barcodes():
+    id = request.args.get('idrequest')
+    barcodes = NGSBarcode.query.filter(NGSBarcode.ngsrun == id).all()
+    run = NGSRun.query.filter(NGSRun.id == id).one_or_none()
+    return render_template('ngsbarcodes.html', barcodes=barcodes, run=run)
     
 @bp.route('edit', methods=['GET'])
 def edit_form():
