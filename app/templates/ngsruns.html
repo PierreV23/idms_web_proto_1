@@ -6,80 +6,61 @@
 
 {% block content %}
 
-{% if idrequest %}
-   {% for d in data %}
-      {% if d.id == idrequest|int %}
-         <H2>List of run {{ d.id}}: "{{ d.name }}" ({{ d.flowcell }})</H2>
-      {% endif %}
-   {% endfor %}
-<!--
-<form action="edit" method="get">
-   <input type="hidden" id="idrequest" name="idrequest" value="{{ idrequest }}">
-   <label class="col-sm-2 col-form-label"><button type="submit" class="btn btn-secondary">EDIT</button></label>
-</form>
--->
-
-<TABLE class="table table-striped table-hover table-sm">
-    <thead class="thead-dark">
-    <TR>
-        <TH scope="col">id</TH>
-        <TH scope="col">ngsrunid</TH>
-        <TH scope="col">Barcode</TH>
-        <TH scope="col">Unilab code</TH>
-        <TH scope="col">Virus target</TH>
-        <TH scope="col">Primer set Collection</TH>
-        <TH scope="col">Description</TH>
-        <TH scope="col">Creation date</TH>
-    </TR>
-    </thead>
-<tbody>
-   {% for code in barcodes %}
-      {% if code.ngsrun|int == idrequest|int %}
-      <tr>
-         <td>{{ code.id }}</td>
-         <td>{{ code.ngsrun }}</td>
-         <td>{{ code.barcode }}</td>
-         <td>{{ code.unilab }}</td>
-         <td>{{ code.virus_target }}</td>
-         <td>{{ code.primer_set }}</td>
-         <td>{{ code.description }}</td>
-         <td>{{ code.creation_date }}</td>
+<div class="row">
+<div class="scroll card border-primary col-md-4">
+<div class="card-header">
+   <H2>List of all runs</H2>
+</div>
+<div class="card-body">   
+   <TABLE class="table table-striped table-hover table-sm">
+       <thead class="thead-dark">
+       <TR>
+           <TH scope="col">ID</TH>
+           <TH scope="col">Name</TH>
+           <TH scope="col">Flowcell</TH>
+           <TH scope="col">Data Collection</TH>
+       </TR>
+       </thead>
+   {% set lflowcells=[] %}
+   
+   <tbody>
+      {% for run in data %}
+      
+      <tr {% if run.id == idrequest|int  %}  class="table-success" {% endif %} class="runrow" data-id="{{ run.id }}">
+         <a href="/ngsruns/list?idrequest={{ run.id }}"></a>         
+         <td>{{ run.id }}</td>
+         <td>{{ run.name }}</td>
+         {% if run.flowcell in lflowcells %}
+         <td><b>{{ run.flowcell }} !DUPLICATE!</b></td>
+         {% else %}
+         <td>{{ run.flowcell }}</td>
+         {% endif %}
+         <td>{{ run.datacoll.htmlshort|safe }}</td>
+         <!--{{ lflowcells.append( run.flowcell ) }}-->
       </tr>
-      {% endif %}
-   {% endfor %}
-</tbody>
-</TABLE>
-{% endif %}
+      
+      {% endfor %}
+   </tbody>
+   </TABLE>
 
-<H2>List of all runs</H2>
-<TABLE class="table table-striped table-hover table-sm">
-    <thead class="thead-dark">
-    <TR>
-        <TH scope="col">ID</TH>
-        <TH scope="col">Name</TH>
-        <TH scope="col">Flowcell</TH>
-        <TH scope="col">Data Collection</TH>
-    </TR>
-    </thead>
+<script>
+      $('.runrow').on('click', function() {
+        $('.runrow').removeClass('table-primary') 
+        myid=$(this).data('id')
+        $.get('{{ url_for('ngsruns.run_barcodes') }}', {
+          idrequest: myid
+        }, function(data) {
+          $('#barcodes').html(data)
+          $('tr[data-id=' + myid + ']').addClass('table-primary')
+        });
+      });
+      
+</script>
+</div>
+</div>
 
-{% set lflowcells=[] %}
+<div class="scroll card border-primary col-md-8" id="barcodes">
 
-<tbody>
-   {% for run in data %}
-   <tr>
-      <td>{{ run.id }}</td>
-      <td><a href="/ngsruns/list?idrequest={{ run.id }}">{{ run.name }}</a></td>
-      {% if run.flowcell in lflowcells %}
-      <td><b>{{ run.flowcell }} !DUPLICATE!</b></td>
-      {% else %}
-      <td>{{ run.flowcell }}</td>
-      {% endif %}
-      <td>{{ run.datacoll }}</td>
-      <!--{{ lflowcells.append( run.flowcell ) }}-->
-   </tr>
-   {% endfor %}
-</tbody>
-</TABLE>
+</div>
+</div>
 {% endblock %}
-
-
