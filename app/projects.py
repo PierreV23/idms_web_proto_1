@@ -85,7 +85,7 @@ def show_projectdetails():
     projectdetails['groups'] = groups
     # Retrieve general project settings
     for attr in ['description', 'default_collection', 'service_account', 'modify_in_place',
-                 'distribution', 'restartable']:
+                 'distribution', 'restartable', 'omit_staging']:
         projectdetails[attr] = pl.get(attr, '')
 
 #    projectdetails['conf'] = config[projectnaam]
@@ -173,6 +173,7 @@ def update_projectsettings():
         for attr in ['description', 'repo', 'tag', 'lsf_queue']:
             if attr in requestdata:
                 data[attr] = requestdata[attr]
+        add_checkbox(data, requestdata, 'omit_staging')
         add_checkbox(data, requestdata, 'modify_in_place')
         add_checkbox(data, requestdata, 'restartable')
         add_checkbox(data, requestdata, 'distribution')
