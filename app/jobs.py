@@ -121,6 +121,7 @@ def show_jobdetails():
         'sys::runsheet::tag': ('Git tag', 'tag'),
         'sys::runsheet::distribution': ('Distribution pipeline', 'boolean'),
         'sys::runsheet::restartable': ('Restarts on error', 'boolean'),
+        'sys::runsheet::omit_staging': ('Omit staging', 'boolean'),
         'sys::run::pid': ('Process PID', 'text')
     }
     D = {}
