@@ -244,24 +244,24 @@ def generate_graph():
                     graph.edge(coll, placeholder, style='dotted', arrowhead='none')
 
         if levels:            
-            extra_colls = collmeta.get_all('user::pipeline::input_collection', [])
+            extra_colls = set(collmeta.get_all('user::pipeline::input_collection', []))
             extra_coll_ids = collmeta.get_all('user::pipeline::input_collection_id', [])
             for extra_coll_id in extra_coll_ids:
                 q = irods_session.query(Collection.name).filter(
                     Criterion('=', CollectionMeta.name, ATTR_DATASETID)).filter(
                     Criterion('=', CollectionMeta.value, extra_coll_id))
-                extra_colls += [ c[Collection.name] for c in q if not c[Collection.name] in extra_colls]
+                extra_colls |= { c[Collection.name] for c in q } 
             for extra_coll in extra_colls:
                 coll_node(extra_coll, levels=0, post=coll, linestyle='dashed')
             # FIND collections that refer to this collection bij name or id
             q = irods_session.query(Collection.name).filter(\
                     Criterion('=', CollectionMeta.name, 'user::pipeline::input_collection_id')).filter( \
                     Criterion('=', CollectionMeta.value, dataset_id))
-            ref_colls = [ c[Collection.name] for c in q]
+            ref_colls = { c[Collection.name] for c in q }
             q = irods_session.query(Collection.name).filter(\
                     Criterion('=', CollectionMeta.name, 'user::pipeline::input_collection')).filter( \
                     Criterion('=', CollectionMeta.value, coll))
-            ref_colls += [ c[Collection.name] for c in q if not c in ref_colls ]
+            ref_colls |= { c[Collection.name] for c in q } 
             for ref_coll in ref_colls:
                 coll_node(ref_coll, levels=1, pre=coll, linestyle='dashed')
 
