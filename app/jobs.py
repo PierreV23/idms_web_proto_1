@@ -63,8 +63,6 @@ def pagebuttons(page_size, count, current_page, max_buttons, template):
     else:
         before = pagebuttons
         after = []
-    print(before)
-    print(after)
     return before + after
 
 @login_required
@@ -115,7 +113,7 @@ def show_jobs():
     #     if x in ['all', a]:
     #         l = l + joblist(a)
     columns = ['Name', 'State'] + [JOB_FIELDS[a][0] for a in JOB_FIELDS]
-    buttons = pagebuttons(PAGE_SIZE, total, page, 10, 'href={}?page={{}}'.format(url_for('jobs.show_jobs')))
+    buttons = pagebuttons(PAGE_SIZE, total, page, 10, 'href={}?page={{}}&items={}'.format(url_for('jobs.show_jobs'), state))
     return render_template('jobs2.html', joblist=l, items=state, columns=columns, buttons=buttons)
 
 @bp.route('/jobdetails')
