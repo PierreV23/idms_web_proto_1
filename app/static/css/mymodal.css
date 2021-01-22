@@ -114,6 +114,10 @@ ul {
   height: 15px;
 }
 
+.buttonbar {
+    float: right;
+}
+
 .graph-height {
   min-height: 27vh;
   max-height: 27vh;
