@@ -132,7 +132,7 @@ $(document).ready(function(){
 </div>
 
 <!-- RUNSHEET JOB TABLE STARTS HERE -->
-<div class="card card-body scroll">
+
 <TABLE class="table table-striped table-hover table-sm">
 <thead class="thead-dark">
 <TR>
@@ -183,11 +183,5 @@ $(document).ready(function(){
 {% endfor %}
 </tbody>
  </TABLE>
-</div>
- <div class="buttonbar">
-  {% for button in buttons %}
-  <a class="btn {{ button['class'] }}" {{ button['ref'] | safe }} role="button"> {{ button['text'] }} </a>
-  {% endfor %}
-</div>  
 {% endblock %}
 
