@@ -68,7 +68,7 @@ ngsruns_schema = NGSRunsSchema(many=True)
 barcode_schema = NGSBarcodesSchema()
 barcodes_schema = NGSBarcodesSchema(many=True)
 
-barcodes = [ 'barcode{:02d}'.format(bar) for bar in range(1,25) ]
+barcodes = [ 'barcode{:02d}'.format(bar) for bar in range(1,97) ]
 
 FIELDS = {
     'virus_target': NGSBarcode.virus_target,
