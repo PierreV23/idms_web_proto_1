@@ -95,6 +95,8 @@ def run_list():
     for run in data:
         if run['flowcell']:
             run['datacoll'] = datafield('collection', flowcell_list.get(run['flowcell']), 'irods_collection')
+        else:
+            run['datacoll'] = datafield('collection', None, 'irods_collection')
     data.sort(key = lambda x: x["id"], reverse=True)
     return render_template('ngsruns.html', data=data, idrequest=id)
 
