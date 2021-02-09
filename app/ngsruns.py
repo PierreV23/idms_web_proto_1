@@ -133,6 +133,16 @@ def run_form():
     data = { barcode : None for barcode in barcodes }
     return render_template('ngsrun.html', data=data, barcodes=barcodes, id=-1)
 
+@bp.route('delete', methods=['GET'])
+@login_required
+def delete_ngs_run():
+    id = request.args.get('id', type=int)
+    if id:
+        NGSBarcode.query.filter(NGSBarcode.ngsrun==id).delete()
+        NGSRun.query.filter(NGSRun.id == id).delete()
+        db.session.commit()
+    return redirect(url_for('ngsruns.run_list'))
+
 @bp.route('new', methods=['POST'])
 def run_update():
     f = request.form.to_dict()
