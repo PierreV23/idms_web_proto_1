@@ -9,18 +9,34 @@ Created on Mon Nov 18 10:54:56 2019
 import base64
 import os
 from datetime import datetime, timezone
+from dateutil.relativedelta import relativedelta
 from flask import Blueprint, render_template, redirect, request, url_for
 from flask_login import current_user, login_required
 from irods.models import Collection, CollectionMeta, DataObject
 from irods.column import Criterion
 from app.datafield import AVU2data, datafield
 from graphviz import Digraph
+from irods.meta import iRODSMeta
+#from irods_helper import getmetaitem
 
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
 
 NAME_LENGTH = 20
 MAX_GRAPH_LEVELS = 3
 ATTR_DATASETID = 'sys::dataset_id'
+#TODO: use constants.py (role irods_cronjobs)
+ATTR_ARCHIVE_PREFIX = 'sys::archive::'
+ATTR_ARCHIVE_ENABLE = f'{ATTR_ARCHIVE_PREFIX}enable'
+ATTR_ARCHIVE_DEFAULT_STATE = f'{ATTR_ARCHIVE_PREFIX}default_state'
+ATTR_ARCHIVE_DESIREDSTATE = f'{ATTR_ARCHIVE_PREFIX}desired_state'
+ATTR_ARCHIVE_KEEP_ONLINE_TILL = f'{ATTR_ARCHIVE_PREFIX}keep_online_till'
+ATTR_ARCHIVE_LOCAL = f'{ATTR_ARCHIVE_PREFIX}local'
+ATTR_ARCHIVE_STAGE = f'{ATTR_ARCHIVE_PREFIX}stage'
+ATTR_ARCHIVE_STATE = f'{ATTR_ARCHIVE_PREFIX}state'
+ATTR_ARCHIVE_LASTRUN = f'{ATTR_ARCHIVE_PREFIX}lastrun'
+ATTR_ARCHIVE_MINSTABLE = f'{ATTR_ARCHIVE_PREFIX}min_stable'
+ATTR_ARCHIVE_ONLINEPERCENTAGE = f'{ATTR_ARCHIVE_PREFIX}online_percentage'
+
 
 COLL_SHAPES = {
     'valid':      ('box3d', 'springgreen1'),
@@ -33,6 +49,15 @@ COLL_SHAPES = {
 
 PROCESS_SHAPE = 'cds'
 
+# TODO: use the irods_helper instead (role irods_cronjobs)
+def getmetaitem(irods_obj, attr, default=None): 
+    try:
+        value = irods_obj.metadata.get_one(attr).value
+    except KeyError:
+        value = default
+    return value
+
+
 @bp.route('_meta')
 @login_required
 def coll_meta():
@@ -43,6 +68,7 @@ def coll_meta():
     query = irods_session.query(CollectionMeta.name, CollectionMeta.value,
                                 CollectionMeta.units).filter(
                                     Criterion('=', Collection.name, path))
+     # TODO: why not use a simple list of AVUs here? The template is not accessing the dictionary by key anyway...
     for coll_metadata in query:
         name = coll_metadata[CollectionMeta.name]
         value = coll_metadata[CollectionMeta.value]
@@ -51,6 +77,78 @@ def coll_meta():
         avu[avu_id] = AVU2data(name, value, units)
         
     return render_template('metadata.html', avu=avu)
+
+@bp.route('_setKeepOnlineUntil', methods=['GET'])
+@login_required
+def setKeepOnlineUntil():
+    irods_session = current_user.irods_session
+
+    selectionStr = request.args.get('selection','None', type=str)
+    collection = request.args.get('collection','None', type=str)
+
+    now = datetime.today()
+    delta = relativedelta(days=0)
+    if selectionStr == '1w':
+        delta = relativedelta(days=7)
+    elif selectionStr == '1M':
+        delta = relativedelta(months=1)
+    elif selectionStr == '6M':
+        delta = relativedelta(months=6)
+    else:
+        print( f"unknown selection for _setKeepOnlineUntil: {selectionStr}")
+        return('DONE')
+    keepOnlineUntil = now + delta
+
+    coll_obj = irods_session.collections.get(collection)
+    new_meta = iRODSMeta(ATTR_ARCHIVE_KEEP_ONLINE_TILL, str(int(datetime.timestamp(keepOnlineUntil))), 'timestamp' )
+    coll_obj.metadata[ATTR_ARCHIVE_KEEP_ONLINE_TILL] = new_meta
+    return('DONE')
+
+
+@bp.route('_setKeepLocal', methods=['GET'])
+@login_required
+def setKeepLocal():
+    irods_session = current_user.irods_session
+    selectionStr = request.args.get('selection','false', type=str)
+    collection = request.args.get('collection','None', type=str)
+    if selectionStr not in ['true', 'false']:
+        print( f"unknown selection for _setKeepLocal: {selectionStr}" )
+        return('DONE')
+    #print( collection )
+    coll_obj = irods_session.collections.get(collection)
+    new_meta = iRODSMeta(ATTR_ARCHIVE_LOCAL, selectionStr)
+    coll_obj.metadata[ATTR_ARCHIVE_LOCAL] = new_meta
+    return('DONE')
+
+@bp.route('_actions')
+@login_required
+def coll_actions():
+    path = request.args.get('path','/', type=str)
+    coll_name = path.split('/')[-1]
+    irods_session = current_user.irods_session
+
+    coll_obj = irods_session.collections.get(path)
+    is_dataset = getmetaitem(coll_obj, ATTR_DATASETID, "") != ""
+    keep_local = getmetaitem(coll_obj, ATTR_ARCHIVE_LOCAL, False)
+    online_percentage = int(getmetaitem(coll_obj, ATTR_ARCHIVE_ONLINEPERCENTAGE, 0 ))
+    archive_state = getmetaitem(coll_obj, ATTR_ARCHIVE_STATE, "000")
+    is_archived = False 
+    if archive_state[-1] == '1':
+        is_archived = True 
+    is_offline = False
+    if archive_state[:2] == '00':
+        is_offline = True
+
+    archival_state = {
+        "is_dataset": is_dataset,
+        "is_archived": is_archived,
+        "is_offline": is_offline,
+        "keep_local": keep_local,
+        "online_percentage": online_percentage
+    }   
+    #print( archival_state )
+    return render_template('actions.html', collection=path, name=coll_name, archival_state=archival_state )
+
 
 @bp.route('_collist')
 @login_required    
@@ -378,7 +476,7 @@ def collbrowser():
     #data_graph = base64.b64encode(graph_output).decode('utf-8')
 
     return render_template('collbrowser.html', path_title=path_title,
-                           path=path)
+                           path=path, archived=True)
 
 
 @bp.route('upload_file', methods=['GET', 'POST'])
