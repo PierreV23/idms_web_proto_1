@@ -13,14 +13,14 @@ var sortkey="";
 var reverse="";
 
 function fillModal(path, name) {
-    var ModalHeader =  document.getElementById("DocTitle")
+    var ModalHeader = document.getElementById("DocTitle")
     DocTitle.innerHTML = name 
     var modalEmbed =  document.getElementById("DocText")
     newEmbed = modalEmbed.cloneNode(true)
     source = "{{ url_for('docviewer.serve_object') }}?path=" + path
     newEmbed.setAttribute('src', source)
     modalEmbed.parentNode.replaceChild(newEmbed, modalEmbed)
-}  
+}
 
 function avu_table() {
     if ($("#metatoggle").text() == 'Formatted') {
@@ -93,12 +93,24 @@ function tree_active() {
   $(".tree-label[data-path='" + collection +"']").addClass('path-active');
 }
 
+function load_actions() {
+  //path_elem = collection.split('/')
+  //current_col_name = path_elem[-1]
+
+  $.get('{{ url_for('collbrowser.coll_actions') }}', {
+    path: collection
+  }, function(data) {
+    $('#collapse-actions').html(data)
+  });
+}
+
 function set_path() {
   load_list(true);
   load_graph();
   load_meta();
   build_title();
   tree_active();
+  load_actions();
 }
 
 $(document).on('click', '.sort-change', function() {
@@ -137,14 +149,7 @@ window.onpopstate = function(event) {
 </div>
 </div>
 </div>
-<div class="card border-primary mb-3">
-<div class="card-header">Tasks</div>
-<div class="card card-body">
-<a class="btn btn-outline-secondary" data-toggle="modal" data-target="#upload" href="#upload" role="button">
-Upload
-</a>
-</div>
-</div>
+
 </nav>
 
 <div id="content">
@@ -170,11 +175,12 @@ $('#sidebar').on('click', '.list-open', function() {
 });
 </script>
 
-<div id="data_map"></div>
-
 <div class="container-wide">
+
 <div class="row">
-<div class="col-md-12">
+<div class="col-md-8">
+
+  <div id="data_map"></div>
 
 <div class="card border-primary mb-3 graph-height">
     <div class="card-header myheader">
@@ -188,7 +194,13 @@ $('#sidebar').on('click', '.list-open', function() {
 </div>
 
 </div>
+
+<div class="col-md-4">
+<div id="collapse-actions">
 </div>
+</div>
+
+</div> <!--row-->
 
 <div class="row">
 <div class="col-md-8">
@@ -216,9 +228,9 @@ $('#sidebar').on('click', '.list-open', function() {
 
 
 </div>
-</div>
-</div>
+</div> <!--row-->
 
+</div> <!-- container-wide-->
 
 <!-- Document viewer modal dialog -->
 <div class="modal modal-tall" id="myOutput" role="dialog" >
@@ -261,7 +273,7 @@ $('#sidebar').on('click', '.list-open', function() {
     </div>            
 </div>
 
-</div>
+</div> <!-- content -->
 
 {% endblock %}
 

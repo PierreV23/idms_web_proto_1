@@ -100,7 +100,7 @@ ul {
 
 .scroll {
   min-height: 71vh;
-  max-height: 71vh;
+  max-height: 84vh;
   overflow-x: scroll;
   overflow-y: scroll;
 }
@@ -157,4 +157,8 @@ ul {
 .sort-change {
   cursor: pointer;
   color: blue;  
+}
+
+.vertical-down {
+    padding-top: 5px;
 }
