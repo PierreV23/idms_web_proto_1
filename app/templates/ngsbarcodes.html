@@ -1,5 +1,23 @@
+<div id="confirm-delete" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Confirm delete of {{ run.name }}</h5>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to delete run {{ run.name }} and all associated barcodes?<p> This action cannot be undone! 
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger btn-sm" data-dismiss="modal" onclick="gotoURL('{{ url_for("ngsruns.delete_ngs_run") }}?id={{ run.id }}')">Delete</button>
+        <button type="button" class="btn btn-default btn-sm" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="card-header">
-<H2>Barcodes in run {{ run.id}}: "{{ run.name }}" ({{ run.flowcell }})</H2>
+  <h2 class="alignleft">Barcodes in run {{ run.id }}: "{{ run.name }}" ({{ run.flowcell }})</h2>
+  <button type="button" class="btn btn-default btn-danger btn-sm alignright" data-toggle="modal" data-target="#confirm-delete">Delete</button>
 </div>
 <div class="card-body">
 <TABLE class="table table-striped table-hover table-sm">
@@ -31,3 +49,9 @@
 </tbody>
 </TABLE>
 </div>
+
+<script>
+function gotoURL(url) {
+  location.href=url;
+}
+</script>

@@ -114,6 +114,15 @@ ul {
   height: 15px;
 }
 
+.alignleft {
+  float: left;
+}
+
+.alignright {
+  float: right;
+}
+
+
 .buttonbar {
     float: right;
 }
