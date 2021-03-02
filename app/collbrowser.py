@@ -45,7 +45,8 @@ COLL_SHAPES = {
     'temporary':  ('note',  'gold2'),
     'distributed':('box3d','springgreen1:gray'),
     'unknown'    :('ellipse', 'gray'),
-    'qc_report'  :('box3d', 'yellow')}
+    'qc_report'  :('box3d', 'yellow'),
+    'refsamp_report'  :('box3d', 'yellow')}
 
 PROCESS_SHAPE = 'cds'
 
