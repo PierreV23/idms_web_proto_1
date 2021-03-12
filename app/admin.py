@@ -61,7 +61,6 @@ def admin():
         items = current_user.irods_session.query(DataObject.id).filter(
             Criterion('=', Collection.name, path)).count(DataObject.id)
         count  = items.execute()[0][DataObject.id]
-        print(count)
         #print(next(items.get_results()))
         queues[q] = {'enabled': enabled, 'count': count}
     return render_template('queues.html', queues=queues)
@@ -99,7 +98,6 @@ def update_resources():
         "sys::resource::keep"
     )
     data = request.form.to_dict()
-    print(data)
     # Create a dict of the form data
     resources = {}
     for d in data:
@@ -126,7 +124,6 @@ def update_resources():
         else:
             del res_obj.metadata['sys::tiering::group']
 
-    print(resources)
     return redirect(url_for('admin.resources'))
 
 @bp.route('/modify')
