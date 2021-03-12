@@ -193,7 +193,10 @@ class data_irods_collection(data_base):
             # LINE TOO LONG
             prefixlen = max(1, maxlen - len(shortname) - 2)
             prefix = '..' + prefix[-prefixlen:]
-        return '{}/{}'.format(prefix, shortname)
+        if prefix == '/':
+            return '/{}'.format(shortname)
+        else:
+            return '{}/{}'.format(prefix, shortname)
 
     @property
     def htmlstring(self):

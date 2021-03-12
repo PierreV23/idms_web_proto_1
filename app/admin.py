@@ -9,7 +9,7 @@ import os
 from flask import Blueprint, render_template, redirect, request, url_for
 from flask_login import current_user, login_required
 from irods.meta import iRODSMeta
-from irods.models import Collection, CollectionMeta, DataObject
+from irods.models import Collection, CollectionMeta, DataObject, Resource, ResourceMeta
 from irods.column import Criterion
 from irods.query import SpecificQuery
 
@@ -65,6 +65,69 @@ def admin():
         #print(next(items.get_results()))
         queues[q] = {'enabled': enabled, 'count': count}
     return render_template('queues.html', queues=queues)
+
+@login_required
+@bp.route('/resources')
+def resources():
+    resources =  {}
+    q = current_user.irods_session.query(Resource.name)
+    for r in q:
+        resource = current_user.irods_session.resources.get(r[Resource.name])
+        resources[r[Resource.name]] = { m.name: m.value for m in resource.metadata.items() if m.name.startswith('sys::resource')}
+        m = resource.metadata.get_all('sys::tiering::group')
+        if m:
+            resources[r[Resource.name]]['group'] = m[0].value
+            resources[r[Resource.name]]['id'] = m[0].units
+    return render_template('resources.html', resources=resources)
+
+@login_required
+@bp.route('/_update_resources', methods=['POST'])
+def update_resources():
+    TEXT_PROPERTIES = ( 
+        "sys::resource::copies",
+        "sys::resource::cost",
+        "sys::resource::minfree",
+        "sys::resource::min_age_before_copy",
+        "sys::resource::min_age_before_trim"
+    )
+    BOOL_PROPERTIES = (
+        "sys::resource::local",
+        "sys::resource::online",
+        "sys::resource::stage",
+        "sys::resource::surf",
+        "sys::resource::tar",
+        "sys::resource::keep"
+    )
+    data = request.form.to_dict()
+    print(data)
+    # Create a dict of the form data
+    resources = {}
+    for d in data:
+        resource, attr = d.split('__')
+        value = data[d]
+        if not resource in resources:
+            resources[resource] = {}
+        resources[resource][attr] = value
+    # Update resource settings
+    for resource in resources:
+        res_obj = current_user.irods_session.resources.get(resource)
+        for property in TEXT_PROPERTIES:
+            if property in resources[resource] and resources[resource][property]:
+                res_obj.metadata[property] = iRODSMeta(property, resources[resource][property])
+            else:
+                del res_obj.metadata[property]
+        for property in BOOL_PROPERTIES:
+            value = resources[resource].get(property, 'false')
+            res_obj.metadata[property] = iRODSMeta(property, value)
+        group = resources[resource].get('group')
+        id = resources[resource].get('id')
+        if group and id:
+            res_obj.metadata['sys::tiering::group'] = iRODSMeta('sys::tiering::group', group, id)
+        else:
+            del res_obj.metadata['sys::tiering::group']
+
+    print(resources)
+    return redirect(url_for('admin.resources'))
 
 @bp.route('/modify')
 @login_required

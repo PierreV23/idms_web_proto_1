@@ -1,4 +1,5 @@
 <script>
+
     function updateUntilDate() {
         var selected = $( "#inputSelectDate" ).val()
         var now = moment()
@@ -24,10 +25,44 @@
           collection: '{{ collection }}',
           selection: selected
         }, function(data) {
-           load_meta()
+           load_meta();
         });
     }
 
+    function overrideDatasetLocal() {
+        var selected = $( "#keepLocalSwitch" ).is(':checked')
+        var override = $( "#overrideLocalSwitch" ).is(':checked')
+        $.get('{{ url_for('collbrowser.setOverrideLocal') }}', {
+          collection: '{{ collection }}',
+          override: override,
+          selection: selected
+        }, function(data) {
+           load_meta();
+           load_actions();
+        });
+    }
+
+    function setMincopies(i) {
+        $.get('{{ url_for('collbrowser.setMincopies') }}', {
+          collection: '{{ collection }}',
+          copies: i
+        }, function(data) {
+           load_meta();
+        });
+    }
+
+    function overrideMincopies() {
+        var copies = $(".min-copies:checked").val()
+        var override = $( "#overrideMincopiesSwitch" ).is(':checked')
+        $.get('{{ url_for('collbrowser.setOverrideMincopies') }}', {
+          collection: '{{ collection }}',
+          override: override,
+          copies: copies
+        }, function(data) {
+           load_meta();
+           load_actions();
+        });
+    }    
 
     function keepDatasetLocal() {
         var selected = $( "#keepLocalSwitch" ).is(':checked')
@@ -38,23 +73,38 @@
            load_meta()
         });
     }
+
+$('.nav-pills').on('shown.bs.tab', function(event){
+  activetab = event.target.getAttribute('href')
+});
+
+
 </script>
 
 <div class="card border-primary md-2 graph-height">
     <div class="card-header">
       <ul class="nav nav-pills">
         <li class="nav-item mx-2">
-          <button class="btn btn-outline-primary active" id="tasks-tab" data-toggle="tab" href="#tasks" role="tab" aria-controls="tasks" aria-selected="true">Files</button>
+          <button class="btn btn-outline-primary active" id="tasks-tab" 
+            data-toggle="tab" href="#tasks" role="tab" 
+            aria-controls="tasks" aria-selected="false">Files</button>
         </li>
         <li class="nav-item mx-2">
-
           <button class="btn 
               {% if archival_state.is_offline is sameas true %} btn-outline-danger {% else %}
               btn-outline-primary
               {% endif %}
               {% if archival_state.is_dataset is sameas false %} btn-outline-dark disabled {% endif %}
-              " id="archive-tab" data-toggle="tab" href="#archive" role="tab" aria-controls="archive" aria-selected="false">
+              " id="archive-tab" data-toggle="tab" href="#archive" role="tab" aria-controls="archive" 
+              aria-selected="false">
               {% if archival_state.is_dataset is sameas true and archival_state.is_offline is sameas true %}OFFLINE{% else %}Archive{% endif %}
+          </button>
+        </li>
+        <li class="nav-item mx-2">
+          <button class="btn btn-outline-primary" id="storage-tab"
+            data-toggle="tab" href="#storage" role="tab"
+            aria-controls="storage" aria-selected="false">
+            Storage
           </button>
         </li>
       </ul>
@@ -63,7 +113,7 @@
         <div class="tab-pane active" id="tasks" role="tabpanel" aria-labelledby="tasks-tab">
           <a class="btn btn-outline-secondary" data-toggle="modal" data-target="#upload" href="#upload" role="button">
             Upload
-            </a>
+          </a>
         </div>
         <div class="tab-pane" id="archive" role="tabpanel" aria-labelledby="archive-tab">
             {% if archival_state.is_offline is sameas true %} 
@@ -71,41 +121,32 @@
             {% endif %}
             <hr>
             <form>
-                <div class="form-group row">
-                      <label class="col-sm-4 col-form-label" 
-                      title="Patient data or other GDPR sensitive information must not be stored in external archive!">Sensitive* information:</label>
-                      <div class="col-sm-6 custom-control custom-switch vertical-down">
-                        <input type="checkbox" class="custom-control-input" onChange="keepDatasetLocal()"
-                             value="true"
-                             id="keepLocalSwitch" {% if archival_state.keep_online is sameas true %}checked{% endif %}>
-                        <label class="custom-control-label" for="keepLocalSwitch">keep on local storage</label>
-                      </div>
-                </div>                    
-
-                <div class="form-group row">
-                    <label class="col-sm-4 col-form-label">
-                    {% if archival_state.is_offline is sameas true %} 
-                    Bring
-                    {% else %}
-                    Keep
-                    {% endif %}
-                    dataset online for:
-                    </label>
-                    <div class="input-group col-sm-4">
-                        <select class="custom-select" id="inputSelectDate" onChange="updateUntilDate()">
-                            <option selected>Choose...</option>
-                            <option value="1w">1 Week</option>
-                            <option value="1M">1 Month</option>
-                            <option value="6M">6 Month</option>
-                        </select>
-                        <div class="input-group-append">
-                            <button class="btn btn-outline-secondary" type="button" onClick="bringDatasetOnline()">bring online</button>
-                        </div>
-                    </div>
-                    <div class="col-sm-4 vertical-down">
-                        <span id="untilDate"></span>
-                    </div>
+              <div class="form-group">
+                <label class="col-form-label">
+                {% if archival_state.is_offline is sameas true %} 
+                Bring
+                {% else %}
+                Keep
+                {% endif %}
+                online for:
+                </label>
+              </div>
+              <div class="form-group row">
+                <div class="col-sm-4">
+                  <select class="custom-select" id="inputSelectDate" onChange="updateUntilDate()">
+                      <option selected>Choose...</option>
+                      <option value="1w">1 Week</option>
+                      <option value="1M">1 Month</option>
+                      <option value="6M">6 Month</option>
+                  </select>
                 </div>
+                <div class="col-sm-3">
+                    <button class="btn btn-sm btn-outline-secondary" type="button" onClick="bringDatasetOnline()">bring online</button>
+                </div>
+                <div class="col-sm-3 vertical-down">
+                    <span id="untilDate"></span>
+                </div>
+              </div>
             </form>
 
             <hr>
@@ -124,7 +165,67 @@
                 </div>
             </form>
             {% endif %}
+
+        </div>
+        <div class="tab-pane" id="storage" role="tabpanel" aria-labelledby="storage-tab">
+          <form>
+            <div class="form-group">
+              <div class="col-sm-4 custom-control custom-switch vertical-down">
+                <input type="checkbox" class="custom-control-input" onChange="keepDatasetLocal()"
+                      value="true"
+                      id="keepLocalSwitch" {% if archival_state.keep_local[0] == 'true' %}checked{% endif %}
+                      {% if archival_state.keep_local[2] == False %}disabled{% endif %}>
+                <label class="custom-control-label" for="keepLocalSwitch">keep on local storage</label>
+              </div>
+          
+              <div class="col-sm-4 custom-control custom-switch vertical-down">
+                <input type="checkbox" class="custom-control-input" onChange="overrideDatasetLocal()"
+                      value="true"
+                      id="overrideLocalSwitch" {% if archival_state.keep_local[2] == True %}checked{% endif %}>
+                      <label class="custom-control-label" for="overrideLocalSwitch">Override inheritance</label>               
+              </div>
+              <label class="col-form-label">
+                {% if not archival_state.keep_local[2] %}
+                Set from: {{ archival_state.keep_local[1].htmlstring | safe }}
+                {% endif %}
+              </label>              
+            </div>         
+          </form>
+          <hr>
+          <form>
+            <div class="form-group">
+              {% for i in range(1,5) %}
+              <div class="form-check form-check-inline">
+                <input class="form-check-input min-copies" type="radio" name="inlineRadioOptions"
+                {% if i == (archival_state.min_copies[0] | int) %}
+                checked
+                {% endif %}
+                {% if archival_state.min_copies[2] == False %}
+                disabled
+                {% endif %}
+                id="inlineRadio1" value="{{ i }}" onChange="setMincopies({{ i }})">
+                <label class="form-check-label" for="inlineRadio1">{{ i }}</label>
+              </div>
+              {% endfor %}
+              <label class="col-form-label" for="inlineRadio4">copies to store</label>
+
+              <div class="col-sm-4 custom-control custom-switch vertical-down">
+                <input type="checkbox" class="custom-control-input" onChange="overrideMincopies()"
+                      value="true"
+                      id="overrideMincopiesSwitch" {% if archival_state.min_copies[2] == True %}checked{% endif %}>
+                      <label class="custom-control-label" for="overrideMincopiesSwitch">Override inheritance</label>               
+              </div>
+              <label class="col-form-label" >
+                {% if not archival_state.min_copies[2] %}
+                Set from: {{ archival_state.min_copies[1].htmlstring | safe }}
+                {% endif %}
+              </label>                                       
+            </div>
+          </form>
         </div>
     </div>
 </div>
 
+<script>
+
+</script>

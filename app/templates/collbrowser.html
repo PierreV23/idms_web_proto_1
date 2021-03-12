@@ -11,6 +11,7 @@
 var collection="{{ path }}";
 var sortkey="";
 var reverse="";
+var activetab="Files";
 
 function fillModal(path, name) {
     var ModalHeader = document.getElementById("DocTitle")
@@ -101,6 +102,9 @@ function load_actions() {
     path: collection
   }, function(data) {
     $('#collapse-actions').html(data)
+    $('#collection').val(collection)
+    $('.nav-pills button[href="' + activetab + '"]').tab('show')
+    //$('.nav-tabs a:last').tab('show')
   });
 }
 
@@ -140,7 +144,7 @@ window.onpopstate = function(event) {
 
 <div class="wrapper">
 <nav id="sidebar">
-<div class="card border-primary mb-3">
+<div class="card border-primary mb-3 h100">
 <div class="card-header sidebar-header list-pointer">
 <b>Collection tree</b>
 </div>

@@ -8,11 +8,9 @@ html {
   
 .modal-tall .modal-dialog {
   height: 90%;
-#  width: 100%;
 }
 .modal-tall .modal-content {
   height: 100%;
-#  width: 100%;
 }
 
 .modal-tall .modal-header {
@@ -49,10 +47,19 @@ html {
    align-items: stretch;
 }
 
+.h100{
+  min-height: 100%;
+}
+
+
 #sidebar{
   min-width: 275px;
   max-width: 275px;
-  min-height: 100vh;
+  /* min-height: 88vh;
+  max-height: 88vh; */
+  min-height: 100%;
+  max-height: 88vh;
+
   padding-right: 8px;
   white-space: nowrap;
 }
@@ -134,8 +141,6 @@ ul {
 }
 
 .coll-meta {
-#  min-width: 30vw;
-#  max-width: 40vw;
   min-height: 55vh;
   max-height: 55vh;
   overflow-y: scroll;
@@ -144,8 +149,6 @@ ul {
 .coll-content {
   min-height: 55vh;
   max-height: 55vh;
-#  min-width: 30vw;
-#  max-width: 70vw;
   overflow-y: scroll;
 }
 
