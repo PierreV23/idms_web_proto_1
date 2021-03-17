@@ -36,6 +36,7 @@ ATTR_ARCHIVE_STATE = f'{ATTR_ARCHIVE_PREFIX}state'
 ATTR_ARCHIVE_LASTRUN = f'{ATTR_ARCHIVE_PREFIX}lastrun'
 ATTR_ARCHIVE_MINSTABLE = f'{ATTR_ARCHIVE_PREFIX}min_stable'
 ATTR_ARCHIVE_ONLINEPERCENTAGE = f'{ATTR_ARCHIVE_PREFIX}online_percentage'
+ATTR_ARCHIVE_MINCOPIES = f'{ATTR_ARCHIVE_PREFIX}min_copies'
 
 
 COLL_SHAPES = {
@@ -58,6 +59,18 @@ def getmetaitem(irods_obj, attr, default=None):
         value = default
     return value
 
+def getmetatree(irods_obj, attr, default=None):
+    return  _getmetatree(irods_obj, attr, irods_obj.path, default=None)
+
+@login_required
+def _getmetatree(irods_obj, attr, base, default=None):
+    value = getmetaitem(irods_obj, attr, default=None)
+    if value is not None:
+        return value, datafield('collection', irods_obj.path, 'irods_collection'), irods_obj.path == base
+    if irods_obj.path != '/':
+        parent = current_user.irods_session.collections.get(os.path.dirname(irods_obj.path))
+        return _getmetatree(parent, attr, base, default=None)
+    return default, None, True
 
 @bp.route('_meta')
 @login_required
@@ -105,6 +118,27 @@ def setKeepOnlineUntil():
     coll_obj.metadata[ATTR_ARCHIVE_KEEP_ONLINE_TILL] = new_meta
     return('DONE')
 
+@bp.route('_setOverrideLocal', methods=['GET'])
+@login_required
+def setOverrideLocal():
+    irods_session = current_user.irods_session
+    selectionStr = request.args.get('selection','false', type=str)
+    overrideStr = request.args.get('override','false', type=str)
+    collection = request.args.get('collection','None', type=str)
+    if selectionStr not in ['true', 'false']:
+        print( f"unknown selection for _setKeepLocal: {selectionStr}" )
+        return('DONE')
+    if overrideStr not in ['true', 'false']:
+        print( f"unknown selection for _setKeepLocal: {overrideStr}" )
+        return('DONE')
+    #print( collection )
+    coll_obj = irods_session.collections.get(collection)
+    if overrideStr == 'false':
+        coll_obj.metadata._delete_all_values(ATTR_ARCHIVE_LOCAL)
+    else:
+        new_meta = iRODSMeta(ATTR_ARCHIVE_LOCAL, selectionStr)
+        coll_obj.metadata[ATTR_ARCHIVE_LOCAL] = new_meta
+    return('DONE')
 
 @bp.route('_setKeepLocal', methods=['GET'])
 @login_required
@@ -121,6 +155,36 @@ def setKeepLocal():
     coll_obj.metadata[ATTR_ARCHIVE_LOCAL] = new_meta
     return('DONE')
 
+@bp.route('_setOverrideMincopies', methods=['GET'])
+@login_required
+def setOverrideMincopies():
+    irods_session = current_user.irods_session
+    copies = request.args.get('copies','false', type=str)
+    overrideStr = request.args.get('override','false', type=str)
+    collection = request.args.get('collection','None', type=str)
+    if overrideStr not in ['true', 'false']:
+        print( f"unknown selection for _setKeepLocal: {overrideStr}" )
+        return('DONE')
+    #print( collection )
+    coll_obj = irods_session.collections.get(collection)
+    if overrideStr == 'false':
+        coll_obj.metadata._delete_all_values(ATTR_ARCHIVE_MINCOPIES)
+    else:
+        new_meta = iRODSMeta(ATTR_ARCHIVE_MINCOPIES, copies)
+        coll_obj.metadata[ATTR_ARCHIVE_MINCOPIES] = new_meta
+    return('DONE')
+
+@bp.route('_setMincopies', methods=['GET'])
+@login_required
+def setMincopies():
+    irods_session = current_user.irods_session
+    copies = request.args.get('copies','2', type=str)
+    collection = request.args.get('collection','None', type=str)
+    coll_obj = irods_session.collections.get(collection)
+    new_meta = iRODSMeta(ATTR_ARCHIVE_MINCOPIES, copies)
+    coll_obj.metadata[ATTR_ARCHIVE_MINCOPIES] = new_meta
+    return('DONE')    
+
 @bp.route('_actions')
 @login_required
 def coll_actions():
@@ -130,9 +194,10 @@ def coll_actions():
 
     coll_obj = irods_session.collections.get(path)
     is_dataset = getmetaitem(coll_obj, ATTR_DATASETID, "") != ""
-    keep_local = getmetaitem(coll_obj, ATTR_ARCHIVE_LOCAL, False)
+    keep_local = getmetatree(coll_obj, ATTR_ARCHIVE_LOCAL, False)
     online_percentage = int(getmetaitem(coll_obj, ATTR_ARCHIVE_ONLINEPERCENTAGE, 0 ))
     archive_state = getmetaitem(coll_obj, ATTR_ARCHIVE_STATE, "000")
+    min_copies = getmetatree(coll_obj, ATTR_ARCHIVE_MINCOPIES, 2)
     is_archived = False 
     if archive_state[-1] == '1':
         is_archived = True 
@@ -145,8 +210,10 @@ def coll_actions():
         "is_archived": is_archived,
         "is_offline": is_offline,
         "keep_local": keep_local,
-        "online_percentage": online_percentage
-    }   
+        "online_percentage": online_percentage,
+        "min_copies": min_copies
+    }
+
     #print( archival_state )
     return render_template('actions.html', collection=path, name=coll_name, archival_state=archival_state )
 
