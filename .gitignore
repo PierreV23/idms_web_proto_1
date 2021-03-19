@@ -1,6 +1,7 @@
 __pycache__
 migrations
-instance
+instance/*
+!instance/config.py.sample
 secret
 secret.acc
 secret.prod
