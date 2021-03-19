@@ -13,9 +13,9 @@ app = Flask(__name__)
 # Default config; N.B. values may be overridden by loading instance config.py below.
 app.config.from_mapping(
     SECRET_KEY='58gqh)5&^&877838-_P[43889rv4&*F$%q5',
-    DATABASE=os.path.join(app.instance_path, 'ngsrun.sqlite'),
+#    DATABASE=os.path.join(app.instance_path, 'ngsrun.sqlite'),
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
-    SQLALCHEMY_DATABASE_URI='sqlite:///:memory:'
+    SQLALCHEMY_DATABASE_URI='sqlite:///{}/ngsruns.sqlite'.format(app.instance_path)
 )
 
 app.config.from_pyfile(os.path.join(app.instance_path, 'config.py'), silent=True)
