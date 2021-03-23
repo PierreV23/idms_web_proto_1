@@ -225,6 +225,10 @@ def collist():
     sortkey = request.args.get('sortkey', None, type=str)
     reverse_str = request.args.get('reverse', 'false', type=str)
     new_path_str = request.args.get('new_path', 'true', type=str)
+    options = {
+        'download_btn': request.args.get('btn_download', 'true', type=str) == 'true',
+        'delete_btn': request.args.get('btn_del', 'false', type=str) == 'true'
+    }
 
     irods_session = current_user.irods_session
 
@@ -304,7 +308,8 @@ def collist():
             objs.sort(key=lambda x: x[sortkey], reverse=reverse)
 
     return render_template('coll_contents.html', cols=cols, objs=objs, 
-                           show=show_display_field, sortkey=sortkey, reverse=reverse)
+                           show=show_display_field, sortkey=sortkey, reverse=reverse,
+                           options=options)
 
 def shortname(name,l):
     s = name
@@ -521,27 +526,6 @@ def clickable_path(path):
 def collbrowser():
     path = request.args.get('path', '/rivmZone/projects', type=str)
     path_title = clickable_path(path) 
-    
-
-    # Find subcollections, objects
-    # c, o = collist(path)
-
-    # Find related collections
-    rel_colls = []
-    # if ATTR_DATASETID in a:
-    #     print('Search related collections')
-    #     query = irods_session.query(Collection.name).filter(
-    #         Criterion('=', CollectionMeta.name, 'sys::pipeline::input_collection_id')).filter(
-    #             Criterion('=', CollectionMeta.value, a[ATTR_DATASETID].value))
-    #     rel_colls = [c[Collection.name] for c in query]
-
-
-    # Generate the graph
-    #graph_data = generate_graph(path)
-
-    #graph_output = graph_data.pipe(format='png')
-    #graph_imagemap = graph_data.pipe(format='cmapx').decode('utf-8')
-    #data_graph = base64.b64encode(graph_output).decode('utf-8')
 
     return render_template('collbrowser.html', path_title=path_title,
                            path=path, archived=True)
@@ -559,3 +543,13 @@ def upload_file():
         f.save(iObj)
         iObj.close()
     return redirect(url_for('collbrowser.collbrowser') + '?path=' + requestdata['collection'])
+
+@login_required
+@bp.route('_deletefile', methods=['POST'])
+def delete_file():
+    requestdata = request.form.to_dict()
+    if 'path' in requestdata:
+        path = requestdata['path']
+        print(f'DELETE {path}')
+        current_user.ifs.deletefile(path)
+    return '', 201

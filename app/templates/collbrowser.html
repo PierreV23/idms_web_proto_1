@@ -74,7 +74,8 @@ function load_list(new_path) {
     path: collection,
     sortkey: sortkey,
     reverse: reverse,
-    new_path: new_path
+    new_path: new_path,
+    btn_download: true
   }, function(data) {
     $('#collapse-contents').html(data)
   });

@@ -5,7 +5,7 @@ from flask_migrate import Migrate
 from app.models import WebUser
 from . import auth, collbrowser, jobs, docviewer
 from . import projects, cluster, admin, reports
-from . import ngsruns
+from . import ngsruns, upload
 import irods.exception
 
 app = Flask(__name__)
@@ -31,6 +31,7 @@ app.register_blueprint(cluster.bp)
 app.register_blueprint(admin.bp)
 app.register_blueprint(reports.bp)
 app.register_blueprint(ngsruns.bp)
+app.register_blueprint(upload.bp)
 
 from .ngsruns import db
 db.init_app(app)
