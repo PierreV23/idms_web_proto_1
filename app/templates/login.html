@@ -11,6 +11,11 @@
 
 <form action="{{ url_for('auth.login') }}" method="post">
   <input type="hidden" name="next" id="next" value="{{ next }}"></input>
+  {% if failed == True %}
+  <div class="alert alert-danger" role="alert">
+    Login to the web interface failed
+  </div>
+  {% endif %}
   <div class="form-group">
     <label for="environment">Environment</label>
     <select class="custom-select" name="environment" id="environment" >

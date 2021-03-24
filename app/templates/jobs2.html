@@ -54,11 +54,11 @@ $(document).ready(function(){
 </div>
 <div class="form-group">
   <label for="input_collection">Input collection</label>
-  <input type="text" class="form-control" name="input_collection" id="input_collection" placeholder="/rivmZone/projects/" value="">
+  <input type="text" class="form-control" name="input_collection" id="input_collection" placeholder="/{{ current_user.irods_zone }}/projects/" value="">
 </div>
 <div class="form-group">
   <label for="output_prefix">Output prefix</label>
-  <input type="text" class="form-control" name="output_prefix" id="output_prefix" placeholder="/rivmZone/projects" value="">
+  <input type="text" class="form-control" name="output_prefix" id="output_prefix" placeholder="/{{ current_user.irods_zone }}/projects" value="">
 </div>
 <div class="form-group">
   <label for="service_account">Service account</label>

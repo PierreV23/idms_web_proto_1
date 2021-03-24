@@ -25,7 +25,7 @@ def login():
             print('Not auth')
             print(user.is_authenticated)
             print(user.irods_session)
-            return redirect(url_for('auth.login'))
+            return redirect(f'{ url_for("auth.login") }?failed=true')
         print('Auth')
         print(user.is_admin)
         user.store()
@@ -33,7 +33,8 @@ def login():
         return redirect(requestdata['next'])
     else:
         nexturl = request.args.get('next', default='/', type=str)
-        return render_template('login.html', next=nexturl, debug=False)
+        failed = request.args.get('failed', 'false') == 'true'
+        return render_template('login.html', next=nexturl, debug=False, failed=failed)
 
 
 @bp.route('/logout')

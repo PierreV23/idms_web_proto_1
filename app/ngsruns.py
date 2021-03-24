@@ -90,7 +90,7 @@ def run_list():
     # Create a list of flowcells and collections in irods
     q = current_user.irods_session.query(Collection.name, CollectionMeta.value).filter( \
             Criterion('=', CollectionMeta.name, 'minion::flow_cell_id')).filter( \
-            Criterion('=', Collection.parent_name, '/rivmZone/projects/ngslab/minion'))
+            Criterion('=', Collection.parent_name, f'/{current_user.irods_zone}/projects/ngslab/minion'))
     flowcell_list = { x[CollectionMeta.value] : x[Collection.name] for x in q }
     for run in data:
         if run['flowcell']:

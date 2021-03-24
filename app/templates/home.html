@@ -13,8 +13,8 @@
 Quick Links
     </div>
   <ul class="list-group list-group-flush">
-    <li class="list-group-item"><A href={{ url_for('collbrowser.collbrowser') + '?path=/rivmZone/home/' + current_user.username}}>Home collection</a></li>
-    <li class="list-group-item"><A href={{ url_for('collbrowser.collbrowser') + '?path=/rivmZone/projects' }}>Project Data</a></li>
+    <li class="list-group-item"><A href={{ url_for('collbrowser.collbrowser') + '?path=/' + current_user.irods_zone + '/home/' + current_user.username}}>Home collection</a></li>
+    <li class="list-group-item"><A href={{ url_for('collbrowser.collbrowser') + '?path=/' + current_user.irods_zone + '/projects' }}>Project Data</a></li>
   </ul>
 </div>
 

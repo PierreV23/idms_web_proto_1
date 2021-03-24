@@ -52,7 +52,7 @@ def admin():
     queues = {}
     for q in ['incoming', 'stage', 'queued', 'active']:
         enabled = True
-        path = '/rivmZone/system/runsheet/' + q
+        path = f'/{current_user.irods_zone}/system/runsheet/{q}'
         metaquery = current_user.irods_session.query(CollectionMeta.value).filter(
             Criterion('=', Collection.name, path)).filter(
             Criterion('=', CollectionMeta.name, 'sys::enable'))
@@ -136,7 +136,7 @@ def modify():
     if action == 'disable' or action == 'enable':
         value = 'true' if action == 'enable' else 'false'
         new_meta = iRODSMeta('sys::enable', value)
-        coll = '/rivmZone/system/runsheet/' + data.get('queue', 'none')
+        coll = os.path.join('/', current_user.irods_zone, 'system/runsheet',  data.get('queue', 'none'))
 #        try:
         collobj = current_user.irods_session.collections.get(coll)
         collobj.metadata[new_meta.name] = new_meta
