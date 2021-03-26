@@ -24,6 +24,11 @@ function load_list() {
     }, function(data) {
       $('#contents').html(data)
     });
+    $.get("{{ url_for('upload.seq_list') }}", {
+      collection: collection
+    }, function(data) {
+      $('#seqlist').html(data)
+    });
   }
 
 $('#contents').on('change', function() {
@@ -48,12 +53,16 @@ $(window).on('load', function() {
         </div>
     </div>
     <div class="row">
-        <div class="col-md-4">
-            <form>
-                <div class="form-group">
-                    <button type="button" class="btn btn-primary">Confirm data upload</button>
-                    <a href="{{ url_for('upload.cancel_upload') }}"><button type="button" class="btn btn-secondary">Cancel data upload</button></a>
-                </div>
+        <div class="col-md-3">
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.7.1/min/dropzone.min.css">
+            <form method="POST" action="{{ url_for('upload.upload_file') }}" class="dropzone" id="file-upload">
+            <div id="contents" class="card coll-content-sm">
+
+            </div>
+            </form>
+            <div class="card">
+                <form>
+                
                 <div class="form-group">
                     <label for="example">Project</label>
                     <select class="custom-select" aria-label=".form-select-lg example">
@@ -71,17 +80,15 @@ $(window).on('load', function() {
                     <label for="runid">RUN-ID</label>
                     <input type="text" class="form-control" id="runid">
                 </div>
-
-            </form>
+                <div class="form-group">
+                    <button type="button" class="btn btn-primary">Confirm data upload</button>
+                    <a href="{{ url_for('upload.cancel_upload') }}"><button type="button" class="btn btn-secondary">Cancel data upload</button></a>
+                </div>
+            </form>   
+        </div>  
         </div>
-        <div class="col-md-8">
-            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.7.1/min/dropzone.min.css">
-            <form method="POST" action="{{ url_for('upload.upload_file') }}" class="dropzone" id="file-upload">
-            </form>
-            <hr>
-            <div id="contents" class="card coll-content">
-
-            </div>
+        <div class="col-md-9">
+            <div class="card seqlist" id="seqlist"></div>
         </div>
     </div>
 </div>

@@ -4,9 +4,11 @@ channels:
   - defaults
   - anaconda
 dependencies:
+  - biopython
   - flask
   - graphviz
   - marshmallow-sqlalchemy
+  - openpyxl=3.0.6
   - pip
   - python
   - pyyaml
