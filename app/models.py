@@ -20,15 +20,18 @@ from fs_irods import fs_irods
 IRODS_ENVS = {
     'Productie':   {
         'host': 'rivm-bioir-l01p.rivm.ssc-campus.nl',
-        'zone': 'rivmZone'
+        'zone': 'rivmZone',
+        'default': True
     },
     'Acceptatie':   {
         'host': 'rivm-bioir-l01a.rivm.ssc-campus.nl',
-        'zone': 'accZone'
+        'zone': 'rivmZone_acc_01',
+        'default': False
     },
-    'Test':   {
+    'Test_01':   {
         'host': 'rivm-bioir-l01t.rivm.ssc-campus.nl',
-        'zone': 'testZone'
+        'zone': 'rivmZone_test_01',
+        'default': False
     }
 }
 

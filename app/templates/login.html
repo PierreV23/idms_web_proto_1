@@ -19,9 +19,9 @@
   <div class="form-group">
     <label for="environment">Environment</label>
     <select class="custom-select" name="environment" id="environment" >
-    <option {% if debug == False %} selected {% endif %} value="Productie">Productie</option>
-    <option value="Acceptatie">Acceptatie</option>
-    <option {% if debug == True %} selected {% endif %} value="Test">Test</option>
+      {% for env in envs %}
+        <option {% if envs[env].default == True %} selected {% endif %} value="{{ env }}">{{ env }}</option>
+      {% endfor %}
     </select>
   </div>
   

@@ -8,7 +8,7 @@ Created on Tue Nov 12 14:33:10 2019
 from datetime import timedelta
 from flask import Blueprint, render_template, redirect, request, url_for
 from flask_login import login_user, logout_user, current_user, login_required
-from app.models import WebUser
+from app.models import WebUser, IRODS_ENVS
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -34,7 +34,7 @@ def login():
     else:
         nexturl = request.args.get('next', default='/', type=str)
         failed = request.args.get('failed', 'false') == 'true'
-        return render_template('login.html', next=nexturl, debug=False, failed=failed)
+        return render_template('login.html', next=nexturl, envs=IRODS_ENVS, failed=failed)
 
 
 @bp.route('/logout')
