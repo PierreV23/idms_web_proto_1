@@ -79,7 +79,7 @@ def joblist(state='', page=1):
     """
     job_list = []
     q1 = current_user.irods_session.query(Collection.name, DataObject.name, DataObject.id, DataObject.create_time).filter( \
-        Criterion('like', Collection.name, f'/{current_user.irods_zone}/system/runsheet/{state}/%')).filter(
+        Criterion('like', Collection.name, f'/{current_user.irods_zone}/system/runsheet/{state}%')).filter(
         Criterion('!=', Collection.name, f'/{current_user.irods_zone}/system/runsheet/log')).filter(
         Criterion('!=', Collection.name, f'/{current_user.irods_zone}/system/runsheet/archive'))    
     result_list_1 = [ j for j in q1 ]
