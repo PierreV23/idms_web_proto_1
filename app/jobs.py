@@ -79,9 +79,9 @@ def joblist(state='', page=1):
     """
     job_list = []
     q1 = current_user.irods_session.query(Collection.name, DataObject.name, DataObject.id, DataObject.create_time).filter( \
-        Criterion('like', Collection.name, '/rivmZone/system/runsheet/' + state +  '%')).filter(
-        Criterion('!=', Collection.name, '/rivmZone/system/runsheet/log')).filter(
-        Criterion('!=', Collection.name, '/rivmZone/system/runsheet/archive'))    
+        Criterion('like', Collection.name, f'/{current_user.irods_zone}/system/runsheet/{state}/%')).filter(
+        Criterion('!=', Collection.name, f'/{current_user.irods_zone}/system/runsheet/log')).filter(
+        Criterion('!=', Collection.name, f'/{current_user.irods_zone}/system/runsheet/archive'))    
     result_list_1 = [ j for j in q1 ]
     result_list_2 = sorted( result_list_1, key = lambda j: j[DataObject.create_time], reverse = True )[PAGE_SIZE*(page-1):PAGE_SIZE*page]
 
@@ -130,7 +130,7 @@ def show_jobdetails():
             Criterion('=', DataObject.id, jobid ))
     metadata = {meta[DataObjectMeta.name] : meta[DataObjectMeta.value] for meta in q2}
     # Find the job log file
-    joblog = '/rivmZone/system/runsheet/log/' + jobnaam + '.log'
+    joblog = f'/{current_user.irods_zone}/system/runsheet/log/{jobnaam}.log'
     ifs = current_user.ifs
     try:
         obj = ifs.getfile(joblog)
