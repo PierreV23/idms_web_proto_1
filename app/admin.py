@@ -9,7 +9,7 @@ import os
 from flask import Blueprint, render_template, redirect, request, url_for
 from flask_login import current_user, login_required
 from irods.meta import iRODSMeta
-from irods.models import Collection, CollectionMeta, DataObject, Resource, ResourceMeta
+from irods.models import Collection, CollectionMeta, DataObject, Resource, ResourceMeta, DataObjectMeta
 from irods.column import Criterion
 from irods.query import SpecificQuery
 
@@ -50,16 +50,18 @@ def admin():
     if not current_user.is_admin:
         return render_template('denied.html')
     queues = {}
-    for q in ['incoming', 'stage', 'queued', 'active']:
+    for q in ['incoming', 'stage', 'queued', 'startup', 'active']:
         enabled = True
-        path = f'/{current_user.irods_zone}/system/runsheet/{q}'
+        path = f'/{current_user.irods_zone}/system/runsheet'
         metaquery = current_user.irods_session.query(CollectionMeta.value).filter(
             Criterion('=', Collection.name, path)).filter(
-            Criterion('=', CollectionMeta.name, 'sys::enable'))
+            Criterion('=', CollectionMeta.name, f'sys::enable::{q}'))
         for meta in metaquery:
             enabled = meta[CollectionMeta.value] == 'true'
-        items = current_user.irods_session.query(DataObject.id).filter(
-            Criterion('=', Collection.name, path)).count(DataObject.id)
+        items = current_user.irods_session.query(DataObject.id).filter(\
+            Criterion('=', Collection.name, '/rivmZone/system/runsheet/processing')).filter(\
+            Criterion('=', DataObjectMeta.name, 'sys::runsheet::state')).filter(\
+            Criterion('=', DataObjectMeta.value, q)).count(DataObject.id)
         count  = items.execute()[0][DataObject.id]
         #print(next(items.get_results()))
         queues[q] = {'enabled': enabled, 'count': count}
@@ -131,12 +133,13 @@ def update_resources():
 def modify():
     data = request.args.to_dict()
     action = data.get('action')
+    queue = data.get('queue', 'none')
     if action is None:
         return redirect(url_for('admin.admin'))
     if action == 'disable' or action == 'enable':
         value = 'true' if action == 'enable' else 'false'
-        new_meta = iRODSMeta('sys::enable', value)
-        coll = os.path.join('/', current_user.irods_zone, 'system/runsheet',  data.get('queue', 'none'))
+        new_meta = iRODSMeta(f'sys::enable::{queue}', value)
+        coll = os.path.join('/', current_user.irods_zone, 'system/runsheet')
 #        try:
         collobj = current_user.irods_session.collections.get(coll)
         collobj.metadata[new_meta.name] = new_meta
