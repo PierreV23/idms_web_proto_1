@@ -150,6 +150,8 @@ $(document).ready(function(){
       <TR class="table-light">
     {% elif entry.State.value == "queued" %}
       <TR class="table-active">
+    {% elif entry.State.value == "startup" %}
+        <TR class="table-info">
     {% elif entry.State.value == "active" %}
       <TR class="table-primary">
     {% elif entry.State.value == "postprocessing" %}
