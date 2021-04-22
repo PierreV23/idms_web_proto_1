@@ -18,9 +18,21 @@ from irods.column import Criterion
 from fs_irods import fs_irods
 
 IRODS_ENVS = {
-    'Productie':   'rivm-bioir-l01p.rivm.ssc-campus.nl',
-    'Acceptatie':   'rivm-bioir-l01a.rivm.ssc-campus.nl',
-    'Test':         'rivm-bioir-l01t.rivm.ssc-campus.nl',
+    'Productie':   {
+        'host': 'rivm-bioir-l01p.rivm.ssc-campus.nl',
+        'zone': 'rivmZone',
+        'default': True
+    },
+    'Acceptatie':   {
+        'host': 'rivm-bioir-l01a.rivm.ssc-campus.nl',
+        'zone': 'rivmZone_acc_01',
+        'default': False
+    },
+    'Test_01':   {
+        'host': 'rivm-bioir-l01t.rivm.ssc-campus.nl',
+        'zone': 'rivmZone_test_01',
+        'default': False
+    }
 }
 
 
@@ -59,7 +71,12 @@ class WebUser(UserMixin):
         self.environment = environment
         self._is_authenticated = is_authenticated
         self._is_admin = None
-        self.irods_server = IRODS_ENVS.get(environment, None)
+        self.irods_server = None
+        self.irods_zone = None
+        irods_env = IRODS_ENVS.get(environment, None)
+        if irods_env:
+            self.irods_server = irods_env.get('host')
+            self.irods_zone = irods_env.get('zone')
         self.configure_irods_session(username, password)
     
     @property    
@@ -109,7 +126,7 @@ class WebUser(UserMixin):
             port=1247,
             user=username,
             password=password,
-            zone='rivmZone',
+            zone=self.irods_zone,
             authentication_scheme='pam',
             **ssl_settings
         )
@@ -117,7 +134,7 @@ class WebUser(UserMixin):
 
     def validate_irods_session(self):
         try:
-            self.irods_session.collections.get('/rivmZone')
+            self.irods_session.collections.get(f'/{self.irods_zone}')
             self._is_authenticated = True
             return True
         except:

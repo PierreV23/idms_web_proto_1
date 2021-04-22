@@ -524,7 +524,7 @@ def clickable_path(path):
 @bp.route('/')
 @login_required
 def collbrowser():
-    path = request.args.get('path', '/rivmZone/projects', type=str)
+    path = request.args.get('path', f'/{current_user.irods_zone}/projects', type=str)
     path_title = clickable_path(path) 
 
     return render_template('collbrowser.html', path_title=path_title,

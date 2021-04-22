@@ -8,7 +8,7 @@ Created on Tue Nov 12 14:33:10 2019
 from datetime import timedelta
 from flask import Blueprint, render_template, redirect, request, url_for
 from flask_login import login_user, logout_user, current_user, login_required
-from app.models import WebUser
+from app.models import WebUser, IRODS_ENVS
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -25,7 +25,7 @@ def login():
             print('Not auth')
             print(user.is_authenticated)
             print(user.irods_session)
-            return redirect(url_for('auth.login'))
+            return redirect(f'{ url_for("auth.login") }?failed=true')
         print('Auth')
         print(user.is_admin)
         user.store()
@@ -33,7 +33,8 @@ def login():
         return redirect(requestdata['next'])
     else:
         nexturl = request.args.get('next', default='/', type=str)
-        return render_template('login.html', next=nexturl, debug=False)
+        failed = request.args.get('failed', 'false') == 'true'
+        return render_template('login.html', next=nexturl, envs=IRODS_ENVS, failed=failed)
 
 
 @bp.route('/logout')

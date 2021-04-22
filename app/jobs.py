@@ -78,22 +78,30 @@ def joblist(state='', page=1):
         joblist, total_job_count
     """
     job_list = []
-    q1 = current_user.irods_session.query(Collection.name, DataObject.name, DataObject.id, DataObject.create_time).filter( \
-        Criterion('like', Collection.name, '/rivmZone/system/runsheet/' + state +  '%')).filter(
-        Criterion('!=', Collection.name, '/rivmZone/system/runsheet/log')).filter(
-        Criterion('!=', Collection.name, '/rivmZone/system/runsheet/archive'))    
+    if state == '':
+        q1 = current_user.irods_session.query(Collection.name, DataObject.name, DataObject.id, DataObject.create_time).filter( \
+            Criterion('like', Collection.name, f'/{current_user.irods_zone}/system/runsheet%')).filter( \
+                Criterion('!=', Collection.name, f'/{current_user.irods_zone}/system/runsheet/archive')).filter( \
+                Criterion('!=', Collection.name, f'/{current_user.irods_zone}/system/runsheet/log'))
+    else:
+        q1 = current_user.irods_session.query(Collection.name, DataObject.name, DataObject.id, DataObject.create_time).filter( \
+            Criterion('like', Collection.name, f'/{current_user.irods_zone}/system/runsheet%')).filter(
+            Criterion('=', DataObjectMeta.name, 'sys::runsheet::state')).filter(
+            Criterion('=', DataObjectMeta.value, state))    
     result_list_1 = [ j for j in q1 ]
     result_list_2 = sorted( result_list_1, key = lambda j: j[DataObject.create_time], reverse = True )[PAGE_SIZE*(page-1):PAGE_SIZE*page]
 
     current_time = time.time()
     for job in result_list_2:
-        jobstate = job[Collection.name].split('/')[4]
         job_record = {'Name': datafield('runsheet', job[DataObject.name], 'runsheet')}
-        job_record['State'] = datafield('state', jobstate, 'job_state')
         job_record['Created'] = datafield('create_time', utc_to_local(job[DataObject.create_time]).timestamp(), 'timestamp')
         q2 = current_user.irods_session.query(DataObjectMeta.name, DataObjectMeta.value).filter( \
             Criterion('=', DataObject.id, job[DataObject.id]))
         metadata = {meta[DataObjectMeta.name] : meta[DataObjectMeta.value] for meta in q2}
+        state = metadata.get('sys::runsheet::state', 'unknown')
+        if state == 'unknown':
+            state = job[Collection.name].split('/')[4]
+        job_record['State'] = datafield('state', state, 'job_state')
         for field in JOB_FIELDS:
             if field in metadata:
                 job_record[JOB_FIELDS[field][0]] = datafield(field, metadata[field], JOB_FIELDS[field][1])
@@ -130,7 +138,7 @@ def show_jobdetails():
             Criterion('=', DataObject.id, jobid ))
     metadata = {meta[DataObjectMeta.name] : meta[DataObjectMeta.value] for meta in q2}
     # Find the job log file
-    joblog = '/rivmZone/system/runsheet/log/' + jobnaam + '.log'
+    joblog = f'/{current_user.irods_zone}/system/runsheet/log/{jobnaam}.log'
     ifs = current_user.ifs
     try:
         obj = ifs.getfile(joblog)
@@ -164,6 +172,7 @@ def show_jobdetails():
         'sys::run::input_dir': ('Input directory', 'directory'),
         'sys::run::output_dir': ('Output directory', 'directory'),
         'sys::run::owner': ('Job owner', 'irods_user'),
+        'sys::runsheet::service_account': ('Sevice account', 'irods_user'),
         'sys::run::pipeline_dir': ('Pipeline run directory', 'directory'),
         'sys::run::run_dir': ('Pipeline run directory', 'directory'),
         'sys::runsheet::repo': ('Git repository', 'repo'),
