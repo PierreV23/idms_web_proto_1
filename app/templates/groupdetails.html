@@ -7,12 +7,15 @@ Details of group <B>{{ group }}</B>
 {% endblock %}
 
 {% block content %}
-<TABLE class="table" border=1>
+<TABLE class="table">
+<THEAD class="thead-dark">
+
 <TR>
    <TH>Username</TH>
    <TH>email address</TH>
    <TH>Department</TH>
 </TR>  
+<THEAD>
 {% for key, value in ginfo.items()|sort %}
 {% if value["serviceaccount"] == False %} 
 <TR>
