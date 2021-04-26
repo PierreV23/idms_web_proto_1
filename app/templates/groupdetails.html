@@ -1,56 +1,35 @@
 {% extends 'base2.html' %}
   
 {% block heading %}
-<H2>Group details for {{ details.name }} </H2>
+<H2>
+Details of group <B>{{ group }}</B>
+</H2>
 {% endblock %}
 
 {% block content %}
-
-<div class="card card-body">
-<H2>Details</H2>
-<TABLE class="table table-striped table-hover table-sm" >
-<thead>
-</thead>
-<tbody>
-<tr>
-<td width="30%">ProjectID</td>
-<td>
-<a href="/projectdetails?name={{details.projectID}}">
-{{ details.projectID }}
-</a>
-</td>
-</tr>
-
-<tr><td>AD Group</td>
-<td>{{ details.adgroup }}</td>
-</tbody>
-</table>
-</div>
-
-
-<div class="card card-body">
-<H2>Group members</H2>
-<TABLE class="table table-striped table-hover table-sm" >
-<thead>
+<TABLE class="table" border=1>
 <TR>
-<TH scope="col"></TH>
-<TH scope="col">Name</TH>
+   <TH>Username</TH>
+   <TH>email address</TH>
+   <TH>Department</TH>
+</TR>  
+{% for key, value in ginfo.items()|sort %}
+{% if value["serviceaccount"] == False %} 
+<TR>
+   <TD> {{ key }} </TD>
+   <TD> {{ value["sys::ad::mail"] }} </TD>
+   <TD> {{ value["sys::ad::department"] }} </TD>
 </TR>
-</thead>
-<tbody>
-{% for user in details.users %}
-<tr>
-<td width="20%">
-{{ group }}
-</td>
-</tr>
+{% endif %}
 {% endfor %}
-</tbody>
-</table>
-</div>
-
-
-<!-- PROJECT Collections --!>
+</TABLE>
+<hr>
+Service accounts in group {{ group }}:<br>
+{% for key, value in ginfo.items()|sort %}
+{% if value["serviceaccount"] == True %} 
+   - {{ key }}<br>
+{% endif %}
+{% endfor %}
 
 {% endblock %}
 

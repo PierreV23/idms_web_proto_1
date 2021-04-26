@@ -5,7 +5,7 @@
 <script>
 function fillModal(path, name) {
     var ModalHeader =  document.getElementById("DocTitle")
-    DocTitle.innerHTML = name 
+    ModalHeader.innerHTML = name 
     var modalEmbed =  document.getElementById("DocText")
     newEmbed = modalEmbed.cloneNode(true)
     source = "{{ url_for('docviewer.serve_object') }}?path=" + path
