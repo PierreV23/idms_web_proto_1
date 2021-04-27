@@ -180,6 +180,7 @@ def show_jobdetails():
         'sys::runsheet::distribution': ('Distribution pipeline', 'boolean'),
         'sys::runsheet::restartable': ('Restarts on error', 'boolean'),
         'sys::runsheet::omit_staging': ('Omit staging', 'boolean'),
+        'sys::runsheet::lsf_queue': ('LSF Queue', 'lsf_queue'),
         'sys::run::pid': ('Process PID', 'text')
     }
     D = {}
