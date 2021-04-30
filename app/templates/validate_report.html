@@ -1,0 +1,56 @@
+{% extends 'base2.html' %}
+
+  
+{% block header %}
+<h2>{% block title %}Data validation report{% endblock %}</h2>
+{% endblock %}
+
+{% block content %}
+
+<script>
+
+var collection="{{ collection }}"
+
+function load_contents() {
+    $('#upload-btn').hide()
+    $.get("{{ url_for('upload.seq_list') }}", {
+      collection: collection
+    }, function(data) {
+      $('#seqlist').html(data)
+    });
+    $.get("{{ url_for('upload.validate_results') }}", {
+        collection: collection
+    }, function(content) {
+        $('#report').html(content.report)
+        $('#result').html(content.result)
+        if (content.result != 'Error') {
+            $('#upload-btn').show()
+        }
+    })
+}
+
+
+$(window).on('load', function() {
+  load_contents();
+});
+
+</script>
+
+<!-- <div class="seqlist" id="seqlist">
+    <center>Please wait while loading data ...</center>
+</div> -->
+<div class="container">
+    <div class="card">
+        <div class="card card-header">
+            <h3>Data upload validation result: <emp><span id="result"> ... </span></h3></emp>
+            <a href="{{ url_for('upload.upload_batch') }}"><button class="button btn-primary float-right" id="upload-btn">Upload data</button></a>
+        </div>
+        <div class="card card-body">
+            <div class="seqlist" id="report">
+                <center>Please wait while loading validation results ...</center>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
