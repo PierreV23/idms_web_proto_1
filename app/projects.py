@@ -46,7 +46,7 @@ def rest_call(request_type, endpoint, data={}):
 def get_projectlist():
     pl, result = rest_call('GET', 'projects')
     projectlist = { p['name']: p for p in pl }
-    projectlist = sorted(projectlist)
+    #projectlist = sorted(projectlist)
     return projectlist
 
 @BP.route('/')
