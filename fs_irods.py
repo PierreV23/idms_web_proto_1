@@ -7,60 +7,70 @@ Created on Tue May  7 12:14:23 2019
 """
 
 import base64
-import math
 import os
-import re
-import ssl
-import time
 import calendar as cal
 import irods.keywords as kw
+import math
 from irods.column import Criterion
 from irods.session import iRODSSession
 from irods.models import Collection, CollectionMeta, DataObject
-from fs_base import factory, fsobject_base, fs_base
+from synchelper import utc2local
+from fs_base import *
 
-def utc2local(utc):
-    return time.mktime(time.localtime(utc))
+class irodsFsBuilder:
+    def __init__(self):
+        self._instance = None
+        
+    def __call__(self, **kwargs):
+        if not self._instance:
+            self._instance = fs_irods(**kwargs)
+        return self._instance
+    
+factory.register('irods', irodsFsBuilder())
+
 
 class file_irods(fsobject_base):
     def __init__(self, fso, path):
         super().__init__(fso, path)
-        self.refresh()
-
-    def refresh(self):
-        self.irods_object = self.fso.irods_session.data_objects.get(self.path)
+        self.irods_object = fso.irods_session.data_objects.get(path)
 
     def isdir(self):
         return False
 
-    def calculate_checksum(self):
-        cs = self.irods_object.checksum
-        if cs is None:
-            return super().calculate_checksum()
-        else:
-            sha2 = cs.split(':')[1]
-            return base64.b64decode(sha2).hex()
+    def checksum(self):
+        sha2 = self.irods_object.checksum.split(':')[1]
+        return base64.b64decode(sha2).hex()
 
     def filesize(self):
         return self.irods_object.size
 
+    def create_time(self):
+        return self.irods_object.create_time
+
+    def owner_name(self):
+        return self.irods_object.owner_name
+
     def isfile(self):
         return True
 
+    def _getfile(self, path):
+        return session.data_objects.get( path)
+        #with obj.open('r+') as f:
+        #    for line in f:
+        #        print(line)
+
     def open(self, mode):
-        return self.irods_object.open(mode[:1])
+        return self.irods_object.open(mode)
 
     def set_mtime(self, mtime):
         new_time = utc2local(mtime)
         self.irods_object.manager.modDataObjMeta(
             {"objPath": self.path}, {"dataModify": round(new_time)})
-        self.refresh()
 
     def utc_mtime(self):
         mtime = cal.timegm(self.irods_object.modify_time.timetuple())
         return math.floor(mtime)
 
-# TODO
     def local_mtime(self):
         return 0
 
@@ -70,27 +80,18 @@ class folder_irods(fsobject_base):
         super().__init__(fso, path)
         self.irods_object = fso.irods_session.collections.get(path)
 
-    def filesize(self):
-        return 0
-
     def isdir(self):
         return True
-
+    
     def isfile(self):
-        return False
-
-    def accessible(self):
-        raise NotImplementedError
+        return False    
 
     def removemeta(self, name):
         for m in self.irods_object.metadata.get_all(name):
             self.irods_object.metadata.remove(m)
 
     def setmeta(self, name, value, units=''):
-        try:
-            self.irods_object.metadata.add(name, value, units)
-        except:
-            pass
+        self.irods_object.metadata.add(name, value, units)
 
     def replaceorsetmeta(self, name, value):
         self.removemeta(name)
@@ -104,43 +105,21 @@ class folder_irods(fsobject_base):
             self.setmeta(name, default, '')
         return self.getmeta(name)
 
-    def utc_mtime(self):
-        return 0
+    #def create_time(self2):
+    #    return self.irods_object.create_time
+
+    #def owner_name(self2):
+    #    return self.irods_object.owner_name
 
 
 class fs_irods(fs_base):
-    def __init__(self, resource='', use_ssl=False, host=None, user=None,
-                 zone=None, password=None, port=1247, session=None):
+    def __init__(self, resource='', session=None):
         super().__init__(supportsopen=True)
-        self.resource = resource 
-        if session:
-            self.irods_session = session
-            return      
 
-        if host:
-            session_params = {'host': host, 'port': port, 'zone': zone,
-                              'user': user, 'password': password}
-        else:
-            try:
-                env_file = os.environ['IRODS_ENVIRONMENT_FILE']
-            except KeyError:
-                env_file = os.path.expanduser('~/.irods/irods_environment.json')
-            session_params = { 'irods_env_file': env_file }
-        try:
-            env_file = os.environ['IRODS_ENVIRONMENT_FILE']
-        except KeyError:
-            env_file = os.path.expanduser('~/.irods/irods_environment.json')
-        if use_ssl:
-            context = ssl._create_unverified_context(purpose=ssl.Purpose.SERVER_AUTH,
-                                                     cafile=None, capath=None, cadata=None)
-            ssl_settings = {'irods_ssl_ca_certificate_file': '/etc/irods/ssl/irods.crt',
-                            'ssl_context': context}
-            self.irods_session = iRODSSession(**session_params, **ssl_settings)
-        else:
-            self.irods_session = iRODSSession(**session_params)
+        self.irods_session = session
+        self.resource = resource
 
-
-    def __del__(self):
+    def cleanup(self):
         self.irods_session.cleanup()
 
     def ls(self, path):
@@ -151,14 +130,24 @@ class fs_irods(fs_base):
         for entry in coll.data_objects:
             result.append(self.getfile(entry.path))
         return result
+    
+    def lsdirnames(self, path):
+        if path[-1] == '/':
+            path = path[:-1]
+        coll = self.irods_session.collections.get(path)
+        result = [ subcoll.name for subcoll in coll.subcollections]
+        return result
 
-    def lsdirs(self, path, skip_inaccessible=False):
+    def lsfilenames(self, path):
+        if path[-1] == '/':
+            path = path[:-1]        
+        coll = self.irods_session.collections.get(path)
+        result = [ data_object.name for data_object in coll.data_objects]
+        return result
+
+    def lsdirs(self, path):
         print("lsdirs not implemented")
         exit(2)
-
-    @staticmethod
-    def factory(**kwargs):
-        return fs_irods(**kwargs)
 
     def fileexists(self, path):
         base, file = self._pathsplit(path)
@@ -177,9 +166,7 @@ class fs_irods(fs_base):
                 Criterion('=', CollectionMeta.name, m['field'])).filter(
                     Criterion(m['op'], CollectionMeta.value, m['value']))
         for coll in query.get_results():
-            collname = coll[Collection.name]
-            if not re.match('/[^/]*/trash/.*', collname):
-                result.append(folder_irods(self, collname))
+            result.append(folder_irods(self, coll[Collection.name]))
         return result
 
     def folderexists(self, path):
@@ -193,34 +180,9 @@ class fs_irods(fs_base):
     def getfolder(self, path):
         return folder_irods(self, path)
 
-    def mkdir(self, path, parents=False):
-        if parents:
-            parentdir, dir = os.path.split(path)
-            if not self.folderexists(parentdir):
-                self.mkdir(parentdir, True)
+    def mkdir(self, path):
         self.irods_session.collections.create(path)
         return folder_irods(self, path)
-
-    def rmdir(self, path, recurse=False):
-        if self.folderexists(path) == False:
-            return False
-        for obj in self.ls(path):
-            if type(obj) == folder_irods:
-                self.rmdir(obj.path)
-            else:
-                self.deletefile(obj.path)
-        self.irods_session.collections.remove(path, recurse=recurse, force=True)
-
-    def createfile(self, path):
-        options = {kw.FORCE_FLAG_KW: ''}
-        obj = self.irods_session.data_objects.create(path, **options,
-                                                     resource=self.resource)
-        return obj.open('w')
-    
-    def deletefile(self, path):
-        self.irods_session.data_objects.unlink(path, True)
-        self.invalidate_cache_entry(path)
-        
 
     def open(self, path, mode):
         options = {kw.FORCE_FLAG_KW: ''}
@@ -228,5 +190,16 @@ class fs_irods(fs_base):
                                                      resource=self.resource)
         return obj.open(mode[:1])
 
-
-factory.register('irods', fs_irods.factory, 'resource=<dest resource>,use_ssl=<true|false>,host=<host>,user=<user>,password=<passwd>,zone=<zone>')
+    def verify(self, checksums, path, exclude=[]):
+        print('Verifying checksums')
+        for a in checksums:
+            if a in exclude:
+                continue
+            fullpath = path + '/' + a
+            if not self.fileexists(fullpath):
+                print('Cannot find %s' % fullpath)
+                return False
+            if checksums[a] != self.getfile(fullpath).checksum():
+                print('Checksum error for %s' % fullpath)
+                return False
+        return True

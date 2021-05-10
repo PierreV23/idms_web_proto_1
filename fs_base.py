@@ -4,57 +4,37 @@ Created on Mon May  6 14:28:12 2019
 Purpose: abstract filesystem base class
 """
 
-from abc import ABC
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 import hashlib
-from datetime import datetime
-import shutil
-import os
-import fnmatch
-
 
 BUF_SIZE = 1024 * 1024
 
-def log(txt):
-    print("{0}: {1}".format(datetime.now(), txt))
-
-class fsFactory():
-    _fscreators = {}
-
+class fsfactory():
     def __init__(self):
         self._fscreators = {}
-        self._optiontext = {}
-
-    def register(self, name, creator, optionText):
+        
+    def register(self, name, creator):
         self._fscreators[name] = creator
-        self._optiontext[name] = optionText
-
-    def createfs(self, name, **params):
-        creator = self._fscreators[name]
+        
+    def getfs(self, name, **params):
+        creator = self._fscreators.get(name)
+        if not creator:
+            raise ValueError(name)
         return creator(**params)
-
+    
     def listfs(self):
-        print('Filesystem   Options\n===============================================')
         for i in self._fscreators:
-            print("%-10s %-40s" % (i, self._optiontext[i]))
+            print(i)
 
-
-factory = fsFactory()
-
-
-#class fsbuilder():
-#    def __init__(self):
-#        self._instance = None
-#
-#    def options(self):
-#        return '-'
-
+        
+factory = fsfactory()
+    
 
 class fsobject_base(ABC):
     def __init__(self, fso, path):
         self.fso = fso
         self.path = path
-        self._checksum = None
+        self._sha256 = ""
 
     @abstractmethod
     def isdir(self):
@@ -64,17 +44,7 @@ class fsobject_base(ABC):
     def isfile(self):
         pass
 
-    def accessible(self):
-        # Test if object is accessible for reading
-        # can be reimplemented in derived classes 
-        try:
-            _ = self.open('r')
-        except:
-            return False
-        return True
-
-    def calculate_checksum(self):
-#        log('Expensive checksum calc for %s' % self.path)
+    def _checksum(self):
         sha256 = hashlib.sha256()
         with fopen(self, 'rb') as f:
             while True:
@@ -84,61 +54,48 @@ class fsobject_base(ABC):
                 sha256.update(data)
         return sha256.hexdigest()
 
-    @property
     def checksum(self):
-        if self._checksum is None:
-            self._checksum = self.calculate_checksum()
-        return self._checksum
+        if self._sha256 == "":
+            if self.path in self.fso.checksums:
+                self._sha256 = self.fso.checksums[self.path]
+            else:
+                self._sha256 = self._checksum()
+        return self._sha256
 
-    @checksum.setter
-    def checksum(self, cs):
-        self._checksum = cs
-
-
-    def compareto(self, other, compareChecksums=True):
-        if compareChecksums:
-            if self.checksum == other.checksum:
-                return True
-        else:
-            if self.filesize() == other.filesize():
-                if self.utc_mtime() == other.utc_mtime():
+    def compareto(self, other):
+        if self.filesize() == other.filesize():
+            if self.utc_mtime() == other.utc_mtime():
+                if self.checksum() == other.checksum():
                     return True
         return False
 
-    def copyto(self, dest_fs, dest_path):
-        source_fp = self.open('rb')
-        dest_fp = dest_fs.createfile(dest_path)
-        shutil.copyfileobj(source_fp, dest_fp, BUF_SIZE)
-        source_fp.close()
-        dest_fp.close()
-        dest_fs.invalidate_cache_entry(dest_path)
-
-    @abstractmethod
-    def filesize(self):
-        pass
+    def copyto(self, fp):
+        source = self.open('rb')
+        while True:
+            copy_buffer = source.read(BUF_SIZE)
+            if not copy_buffer:
+                break
+            fp.write(copy_buffer)
 
     def open(self, mode):
-        raise 'fsobject_base.open not implemented'
+        print("fsobject_base.open")
+        raise('fs_base.open not implemented')
+        exit(2)
 
     def shortname(self):
         return self.path.split('/')[-1]
-
-    @abstractmethod
-    def utc_mtime(self):
-        pass
 
 
 class fopen():
     def __init__(self, ff, mode):
         self.objf = ff
         self.mode = mode
-        self.fp = None
 
     def __enter__(self):
         self.fp = self.objf.open(self.mode)
         return self.fp
 
-    def __exit__(self, ftype, value, traceback):
+    def __exit__(self, type, value, traceback):
         self.fp.close()
 
 
@@ -146,14 +103,14 @@ class fs_base(ABC):
     @abstractmethod
     def __init__(self, supportsopen=False):
         self.supportsopen = supportsopen
+        self.checksums = {}
         self.files = {}
 
-    def invalidate_cache(self):
-        self.files = {}
-
-    def invalidate_cache_entry(self, path):
-        if path in self.files:
-            del self.files[path]
+    def add_checksum_file(self, checksums, base):
+        for a in checksums:
+            print(base + '/' + a)
+            print(checksums[a])
+            self.checksums[base + '/' + a] = checksums[a]
 
     @abstractmethod
     def ls(self, path):
@@ -167,11 +124,9 @@ class fs_base(ABC):
         result = [a.shortname() for a in self.ls(path) if not a.isdir()]
         return result
 
-    def lsdirs(self, path, skip_inaccessible=False):
-        if skip_inaccessible:
-            result = [a for a in self.ls(path) if a.isdir() and a.accessible()]
-        else:    
-            result = [a for a in self.ls(path) if a.isdir()]
+    def lsdirs(self, path):
+        result = [ a for a in self.ls(path) if a.isdir() ]
+        print('lsdirs %s' % path)
         return result
 
     def _pathsplit(self, path):
@@ -183,32 +138,13 @@ class fs_base(ABC):
     def fileexists(self, path):
         pass
 
-    def glob(self, path):
-        result = []
-        head, tail = os.path.split(path)
-        for filename in self.lsfilenames( head ):
-            if fnmatch.fnmatch( filename, tail ):
-                result.append( os.path.join( head, filename ) )
-        return result
-
-    def foldermtime(self, path):
-        mtime = 0
-        pathListing = self.ls(path)
-        for entry in pathListing:
-            if entry.isdir() and entry.shortname() != '.' and entry.shortname() != '..':
-                mtime = max(mtime, self.foldermtime(entry.path))
-            else:
-                mtime = max(mtime, entry.utc_mtime())
-        return mtime
-
     @abstractmethod
     def folderexists(self, path):
         pass
 
     @abstractmethod
     def _getfile(self, path):
-        pass
-        #return fsobject_base(self, path)
+        return fsobject_base(self, path)
 
     def getfile(self, path):
         if path not in self.files:
@@ -219,20 +155,17 @@ class fs_base(ABC):
     def mkdir(self, path):
         pass
 
-    @abstractmethod
-    def rmdir(self, path, recurse=False):
-        pass
-
-    def createfile(self, path):
-        log('%s :createfile not implemented in ' % self.__class__)
-        exit(2)
-        
-    def deletefile(self, path):
-        log('%s :deletefile not implemented in ' % self.__class__)
-        exit(2)        
+    def read_checksum_file(self, path):
+        result = {}
+        csFile = self.getfile(path)
+        with csFile.open('r') as fh:
+            for x in fh:
+                hashvalue, filename = x.split('  ')
+                result[filename.rstrip()] = hashvalue
+        return result
 
     def syncfolderto(self, sourcepath, destfs, destpath):
-        log("sync_folder %s to %s" % (sourcepath, destpath))
+        print("sync_folder %s to %s" % (sourcepath, destpath))
 
         copyCounter = 0
 
@@ -247,21 +180,22 @@ class fs_base(ABC):
             else:
                 bcopy = False
                 if not destfs.fileexists(destfile):
-                    log('Destination not found')
+                    print('Destination not found')
                     bcopy = True
                 elif not entry.compareto(destfs.getfile(destfile)):
-                    log('Comparison failed')
+                    print('Comparison failed')
                     bcopy = True
                 if bcopy:
-                    log('-> Copy %s to %s' % (entry.path, destfile))
+                    print('-> Copy %s to %s' % (entry.path, destfile))
                     copyCounter += 1
                     if destfs.supportsopen:
-                        entry.copyto(destfs, destfile)
+                        with destfs.open(destfile, "wb") as fp_dest:
+                            entry.copyto(fp_dest)
                     elif self.supportsopen():
                         with entry.open("rb") as fp_source:
                             destfs.copyfrom(fp_source, destfile)
                     else:
-                        log('Error: cannot copy %s to %s' % (entry.shortname(), destfile))
+                        print('Error: cannot copy %s to %s' % (entry.shortname(), destfile))
                         exit(2)
 
                     destfs.getfile(destfile).set_mtime(entry.utc_mtime())
