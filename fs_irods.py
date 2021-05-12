@@ -184,6 +184,9 @@ class fs_irods(fs_base):
         self.irods_session.collections.create(path)
         return folder_irods(self, path)
 
+    def rmdir(self, path, recurse=False, force=False):
+        self.irods_session.collections.remove(path, recurse=recurse, force=force)
+
     def open(self, path, mode):
         options = {kw.FORCE_FLAG_KW: ''}
         obj = self.irods_session.data_objects.create(path, **options,
