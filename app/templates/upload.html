@@ -31,10 +31,6 @@ function load_list() {
     });
   }
 
-$('#contents').on('change', function() {
-    alert('CHANGE');
-});
-
 $(document).on('collchange', function(e) {
   load_list();
 });
@@ -65,10 +61,15 @@ $(window).on('load', function() {
                 
                 <div class="form-group">
                     <label for="example">Project</label>
-                    <select class="custom-select" aria-label=".form-select-lg example">
-                        <option selected>Select a project ...</option>
+                    <select class="custom-select" aria-label=".form-select-lg example" id="projectselect">
+                        <option>Select a project ...</option>
                         {% for project in projectlist %}
-                        <option value="{{ project }}">{{ project }}</option>
+                        <option value="{{ project }}"
+                            {% if project == upload_data['project'] %}
+                            selected
+                            {% endif %}
+                            >{{ project }}
+                        </option>
                         {% endfor %}
                     </select>
                 </div>
@@ -109,6 +110,17 @@ $(window).on('load', function() {
             });
         }
     }
+
+$('#projectselect').change(
+    function(data) {
+        selected_project = document.getElementById("projectselect").value;
+        $.post("{{ url_for('upload.change_project') }}", {
+            project: selected_project
+        }, function(response) {
+            // TODO: change value of select here, in case the selected project is not allowed
+        })
+    }
+)
 
 </script>
 {% endblock %}
