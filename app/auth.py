@@ -26,8 +26,6 @@ def login():
             print(user.is_authenticated)
             print(user.irods_session)
             return redirect(f'{ url_for("auth.login") }?failed=true')
-        print('Auth')
-        print(user.is_admin)
         user.store()
         login_user(user, duration=timedelta(hours=24))
         return redirect(requestdata['next'])

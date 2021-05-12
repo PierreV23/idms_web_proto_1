@@ -43,7 +43,10 @@ $(window).on('load', function() {
     <div class="card">
         <div class="card card-header">
             <h3>Data upload validation result: <emp><span id="result"> ... </span></h3></emp>
-            <a href="{{ url_for('upload.upload_batch') }}"><button class="button btn-primary float-right" id="upload-btn">Upload data</button></a>
+            <div class ="float-right">
+            <a href="{{ url_for('upload.upload_page') }}"><button class="button btn-primary " id="back-button">Go back</button></a>
+            <a href="{{ url_for('upload.upload_batch') }}"><button class="button btn-primary float-right" id="upload-btnx">Upload data</button></a>
+            </div>
         </div>
         <div class="card card-body">
             <div class="seqlist" id="report">

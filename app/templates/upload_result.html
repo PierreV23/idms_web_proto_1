@@ -6,6 +6,12 @@
 {% endblock %}
 
 {% block content %}
-Something was uploaded ... possibly successful
-
+<div class="container">
+{% if upload_result %}
+Your dataset was successfully uploaded
+{% else %}
+An error occurred while uploading your dataset
+{% end if %}
+<a href="{{ url_for('upload.upload_page') }}"><button class="button btn-primary">Upload more data</button></a>
+</div>
 {% endblock %}

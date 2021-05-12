@@ -5,6 +5,7 @@
 
 import io
 import os
+import time
 from flask import Blueprint, render_template, redirect, request, url_for, session, current_app
 from flask_login import current_user, login_required
 import uuid
@@ -24,6 +25,42 @@ DEFAULT_UPLOAD = {
 
 bp = Blueprint('upload', __name__, url_prefix='/upload')
 
+@login_required
+def unique_coll(project):
+    """Generate a unique collection name for project
+    and create the collection"""
+    if project is None:
+        projectcoll = f'/{current_user.irods_zone}/upload/data'
+    else:
+        # TODO Get coll from project settings
+        pass
+    datestr = time.strftime('%Y%m%d_%H%M')
+    collname = os.path.join(projectcoll, datestr)
+    i = 0
+    while current_user.irods_session.collections.exists(collname):
+        collname = os.path.join(projectcoll, f'{datestr}_{i:04}')
+        i += 1
+    current_user.ifs.mkdir(collname)
+    # TODO : add some metadata?
+    return collname
+
+def upload_data():
+    if current_user.environment not in session:
+        session[current_user.environment] = {}
+    if not UPLOAD_KEY in session[current_user.environment]:
+        session[current_user.environment][UPLOAD_KEY] = DEFAULT_UPLOAD
+        session[current_user.environment][UPLOAD_KEY]['collection'] = f'/{current_user.irods_zone}/upload/{uuid.uuid4()}'
+    return session[current_user.environment][UPLOAD_KEY]
+
+def clear_upload():
+    if current_user.environment in session:
+        if UPLOAD_KEY in session[current_user.environment]:
+            collection =  session[current_user.environment][UPLOAD_KEY].get('collection')
+            if collection:
+                current_user.ifs.rmdir(collection, recurse=True, force=True)
+            del session[current_user.environment][UPLOAD_KEY]
+
+
 @bp.errorhandler(413)
 def too_large(e):
     return "File is too large", 413
@@ -31,11 +68,8 @@ def too_large(e):
 @bp.route('upload')
 def upload_page():
     # Find out if an upload is still in progress
-    if UPLOAD_KEY not in session:
-        session[UPLOAD_KEY] = DEFAULT_UPLOAD
-        session[UPLOAD_KEY]['collection'] = f'/rivmZone/upload/{uuid.uuid4()}'
     projectlist = projects.get_projectlist()
-    return render_template('upload.html', upload_data=session[UPLOAD_KEY], projectlist=projectlist)
+    return render_template('upload.html', upload_data=upload_data(), projectlist=projectlist)
 
 def LengthWithinMargin(seq):
 
@@ -71,7 +105,7 @@ def read_data(coll):
                 sheet = workbook.active
                 headers = [ col.value for col in sheet[1] ]
                 for row in sheet.iter_rows(min_row=2,max_row=sheet.max_row):
-                    seqid = row[6].value
+                    seqid = row[7].value
                     for cell in row:
                         header = headers[cell.col_idx - 1]
                         data.setdefault(seqid, {})[header] = cell.value
@@ -82,7 +116,7 @@ def read_data(coll):
 @bp.route('_uploadfile', methods=['POST'])
 def upload_file():
     f = request.files['file']
-    collection = session[UPLOAD_KEY]['collection']
+    collection = upload_data()['collection']
     if not current_user.ifs.folderexists(collection):
         current_user.ifs.mkdir(collection)
     # Generate irods file object
@@ -95,46 +129,49 @@ def upload_file():
 @login_required
 @bp.route('_cancelupload', methods=['GET'])
 def cancel_upload():
-    if UPLOAD_KEY in session:
-        collection =  session[UPLOAD_KEY].get('collection')
-        if collection:
-            current_user.ifs.rmdir(collection)
-    del session[UPLOAD_KEY]
+    clear_upload()
     return render_template('home.html')
 
 @login_required
 @bp.route('_validate', methods=['GET'])
 def validate():
-    if UPLOAD_KEY not in session:
+    settings = upload_data()
+    if settings['collection'] is None:
         return redirect(url_for('upload.upload_page'))
-    coll = session[UPLOAD_KEY]['collection']
+    return render_template('validate_report.html', collection=settings['collection'])
 
-    return render_template('validate_report.html', collection=coll)
 
 @login_required
 @bp.route('_uploadbatch', methods=['GET'])
 def upload_batch():
-    if UPLOAD_KEY not in session:
+    settings = upload_data()
+    if settings['collection'] is None:
         return redirect(url_for('upload.upload_page'))
-    collection = session[UPLOAD_KEY]['collection']
+    collection = settings['collection']
     batch = get_batch(collection)
     batch.validate()
     result = batch.result()
-    if result in  ('Ok', 'Warning'):
-        batch.upload()
+    if result in  ('Ok', 'Warning', 'Error'):
+        # Generate a collection name for storing upload
+        # TODO: add project
+        collname = unique_coll(None)
+        coll = current_user.irods_session.collections.get(collname)
+        upload_result = batch.upload(coll, force=True)
     # TODO: Evaluate upload result
     # TODO: Remove current upload session vars
+    clear_upload()
     # TODO: Show some result
-    return render_template('upload_result.html')
+    return render_template('upload_result.html', upload_result=upload_result)
 
 
 
 @login_required
 @bp.route('_validate_results', methods=['GET'])
 def validate_results():
-    if UPLOAD_KEY not in session:
+    settings = upload_data()
+    if settings['collection'] is None:
         return redirect(url_for('upload.upload_page'))
-    collection = session[UPLOAD_KEY]['collection']
+    collection = settings['collection']
     batch = get_batch(collection)
     batch.validate()
     data = batch.validate_results()
