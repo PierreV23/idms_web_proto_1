@@ -3,6 +3,7 @@
 """Kiemsurveilance data upload interface voor NGSweb
 """
 
+import csv
 import io
 import os
 import time
@@ -51,7 +52,7 @@ def upload_data():
         session[current_user.environment] = {}
     if not UPLOAD_KEY in session[current_user.environment]:
         session[current_user.environment][UPLOAD_KEY] = DEFAULT_UPLOAD
-        session[current_user.environment][UPLOAD_KEY]['collection'] = f'/{current_user.irods_zone}/upload/{uuid.uuid4()}'
+        update_setting('collection', f'/{current_user.irods_zone}/upload/{uuid.uuid4()}')
     return session[current_user.environment][UPLOAD_KEY]
 
 def update_setting(key, value):
@@ -118,6 +119,17 @@ def read_data(coll):
                         header = headers[cell.col_idx - 1]
                         data.setdefault(seqid, {})[header] = cell.value
                 xlsf.close()
+            if f.path.endswith('.csv'):
+                with f.open('r') as csvf:
+                    wrapper = io.TextIOWrapper(csvf, encoding='utf-8')
+                    csvdata = csv.reader(wrapper)
+                    headers = next(csvdata)
+                    for row in csvdata:
+                        seqid = row[7]
+                        for i, cell in enumerate(row):
+                            header = headers[i]
+                            data.setdefault(seqid, {})[header] = cell
+
     return headers, data
 
 @login_required
@@ -214,6 +226,10 @@ def get_batch(collection):
                 xlsf = f.open('r')
                 batch.load_data(xlsf, 'xlsx', transform_file=current_app.config.get("LABSURV_TRANSFORM"))
                 xlsf.close()
+            if f.path.endswith('.csv'):
+                csvf = f.open('r')
+                wrapper = io.TextIOWrapper(csvf, encoding='utf-8')
+                batch.load_data(wrapper, 'csv', transform_file=current_app.config.get("LABSURV_TRANSFORM"))
     return batch
 
 @bp.route('_seq_list', methods=['GET'])
