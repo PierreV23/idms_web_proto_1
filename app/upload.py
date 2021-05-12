@@ -7,6 +7,7 @@ import io
 import os
 import time
 from flask import Blueprint, render_template, redirect, request, url_for, session, current_app
+from flask import jsonify
 from flask_login import current_user, login_required
 import uuid
 from app import projects
@@ -29,11 +30,12 @@ bp = Blueprint('upload', __name__, url_prefix='/upload')
 def unique_coll(project):
     """Generate a unique collection name for project
     and create the collection"""
-    if project is None:
-        projectcoll = f'/{current_user.irods_zone}/upload/data'
-    else:
-        # TODO Get coll from project settings
-        pass
+    projectcoll = f'/{current_user.irods_zone}/upload/data'
+
+    if not project is None:
+        pl, result = projects.rest_call('GET', 'projects/{}'.format(project))
+        if 'default_collection' in pl:
+            projectcoll = pl['default_collection']
     datestr = time.strftime('%Y%m%d_%H%M')
     collname = os.path.join(projectcoll, datestr)
     i = 0
@@ -52,6 +54,11 @@ def upload_data():
         session[current_user.environment][UPLOAD_KEY]['collection'] = f'/{current_user.irods_zone}/upload/{uuid.uuid4()}'
     return session[current_user.environment][UPLOAD_KEY]
 
+def update_setting(key, value):
+    settings = upload_data()
+    session[current_user.environment][UPLOAD_KEY][key] = value
+    session.modified = True
+
 def clear_upload():
     if current_user.environment in session:
         if UPLOAD_KEY in session[current_user.environment]:
@@ -59,6 +66,7 @@ def clear_upload():
             if collection:
                 current_user.ifs.rmdir(collection, recurse=True, force=True)
             del session[current_user.environment][UPLOAD_KEY]
+    session.modified = True
 
 
 @bp.errorhandler(413)
@@ -113,6 +121,14 @@ def read_data(coll):
     return headers, data
 
 @login_required
+@bp.route('_change_project', methods=['POST'])
+def change_project():
+    f = request.form.to_dict()
+    if 'project' in f:
+        update_setting('project', f['project'])
+    return jsonify(upload_data()['project'])
+
+@login_required
 @bp.route('_uploadfile', methods=['POST'])
 def upload_file():
     f = request.files['file']
@@ -154,7 +170,7 @@ def upload_batch():
     if result in  ('Ok', 'Warning', 'Error'):
         # Generate a collection name for storing upload
         # TODO: add project
-        collname = unique_coll(None)
+        collname = unique_coll(settings['project'])
         coll = current_user.irods_session.collections.get(collname)
         upload_result = batch.upload(coll, force=True)
     # TODO: Evaluate upload result
