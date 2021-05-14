@@ -149,6 +149,10 @@ class fs_irods(fs_base):
         print("lsdirs not implemented")
         exit(2)
 
+    def deletefile(self, path):
+        if self.fileexists(path):
+            file = self.irods_session.data_objects.unlink(path)
+
     def fileexists(self, path):
         base, file = self._pathsplit(path)
         query = self.irods_session.query(
@@ -185,7 +189,8 @@ class fs_irods(fs_base):
         return folder_irods(self, path)
 
     def rmdir(self, path, recurse=False, force=False):
-        self.irods_session.collections.remove(path, recurse=recurse, force=force)
+        if self.folderexists(path):
+            self.irods_session.collections.remove(path, recurse=recurse, force=force)
 
     def open(self, path, mode):
         options = {kw.FORCE_FLAG_KW: ''}
