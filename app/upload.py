@@ -247,8 +247,8 @@ def get_batch(collection):
                 xlsf.close()
             if f.path.endswith('.csv'):
                 csvf = f.open('r')
-                wrapper = io.TextIOWrapper(csvf, encoding='utf-8')
-                batch.load_data(wrapper, 'csv', transform_file=current_app.config.get("LABSURV_TRANSFORM"))
+#                wrapper = io.TextIOWrapper(csvf, encoding='utf-8')
+                batch.load_data(csvf, 'csv', transform_file=current_app.config.get("LABSURV_TRANSFORM"))
     return batch
 
 @bp.route('_seq_list', methods=['GET'])
