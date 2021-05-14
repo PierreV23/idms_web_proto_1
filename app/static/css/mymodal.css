@@ -86,6 +86,10 @@ ul {
   font-weight: bold;
 }
 
+.inline {
+  display: inline;
+}
+
 .caret-nosub::before {
   content: "\25B7";
   color: white;

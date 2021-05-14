@@ -50,13 +50,34 @@ $(window).on('load', function() {
     </div>
     <div class="row">
         <div class="col-md-3">
-            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.7.1/min/dropzone.min.css">
-            <form method="POST" action="{{ url_for('upload.upload_file') }}" class="dropzone" id="file-upload">
-            <div id="contents" class="card coll-content-sm">
-
+            <div class="card border-primary">
+                <div class="card card-header text-white bg-secondary">
+                    Data Upload Instructions
+                </div>
+                <div class="card card-body">
+                The upload requires you to supply one FASTA file with SARS-CoV-2 sequences and a 
+                coupled metadata file in Comma Separated Values format (=csv) or XLS format. 
+                You can upload these with the widget below. Please dont select a project for this test.
+                For uploading data, you can use this using this 
+                <a href="{{ url_for('static', filename='templates/labsurv-template.csv' ) }}" style="display:inline;">template</a>
+                </div>
             </div>
-            </form>
-            <div class="card">
+            <div class="card border-primary">
+                <div class="card card-header text-white bg-secondary">Upload data files here</div>
+                <div class="card card-body">  
+                    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.7.1/min/dropzone.min.css">
+                    <form method="POST" action="{{ url_for('upload.upload_file') }}" class="dropzone" id="file-upload">
+                        <div id="contents" class="card coll-content-sm">
+
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="card border-primary">
+                <div class="card card-header  text-white bg-secondary">
+                    Dataset info
+                </div>
+                <div class="card card-body">
                 <form>
                 
                 <div class="form-group">
@@ -85,11 +106,17 @@ $(window).on('load', function() {
                     <a href="{{ url_for('upload.cancel_upload') }}"><button type="button" class="btn btn-secondary">Cancel data upload</button></a>
                     <a href="{{ url_for('upload.validate') }}"><button type="button" class="btn btn-primary">Verify data</button></a>
                 </div>
-            </form>   
+            </form>
+            </div>
         </div>  
         </div>
         <div class="col-md-9">
-            <div class="card seqlist" id="seqlist"></div>
+            <div class="card border-primary">
+                <div class="card card-header text-white bg-secondary">
+                    Data preview
+                </div> 
+                <div class="card card-body seqlist" id="seqlist"></div>
+            </div>
         </div>
     </div>
 </div>
