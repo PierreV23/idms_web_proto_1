@@ -18,6 +18,7 @@ import openpyxl
 from labsurv import KSUpload, KSUploadType, connect
 
 SAMPLEID = 'SendingOrganisationSampleId'
+SEQUENCEID = 'SendingOrganisationSequenceId'
 
 UPLOAD_KEY = 'current_upload'
 DEFAULT_UPLOAD = {
@@ -198,7 +199,8 @@ def upload_batch():
     batch = get_batch(collection)
     batch.validate()
     result = batch.result()
-    if result in  ('Ok', 'Warning', 'Error'):
+    upload_result = False
+    if result in  ('OK', 'Warning'):
         # Generate a collection name for storing upload
         # TODO: add project
         collname = unique_coll(settings['project'])
