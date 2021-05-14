@@ -17,6 +17,7 @@ import openpyxl
 
 from labsurv import KSUpload, KSUploadType, connect
 
+SAMPLEID = 'SendingOrganisationSampleId'
 
 UPLOAD_KEY = 'current_upload'
 DEFAULT_UPLOAD = {
@@ -113,8 +114,17 @@ def read_data(coll):
                 workbook = openpyxl.load_workbook( xlsf )
                 sheet = workbook.active
                 headers = [ col.value for col in sheet[1] ]
+                try:
+                    seqid_idx = headers.index(SAMPLEID)
+                except ValueError:
+                    seqid_idx = None
+                i=0
                 for row in sheet.iter_rows(min_row=2,max_row=sheet.max_row):
-                    seqid = row[7].value
+                    if seqid_idx:
+                        seqid = row[seqid_idx].value
+                    else:
+                        seqid = i
+                    i += 1
                     for cell in row:
                         header = headers[cell.col_idx - 1]
                         data.setdefault(seqid, {})[header] = cell.value
@@ -122,12 +132,21 @@ def read_data(coll):
             if f.path.endswith('.csv'):
                 with f.open('r') as csvf:
                     wrapper = io.TextIOWrapper(csvf, encoding='utf-8')
-                    csvdata = csv.reader(wrapper)
+                    csvdata = csv.reader(wrapper, delimiter='\t')
                     headers = next(csvdata)
+                    try:
+                        seqid_idx = headers.index(SAMPLEID)
+                    except ValueError:
+                        seqid_idx = None
+                    i=0
                     for row in csvdata:
-                        seqid = row[7]
-                        for i, cell in enumerate(row):
-                            header = headers[i]
+                        if seqid_idx:
+                            seqid = row[seqid_idx]
+                        else:
+                            seqid = i
+                        i += 1
+                        for j, cell in enumerate(row):
+                            header = headers[j]
                             data.setdefault(seqid, {})[header] = cell
 
     return headers, data
