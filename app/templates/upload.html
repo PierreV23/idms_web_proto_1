@@ -57,7 +57,7 @@ $(window).on('load', function() {
                 <div class="card card-body">
                 The upload requires you to supply one FASTA file with SARS-CoV-2 sequences and a 
                 coupled metadata file in Comma Separated Values format (=csv) or XLS format. 
-                You can upload these with the widget below. Please dont select a project for this test.
+                You can upload these with the widget below.
                 For uploading data, you can use this using this 
                 <a href="{{ url_for('static', filename='templates/labsurv-template.csv' ) }}" style="display:inline;">template</a>
                 </div>
@@ -81,15 +81,15 @@ $(window).on('load', function() {
                 <form>
                 
                 <div class="form-group">
-                    <label for="example">Project</label>
-                    <select class="custom-select" aria-label=".form-select-lg example" id="projectselect">
-                        <option>Select a project ...</option>
-                        {% for project in projectlist %}
-                        <option value="{{ project }}"
-                            {% if project == upload_data['project'] %}
+                    <label for="example">Organisation</label>
+                    <select class="custom-select" aria-label=".form-select-lg example" id="orgselect">
+                        <option>Select an organisation ...</option>
+                        {% for organisation in organisationlist %}
+                        <option value="{{ organisation }}"
+                            {% if organisation == upload_data['organisation'] %}
                             selected
                             {% endif %}
-                            >{{ project }}
+                            >{{ organisation }}
                         </option>
                         {% endfor %}
                     </select>
@@ -138,13 +138,13 @@ $(window).on('load', function() {
         }
     }
 
-$('#projectselect').change(
+$('#orgselect').change(
     function(data) {
-        selected_project = document.getElementById("projectselect").value;
-        $.post("{{ url_for('upload.change_project') }}", {
-            project: selected_project
+        selected_organisation = document.getElementById("orgselect").value;
+        $.post("{{ url_for('upload.change_organisation') }}", {
+            organisation: selected_organisation
         }, function(response) {
-            // TODO: change value of select here, in case the selected project is not allowed
+            // TODO: change value of select here, in case the selected organisation is not allowed
         })
     }
 )

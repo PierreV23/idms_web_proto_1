@@ -15,7 +15,7 @@ from app import projects
 from Bio import SeqIO
 import openpyxl
 
-from labsurv import KSUpload, KSUploadType, connect
+from labsurv import KSUpload, KSUploadType, connect, organisationcodes
 
 SAMPLEID = 'SendingOrganisationSampleId'
 SEQUENCEID = 'SendingOrganisationSequenceId'
@@ -24,10 +24,19 @@ UPLOAD_KEY = 'current_upload'
 DEFAULT_UPLOAD = {
     'collection': None,
     'project': None,
+    'organisation': None,
     'filelist': []
 }
 
 bp = Blueprint('upload', __name__, url_prefix='/upload')
+
+
+def dbconnect():
+    dbcred = current_app.config["LABSURV_DB_CRED"].get(current_user.environment)
+    if dbcred is None:
+        # TODO : show some error
+        return False
+    connect(*dbcred)
 
 @login_required
 def unique_coll(project):
@@ -76,11 +85,13 @@ def clear_upload():
 def too_large(e):
     return "File is too large", 413
 
+
 @bp.route('upload')
 def upload_page():
     # Find out if an upload is still in progress
-    projectlist = projects.get_projectlist()
-    return render_template('upload.html', upload_data=upload_data(), projectlist=projectlist)
+    dbconnect()
+    organisationlist = organisationcodes()
+    return render_template('upload.html', upload_data=upload_data(), organisationlist=organisationlist)
 
 def LengthWithinMargin(seq):
 
@@ -153,12 +164,12 @@ def read_data(coll):
     return headers, data
 
 @login_required
-@bp.route('_change_project', methods=['POST'])
-def change_project():
+@bp.route('_change_organisation', methods=['POST'])
+def change_organisation():
     f = request.form.to_dict()
-    if 'project' in f:
-        update_setting('project', f['project'])
-    return jsonify(upload_data()['project'])
+    if 'organisation' in f:
+        update_setting('organisation', f['organisation'])
+    return jsonify(upload_data()['organisation'])
 
 @login_required
 @bp.route('_uploadfile', methods=['POST'])
@@ -196,7 +207,7 @@ def upload_batch():
     if settings['collection'] is None:
         return redirect(url_for('upload.upload_page'))
     collection = settings['collection']
-    batch = get_batch(collection)
+    batch = get_batch(settings['collection'], setings['organisation'])
     batch.validate()
     result = batch.result()
     upload_result = False
@@ -220,8 +231,7 @@ def validate_results():
     settings = upload_data()
     if settings['collection'] is None:
         return redirect(url_for('upload.upload_page'))
-    collection = settings['collection']
-    batch = get_batch(collection)
+    batch = get_batch(settings['collection'], settings['organisation'])
     batch.validate()
     data = batch.validate_results()
     result = batch.result()
@@ -229,13 +239,9 @@ def validate_results():
                 'result': result }
     return content
 
-def get_batch(collection):
-    dbcred = current_app.config["LABSURV_DB_CRED"].get(current_user.environment)
-    if dbcred is None:
-        # TODO : show some error
-        return False
-    connect(*dbcred) 
-    batch = KSUpload(KSUploadType.EXTERNAL, sending_organisation_id=1)
+def get_batch(collection, organisation):
+    dbconnect()
+    batch = KSUpload(KSUploadType.EXTERNAL, sending_organisation_code=organisation)
     for f in current_user.ifs.ls(collection):
         if f.isfile():
             if f.path.endswith('.fasta'):
