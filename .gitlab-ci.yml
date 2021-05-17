@@ -21,4 +21,4 @@ deploy_production:
   only:
     - release
   tags:
-    - production
+    - prod
