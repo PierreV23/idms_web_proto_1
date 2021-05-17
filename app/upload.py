@@ -207,7 +207,7 @@ def upload_batch():
     if settings['collection'] is None:
         return redirect(url_for('upload.upload_page'))
     collection = settings['collection']
-    batch = get_batch(settings['collection'], setings['organisation'])
+    batch = get_batch(settings['collection'], settings['organisation'])
     batch.validate()
     result = batch.result()
     upload_result = False
