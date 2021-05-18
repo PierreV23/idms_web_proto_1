@@ -163,7 +163,8 @@ ul {
 }
 
 .seqlist {
-  min-height: 40vh;
+  min-height: 75h;
+  max-height: 75vh;
   overflow-x: scroll;
   overflow-y: scroll;
 }

@@ -116,10 +116,8 @@ def read_data(coll):
                 fasta = f.open('r')
                 wrapper = io.TextIOWrapper(fasta, encoding='utf-8')
                 for seq in SeqIO.parse(wrapper, 'fasta'):
-                    data.setdefault(seq.id, { 
-                        'PassedQC': 'No' if HasTooManyN(seq.seq) else 'Yes',
-                        'LengthOK': 'Yes' if LengthWithinMargin(seq.seq) else 'No'
-                        })
+                    data.setdefault(seq.id, {})['PassedQC'] = 'No' if HasTooManyN(seq.seq) else 'Yes'
+                    data.setdefault(seq.id, {})['LengthOK'] = 'Yes' if LengthWithinMargin(seq.seq) else 'No'
                 fasta.close()
             if f.path.endswith('.xlsx'):
                 xlsf = f.open('r')
@@ -127,7 +125,7 @@ def read_data(coll):
                 sheet = workbook.active
                 headers = [ col.value for col in sheet[1] ]
                 try:
-                    seqid_idx = headers.index(SAMPLEID)
+                    seqid_idx = headers.index(SEQUENCEID)
                 except ValueError:
                     seqid_idx = None
                 i=0
@@ -147,7 +145,7 @@ def read_data(coll):
                     csvdata = csv.reader(wrapper, delimiter='\t')
                     headers = next(csvdata)
                     try:
-                        seqid_idx = headers.index(SAMPLEID)
+                        seqid_idx = headers.index(SEQUENCEID)
                     except ValueError:
                         seqid_idx = None
                     i=0
@@ -156,7 +154,7 @@ def read_data(coll):
                             seqid = row[seqid_idx]
                         else:
                             seqid = i
-                        i += 1
+                            i += 1
                         for j, cell in enumerate(row):
                             header = headers[j]
                             data.setdefault(seqid, {})[header] = cell
