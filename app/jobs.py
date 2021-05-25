@@ -10,7 +10,7 @@ from flask import Blueprint, render_template, request, url_for
 from flask_login import current_user, login_required
 from fs_irods import folder_irods
 from irods.exception import DataObjectDoesNotExist
-from irods.models import Collection, DataObject, DataObjectMeta
+from irods.models import Collection, DataObject, DataObjectMeta, CollectionMeta
 from irods.column import Criterion
 from app.datafield import datafield, AVU2data, INFINITE_DATE
 import os
@@ -28,14 +28,22 @@ JOB_FIELDS = {
     'sys::run::finish_time': ('End time', 'timestamp'),
     'sys::runsheet::projectID': ('projectID', 'projectid'),
     'sys::run::exit_code': ('Result', 'int'),
-    'sys::runsheet::input_collection': ('Input Collection', 'irods_collection'),
-    ##'sys::run::output_collection': ('Output Collection', 'irods_collection')
+    'sys::runsheet::input_collection': ('Input Collection', 'irods_collection')
 }
+
+ATTR_RUNSHEET_PREFIX = 'sys::runsheet::'
+ATTR_RUNSHEET_STATE = '{}state'.format(ATTR_RUNSHEET_PREFIX)
+ATTR_RUNSHEET_ID = '{}id'.format(ATTR_RUNSHEET_PREFIX)
+ATTR_RUNSHEET_CREATETIME = '{}create_time'.format(ATTR_RUNSHEET_PREFIX)
 
 MAX_READ_LOG_BYTES = 100000
 
 def utc_to_local(utc_dt):
     return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=None)
+
+def timestamp_to_local(timestamp):
+    utc_dt = datetime.utcfromtimestamp(float(timestamp))
+    return utc_to_local(utc_dt)
 
 def pagebuttons(page_size, count, current_page, max_buttons, template):
     pagebuttons = []
@@ -77,24 +85,60 @@ def joblist(state='', page=1):
     returns:
         joblist, total_job_count
     """
+
     job_list = []
     if state == '':
+        # incoming runsheets could still be runsheet-files
         q1 = current_user.irods_session.query(Collection.name, DataObject.name, DataObject.id, DataObject.create_time).filter( \
             Criterion('like', Collection.name, f'/{current_user.irods_zone}/system/runsheet%')).filter( \
                 Criterion('!=', Collection.name, f'/{current_user.irods_zone}/system/runsheet/archive')).filter( \
                 Criterion('!=', Collection.name, f'/{current_user.irods_zone}/system/runsheet/log'))
+        # or runsheets could be on collections
+        q1b = current_user.irods_session.query(Collection, CollectionMeta).filter( 
+                Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_STATE)).filter( 
+                Criterion('not like', Collection.name, f'/{current_user.irods_zone}/system/runsheet%'))
     else:
+        # incoming runsheets could still be runsheet-files
         q1 = current_user.irods_session.query(Collection.name, DataObject.name, DataObject.id, DataObject.create_time).filter( \
             Criterion('like', Collection.name, f'/{current_user.irods_zone}/system/runsheet%')).filter(
-            Criterion('=', DataObjectMeta.name, 'sys::runsheet::state')).filter(
+            Criterion('=', DataObjectMeta.name, ATTR_RUNSHEET_STATE)).filter(
             Criterion('=', DataObjectMeta.value, state))    
-    result_list_1 = [ j for j in q1 ]
-    result_list_2 = sorted( result_list_1, key = lambda j: j[DataObject.create_time], reverse = True )[PAGE_SIZE*(page-1):PAGE_SIZE*page]
+        # or runsheets could be on collections
+        q1b = current_user.irods_session.query(Collection, CollectionMeta).filter(
+                Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_STATE)).filter(
+                Criterion('=', CollectionMeta.value, f'{state}')).filter(
+                Criterion('not like', Collection.name, f'/{current_user.irods_zone}/system/runsheet%'))
 
-    current_time = time.time()
-    for job in result_list_2:
+    result_list_1b = [ j for j in q1b ]
+    result_list_2b = sorted( result_list_1b, key = lambda j : j[Collection.create_time], reverse = True)[PAGE_SIZE*(page-1):PAGE_SIZE*page]
+    for res in result_list_2b:
+        job_record = {}
+        runsheet_collection = res[Collection.name] 
+        #create runsheet object by reading collection meta-data
+        q1c = current_user.irods_session.query(CollectionMeta.name, CollectionMeta.value).filter( \
+            Criterion('=', Collection.name, runsheet_collection))
+        metadata = {meta[CollectionMeta.name] : meta[CollectionMeta.value] for meta in q1c}
+        state = metadata.get(ATTR_RUNSHEET_STATE, 'unknown')
+        name = metadata.get(ATTR_RUNSHEET_ID, 'unknown')
+#        job_record['COLLECTION'] =  Collection.name
+        job_record['Name'] = datafield('runsheet', name, 'runsheet')
+        job_record['create_time'] = timestamp_to_local(metadata.get(ATTR_RUNSHEET_CREATETIME, 0)).timestamp()
+        job_record['Created'] =datafield('create_time', job_record['create_time'], 'timestamp')
+        job_record['State'] =datafield('state', state, 'job_state')
+        for field in JOB_FIELDS:
+            if field in metadata:
+                job_record[JOB_FIELDS[field][0]] = datafield(field, metadata[field], JOB_FIELDS[field][1])
+        job_list.append( job_record ) 
+
+    coll_jobs = len(result_list_1b)
+
+    result_list_1 = [ j for j in q1 ]
+    result_list_2 = sorted( result_list_1, key=lambda j: j[DataObject.create_time], reverse = True )
+    result_list_3 = result_list_2[max(0,PAGE_SIZE*(page-1)-coll_jobs):PAGE_SIZE*page-coll_jobs]
+    for job in result_list_3:
         job_record = {'Name': datafield('runsheet', job[DataObject.name], 'runsheet')}
-        job_record['Created'] = datafield('create_time', utc_to_local(job[DataObject.create_time]).timestamp(), 'timestamp')
+        job_record['create_time'] = utc_to_local(job[DataObject.create_time]).timestamp()
+        job_record['Created'] = datafield('create_time', job_record['create_time'], 'timestamp')
         q2 = current_user.irods_session.query(DataObjectMeta.name, DataObjectMeta.value).filter( \
             Criterion('=', DataObject.id, job[DataObject.id]))
         metadata = {meta[DataObjectMeta.name] : meta[DataObjectMeta.value] for meta in q2}
@@ -106,7 +150,8 @@ def joblist(state='', page=1):
             if field in metadata:
                 job_record[JOB_FIELDS[field][0]] = datafield(field, metadata[field], JOB_FIELDS[field][1])
         job_list.append(job_record)
-    return job_list, len(result_list_1)
+
+    return job_list, len(result_list_1) + len(result_list_1b)
 
 @bp.route('/')
 @login_required
@@ -127,18 +172,43 @@ def show_jobs():
 @bp.route('/jobdetails')
 @login_required
 def show_jobdetails():
+    #this could be either the object-name of the yaml file or meta information attached to the collection
     jobnaam = request.args.get('name', '', type=str)
+
+    D = {}
+    metadata = {}
+    joblog = ''
+
     # We want the full path to the job runsheet object
     query = current_user.irods_session.query(DataObject.id, DataObject.create_time, Collection.name).filter(Criterion('=', DataObject.name, jobnaam))
-    job = next(query.get_results())
-    runsheet = job[Collection.name] + '/' + jobnaam
-    jobid = job[DataObject.id]
-#    jobObj = current_user.irods_session.data_objects.get(runsheet)
-    q2 = current_user.irods_session.query(DataObjectMeta.name, DataObjectMeta.value).filter( \
-            Criterion('=', DataObject.id, jobid ))
-    metadata = {meta[DataObjectMeta.name] : meta[DataObjectMeta.value] for meta in q2}
-    # Find the job log file
-    joblog = f'/{current_user.irods_zone}/system/runsheet/log/{jobnaam}.log'
+    results = list(query.get_results())
+    
+    if len(results)==1:
+        #apparently we found a runsheet.yml-file
+        job = results[0]
+        runsheet = job[Collection.name] + '/' + jobnaam
+        jobid = job[DataObject.id]
+        q2 = current_user.irods_session.query(DataObjectMeta.name, DataObjectMeta.value).filter( \
+                Criterion('=', DataObject.id, jobid ))
+        metadata = {meta[DataObjectMeta.name] : meta[DataObjectMeta.value] for meta in q2}
+        D['Runsheet file'] = datafield('runsheet',  runsheet, 'irods_object')
+        D['Create time'] = datafield('create_time', utc_to_local(job[DataObject.create_time]).timestamp(), 'timestamp')
+        joblog = f'/{current_user.irods_zone}/system/runsheet/log/{jobnaam}.log'
+    else:
+        #since we didn't find a file, the jobnaam is refering to metainfo on a collection
+        query = current_user.irods_session.query(Collection.name, CollectionMeta).filter( 
+            Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_ID )).filter(
+            Criterion('=', CollectionMeta.value, f'{jobnaam}'))
+        # Find the job log file
+        results = query.get_results()
+        job = next(results)
+        runsheet = job[Collection.name] 
+        q2 = current_user.irods_session.query(CollectionMeta.name, CollectionMeta.value).filter( \
+                Criterion('=', Collection.name, runsheet ))
+        metadata = {meta[CollectionMeta.name] : meta[CollectionMeta.value] for meta in q2}
+        D['Runsheet collection'] = datafield('runsheet',  runsheet, 'irods_collection')
+        D['Create time'] = datafield('create_time', float(metadata[ATTR_RUNSHEET_CREATETIME]), 'timestamp')
+        joblog = f'/{runsheet}/log/{jobnaam}.log'
     ifs = current_user.ifs
     try:
         obj = ifs.getfile(joblog)
@@ -181,11 +251,9 @@ def show_jobdetails():
         'sys::runsheet::restartable': ('Restarts on error', 'boolean'),
         'sys::runsheet::omit_staging': ('Omit staging', 'boolean'),
         'sys::runsheet::lsf_queue': ('LSF Queue', 'lsf_queue'),
+        'sys::run::lsf_jobid': ('LSF Job ID', 'text'),
         'sys::run::pid': ('Process PID', 'text')
     }
-    D = {}
-    D['Runsheet file'] = datafield('runsheet',  runsheet, 'irods_object')
-    D['Create time'] = datafield('create_time', utc_to_local(job[DataObject.create_time]).timestamp(), 'timestamp')
     for field in FIELDS:
         if field in metadata:
             D[FIELDS[field][0]] = datafield(field, metadata[field], FIELDS[field][1])
