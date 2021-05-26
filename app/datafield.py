@@ -25,7 +25,11 @@ KNOWN_ATTRIBUTES = {
     'sys::pipeline::last_use': 'timestamp',
     'sys::pipeline::stage_time': 'timestamp',
     'sys::pipeline::used_by': 'runsheet',
-    'user::pipeline::input_collection_id': 'collection_id'
+    'user::pipeline::input_collection_id': 'collection_id',
+    'sys::run::start_time': 'timestamp',
+    'sys::runsheet::create_time': 'timestamp',
+    'sys::runsheet::input_collection': 'irods_collection',
+    'sys::runsheet::projectID': 'projectid'
 }
 
 KNOWN_ATTRIBUTE_TEMPLATES = {

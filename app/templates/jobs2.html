@@ -23,6 +23,7 @@ $(document).ready(function(){
   </button>
  <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
  <a class="dropdown-item" href="/jobs?items=incoming">Incoming</a>
+ <a class="dropdown-item" href="/jobs?items=prepare">Prepare</a>
  <a class="dropdown-item" href="/jobs?items=queued">Queued</a>
  <a class="dropdown-item" href="/jobs?items=active">Active</a>
  <a class="dropdown-item" href="/jobs?items=postprocessing">Post-processing</a>
@@ -148,6 +149,8 @@ $(document).ready(function(){
 {% for entry in joblist %}
     {% if entry.State.value in ("incoming", "stage") %}
       <TR class="table-light">
+    {% elif entry.State.value == "prepare" %}
+      <TR class="table-info">
     {% elif entry.State.value == "queued" %}
       <TR class="table-active">
     {% elif entry.State.value == "startup" %}
