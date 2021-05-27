@@ -75,29 +75,11 @@ $(window).on('load', function() {
             </div>
             <div class="card border-primary">
                 <div class="card card-header  text-white bg-secondary">
-                    Dataset info
+                    Dataset actions
                 </div>
                 <div class="card card-body">
                 <form>
                 
-                <div class="form-group">
-                    <label for="example">Organisation</label>
-                    <select class="custom-select" aria-label=".form-select-lg example" id="orgselect">
-                        <option>Select an organisation ...</option>
-                        {% for organisation in organisationlist %}
-                        <option value="{{ organisation }}"
-                            {% if organisation == upload_data['organisation'] %}
-                            selected
-                            {% endif %}
-                            >{{ organisation }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="description">Description</label>
-                    <input type="text" class="form-control" id="description">
-                </div>
                 <!-- <div class="form-group">
                     <label for="runid">RUN-ID</label>
                     <input type="text" class="form-control" id="runid">
@@ -137,17 +119,6 @@ $(window).on('load', function() {
             });
         }
     }
-
-$('#orgselect').change(
-    function(data) {
-        selected_organisation = document.getElementById("orgselect").value;
-        $.post("{{ url_for('upload.change_organisation') }}", {
-            organisation: selected_organisation
-        }, function(response) {
-            // TODO: change value of select here, in case the selected organisation is not allowed
-        })
-    }
-)
 
 </script>
 {% endblock %}
