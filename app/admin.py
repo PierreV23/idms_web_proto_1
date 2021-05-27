@@ -50,7 +50,7 @@ def admin():
     if not current_user.is_admin:
         return render_template('denied.html')
     queues = {}
-    for q in ['incoming', 'stage', 'queued', 'startup', 'active']:
+    for q in ['incoming', 'prepare', 'stage', 'queued', 'startup', 'active']:
         enabled = True
         path = f'/{current_user.irods_zone}/system/runsheet'
         metaquery = current_user.irods_session.query(CollectionMeta.value).filter(
