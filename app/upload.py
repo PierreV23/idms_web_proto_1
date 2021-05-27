@@ -15,7 +15,7 @@ from app import projects
 from Bio import SeqIO
 import openpyxl
 
-from labsurv import KSUpload, KSUploadType, connect, organisationcodes
+from labsurv import KSUpload, KSUploadType, connect
 
 SAMPLEID = 'SendingOrganisationSampleId'
 SEQUENCEID = 'SendingOrganisationSequenceId'
@@ -24,7 +24,6 @@ UPLOAD_KEY = 'current_upload'
 DEFAULT_UPLOAD = {
     'collection': None,
     'project': None,
-    'organisation': None,
     'filelist': []
 }
 
@@ -90,8 +89,8 @@ def too_large(e):
 def upload_page():
     # Find out if an upload is still in progress
     dbconnect()
-    organisationlist = organisationcodes()
-    return render_template('upload.html', upload_data=upload_data(), organisationlist=organisationlist)
+#    organisationlist = organisationcodes()
+    return render_template('upload.html', upload_data=upload_data())
 
 def LengthWithinMargin(seq):
 
@@ -161,13 +160,13 @@ def read_data(coll):
 
     return headers, data
 
-@login_required
-@bp.route('_change_organisation', methods=['POST'])
-def change_organisation():
-    f = request.form.to_dict()
-    if 'organisation' in f:
-        update_setting('organisation', f['organisation'])
-    return jsonify(upload_data()['organisation'])
+# @login_required
+# @bp.route('_change_organisation', methods=['POST'])
+# def change_organisation():
+#     f = request.form.to_dict()
+#     if 'organisation' in f:
+#         update_setting('organisation', f['organisation'])
+#     return jsonify(upload_data()['organisation'])
 
 @login_required
 @bp.route('_uploadfile', methods=['POST'])
@@ -205,7 +204,7 @@ def upload_batch():
     if settings['collection'] is None:
         return redirect(url_for('upload.upload_page'))
     collection = settings['collection']
-    batch = get_batch(settings['collection'], settings['organisation'])
+    batch = get_batch(settings['collection'])
     batch.validate()
     result = batch.result()
     upload_result = False
@@ -229,7 +228,7 @@ def validate_results():
     settings = upload_data()
     if settings['collection'] is None:
         return redirect(url_for('upload.upload_page'))
-    batch = get_batch(settings['collection'], settings['organisation'])
+    batch = get_batch(settings['collection'])
     batch.validate()
     data = batch.validate_results()
     result = batch.result()
@@ -237,9 +236,9 @@ def validate_results():
                 'result': result }
     return content
 
-def get_batch(collection, organisation):
+def get_batch(collection):
     dbconnect()
-    batch = KSUpload(KSUploadType.EXTERNAL, sending_organisation_code=organisation)
+    batch = KSUpload(KSUploadType.EXTERNAL)
     for f in current_user.ifs.ls(collection):
         if f.isfile():
             if f.path.endswith('.fasta'):
