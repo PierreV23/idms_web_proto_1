@@ -13,8 +13,9 @@ from flask import abort, Blueprint, render_template, redirect, request, url_for
 from flask_login import current_user, login_required
 from flask import jsonify
 from irods.exception import CAT_NO_ACCESS_PERMISSION, OVERWRITE_WITHOUT_FORCE_FLAG
-from irods.models import Collection, CollectionMeta, User, UserMeta
+from irods.models import Collection, CollectionMeta, User, UserMeta, UserGroup
 from irods.column import Criterion
+from irods.user import iRODSUser, iRODSUserGroup
 from app.datafield import AVU2data, datafield
 from app.models import deobfuscate
 
@@ -224,3 +225,32 @@ def get_process():
     processlist = [ p['name'] for p in response ]
     return jsonify(processlist)
 
+@BP.route('_myprojects', methods=['GET'])
+@login_required
+def my_projects():
+
+    usr_groups = [ (iRODSUserGroup ( current_user.irods_session.user_groups, result) ) \
+        for result in current_user.irods_session.query(UserGroup).filter( User.name == current_user.username ) ]
+
+    my_projects = []
+    for g in usr_groups:
+        try:
+            project = g.metadata.get_one('projectID')
+        except KeyError:
+            project = None
+        if project:
+            my_projects.append(project.value)
+
+    projectlist = { x: '' for x in sorted(my_projects) }
+
+    pl, result = rest_call('GET', 'projects')
+
+    if result == 200:
+        projectcolls = { p['name']: p['default_collection'] for p in pl }
+        for project in projectlist:
+            if project in projectcolls:
+                projectlist[project] = projectcolls[project]
+
+    columns = min(4, 1 + len(projectlist) // 20)
+
+    return render_template('_myprojects.html', projectlist=projectlist, columns=columns )
