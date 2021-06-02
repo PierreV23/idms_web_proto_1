@@ -49,6 +49,14 @@ def get_projectlist():
     #projectlist = sorted(projectlist)
     return projectlist
 
+@login_required
+def get_processlist(project):
+    pl, result = rest_call('GET', f'projects/{project}/processes')
+    processes = []
+    if result == 200:
+        processes = [ p['name'] for p in pl ]
+    return processes
+
 @BP.route('/')
 @login_required
 def show_projects():
@@ -218,9 +226,6 @@ def get_process():
     data = request.form.to_dict()
     if not 'project' in data:
         abort(400)
-    response, result = rest_call('GET', 'projects/{}/processes'.format(data['project']))
-    if result != 200:
-        return jsonify({})
-    processlist = [ p['name'] for p in response ]
+    processlist = get_processlist(data['project'])
     return jsonify(processlist)
 

@@ -29,13 +29,25 @@
         });
     }
 
+    function startProcess() {
+      var processid = $("#processSelect").val()
+      $.get('{{ url_for('collbrowser.startprocess') }}', {
+        collection: '{{ collection }}',
+        processid: processid
+      }, function(data) {
+        load_meta();
+        load_actions();
+      });
+    }
+
     function overrideDatasetLocal() {
         var selected = $( "#keepLocalSwitch" ).is(':checked')
         var override = $( "#overrideLocalSwitch" ).is(':checked')
-        $.get('{{ url_for('collbrowser.setOverrideLocal') }}', {
+        $.get('{{ url_for('collbrowser.setoverride') }}', {
+          attr: 'sys::archive::local',
           collection: '{{ collection }}',
           override: override,
-          selection: selected
+          value: selected
         }, function(data) {
            load_meta();
            load_actions();
@@ -43,9 +55,10 @@
     }
 
     function setMincopies(i) {
-        $.get('{{ url_for('collbrowser.setMincopies') }}', {
+        $.get('{{ url_for('collbrowser.setmeta') }}', {
           collection: '{{ collection }}',
-          copies: i
+          attr: 'sys::archive::min_copies',
+          value: i
         }, function(data) {
            load_meta();
         });
@@ -54,10 +67,11 @@
     function overrideMincopies() {
         var copies = $(".min-copies:checked").val()
         var override = $( "#overrideMincopiesSwitch" ).is(':checked')
-        $.get('{{ url_for('collbrowser.setOverrideMincopies') }}', {
+        $.get('{{ url_for('collbrowser.setoverride') }}', {
           collection: '{{ collection }}',
           override: override,
-          copies: copies
+          attr: 'sys::archive::min_copies',
+          value: copies
         }, function(data) {
            load_meta();
            load_actions();
@@ -66,9 +80,21 @@
 
     function keepDatasetLocal() {
         var selected = $( "#keepLocalSwitch" ).is(':checked')
-        $.get('{{ url_for('collbrowser.setKeepLocal') }}', {
+        $.get('{{ url_for('collbrowser.setmeta') }}', {
           collection: '{{ collection }}',
-          selection: selected
+          attr: 'sys::archive::local',
+          value: selected
+        }, function(data) {
+           load_meta()
+        });
+    }
+
+    function enableArchive() {
+      var selected = $( "#enableArchiveSwitch" ).is(':checked')
+        $.get('{{ url_for('collbrowser.setmeta') }}', {
+          collection: '{{ collection }}',
+          attr: "sys::archive::enable",
+          value: selected
         }, function(data) {
            load_meta()
         });
@@ -100,6 +126,7 @@ $('.nav-pills').on('shown.bs.tab', function(event){
               {% if archival_state.is_dataset is sameas true and archival_state.is_offline is sameas true %}OFFLINE{% else %}Archive{% endif %}
           </button>
         </li>
+        {% if archival_state.is_dataset is sameas true %}
         <li class="nav-item mx-2">
           <button class="btn btn-outline-primary" id="storage-tab"
             data-toggle="tab" href="#storage" role="tab"
@@ -107,6 +134,14 @@ $('.nav-pills').on('shown.bs.tab', function(event){
             Storage
           </button>
         </li>
+        <li class="nav-item mx-2">
+          <button class="btn btn-outline-primary" id="pipeline-tab"
+            data-toggle="tab" href="#pipeline" role="tab"
+            aria-controls="pipeline" aria-selected="false">
+            Pipeline
+          </button>
+        </li>
+        {% endif %}
       </ul>
     </div>
     <div class="card card-body tab-content">
@@ -167,9 +202,17 @@ $('.nav-pills').on('shown.bs.tab', function(event){
             {% endif %}
 
         </div>
+
         <div class="tab-pane" id="storage" role="tabpanel" aria-labelledby="storage-tab">
           <form>
             <div class="form-group">
+              <div class="col-sm-4 custom-control custom-switch vertical-down">
+                <input type="checkbox" class="custom-control-input" onChange="enableArchive()"
+                      value="true"
+                      id="enableArchiveSwitch" {% if archival_state.enabled == 'true' %}checked{% endif %}>
+                <label class="custom-control-label" for="enableArchiveSwitch">Enable archiving</label>
+              </div>
+              <hr>
               <div class="col-sm-4 custom-control custom-switch vertical-down">
                 <input type="checkbox" class="custom-control-input" onChange="keepDatasetLocal()"
                       value="true"
@@ -223,9 +266,25 @@ $('.nav-pills').on('shown.bs.tab', function(event){
             </div>
           </form>
         </div>
+        <div class="tab-pane" id="pipeline" role="tabpanel" aria-labelledby="pipeline-tab">
+          {% if processrequest == "true" %}
+          <h3>Starting up process : {{ processid }}</h3>
+          {% else %}
+          <table>
+            <tr>
+              <td>
+                <select class="custom-select" style="width:150px;" id="processSelect">
+                  {% for p in processes %}
+                  <option {% if p == processid %}selected{% endif %}>{{ p }}</option>
+                  {% endfor %}
+                </select>
+              </td>
+              <td>
+                <button class="btn btn-outline-secondary" onClick="startProcess()">START PROCESS</button>
+              </td>              
+            </tr>
+          </table>
+          {% endif %}
+        </div>
     </div>
 </div>
-
-<script>
-
-</script>
