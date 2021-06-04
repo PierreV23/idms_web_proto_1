@@ -203,7 +203,7 @@ def startprocess():
     if current_user.ifs.folderexists(collection):
         c = current_user.irods_session.collections.get(collection)
         c.metadata[ATTR_PROCESSID] = iRODSMeta(ATTR_PROCESSID, processid)
-        c.metadata[ATTR_PROCESSREQUEST] = iRODSMeta(ATTR_PROCESSREQUEST, 'true')
+        c.metadata[ATTR_PROCESSREQUEST] = iRODSMeta(ATTR_PROCESSREQUEST, current_user.username)
     return 'DONE'
 
 @bp.route('_collist')
