@@ -17,6 +17,7 @@ from irods.column import Criterion
 from app.datafield import AVU2data, datafield
 from graphviz import Digraph
 from irods.meta import iRODSMeta
+from . import projects
 #from irods_helper import getmetaitem
 
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
@@ -24,6 +25,8 @@ bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
 NAME_LENGTH = 20
 MAX_GRAPH_LEVELS = 3
 ATTR_DATASETID = 'sys::dataset_id'
+ATTR_PROJECTID = 'projectID'
+ATTR_PROCESSID = 'processID'
 #TODO: use constants.py (role irods_cronjobs)
 ATTR_ARCHIVE_PREFIX = 'sys::archive::'
 ATTR_ARCHIVE_ENABLE = f'{ATTR_ARCHIVE_PREFIX}enable'
@@ -31,6 +34,7 @@ ATTR_ARCHIVE_DEFAULT_STATE = f'{ATTR_ARCHIVE_PREFIX}default_state'
 ATTR_ARCHIVE_DESIREDSTATE = f'{ATTR_ARCHIVE_PREFIX}desired_state'
 ATTR_ARCHIVE_KEEP_ONLINE_TILL = f'{ATTR_ARCHIVE_PREFIX}keep_online_till'
 ATTR_ARCHIVE_LOCAL = f'{ATTR_ARCHIVE_PREFIX}local'
+ATTR_PROCESSREQUEST = 'processrequest'
 ATTR_ARCHIVE_STAGE = f'{ATTR_ARCHIVE_PREFIX}stage'
 ATTR_ARCHIVE_STATE = f'{ATTR_ARCHIVE_PREFIX}state'
 ATTR_ARCHIVE_LASTRUN = f'{ATTR_ARCHIVE_PREFIX}lastrun'
@@ -118,71 +122,36 @@ def setKeepOnlineUntil():
     coll_obj.metadata[ATTR_ARCHIVE_KEEP_ONLINE_TILL] = new_meta
     return('DONE')
 
-@bp.route('_setOverrideLocal', methods=['GET'])
+
+@bp.route('_setmeta', methods=['GET'])
 @login_required
-def setOverrideLocal():
-    irods_session = current_user.irods_session
-    selectionStr = request.args.get('selection','false', type=str)
+def setmeta():
+    attr = request.args.get('attr')
+    value = request.args.get('value')
+    collection = request.args.get('collection')
+    if attr and value and collection:
+        coll_obj = current_user.irods_session.collections.get(collection)
+        coll_obj.metadata[attr] = iRODSMeta(attr, value)
+    return('DONE')
+
+
+@bp.route('_setoverride', methods=['GET'])
+@login_required
+def setoverride():
+    attr = request.args.get('attr')
+    value = request.args.get('value')
     overrideStr = request.args.get('override','false', type=str)
-    collection = request.args.get('collection','None', type=str)
-    if selectionStr not in ['true', 'false']:
-        print( f"unknown selection for _setKeepLocal: {selectionStr}" )
-        return('DONE')
-    if overrideStr not in ['true', 'false']:
-        print( f"unknown selection for _setKeepLocal: {overrideStr}" )
-        return('DONE')
-    #print( collection )
-    coll_obj = irods_session.collections.get(collection)
-    if overrideStr == 'false':
-        coll_obj.metadata._delete_all_values(ATTR_ARCHIVE_LOCAL)
-    else:
-        new_meta = iRODSMeta(ATTR_ARCHIVE_LOCAL, selectionStr)
-        coll_obj.metadata[ATTR_ARCHIVE_LOCAL] = new_meta
-    return('DONE')
-
-@bp.route('_setKeepLocal', methods=['GET'])
-@login_required
-def setKeepLocal():
-    irods_session = current_user.irods_session
-    selectionStr = request.args.get('selection','false', type=str)
-    collection = request.args.get('collection','None', type=str)
-    if selectionStr not in ['true', 'false']:
-        print( f"unknown selection for _setKeepLocal: {selectionStr}" )
-        return('DONE')
-    #print( collection )
-    coll_obj = irods_session.collections.get(collection)
-    new_meta = iRODSMeta(ATTR_ARCHIVE_LOCAL, selectionStr)
-    coll_obj.metadata[ATTR_ARCHIVE_LOCAL] = new_meta
-    return('DONE')
-
-@bp.route('_setOverrideMincopies', methods=['GET'])
-@login_required
-def setOverrideMincopies():
-    irods_session = current_user.irods_session
-    copies = request.args.get('copies','false', type=str)
-    overrideStr = request.args.get('override','false', type=str)
-    collection = request.args.get('collection','None', type=str)
-    if overrideStr not in ['true', 'false']:
-        print( f"unknown selection for _setKeepLocal: {overrideStr}" )
-        return('DONE')
-    #print( collection )
-    coll_obj = irods_session.collections.get(collection)
-    if overrideStr == 'false':
-        coll_obj.metadata._delete_all_values(ATTR_ARCHIVE_MINCOPIES)
-    else:
-        new_meta = iRODSMeta(ATTR_ARCHIVE_MINCOPIES, copies)
-        coll_obj.metadata[ATTR_ARCHIVE_MINCOPIES] = new_meta
-    return('DONE')
-
-@bp.route('_setMincopies', methods=['GET'])
-@login_required
-def setMincopies():
-    irods_session = current_user.irods_session
-    copies = request.args.get('copies','2', type=str)
-    collection = request.args.get('collection','None', type=str)
-    coll_obj = irods_session.collections.get(collection)
-    new_meta = iRODSMeta(ATTR_ARCHIVE_MINCOPIES, copies)
-    coll_obj.metadata[ATTR_ARCHIVE_MINCOPIES] = new_meta
+    collection = request.args.get('collection')
+    if attr and value and collection:
+        if overrideStr not in ['true', 'false']:
+            print( f"unknown selection for _setKeepLocal: {overrideStr}" )
+            return('DONE')
+        coll_obj = current_user.irods_session.collections.get(collection)
+        if overrideStr == 'false':
+            coll_obj.metadata._delete_all_values(attr)
+        else:
+            new_meta = iRODSMeta(attr, value)
+            coll_obj.metadata[attr] = new_meta
     return('DONE')    
 
 @bp.route('_actions')
@@ -205,7 +174,13 @@ def coll_actions():
     if archive_state[:2] == '00':
         is_offline = True
 
+    projectid = getmetaitem(coll_obj, ATTR_PROJECTID, "")
+    processid = getmetaitem(coll_obj, ATTR_PROCESSID, "")
+    processes = projects.get_processlist(projectid)
+    processrequest = getmetaitem(coll_obj, ATTR_PROCESSREQUEST, "false")
+
     archival_state = {
+        "enabled": getmetaitem(coll_obj, ATTR_ARCHIVE_ENABLE, "false"),
         "is_dataset": is_dataset,
         "is_archived": is_archived,
         "is_offline": is_offline,
@@ -215,8 +190,21 @@ def coll_actions():
     }
 
     #print( archival_state )
-    return render_template('actions.html', collection=path, name=coll_name, archival_state=archival_state )
+    return render_template('actions.html', collection=path, 
+        name=coll_name, archival_state=archival_state,
+        processes=processes, processid=processid, processrequest=processrequest )
 
+
+@bp.route('_startprocess')
+@login_required
+def startprocess():
+    collection = request.args.get('collection')
+    processid = request.args.get('processid')
+    if current_user.ifs.folderexists(collection):
+        c = current_user.irods_session.collections.get(collection)
+        c.metadata[ATTR_PROCESSID] = iRODSMeta(ATTR_PROCESSID, processid)
+        c.metadata[ATTR_PROCESSREQUEST] = iRODSMeta(ATTR_PROCESSREQUEST, current_user.username)
+    return 'DONE'
 
 @bp.route('_collist')
 @login_required    
