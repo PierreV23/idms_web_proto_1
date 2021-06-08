@@ -126,7 +126,6 @@ $('.nav-pills').on('shown.bs.tab', function(event){
               {% if archival_state.is_dataset is sameas true and archival_state.is_offline is sameas true %}OFFLINE{% else %}Archive{% endif %}
           </button>
         </li>
-        {% if archival_state.is_dataset is sameas true %}
         <li class="nav-item mx-2">
           <button class="btn btn-outline-primary" id="storage-tab"
             data-toggle="tab" href="#storage" role="tab"
@@ -134,6 +133,7 @@ $('.nav-pills').on('shown.bs.tab', function(event){
             Storage
           </button>
         </li>
+        {% if archival_state.is_dataset is sameas true %}
         <li class="nav-item mx-2">
           <button class="btn btn-outline-primary" id="pipeline-tab"
             data-toggle="tab" href="#pipeline" role="tab"
