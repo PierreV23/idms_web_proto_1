@@ -210,8 +210,8 @@ def upload_batch():
     upload_result = False
     if result in  ('OK', 'Warning'):
         # Generate a collection name for storing upload
-        # TODO: add project
-        collname = unique_coll(settings['project'])
+        # TODO: add project, for now use 'upload' project
+        collname = unique_coll('upload')
         coll = current_user.irods_session.collections.get(collname)
         upload_result = batch.upload(coll, force=True)
     # TODO: Evaluate upload result
