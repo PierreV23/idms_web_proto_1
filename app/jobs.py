@@ -109,49 +109,54 @@ def joblist(state='', page=1):
                 Criterion('=', CollectionMeta.value, f'{state}')).filter(
                 Criterion('not like', Collection.name, f'/{current_user.irods_zone}/system/runsheet%'))
 
-    result_list_1b = [ j for j in q1b ]
-    result_list_2b = sorted( result_list_1b, key = lambda j : j[Collection.create_time], reverse = True)[PAGE_SIZE*(page-1):PAGE_SIZE*page]
-    for res in result_list_2b:
-        job_record = {}
-        runsheet_collection = res[Collection.name] 
-        #create runsheet object by reading collection meta-data
-        q1c = current_user.irods_session.query(CollectionMeta.name, CollectionMeta.value).filter( \
-            Criterion('=', Collection.name, runsheet_collection))
-        metadata = {meta[CollectionMeta.name] : meta[CollectionMeta.value] for meta in q1c}
-        state = metadata.get(ATTR_RUNSHEET_STATE, 'unknown')
-        name = metadata.get(ATTR_RUNSHEET_ID, 'unknown')
-#        job_record['COLLECTION'] =  Collection.name
-        job_record['Name'] = datafield('runsheet', name, 'runsheet')
-        job_record['create_time'] = timestamp_to_local(metadata.get(ATTR_RUNSHEET_CREATETIME, 0)).timestamp()
-        job_record['Created'] =datafield('create_time', job_record['create_time'], 'timestamp')
-        job_record['State'] =datafield('state', state, 'job_state')
-        for field in JOB_FIELDS:
-            if field in metadata:
-                job_record[JOB_FIELDS[field][0]] = datafield(field, metadata[field], JOB_FIELDS[field][1])
-        job_list.append( job_record ) 
+    # Create a list of all collection and runsheet based jobs
+    result_list = [ ('COLL', j, j[Collection.create_time]) for j in q1b ]
+    for j in q1:
+        result_list.append( ('DATA', j, j[DataObject.create_time]) )
 
-    coll_jobs = len(result_list_1b)
+    # Get the paged subset of the sorted job list
+    result_list_s = sorted( result_list, key = lambda j : j[2], reverse = True)[PAGE_SIZE*(page-1):PAGE_SIZE*page]
 
-    result_list_1 = [ j for j in q1 ]
-    result_list_2 = sorted( result_list_1, key=lambda j: j[DataObject.create_time], reverse = True )
-    result_list_3 = result_list_2[max(0,PAGE_SIZE*(page-1)-coll_jobs):PAGE_SIZE*page-coll_jobs]
-    for job in result_list_3:
-        job_record = {'Name': datafield('runsheet', job[DataObject.name], 'runsheet')}
-        job_record['create_time'] = utc_to_local(job[DataObject.create_time]).timestamp()
-        job_record['Created'] = datafield('create_time', job_record['create_time'], 'timestamp')
-        q2 = current_user.irods_session.query(DataObjectMeta.name, DataObjectMeta.value).filter( \
-            Criterion('=', DataObject.id, job[DataObject.id]))
-        metadata = {meta[DataObjectMeta.name] : meta[DataObjectMeta.value] for meta in q2}
-        state = metadata.get('sys::runsheet::state', 'unknown')
-        if state == 'unknown':
-            state = job[Collection.name].split('/')[4]
-        job_record['State'] = datafield('state', state, 'job_state')
-        for field in JOB_FIELDS:
-            if field in metadata:
-                job_record[JOB_FIELDS[field][0]] = datafield(field, metadata[field], JOB_FIELDS[field][1])
-        job_list.append(job_record)
+    # Get the job details for both types of jobs
+    for res in result_list_s:
+        if res[0] == 'COLL':
+            job_record = {}
+            runsheet_collection = res[1][Collection.name] 
+            #create runsheet object by reading collection meta-data
+            q1c = current_user.irods_session.query(CollectionMeta.name, CollectionMeta.value).filter( \
+                Criterion('=', Collection.name, runsheet_collection))
+            metadata = {meta[CollectionMeta.name] : meta[CollectionMeta.value] for meta in q1c}
+            state = metadata.get(ATTR_RUNSHEET_STATE, 'unknown')
+            name = metadata.get(ATTR_RUNSHEET_ID, 'unknown')
+    #        job_record['COLLECTION'] =  Collection.name
+            job_record['Name'] = datafield('runsheet', name, 'runsheet')
+            job_record['create_time'] = timestamp_to_local(metadata.get(ATTR_RUNSHEET_CREATETIME, 0)).timestamp()
+            job_record['Created'] =datafield('create_time', job_record['create_time'], 'timestamp')
+            job_record['State'] =datafield('state', state, 'job_state')
+            for field in JOB_FIELDS:
+                if field in metadata:
+                    job_record[JOB_FIELDS[field][0]] = datafield(field, metadata[field], JOB_FIELDS[field][1])
+            job_list.append( job_record )
+        else:
+            job=res[1]
+            job_record = {'Name': datafield('runsheet', job[DataObject.name], 'runsheet')}
+            job_record['create_time'] = utc_to_local(res[2]).timestamp()
+            job_record['Created'] = datafield('create_time', job_record['create_time'], 'timestamp')
+            q2 = current_user.irods_session.query(DataObjectMeta.name, DataObjectMeta.value).filter( \
+                Criterion('=', DataObject.id, job[DataObject.id]))
+            metadata = {meta[DataObjectMeta.name] : meta[DataObjectMeta.value] for meta in q2}
+            state = metadata.get('sys::runsheet::state', 'unknown')
+            if state == 'unknown':
+                state = job[Collection.name].split('/')[4]
+            job_record['State'] = datafield('state', state, 'job_state')
+            for field in JOB_FIELDS:
+                if field in metadata:
+                    job_record[JOB_FIELDS[field][0]] = datafield(field, metadata[field], JOB_FIELDS[field][1])
+            job_list.append(job_record)            
 
-    return job_list, len(result_list_1) + len(result_list_1b)
+    coll_jobs = len(result_list)
+
+    return job_list, coll_jobs
 
 @bp.route('/')
 @login_required
