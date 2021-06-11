@@ -21,6 +21,7 @@ KNOWN_ATTRIBUTES = {
     'stage_time': 'timestamp',
     'sys::access_time': 'timestamp',
     'sys::archive::lastrun': 'timestamp',
+    'sys::archive::lastcheck': 'timestamp',
     'sys::pipeline::input_collection_id': 'collection_id',
     'sys::pipeline::last_use': 'timestamp',
     'sys::pipeline::stage_time': 'timestamp',
