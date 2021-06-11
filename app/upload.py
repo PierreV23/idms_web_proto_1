@@ -15,7 +15,7 @@ from app import projects
 from Bio import SeqIO
 import openpyxl
 
-from labsurv import KSUpload, KSUploadType, connect
+from labsurv import KSUpload, KSUploadType
 
 SAMPLEID = 'SendingOrganisationSampleId'
 SEQUENCEID = 'SendingOrganisationSequenceId'
@@ -29,13 +29,6 @@ DEFAULT_UPLOAD = {
 
 bp = Blueprint('upload', __name__, url_prefix='/upload')
 
-
-def dbconnect():
-    dbcred = current_app.config["LABSURV_DB_CRED"].get(current_user.environment)
-    if dbcred is None:
-        # TODO : show some error
-        return False
-    connect(*dbcred)
 
 @login_required
 def unique_coll(project):
@@ -88,8 +81,6 @@ def too_large(e):
 @bp.route('upload')
 def upload_page():
     # Find out if an upload is still in progress
-    dbconnect()
-#    organisationlist = organisationcodes()
     return render_template('upload.html', upload_data=upload_data())
 
 def LengthWithinMargin(seq):
@@ -237,8 +228,8 @@ def validate_results():
     return content
 
 def get_batch(collection):
-    dbconnect()
-    batch = KSUpload(KSUploadType.EXTERNAL)
+    dbcred = current_app.config["LABSURV_DB_CRED"].get(current_user.environment)
+    batch = KSUpload(**dbcred, type=KSUploadType.EXTERNAL)
     for f in current_user.ifs.ls(collection):
         if f.isfile():
             if f.path.endswith('.fasta'):
