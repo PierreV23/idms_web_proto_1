@@ -213,7 +213,7 @@ def upload_batch():
         # TODO: add project, for now use 'upload' project
         collname = unique_coll('upload')
         coll = current_user.irods_session.collections.get(collname)
-        upload_result = batch.upload(coll, force=True)
+        upload_result = batch.upload(coll)
     # TODO: Evaluate upload result
     # TODO: Remove current upload session vars
     clear_upload()
