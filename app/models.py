@@ -73,6 +73,7 @@ class WebUser(UserMixin):
         self._is_admin = None
         self.irods_server = None
         self.irods_zone = None
+        self._irods_session = None
         irods_env = IRODS_ENVS.get(environment, None)
         if irods_env:
             self.irods_server = irods_env.get('host')
@@ -131,6 +132,10 @@ class WebUser(UserMixin):
             **ssl_settings
         )
         self.ifs = fs_irods(session=self._irods_session)
+
+    def cleanup(self):
+        if self._irods_session:
+            _irods_session.cleanup()
 
     def validate_irods_session(self):
         try:
