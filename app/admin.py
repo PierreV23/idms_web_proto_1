@@ -97,7 +97,8 @@ def update_resources():
         "sys::resource::stage",
         "sys::resource::surf",
         "sys::resource::tar",
-        "sys::resource::keep"
+        "sys::resource::keep",
+        "sys::resource::available"
     )
     data = request.form.to_dict()
     # Create a dict of the form data
