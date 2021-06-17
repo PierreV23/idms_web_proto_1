@@ -182,3 +182,7 @@ ul {
 .vertical-down {
     padding-top: 5px;
 }
+
+.right-line {
+  border-right: 1px dashed #333;
+}

@@ -1,0 +1,50 @@
+{% extends 'base2.html' %}
+
+{% block heading %}
+{% endblock %}
+
+{% block content %}
+<script>
+
+$(document).on('click', '.projectname', function() {
+  project=$(this).data('name');
+  $('#details').html('Loading settings for ' + project + " ... ")
+  $.get('{{ url_for('projects.show_projectdetails') }}', {
+    name: project
+  }, function(data) {
+    $('#details').html(data);
+  });
+  console.log(project)
+});
+
+</script>
+<!-- Create a column for projects and and an area to configure projectsettings -->
+<div class="container-wide">
+    <div class="row">
+        <div class="col col-3 right-line">
+            <UL>
+                <h3>
+                    <table class="table table-sm table-striped table-hover">
+                        <thead>
+                            <tr><td>Projects</td></tr>
+                        </thead>
+                        <tbody>
+                    {% for project in projects %}
+                    <tr><td>
+                    <LI class="projectname" data-name="{{ project }}">{{ project }}</LI>
+                    </td></tr>
+                    {% endfor %}
+                    </tbody>
+                    </table>
+                </h3>
+            </UL>
+        </div>
+        <div class="col">
+            <div id="details">
+        .. PLEASE SELECT A PROJECT ...
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

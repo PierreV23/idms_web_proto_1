@@ -1,0 +1,24 @@
+{% extends 'base2.html' %}
+
+{% block content %}
+<script>
+
+function load_graph() {
+  $.get('{{ url_for('projects.process_grid') }}', {
+    project: 'ngslab'
+  }, function(data) {
+     $('#data_map').html(data.map)
+     $('#graphimg').attr('src', 'data:image/png;base64,' + data.graph)
+  });
+}
+
+$(window).on('load', function() {
+  load_graph();
+});
+
+</script>
+
+<div id="data_map"></div>
+<img src="" id="graphimg" usemap="#datagraph" />
+
+{% endblock %}

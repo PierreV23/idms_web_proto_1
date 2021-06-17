@@ -6,6 +6,7 @@ Created on Tue Nov 19 09:05:26 2019
 @author: wierinve
 """
 
+import base64
 import json
 import requests
 from requests.auth import HTTPBasicAuth
@@ -18,6 +19,7 @@ from irods.column import Criterion
 from irods.user import iRODSUser, iRODSUserGroup
 from app.datafield import AVU2data, datafield
 from app.models import deobfuscate
+from graphviz import Digraph
 
 
 BP = Blueprint('projects', __name__, url_prefix='/projects')
@@ -32,6 +34,8 @@ REQUESTS_METHODS = {
 @login_required
 def rest_call(request_type, endpoint, data={}):    
     url = 'http://{}/api/1.0/{}'.format(current_user.irods_server, endpoint)
+    #TODO: remove this testing line:
+    #url = 'http://{}/api/1.0/{}'.format('0.0.0.0:5000', endpoint)
     print(url)
     auth = HTTPBasicAuth('alt\\{}'.format(current_user.username), current_user.ntlm_hash)
     return_data = {}
@@ -65,7 +69,7 @@ def show_projects():
     Return a web page with a list of all projects
     """
     projectlist = get_projectlist()
-    return render_template('projects.html', projects=projectlist)
+    return render_template('projects2.html', projects=projectlist)
 
 
 @BP.route('/details')
@@ -259,3 +263,51 @@ def my_projects():
     columns = min(4, 1 + len(projectlist) // 20)
 
     return render_template('_myprojects.html', projectlist=projectlist, columns=columns )
+
+@BP.route('_processgrid', methods=['GET'])
+@login_required
+def process_grid():
+    project = request.args.get('project')
+
+    graph = Digraph('datagraph')
+    graph.graph_attr['rankdir'] = 'LR'
+    graph.graph_attr['fontsize'] = '15'
+    graph.graph_attr['size'] = '10,8'
+
+    response, result = rest_call('GET', f'/projects/{project}/processes')
+    next_processids = { p.get('next_processid') for p in response if p.get('next_processid') != 0 }
+    processdict = { p['id']: p['name'] for p in response }
+    next_processes = [ processdict[id] for id in next_processids ]
+
+    print(response)
+    print(processdict)
+    print(next_processes)
+
+    for process in response:
+        graph.node(process.get('name'))
+
+    for process in response:
+        if not process['id'] in next_processids:
+            # This is not a 'next process'; it can only run if explicitly set by some distribution pipeline
+            dataname = f'{process["id"]}DATA'
+            graph.node(dataname,label='DATA', shape='box')
+            graph.edge(dataname, process.get('name'))
+        else:
+            # This is a 'next process'. On what data will it run?
+            # find for what process(es) this is a next_process
+            precessors = [ ]
+
+
+
+    graph_output = graph.pipe(format='png')
+    graph_imagemap = graph.pipe(format='cmapx').decode('utf-8')
+    data_graph = base64.b64encode(graph_output).decode('utf-8')
+    result = {}
+    result['graph'] = data_graph
+    result['map'] = graph_imagemap
+    return result    
+
+@BP.route('processes', methods=['GET'])
+@login_required
+def processes():    
+    return render_template('processgrid.html')
