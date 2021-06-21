@@ -35,11 +35,11 @@ REQUESTS_METHODS = {
 def rest_call(request_type, endpoint, data={}):    
     url = 'http://{}/api/1.0/{}'.format(current_user.irods_server, endpoint)
     #TODO: remove this testing line:
-    #url = 'http://{}/api/1.0/{}'.format('0.0.0.0:5000', endpoint)
-    print(url)
+    url = 'http://{}/api/1.0/{}'.format('0.0.0.0:5000', endpoint)
     auth = HTTPBasicAuth('alt\\{}'.format(current_user.username), current_user.ntlm_hash)
     return_data = {}
     if request_type in REQUESTS_METHODS:
+        print(f'REST: {request_type} {url}')
         response = REQUESTS_METHODS[request_type](url, auth=auth, json=data)
     try:
         return_data = response.json()
@@ -62,6 +62,14 @@ def get_processlist(project):
         processes = [ p['name'] for p in pl ]
     return processes
 
+@login_required
+def get_process2list():
+    pl, result = rest_call('GET', 'processes')
+    processes = []
+    if result == 200:
+        processes = [ p['name'] for p in pl ]
+    return processes
+
 @BP.route('/')
 @login_required
 def show_projects():
@@ -69,7 +77,8 @@ def show_projects():
     Return a web page with a list of all projects
     """
     projectlist = get_projectlist()
-    return render_template('projects2.html', projects=projectlist)
+    processlist = get_process2list()
+    return render_template('projects2.html', projects=projectlist, processes=processlist)
 
 
 @BP.route('/details')
@@ -131,6 +140,20 @@ def show_projectdetails():
     #                        conf=config, processnaam=processnaam)
     return render_template('projectdetails.html', PD=projectdetails, all_projects = all_projects,
                            processnaam=processnaam)
+
+
+@BP.route('/processdetails')
+@login_required
+def show_processdetails():
+    """
+    Shows page with process settings
+    """
+    processnaam = request.args.get('name', '', type=str)
+
+    pl, result = rest_call('GET', f'processes/{processnaam}')
+
+    return render_template('processdetails.html', details=pl)
+
 
 
 @login_required
@@ -264,48 +287,140 @@ def my_projects():
 
     return render_template('_myprojects.html', projectlist=projectlist, columns=columns )
 
-@BP.route('_processgrid', methods=['GET'])
-@login_required
-def process_grid():
-    project = request.args.get('project')
 
+@BP.route('_pgaction', methods=['GET', 'POST'])
+@login_required
+def pgaction():
+    project = request.args.get('project')
+    group = request.args.get('group')
+    action = request.args.get('action')
+    print(f'Project {project}, group {group}, action {action}')
+    if action == 'add_process':
+        process = request.args.get('process')
+        name = request.args.get('name')
+        new_process = {
+            'name': name
+        }
+        pl, result = rest_call('POST', f'projects/{project}/processgroups/{group}/processes', new_process)
+    elif action == 'delete_process':
+        process = request.args.get('process')
+        pl, result = rest_call('DELETE', f'projects/{project}/processgroups/{group}/processes/{process}')
+    elif action == 'set_input':
+        process = request.args.get('process')
+        input = request.args.get('input')
+        pl, result = rest_call('PUT', 
+            f'projects/{project}/processgroups/{group}/processes/{process}',
+            { 'input_from': input})
+    elif action == 'add_dependency':
+        process = request.args.get('process')
+        depend = request.args.get('depend')
+        pl, result = rest_call('POST',
+            f'projects/{project}/processgroups/{group}/processes/{process}/dependencies',
+            { 'depends_on': depend })
+    return "OK"
+
+@BP.route('_pggraph', methods=['GET'])
+@login_required
+def pg_graph():
+    """Generate a graph of process flow
+
+        Node names:
+            name: 'out,<id>', with id being the id from pgprocess
+            label: 'out,name', with name being the name from pgprocess
+                if id==0, label='DATA'
+            id: 'out,id,name'
+
+        Process names:
+            name: 'proc,<id>', with id being the id from pgprocess
+            label: '<name>', with name being the name from pgprocess
+            id: 'proc,id,name'
+    """
+
+    def add_coll(name, procid):
+        collname = f'out,{procid}'
+        if procid ==0:
+            label = 'DATA'
+        else:
+            label = f'out:{name}'
+        graph.node(collname, label=label, shape='box', width='2', id=collname)
+        return collname
+        # Create a small 'add' node
+        # addnode = f'add,{procid}'
+        # graph.node(addnode, label='+', id=addnode, shape='circle', fontsize='20')
+        # graph.edge(name, addnode)
+
+    def add_process(name, procid, selected):
+        extra_settings = {}
+        if selected:
+            extra_settings = {
+                'style': 'filled',
+                'fillcolor': 'grey'
+            }
+        nodename = f'proc,{procid}'
+        nodeid = f'proc,{procid},{name}'
+        graph.node(nodename, label=name, shape='cds', id=nodeid, **extra_settings)
+        collname = add_coll(name, procid)
+        graph.edge(nodename, collname, style='bold')
+
+    project = request.args.get('project')
+    group = request.args.get('group', 'default')
+    selected_process = request.args.get('selected_process')
+    pl, result = rest_call('GET', f'projects/{project}/processgroups/{group}/processes')
+    # Create the process group graph
     graph = Digraph('datagraph')
     graph.graph_attr['rankdir'] = 'LR'
-    graph.graph_attr['fontsize'] = '15'
-    graph.graph_attr['size'] = '10,8'
+    # There is always a node for NEW_DATA
+    add_coll('DATA', 0)
+    for process in pl:
+        pname = process.get('name')
+        add_process(pname, process.get('id'), pname==selected_process)
+    for process in pl:
+        processname = f'proc,{process.get("id")}'
+        dataname = f'out,{process.get("input_from", 0)}'
+        graph.edge(dataname, processname, style='bold')
+        # get the dependencies
+        pd, r2  = rest_call('GET', f'projects/{project}/processgroups/{group}/processes/{process.get("id")}/dependencies')
+        for dep in pd:
+            depend_id = dep.get('depends_on')
+            if depend_id is not None:
+                depnode = f'out,{depend_id}'
+                graph.edge(depnode, processname, style='dashed')
 
-    response, result = rest_call('GET', f'/projects/{project}/processes')
-    next_processids = { p.get('next_processid') for p in response if p.get('next_processid') != 0 }
-    processdict = { p['id']: p['name'] for p in response }
-    next_processes = [ processdict[id] for id in next_processids ]
+    graph_output = graph.pipe(format='svg').decode('utf-8')
+    return graph_output
 
-    print(response)
-    print(processdict)
-    print(next_processes)
+@BP.route('_pgdetails')
+@login_required
+def pg_details():
 
-    for process in response:
-        graph.node(process.get('name'))
+    project = request.args.get('project')
+    group = request.args.get('group', 'default')
+    selected_process = request.args.get('selected_process')
+    mode = request.args.get('mode')
+    pl, result = rest_call('GET', f'projects/{project}/processgroups/{group}/processes')
+    all_processes, result = rest_call('GET', f'processes')
+    dependencies = []
+    if selected_process:
+        dependencies, r2 = rest_call('GET', f'projects/{project}/processgroups/{group}/processes/{selected_process}/dependencies')
+        print(dependencies)
+    message = ''
+    if mode == 'select_input':
+        message = f'Please select input for process {selected_process}'
+    elif mode == 'add_dependency':
+        message =f'Please select a required process or collection for {selected_process}'
+    return render_template('pg_details.html', project=project, group=group, 
+        all_processes=all_processes, pg_processes=pl, selected_process=selected_process,
+        dependencies=dependencies, message=message)
 
-    for process in response:
-        if not process['id'] in next_processids:
-            # This is not a 'next process'; it can only run if explicitly set by some distribution pipeline
-            dataname = f'{process["id"]}DATA'
-            graph.node(dataname,label='DATA', shape='box')
-            graph.edge(dataname, process.get('name'))
-        else:
-            # This is a 'next process'. On what data will it run?
-            # find for what process(es) this is a next_process
-            precessors = [ ]
+@BP.route('processgroups', methods=['GET'])
+@login_required
+def processgroups():
+    # Retrieve the list of processes in a group
+    project = request.args.get('project')
+    group = request.args.get('group')
+#    pl, result = rest_call('GET', f'projects/{project}/processgroups/{group}/processes')
 
-
-
-    graph_output = graph.pipe(format='png')
-    graph_imagemap = graph.pipe(format='cmapx').decode('utf-8')
-    data_graph = base64.b64encode(graph_output).decode('utf-8')
-    result = {}
-    result['graph'] = data_graph
-    result['map'] = graph_imagemap
-    return result    
+    return render_template('processgroups.html', project=project, group=group)
 
 @BP.route('processes', methods=['GET'])
 @login_required

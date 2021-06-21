@@ -17,27 +17,70 @@ $(document).on('click', '.projectname', function() {
   console.log(project)
 });
 
+$(document).on('click', '.processname', function() {
+  process=$(this).data('name');
+  $('#details').html('Loading settings for ' + process + " ... ")
+  $.get('{{ url_for('projects.show_processdetails') }}', {
+    name: process
+  }, function(data) {
+    $('#details').html(data);
+  });
+  console.log(process)
+});
+
+$('.nav-pills').on('shown.bs.tab', function(event){
+  activetab = event.target.getAttribute('href')
+});
+
 </script>
 <!-- Create a column for projects and and an area to configure projectsettings -->
-<div class="container-wide">
+<!-- <div class="container-wide viewport"> -->
     <div class="row">
-        <div class="col col-3 right-line">
-            <UL>
-                <h3>
-                    <table class="table table-sm table-striped table-hover">
-                        <thead>
-                            <tr><td>Projects</td></tr>
-                        </thead>
-                        <tbody>
-                    {% for project in projects %}
-                    <tr><td>
-                    <LI class="projectname" data-name="{{ project }}">{{ project }}</LI>
-                    </td></tr>
-                    {% endfor %}
-                    </tbody>
-                    </table>
-                </h3>
-            </UL>
+        <div class="col col-3 right-line scroll2">
+            <div class="card">
+                <div class="card-header">
+                    <ul class="nav nav-pills">
+                        <li class="nav-item mx-2">
+                            <button class="btn btn-outline-primary active" id="projects-tab" 
+                                data-toggle="tab" href="#projects" role="tab" 
+                                aria-controls="projects" aria-selected="false">Projects</button>
+                        </li>
+                        <li class="nav-item mx-2">
+                            <button class="btn btn-outline-primary" id="processes2-tab" 
+                            data-toggle="tab" href="#processes2" role="tab" 
+                            aria-controls="processes2" aria-selected="false">Processes</button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card body tab-content">
+                    <div class="tab-pane active" id="projects" role="tabpanel" aria-labelledby="projects-tab">
+                        <UL>
+                            <table class="table table-sm table-striped table-hover">
+                                <tbody>
+                                    {% for project in projects | sort %}
+                                    <tr><td>
+                                        <LI class="projectname" data-name="{{ project }}">{{ project }}</LI>
+                                    </td></tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </UL>
+                    </div>
+                    <div class="tab-pane" id="processes2" role="tabpanel" aria-labelledby="processes2-tab">
+                        <UL>
+                            <table class="table table-sm table-striped table-hover">
+                                <tbody>
+                                    {% for process in processes | sort %}
+                                    <tr><td>
+                                        <LI class="processname" data-name="{{ process }}">{{ process }}</LI>
+                                    </td></tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </UL>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="col">
             <div id="details">
@@ -45,6 +88,6 @@ $(document).on('click', '.projectname', function() {
             </div>
         </div>
     </div>
-</div>
+<!-- </div> -->
 
 {% endblock %}

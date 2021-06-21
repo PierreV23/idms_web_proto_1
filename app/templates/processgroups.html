@@ -1,0 +1,115 @@
+<script>
+
+selected_process = null
+mode = 'display'
+
+function load_pggraph() {
+  $.get('{{ url_for('projects.pg_graph') }}', {
+    project: project,
+    group: 'default',
+    selected_process: selected_process,
+    mode: mode
+  }, function(data) {
+     $('#pg_graph').html(data)
+  });
+
+};
+
+function load_pgdetails() {
+    $.get('{{ url_for('projects.pg_details') }}', {
+    project: project,
+    group: 'default',
+    selected_process: selected_process,
+    mode: mode
+  }, function(data) {
+     $('#pg_details').html(data)
+  });
+};
+
+function load_pgpage() {
+    console.log('Loading pgpage ...')
+    load_pggraph();
+    load_pgdetails();
+};
+
+$(document).on('click', '#select_input_button', function(){
+    if (mode != 'select_input') {
+        mode = 'select_input';
+    } else {
+        mode = 'display'
+    }
+    
+    load_pgpage();
+})
+
+$(document).on('click', '.node', function(){
+    console.log('Click on ' + this)
+    object = this.id.split(',')
+    console.log(object[0])
+    oldmode = mode
+    mode = 'display'
+    if (oldmode == 'display') {
+        if (object[0] == 'proc') {
+            selected_process = object[2];
+            console.log('set process to ' + selected_process)
+            load_pgpage();
+        }
+    } else if (oldmode == 'select_input') {
+        console.log('Select input ...')
+        if (object[0] == 'proc' || object[0] == 'out' ) {
+            console.log('Set input to proc output')
+            $.get('{{ url_for("projects.pgaction") }}', {
+                project: "{{ project }}",
+                group: "{{ group }}",
+                action: 'set_input',
+                process: selected_process,
+                input: object[1]
+            }, function(data) {
+                load_pgpage();
+            });       
+        }
+    } else if (oldmode == 'add_dependency') {
+        console.log('Add dependency')
+        if (object[0] == 'proc' || object[0] == 'out' ) {
+            console.log('Set depend to proc output');
+            $.get('{{ url_for("projects.pgaction") }}', {
+                project: "{{ project }}",
+                group: "{{ group }}",
+                action: 'add_dependency',
+                process: selected_process,
+                depend: object[1]
+            }, function(data) {
+                load_pgpage()
+            });
+        }
+    } else {
+        load_pgpage();
+    }
+})
+
+// $(document).on('click', '.edge', function(){
+//     console.log('click edge');
+//     console.log(this);
+// })
+
+$(document).on('click', '.select-process', function() {
+  //history.pushState({"coll": collection}, 'Browse ' + collection, '/collbrowser?path=' + collection);
+  selected_process=$(this).data('process');
+  load_pgpage();
+});
+
+$(window).on('load', function() {
+    console.log('loading pgdetails...');
+    load_page();
+});
+
+</script>
+
+
+<div class="h40" id="pg_graph">
+    <CENTER>Loading process group graph ...</CENTER>
+</div>
+<hr>
+<div id="pg_details">
+    <CENTER>Loading process group details ...</CENTER>
+</div>

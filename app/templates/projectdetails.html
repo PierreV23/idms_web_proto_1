@@ -1,52 +1,42 @@
 <script>
-function update_process(sourceElem, destElem) {
-    $.post("{{ url_for('projects.get_process') }}",
-    { project: $(sourceElem+" option:selected").text() },
-        function(response) { 
-            select = $(destElem) 
-            if(select.prop) {
-                var options = select.prop('options');
-            }
-            else {
-                var options = select.attr('options');
-            }
-            $('option', select).remove();
-            $.each(response, function(index, val) {
-    options[options.length] = new Option(val, val);
-});
-        }    
-    );    
+
+processgroup = 'default'
+
+function load_pg() {
+  $.get('{{ url_for('projects.processgroups') }}', {
+    project: "{{ PD.name }}",
+    group: processgroup
+  }, function(data) {
+     $('#processgroups').html(data);
+     console.log('load the contents...')
+     load_pgpage();
+  });
 }
 
-$(window).on('load', function() {
-  $( ".toggle_next" ).each(function() {
-      var check=$(this).prop('checked')
-      var proc=$(this).data('process')
-      $("[id^=nextpro][data-process=" + proc + "]").prop('disabled', function(){
-          return !check
-      })
-    });
-});
-
-$('.nav-pills').on('shown.bs.tab', function(event){
-  activetab = event.target.getAttribute('href')
+$('.nav2').on('shown.bs.tab', function(event){
+  target = event.target.getAttribute('href')
+  activetab = target
+  if (target == "#processgroups") {
+    load_pg();
+  }
+  console.log(target)
 });
 
 </script>
 <!-- PROJECT SETTINGS -->
 <H2>Project details for {{ PD.name }} </H2>
-<div class="card border-primary md-2 scroll">
+<div class="card border-primary md-2 scroll2">
   <div class="card-header">
-    <ul class="nav nav-pills">
+    <ul class="nav nav-pills nav2">
       <li class="nav-item mx-2">
         <button class="btn btn-outline-primary active" id="settings-tab" 
         data-toggle="tab" href="#settings" role="tab" 
         aria-controls="settings" aria-selected="false">Settings</button>
       </li>
       <li class="nav-item mx-2">
-        <button class="btn btn-outline-primary" id="processes-tab" 
-        data-toggle="tab" href="#processes" role="tab" 
-        aria-controls="processes" aria-selected="false">Processes</button>
+        <button class="btn btn-outline-primary" id="processgroups-tab" 
+        data-toggle="tab" href="#processgroups" role="tab" 
+        aria-controls="processgroups" aria-selected="false">Processgroups</button>
       </li>
       <li class="nav-item mx-2">
         <button class="btn btn-outline-primary" id="collections-tab" 
@@ -57,6 +47,11 @@ $('.nav-pills').on('shown.bs.tab', function(event){
         <button class="btn btn-outline-primary" id="usergroup-tab" 
         data-toggle="tab" href="#usergroup" role="tab" 
         aria-controls="usergroup" aria-selected="false">Users & Groups</button>
+      </li>
+      <li class="nav-item mx-2">
+        <button class="btn btn-outline-primary" id="processes-tab" 
+        data-toggle="tab" href="#processes" role="tab" 
+        aria-controls="processes" aria-selected="false">Project processes (legacy)</button>
       </li>
     </ul>
   </div>
@@ -82,18 +77,18 @@ $('.nav-pills').on('shown.bs.tab', function(event){
           <label for="project_svc_{{PD.name}}">Service Account</label>
           <input type="text" class="form-control" name="service_account" id="service_account_{PD.name}}" placeholder="Service Account" value="{{ PD.service_account }}">
         </div>
-
-        <div class="form-group">
-          <label for="project_default_process_{PD.name}}">Default processes to start</label>
-          <input type="text" class=""
-
-        </div>
-      
+     
         <button type="submit" class="btn btn-primary">Submit</button>
         <button type="button" class="btn btn-primary" data-href="/remove_project?name={{PD.name}}" data-toggle="modal" data-target="#confirm-delete">
           Remove project
         </button>
       </form>
+    </div>
+
+    <!-- Processgroups -->
+    <div class="tab-pane" id="processgroups" role="tabpanel" aria-labelledby="processes-tab">
+
+
     </div>
 
     <!-- Processes -->
@@ -222,7 +217,7 @@ $('.nav-pills').on('shown.bs.tab', function(event){
       </form>
       <form action="update_project" method="post">
         <input type="hidden" id="action" name="action" value="delete_process">
-        <input type="hidden" id="process" name="project" value="{{PD.name}}">
+        <input type="hidden" id="project" name="project" value="{{PD.name}}">
         <input type="hidden" id="process" name="process" value="{{process}}">
       <button type="submit" class="btn btn-secondary">Delete</button>
       </form>
