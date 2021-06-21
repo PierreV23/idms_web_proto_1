@@ -6,6 +6,7 @@
 import csv
 import io
 import os
+import sys
 import time
 from flask import Blueprint, render_template, redirect, request, url_for, session, current_app
 from flask import jsonify
@@ -13,9 +14,10 @@ from flask_login import current_user, login_required
 import uuid
 from app import projects
 from Bio import SeqIO
+import pymssql
 import openpyxl
 
-from nonacris.web import NncWeb
+from nonacris import NncWeb
 
 SAMPLEID = 'SendingOrganisationSampleId'
 SEQUENCEID = 'SendingOrganisationSequenceId'
@@ -229,7 +231,7 @@ def validate_results():
 
 def get_batch(collection):
     dbparms = current_app.config["LABSURV_DB_CRED"].get(current_user.environment)
-    dbconn = pymssql.connect(user=current_user.username, password=current_user.passwd, **dbparms)
+    dbconn = pymssql.connect(**dbparms)
     batch = NncWeb(dbconn, None)
     for f in current_user.ifs.ls(collection):
         if f.isfile():

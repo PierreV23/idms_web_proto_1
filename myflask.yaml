@@ -8,8 +8,11 @@ dependencies:
   - flask
   - git
   - graphviz
+  - jsonschema
   - marshmallow-sqlalchemy
+  - numpy
   - openpyxl=3.0.6
+  - pandas
   - pip
   - python
   - pyyaml
