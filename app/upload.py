@@ -15,7 +15,7 @@ from app import projects
 from Bio import SeqIO
 import openpyxl
 
-from labsurv import KSUpload, KSUploadType
+from nonacris.web import NncWeb
 
 SAMPLEID = 'SendingOrganisationSampleId'
 SEQUENCEID = 'SendingOrganisationSequenceId'
@@ -196,7 +196,7 @@ def upload_batch():
         return redirect(url_for('upload.upload_page'))
     collection = settings['collection']
     batch = get_batch(settings['collection'])
-    batch.validate()
+    batch.parse()
     result = batch.result()
     upload_result = False
     if result in  ('OK', 'Warning'):
@@ -204,7 +204,7 @@ def upload_batch():
         # TODO: add project, for now use 'upload' project
         collname = unique_coll('upload')
         coll = current_user.irods_session.collections.get(collname)
-        upload_result = batch.upload(coll)
+        upload_result = batch.store(coll)
     # TODO: Evaluate upload result
     # TODO: Remove current upload session vars
     clear_upload()
@@ -220,31 +220,29 @@ def validate_results():
     if settings['collection'] is None:
         return redirect(url_for('upload.upload_page'))
     batch = get_batch(settings['collection'])
-    batch.validate()
-    data = batch.validate_results()
+    batch.store()
+    data = batch.parse()
     result = batch.result()
     content = { 'report': render_template('validate_results.html', data=data),
                 'result': result }
     return content
 
 def get_batch(collection):
-    dbcred = current_app.config["LABSURV_DB_CRED"].get(current_user.environment)
-    batch = KSUpload(**dbcred, type=KSUploadType.EXTERNAL)
+    dbparms = current_app.config["LABSURV_DB_CRED"].get(current_user.environment)
+    dbconn = pymssql.connect(user=current_user.username, password=current_user.passwd, **dbparms)
+    batch = NncWeb(dbconn, None)
     for f in current_user.ifs.ls(collection):
         if f.isfile():
             if f.path.endswith('.fasta'):
-                fasta = f.open('r')
-                wrapper = io.TextIOWrapper(fasta, encoding='utf-8')
-                batch.load_fasta(wrapper)
-                fasta.close()
+                with f.open('r') as fasta:
+                    wrapper = io.TextIOWrapper(fasta, encoding='utf-8')
+                    batch.setInputSequenceFile(wrapper)
             if f.path.endswith('.xlsx'):
-                xlsf = f.open('r')
-                batch.load_data(xlsf, 'xlsx', transform_file=current_app.config.get("LABSURV_TRANSFORM"))
-                xlsf.close()
+                with f.open('r') as xlsf:
+                    batch.setInputDataFile(xlsf)
             if f.path.endswith('.csv'):
-                csvf = f.open('r')
-#                wrapper = io.TextIOWrapper(csvf, encoding='utf-8')
-                batch.load_data(csvf, 'csv', transform_file=current_app.config.get("LABSURV_TRANSFORM"))
+                with f.open('r') as csvf:
+                    batch.setInputDataFile(csvf)
     return batch
 
 @bp.route('_seq_list', methods=['GET'])
