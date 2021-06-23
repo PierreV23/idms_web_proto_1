@@ -9,13 +9,13 @@
 
 <script>
 
-var collection="{{ upload_data['collection'] }}"
+var directory="{{ upload_data['directory'] }}"
 var sortkey="";
 var reverse="";
 
 function load_list() {
-    $.get("{{ url_for('collbrowser.collist') }}", {
-      path: collection,
+    $.get("{{ url_for('upload.filelist') }}", {
+      path: directory,
       sortkey: sortkey,
       reverse: reverse,
       new_path: false,
@@ -25,7 +25,7 @@ function load_list() {
       $('#contents').html(data)
     });
     $.get("{{ url_for('upload.seq_list') }}", {
-      collection: collection
+        directory: directory
     }, function(data) {
       $('#seqlist').html(data)
     });
@@ -44,7 +44,7 @@ $(window).on('load', function() {
 <div class="container-wide">
     <div class="row">
         <div class="col">
-            <center><h2>Upload data</h2><h4>(coll: {{ upload_data['collection'] }})</h4></center>
+            <center><h2>Upload data</h2><h4>(coll: {{ upload_data['directory'] }})</h4></center>
             <hr>
         </div>
     </div>
@@ -78,19 +78,25 @@ $(window).on('load', function() {
                     Dataset actions
                 </div>
                 <div class="card card-body">
-                <form>
-                
-                <!-- <div class="form-group">
-                    <label for="runid">RUN-ID</label>
-                    <input type="text" class="form-control" id="runid">
-                </div> -->
-                <div class="form-group">
-                    <a href="{{ url_for('upload.cancel_upload') }}"><button type="button" class="btn btn-secondary">Cancel data upload</button></a>
-                    <a href="{{ url_for('upload.validate') }}"><button type="button" class="btn btn-primary">Verify data</button></a>
+                    <form action="{{ url_for('upload.validate') }}" method="POST">                 
+                        <div class="form-group">
+                            <label for="usecase">Use Case</label>
+                            <select class="form-control" id="usecase" name="usecase">
+                                {% for use_case in use_cases %}
+                                <option value="{{ use_case }}"
+                                {% if use_case == upload_data['use_case'] %}selected{% endif %}
+                                >{{ use_case }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <a href="{{ url_for('upload.remove_files') }}"><button type="button" class="btn btn-secondary">Remove files</button></a>
+                            <a href="{{ url_for('upload.cancel_upload') }}"><button type="button" class="btn btn-secondary">Cancel data upload</button></a>
+                            <button type="submit" class="btn btn-primary">Verify data</button>
+                        </div>
+                    </form>
                 </div>
-            </form>
-            </div>
-        </div>  
+            </div>  
         </div>
         <div class="col-md-9">
             <div class="card border-primary">
