@@ -39,7 +39,7 @@ def rest_call(request_type, endpoint, data={}):
     auth = HTTPBasicAuth('alt\\{}'.format(current_user.username), current_user.ntlm_hash)
     return_data = {}
     if request_type in REQUESTS_METHODS:
-        print(f'REST: {request_type} {url}')
+        print(f'REST: {request_type} {url} {data}')
         response = REQUESTS_METHODS[request_type](url, auth=auth, json=data)
     try:
         return_data = response.json()
@@ -180,6 +180,13 @@ def show_processdetails():
 #     return jsondict
 
 
+def add_checkbox(data, attr, name):
+    if name in attr:
+        data[name] = 1
+    else:
+        data[name] = 0
+    return data
+
 @BP.route('/update_project', methods=['GET', 'POST'])
 @login_required
 def update_projectsettings():
@@ -188,12 +195,6 @@ def update_projectsettings():
     The request contains an <action> variable that specifiec the kind of update
     that is requested
     """
-    def add_checkbox(data, attr, name):
-        if name in attr:
-            data[name] = 1
-        else:
-            data[name] = 0
-        return data
 
     requestdata = request.form.to_dict()
     viewprocess = ''
@@ -248,6 +249,21 @@ def update_projectsettings():
 
     return redirect(url_for('projects.show_projectdetails') + "?name={0}&process={1}".format(project, viewprocess))
 
+@BP.route('/_updateproc', methods=['POST'])
+@login_required
+def update_process():
+    requestdata = request.form.to_dict()
+    data = {}
+    procid = requestdata.get('procid')
+    for attr in ['description', 'repo', 'tag']:
+        if attr in requestdata:
+            data[attr] = requestdata[attr]
+    add_checkbox(data, requestdata, 'omit_staging')
+    add_checkbox(data, requestdata, 'modify_in_place')
+    add_checkbox(data, requestdata, 'restartable')
+    add_checkbox(data, requestdata, 'distribution')
+    rest_call('PUT', f'processes/{procid}', data=data)
+    return redirect(f'{ url_for("projects.show_projects") }?page=processes%processid={procid}')
 
 @BP.route('/get_process', methods=['GET','POST'])
 def get_process():
@@ -298,8 +314,28 @@ def pgaction():
     if action == 'add_process':
         process = request.args.get('process')
         name = request.args.get('name')
+        # Check if the process exists:
+        pr, r2 = rest_call('GET', f'processes/{process}')
+        print(pr)
+        if r2 != 200:
+            # TODO: some error message???
+            return 'FAILED'
+        if name == "":
+            # Auto-generate a name based on the process name
+            all_pgprocs, r3 = rest_call('GET', f'projects/{project}/processgroups/{group}/processes')
+            if r3 != 200:
+                return 'FAILED'
+            names = [ p.get('name') for p in all_pgprocs ]
+            index = 1
+            while True:
+                name = f'{process}-{index}'
+                if name not in names:
+                    break
+                index += 1
+
         new_process = {
-            'name': name
+            'name': name,
+            'processid': pr.get('id')
         }
         pl, result = rest_call('POST', f'projects/{project}/processgroups/{group}/processes', new_process)
     elif action == 'delete_process':
@@ -339,10 +375,10 @@ def pg_graph():
     def add_coll(name, procid):
         collname = f'out,{procid}'
         if procid ==0:
-            label = 'DATA'
+            label = 'NEW DATA'
         else:
-            label = f'out:{name}'
-        graph.node(collname, label=label, shape='box', width='2', id=collname)
+            label = f'out\n{name}'
+        graph.node(collname, label=label, shape='box', id=collname)
         return collname
         # Create a small 'add' node
         # addnode = f'add,{procid}'
@@ -354,7 +390,7 @@ def pg_graph():
         if selected:
             extra_settings = {
                 'style': 'filled',
-                'fillcolor': 'grey'
+                'fillcolor': 'lightblue'
             }
         nodename = f'proc,{procid}'
         nodeid = f'proc,{procid},{name}'
@@ -417,10 +453,12 @@ def pg_details():
 def processgroups():
     # Retrieve the list of processes in a group
     project = request.args.get('project')
-    group = request.args.get('group')
-#    pl, result = rest_call('GET', f'projects/{project}/processgroups/{group}/processes')
+    group = request.args.get('group', 'default')
+    # find all groups
+    pl, result = rest_call('GET', f'projects/{project}/processgroups')
+    groups = [ g.get('name') for g in pl ]
 
-    return render_template('processgroups.html', project=project, group=group)
+    return render_template('processgroups.html', project=project, group=group, processgroups=groups)
 
 @BP.route('processes', methods=['GET'])
 @login_required

@@ -1,50 +1,55 @@
-PG_DETAILS
-<BUTTON onClick='load_pgpage()'>RELOAD</BUTTON>
+<!-- PG_DETAILS
+<BUTTON type="button" class="btn btn-primary" onClick='load_pgpage()'>RELOAD</BUTTON> -->
 {{ message }}
 <hr>
 <div class="container-wide">
     <div class="row">
         <div class="col col-mb-4">
-            Processes
+            Processes  <button type="button" class="btn btn-danger float-right" id="delete_process_button">Delete selected</button>
             <hr>
-            <ul>
+            <ul class="list-group">
                 {% for process in pg_processes %}
-                <li class="select-process" data-process="{{ process.name }}">
-                    {% if process.name == selected_process %}
-                    <b>{{ process.name }}</b>
-                    {% else %}
+                <li class="list-group-item select-process {% if process.name == selected_process %} active {% endif %}" data-process="{{ process.name }}">
                     {{ process.name }}
-                    {% endif %}
                 </li>
                 {% endfor %}
             </ul>
-            <button id="delete_process_button">Delete selected</button>
-            <hr>
-            <INPUT TYPE="text" id="process_name"></INPUT>
-            <SELECT style="width: '100px'" id="process_select">
-                {% for proc in all_processes %}
-                <OPTION>{{ proc.name }}</OPTION>
-                {% endfor %}
-            </SELECT>
-            <BUTTON onClick='pgadd_process()''>Add Process</BUTTON>
+
 
         </div>
         <div class="col col-mb-4">
             Settings
             <hr>
-            INPUT: {{ procinput }}
-            <button id="select_input_button">select</button>
-        </div>
-        <div class="col col-mb-4">
+            <label>INPUT: {{ procinput }}</label>
+            <button type="button" class="btn btn-primary" id="select_input_button">select</button>
+            <hr>
             Dependencies
             <hr>
-            <ul>
+            <ul class="list-group">
             {% for dep in dependencies %}
-            <li>{{ dep.depends_on }}</li>
+            <li class="list-group-item">{{ dep.depends_on }}</li>
             {% endfor %}
             </ul>
             <hr>
-            <BUTTON id="add_dep">Add dependency</BUTTON>
+            <BUTTON type="button" class="btn btn-primary" id="add_dep">Add dependency</BUTTON>            
+        </div>
+        <div class="col col-mb-4">
+            Add process
+            <hr>
+            <form>
+                <div class="form-group">
+                    <label for="process_name">Process name (optional)</label>
+                    <INPUT TYPE="text" class="form-control" id="process_name"></INPUT>
+                </div>
+                <div class="form-group">
+                    <SELECT class="form-control" style="width: '100px'" id="process_select">
+                        {% for proc in all_processes %}
+                        <OPTION>{{ proc.name }}</OPTION>
+                        {% endfor %}
+                    </SELECT>
+                </div>
+                <BUTTON type="button" class="btn btn-primary" onClick='pgadd_process()''>Add Process</BUTTON>
+            </form>
         </div>
     </div>
 </div>

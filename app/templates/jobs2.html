@@ -147,7 +147,7 @@ $(document).ready(function(){
 </thead>
 <tbody>
 {% for entry in joblist %}
-    {% if entry.State.value in ("incoming", "stage") %}
+    {% if entry.State.value in ("incoming", "stage", "depends") %}
       <TR class="table-light">
     {% elif entry.State.value == "prepare" %}
       <TR class="table-info">

@@ -1,7 +1,8 @@
-<h1>Process details for : {{ details['name'] }}</h1><form action="update_process" method="post">
+<h1>Process details for : {{ details['name'] }}</h1><form action="{{ url_for('projects.update_process') }}" method="post">
 
     <input type="hidden" id="action" name="action" value="update_process">
     <input type="hidden" id="process" name="process" value="{{ details['name'] }}">
+    <input type="hidden" id="procid" name="procid" value="{{ details['id'] }}"
 
 
     <div class="form-group">

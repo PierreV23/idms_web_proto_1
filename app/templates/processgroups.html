@@ -2,11 +2,12 @@
 
 selected_process = null
 mode = 'display'
+group = '{{ group }}'
 
 function load_pggraph() {
   $.get('{{ url_for('projects.pg_graph') }}', {
     project: project,
-    group: 'default',
+    group: group,
     selected_process: selected_process,
     mode: mode
   }, function(data) {
@@ -18,7 +19,7 @@ function load_pggraph() {
 function load_pgdetails() {
     $.get('{{ url_for('projects.pg_details') }}', {
     project: project,
-    group: 'default',
+    group: group,
     selected_process: selected_process,
     mode: mode
   }, function(data) {
@@ -104,9 +105,19 @@ $(window).on('load', function() {
 });
 
 </script>
+<div class="form-group row">
+<label for="groupselect" class="col-sm-4 col-form-label">Process group</label>
+<div class="col-sm-4">
+<SELECT class="form-control" id="groupselect">
+    {% for processgroup in processgroups %}
+    <OPTION {% if processgroup == group %}SELECTED{% endif %}>{{ processgroup }}</OPTION>
+    {% endfor %}
+</SELECT>
+</div>
+</div>
+<hr>
 
-
-<div class="h40" id="pg_graph">
+<div class="h30" id="pg_graph">
     <CENTER>Loading process group graph ...</CENTER>
 </div>
 <hr>
