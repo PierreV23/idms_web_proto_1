@@ -1,19 +1,17 @@
 <table class="table table-sm table-striped table-bordered">
     <thead>
         <tr>
-            <td>Scope</td>
-            <td>ID</td>
-            <td>Level</td>
-            <td>Message</td>
+            {% for column in data %}
+            <td>{{ column }}</td>
+            {% endfor %}
         </tr>
     </thead>
     <tbody>
-    {% for item in data %}
+    {% for item in data['Description'] %}
         <tr>
-            <td>{{ item[0] }}</td>
-            <td>{{ item[1] }}</td>
-            <td>{{ item[2] }}</td>
-            <td>{{ item[3] }}</td>
+            {% for column in data %}
+            <td>{{ data[column][item] }}</td>
+            {% endfor %}
         </tr>
 
     {% endfor %}

@@ -6,6 +6,8 @@
 import csv
 import io
 import os
+import shutil
+import sys
 import time
 from flask import Blueprint, render_template, redirect, request, url_for, session, current_app
 from flask import jsonify
@@ -13,18 +15,22 @@ from flask_login import current_user, login_required
 import uuid
 from app import projects
 from Bio import SeqIO
+import pymssql
 import openpyxl
 
-from labsurv import KSUpload, KSUploadType
+from nonacris.web import NncWeb
 
 SAMPLEID = 'SendingOrganisationSampleId'
 SEQUENCEID = 'SendingOrganisationSequenceId'
 
+UPLOAD_DIR = '/tmp/upload'
+
 UPLOAD_KEY = 'current_upload'
 DEFAULT_UPLOAD = {
-    'collection': None,
+    'directory': None,
     'project': None,
-    'filelist': []
+    'filelist': [],
+    'use_case': 'UploadRivmSampleForm'
 }
 
 bp = Blueprint('upload', __name__, url_prefix='/upload')
@@ -55,7 +61,7 @@ def upload_data():
         session[current_user.environment] = {}
     if not UPLOAD_KEY in session[current_user.environment]:
         session[current_user.environment][UPLOAD_KEY] = DEFAULT_UPLOAD
-        update_setting('collection', f'/{current_user.irods_zone}/upload/{uuid.uuid4()}')
+        update_setting('directory', f'{UPLOAD_DIR}/{uuid.uuid4()}')
     return session[current_user.environment][UPLOAD_KEY]
 
 def update_setting(key, value):
@@ -63,12 +69,25 @@ def update_setting(key, value):
     session[current_user.environment][UPLOAD_KEY][key] = value
     session.modified = True
 
+@bp.route('_clearupload')
+@login_required
+def remove_files():
+    if current_user.environment in session:
+        if UPLOAD_KEY in session[current_user.environment]:
+            directory =  session[current_user.environment][UPLOAD_KEY].get('directory')
+            if directory and directory.startswith(UPLOAD_DIR):
+                if os.path.exists(directory):
+                    for file in os.listdir(directory):
+                        os.remove(os.path.join(directory, file))
+    return redirect(url_for('upload.upload_page'))
+
 def clear_upload():
     if current_user.environment in session:
         if UPLOAD_KEY in session[current_user.environment]:
-            collection =  session[current_user.environment][UPLOAD_KEY].get('collection')
-            if collection:
-                current_user.ifs.rmdir(collection, recurse=True, force=True)
+            directory =  session[current_user.environment][UPLOAD_KEY].get('directory')
+            if directory and directory.startswith(UPLOAD_DIR):
+                if os.path.exists(directory):
+                    shutil.rmtree(directory)
             del session[current_user.environment][UPLOAD_KEY]
     session.modified = True
 
@@ -80,8 +99,9 @@ def too_large(e):
 
 @bp.route('upload')
 def upload_page():
+    use_cases = NncWeb.USE_CASE.keys()
     # Find out if an upload is still in progress
-    return render_template('upload.html', upload_data=upload_data())
+    return render_template('upload.html', upload_data=upload_data(), use_cases=use_cases)
 
 def LengthWithinMargin(seq):
 
@@ -97,42 +117,41 @@ def HasTooManyN(seq):
     if count < 2990:
         return False
 
-def read_data(coll):
+def read_data(directory):
     data = {}
     headers = []
-    for f in current_user.ifs.ls(coll):
-        if f.isfile():
-            if f.path.endswith('.fasta'):
-                fasta = f.open('r')
-                wrapper = io.TextIOWrapper(fasta, encoding='utf-8')
-                for seq in SeqIO.parse(wrapper, 'fasta'):
-                    data.setdefault(seq.id, {})['PassedQC'] = 'No' if HasTooManyN(seq.seq) else 'Yes'
-                    data.setdefault(seq.id, {})['LengthOK'] = 'Yes' if LengthWithinMargin(seq.seq) else 'No'
-                fasta.close()
-            if f.path.endswith('.xlsx'):
-                xlsf = f.open('r')
-                workbook = openpyxl.load_workbook( xlsf )
-                sheet = workbook.active
-                headers = [ col.value for col in sheet[1] ]
-                try:
-                    seqid_idx = headers.index(SEQUENCEID)
-                except ValueError:
-                    seqid_idx = None
-                i=0
-                for row in sheet.iter_rows(min_row=2,max_row=sheet.max_row):
-                    if seqid_idx:
-                        seqid = row[seqid_idx].value
-                    else:
-                        seqid = i
-                    i += 1
-                    for cell in row:
-                        header = headers[cell.col_idx - 1]
-                        data.setdefault(seqid, {})[header] = cell.value
-                xlsf.close()
-            if f.path.endswith('.csv'):
-                with f.open('r') as csvf:
-                    wrapper = io.TextIOWrapper(csvf, encoding='utf-8')
-                    csvdata = csv.reader(wrapper, delimiter='\t')
+    for filename in os.listdir(directory):
+        fullname = os.path.join(directory, filename)
+        if os.path.isfile(fullname):
+            _, extension = os.path.splitext(fullname)
+            if extension == '.fasta':
+                with open(fullname, 'r') as fasta:
+                    for seq in SeqIO.parse(fasta, 'fasta'):
+                        data.setdefault(seq.id, {})['PassedQC'] = 'No' if HasTooManyN(seq.seq) else 'Yes'
+                        data.setdefault(seq.id, {})['LengthOK'] = 'Yes' if LengthWithinMargin(seq.seq) else 'No'
+            if extension == '.xlsx':
+                with open(fullname, 'rb') as xlsf:
+                    workbook = openpyxl.load_workbook( xlsf )
+                    sheet = workbook.active
+                    headers = [ col.value for col in sheet[1] ]
+                    try:
+                        seqid_idx = headers.index(SEQUENCEID)
+                    except ValueError:
+                        seqid_idx = None
+                    i=0
+                    for row in sheet.iter_rows(min_row=2,max_row=sheet.max_row):
+                        if seqid_idx:
+                            seqid = row[seqid_idx].value
+                        else:
+                            seqid = i
+                        i += 1
+                        for cell in row:
+                            header = headers[cell.col_idx - 1]
+                            data.setdefault(seqid, {})[header] = cell.value
+            if extension == '.csv':
+                with open(fullname, 'r') as csvf:
+#                    wrapper = io.TextIOWrapper(csvf, encoding='utf-8')
+                    csvdata = csv.reader(csvf, delimiter='\t')
                     headers = next(csvdata)
                     try:
                         seqid_idx = headers.index(SEQUENCEID)
@@ -163,14 +182,11 @@ def read_data(coll):
 @bp.route('_uploadfile', methods=['POST'])
 def upload_file():
     f = request.files['file']
-    collection = upload_data()['collection']
-    if not current_user.ifs.folderexists(collection):
-        current_user.ifs.mkdir(collection)
-    # Generate irods file object
-    iObjName = os.path.join(collection, f.filename)
-    iObj = current_user.ifs.open(iObjName, 'w')
-    f.save(iObj)
-    iObj.close()
+    directory = upload_data()['directory']
+    os.makedirs(directory, exist_ok=True)
+    # Generate file object
+    filePath = os.path.join(directory, f.filename)
+    f.save(filePath)
     return '', 204
 
 @login_required
@@ -180,77 +196,83 @@ def cancel_upload():
     return render_template('home.html')
 
 @login_required
-@bp.route('_validate', methods=['GET'])
+@bp.route('_validate', methods=['POST'])
 def validate():
+    data = request.form.to_dict()
+    use_case = data.get('usecase')
     settings = upload_data()
-    if settings['collection'] is None:
+    if use_case:
+        update_setting('use_case', use_case)
+    if settings['directory'] is None:
         return redirect(url_for('upload.upload_page'))
-    return render_template('validate_report.html', collection=settings['collection'])
+    return render_template('validate_report.html', collection=settings['directory'])
 
 
 @login_required
 @bp.route('_uploadbatch', methods=['GET'])
 def upload_batch():
     settings = upload_data()
-    if settings['collection'] is None:
+    if settings['directory'] is None:
         return redirect(url_for('upload.upload_page'))
-    collection = settings['collection']
-    batch = get_batch(settings['collection'])
-    batch.validate()
-    result = batch.result()
+    directory = settings['directory']
+    batch = get_batch(settings)
+    batch.parse()
+    result = not batch.data['Parse.Validation.HasError']
     upload_result = False
-    if result in  ('OK', 'Warning'):
+    if result:
         # Generate a collection name for storing upload
         # TODO: add project, for now use 'upload' project
         collname = unique_coll('upload')
         coll = current_user.irods_session.collections.get(collname)
-        upload_result = batch.upload(coll)
+        batch.setIrodsCollection(coll)
+        upload_result = batch.store()
     # TODO: Evaluate upload result
-    # TODO: Remove current upload session vars
     clear_upload()
     # TODO: Show some result
     return render_template('upload_result.html', upload_result=upload_result)
 
-
+@login_required
+@bp.route('filelist', methods=['GET'])
+def filelist():
+    settings = upload_data()
+    if settings['directory']:
+        files = os.listdir(settings['directory'])
+    return render_template('upload_filelist.html', files=files)
 
 @login_required
 @bp.route('_validate_results', methods=['GET'])
 def validate_results():
     settings = upload_data()
-    if settings['collection'] is None:
+    if settings['directory'] is None:
         return redirect(url_for('upload.upload_page'))
-    batch = get_batch(settings['collection'])
-    batch.validate()
-    data = batch.validate_results()
-    result = batch.result()
-    content = { 'report': render_template('validate_results.html', data=data),
+    batch = get_batch(settings)
+    batch.parse()
+    result = batch.data['Parse.Validation.Table'].to_dict()
+    content = { 'report': render_template('validate_results.html', data=result),
                 'result': result }
     return content
 
-def get_batch(collection):
-    dbcred = current_app.config["LABSURV_DB_CRED"].get(current_user.environment)
-    batch = KSUpload(**dbcred, type=KSUploadType.EXTERNAL)
-    for f in current_user.ifs.ls(collection):
-        if f.isfile():
-            if f.path.endswith('.fasta'):
-                fasta = f.open('r')
-                wrapper = io.TextIOWrapper(fasta, encoding='utf-8')
-                batch.load_fasta(wrapper)
-                fasta.close()
-            if f.path.endswith('.xlsx'):
-                xlsf = f.open('r')
-                batch.load_data(xlsf, 'xlsx', transform_file=current_app.config.get("LABSURV_TRANSFORM"))
-                xlsf.close()
-            if f.path.endswith('.csv'):
-                csvf = f.open('r')
-#                wrapper = io.TextIOWrapper(csvf, encoding='utf-8')
-                batch.load_data(csvf, 'csv', transform_file=current_app.config.get("LABSURV_TRANSFORM"))
+def get_batch(settings):
+    directory = settings.get('directory')
+    dbparms = current_app.config["LABSURV_DB_CRED"].get(current_user.environment)
+    dbconn = pymssql.connect(**dbparms)
+    batch = NncWeb(dbconn, None)
+    batch.setUseCase(settings.get('use_case'))
+    for filepath in os.listdir(directory):
+        fullpath = os.path.join(directory, filepath)
+        if os.path.isfile(fullpath):
+            _, extension = os.path.splitext(fullpath)
+            if extension == '.fasta':
+                batch.setInputSequenceFile(fullpath)
+            if extension in [ '.xlsx', '.csv', '.tsv']:
+                batch.setInputDataFile(fullpath)
     return batch
 
 @bp.route('_seq_list', methods=['GET'])
 def seq_list():
-    collection = request.args.get('collection')
+    directory = request.args.get('directory')
+    headers = []
     ids = []
-    if collection:
-        headers, ids =  read_data(collection)
+    if directory:
+        headers, ids =  read_data(directory)
     return render_template('seq_list.html', headers=headers, ids=ids)

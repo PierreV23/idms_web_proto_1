@@ -87,6 +87,10 @@ class WebUser(UserMixin):
         lmntlm = '{}:{}'.format('0' * 32, hash) 
         return lmntlm
 
+    @property
+    def passwd(self):
+        return deobfuscate(self.password)
+
     def store(self):
         """Store user in Flask session."""
         if 'user_store' not in session:
@@ -101,6 +105,7 @@ class WebUser(UserMixin):
             username, pass_obfuscated, env, is_auth = session['user_store'][username]
             return cls(username, deobfuscate(pass_obfuscated), env, is_auth)
         return None
+        
 
     def delete(self):
         """Delete user from Flask session."""
