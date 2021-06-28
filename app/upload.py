@@ -99,7 +99,7 @@ def too_large(e):
 
 @bp.route('upload')
 def upload_page():
-    use_cases = NncWeb.USE_CASE.keys()
+    use_cases = NncWeb.USE_CASE
     # Find out if an upload is still in progress
     return render_template('upload.html', upload_data=upload_data(), use_cases=use_cases)
 
@@ -124,11 +124,11 @@ def read_data(directory):
         fullname = os.path.join(directory, filename)
         if os.path.isfile(fullname):
             _, extension = os.path.splitext(fullname)
-            if extension == '.fasta':
-                with open(fullname, 'r') as fasta:
-                    for seq in SeqIO.parse(fasta, 'fasta'):
-                        data.setdefault(seq.id, {})['PassedQC'] = 'No' if HasTooManyN(seq.seq) else 'Yes'
-                        data.setdefault(seq.id, {})['LengthOK'] = 'Yes' if LengthWithinMargin(seq.seq) else 'No'
+            # if extension == '.fasta':
+            #     with open(fullname, 'r') as fasta:
+            #         for seq in SeqIO.parse(fasta, 'fasta'):
+            #             data.setdefault(seq.id, {})['PassedQC'] = 'No' if HasTooManyN(seq.seq) else 'Yes'
+            #             data.setdefault(seq.id, {})['LengthOK'] = 'Yes' if LengthWithinMargin(seq.seq) else 'No'
             if extension == '.xlsx':
                 with open(fullname, 'rb') as xlsf:
                     workbook = openpyxl.load_workbook( xlsf )
@@ -246,10 +246,18 @@ def validate_results():
     if settings['directory'] is None:
         return redirect(url_for('upload.upload_page'))
     batch = get_batch(settings)
-    batch.parse()
-    result = batch.data['Parse.Validation.Table'].to_dict()
+    try:
+        batch.parse()
+        result = batch.data['Parse.Validation.Table'].to_dict()
+        validation_passed = not batch.data['Parse.Validation.HasError']
+    except Exception as ex:
+        result = { 'Error': { '0': 'System error in validation module' },
+                   'Description' : { '0' : ex },
+                   'Type': {'0': type(ex) }
+        }
+        validation_passed = False
     content = { 'report': render_template('validate_results.html', data=result),
-                'result': result }
+                'result': validation_passed }
     return content
 
 def get_batch(settings):
