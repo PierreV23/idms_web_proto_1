@@ -13,6 +13,11 @@ var directory="{{ upload_data['directory'] }}"
 var sortkey="";
 var reverse="";
 
+usecase_descriptions = {}
+{% for case in use_cases %}
+usecase_descriptions["{{ case }}"] = "{{ use_cases[case]['Description'] }}"
+{% endfor %}
+
 function load_list() {
     $.get("{{ url_for('upload.filelist') }}", {
       path: directory,
@@ -51,18 +56,6 @@ $(window).on('load', function() {
     <div class="row">
         <div class="col-md-3">
             <div class="card border-primary">
-                <div class="card card-header text-white bg-secondary">
-                    Data Upload Instructions
-                </div>
-                <div class="card card-body">
-                The upload requires you to supply one FASTA file with SARS-CoV-2 sequences and a 
-                coupled metadata file in Comma Separated Values format (=csv) or XLS format. 
-                You can upload these with the widget below.
-                For uploading data, you can use this using this 
-                <a href="{{ url_for('static', filename='templates/labsurv-template.csv' ) }}" style="display:inline;">template</a>
-                </div>
-            </div>
-            <div class="card border-primary">
                 <div class="card card-header text-white bg-secondary">Upload data files here</div>
                 <div class="card card-body">  
                     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.7.1/min/dropzone.min.css">
@@ -89,6 +82,12 @@ $(window).on('load', function() {
                                 {% endfor %}
                             </select>
                         </div>
+                        <div id="usecasedesc">
+                            {{ use_cases[upload_data['use_case']]['Description'] }}
+                        </div>
+                        <p>
+                        For upload data, you can use this <a href="{{ url_for('static', filename='templates/labsurv-template.csv' ) }}">template</a>
+                        <hr>
                         <div class="form-group">
                             <a href="{{ url_for('upload.remove_files') }}"><button type="button" class="btn btn-secondary">Remove files</button></a>
                             <a href="{{ url_for('upload.cancel_upload') }}"><button type="button" class="btn btn-secondary">Cancel data upload</button></a>
@@ -125,6 +124,10 @@ $(window).on('load', function() {
             });
         }
     }
+
+$('#usecase').on('change', function(){
+    $("#usecasedesc").html(usecase_descriptions[$('#usecase').val()]);
+})
 
 </script>
 {% endblock %}
