@@ -55,7 +55,7 @@ def serve_object():
     if file_extension in [".jpg", ".png"]:
         output = '<IMG HEIGHT="100%" SRC="' + url_for('docviewer.serve_image') +  "?path=" + path + '">'
         return output
-    if file_extension in [".re", ".cfg", ".xml", ".out", ".yml", ".yaml", ".err"]:
+    if file_extension in [".re", ".cfg", ".xml", ".out", ".yml", ".yaml", ".err", ".log" ]:
         mimetype = "text/plain"
 
     if mimetype:

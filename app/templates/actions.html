@@ -54,6 +54,20 @@
         });
     }
 
+    function overrideDatasetOnline() {
+        var selected = $( "#keepOnlineSwitch" ).is(':checked')
+        var override = $( "#overrideOnlineSwitch" ).is(':checked')
+        $.get('{{ url_for('collbrowser.setoverride') }}', {
+          attr: 'sys::archive::keep_online',
+          collection: '{{ collection }}',
+          override: override,
+          value: selected
+        }, function(data) {
+           load_meta();
+           load_actions();
+        });
+    }
+
     function setMincopies(i) {
         $.get('{{ url_for('collbrowser.setmeta') }}', {
           collection: '{{ collection }}',
@@ -83,6 +97,17 @@
         $.get('{{ url_for('collbrowser.setmeta') }}', {
           collection: '{{ collection }}',
           attr: 'sys::archive::local',
+          value: selected
+        }, function(data) {
+           load_meta()
+        });
+    }
+
+    function keepDatasetOnline() {
+        var selected = $( "#keepOnlineSwitch" ).is(':checked')
+        $.get('{{ url_for('collbrowser.setmeta') }}', {
+          collection: '{{ collection }}',
+          attr: 'sys::archive::keep_online',
           value: selected
         }, function(data) {
            load_meta()
@@ -231,7 +256,27 @@ $('.nav-pills').on('shown.bs.tab', function(event){
                 {% if not archival_state.keep_local[2] %}
                 Set from: {{ archival_state.keep_local[1].htmlstring | safe }}
                 {% endif %}
-              </label>              
+              </label>
+              <hr>
+              <div class="col-sm-4 custom-control custom-switch vertical-down">
+                <input type="checkbox" class="custom-control-input" onChange="keepDatasetOnline()"
+                      value="true"
+                      id="keepOnlineSwitch" {% if archival_state.keep_online[0] == 'true' %}checked{% endif %}
+                      {% if archival_state.keep_online[2] == False %}disabled{% endif %}>
+                <label class="custom-control-label" for="keepOnlineSwitch">keep online</label>
+              </div>
+          
+              <div class="col-sm-4 custom-control custom-switch vertical-down">
+                <input type="checkbox" class="custom-control-input" onChange="overrideDatasetOnline()"
+                      value="true"
+                      id="overrideOnlineSwitch" {% if archival_state.keep_online[2] == True %}checked{% endif %}>
+                      <label class="custom-control-label" for="overrideOnlineSwitch">Override inheritance</label>               
+              </div>
+              <label class="col-form-label">
+                {% if not archival_state.keep_online[2] %}
+                Set from: {{ archival_state.keep_online[1].htmlstring | safe }}
+                {% endif %}
+              </label>               
             </div>         
           </form>
           <hr>

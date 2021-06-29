@@ -24,6 +24,7 @@
             <TD>Keep</TD>
             <TD>SURF</TD>
             <TD>TAR</TD>
+            <TD>Available</TD>
         </TR>
     </THEAD>
     <TBODY>
@@ -38,7 +39,7 @@
             <TD><input type="text" class="form-control" name="{{ resource }}__sys::resource::minfree"
                 value="{{ resources[resource].get('sys::resource::minfree', 0) }}">
             </TD>
-            {% for property in [ "local", "online", "stage", "keep", "surf", "tar"] %}
+            {% for property in [ "local", "online", "stage", "keep", "surf", "tar", "available"] %}
             <TD><input class="" type="checkbox"
                 name="{{ resource }}__sys::resource::{{ property }}"
                 value="true"

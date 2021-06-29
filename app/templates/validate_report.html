@@ -23,7 +23,7 @@ function load_contents() {
     }, function(content) {
         $('#report').html(content.report)
         $('#result').html(content.result)
-        if (content.result != 'Error') {
+        if (content.result == true) {
             $('#upload-btn').show()
         }
     })
@@ -39,7 +39,7 @@ $(window).on('load', function() {
 <!-- <div class="seqlist" id="seqlist">
     <center>Please wait while loading data ...</center>
 </div> -->
-<div class="container">
+<div class="container-wide">
     <div class="card">
         <div class="card card-header">
             <h3>Data upload validation result: <emp><span id="result"> ... </span></h3></emp>

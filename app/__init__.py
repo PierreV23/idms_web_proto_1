@@ -51,6 +51,13 @@ def load_user(userid):
 def home():
     return render_template('home.html')
 
+# @app.teardown_request
+# def teardown(x):
+#     try:
+#         current_user.irods_session.cleanup()
+#     except:
+#         pass
+
 @app.errorhandler(irods.exception.PAM_AUTH_PASSWORD_FAILED)
 def invalid_session(e):
     """Session may be stale. Destroy it and redirect to login page."""

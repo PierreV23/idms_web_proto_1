@@ -32,6 +32,7 @@ ATTR_ARCHIVE_PREFIX = 'sys::archive::'
 ATTR_ARCHIVE_ENABLE = f'{ATTR_ARCHIVE_PREFIX}enable'
 ATTR_ARCHIVE_DEFAULT_STATE = f'{ATTR_ARCHIVE_PREFIX}default_state'
 ATTR_ARCHIVE_DESIREDSTATE = f'{ATTR_ARCHIVE_PREFIX}desired_state'
+ATTR_ARCHIVE_KEEP_ONLINE = f'{ATTR_ARCHIVE_PREFIX}keep_online'
 ATTR_ARCHIVE_KEEP_ONLINE_TILL = f'{ATTR_ARCHIVE_PREFIX}keep_online_till'
 ATTR_ARCHIVE_LOCAL = f'{ATTR_ARCHIVE_PREFIX}local'
 ATTR_PROCESSREQUEST = 'processrequest'
@@ -167,6 +168,7 @@ def coll_actions():
     online_percentage = int(getmetaitem(coll_obj, ATTR_ARCHIVE_ONLINEPERCENTAGE, 0 ))
     archive_state = getmetaitem(coll_obj, ATTR_ARCHIVE_STATE, "000")
     min_copies = getmetatree(coll_obj, ATTR_ARCHIVE_MINCOPIES, 2)
+    keep_online = getmetatree(coll_obj, ATTR_ARCHIVE_KEEP_ONLINE, "false")
     is_archived = False 
     if archive_state[-1] == '1':
         is_archived = True 
@@ -186,7 +188,8 @@ def coll_actions():
         "is_offline": is_offline,
         "keep_local": keep_local,
         "online_percentage": online_percentage,
-        "min_copies": min_copies
+        "min_copies": min_copies,
+        "keep_online": keep_online
     }
 
     #print( archival_state )

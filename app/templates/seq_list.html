@@ -3,8 +3,6 @@
         <tr>
             <!-- <td>Select</td> -->
             <td>Sequence ID</td>
-            <td>PassedQC</td>
-            <td>Length OK</td>
             {% for h in headers %}
                 <td>{{ h }}</td>
             {% endfor %}
@@ -18,8 +16,6 @@
         <tr>
         {% endif %}
             <td>{{ id }}</td>
-            <td>{{ ids[id]['PassedQC'] }}</td>
-            <td>{{ ids[id]['LengthOK'] }}</td>
             {% for h in headers %}
                 <td>{{ ids[id][h] }}</td>
             {% endfor %}            
