@@ -40,13 +40,13 @@ bp = Blueprint('upload', __name__, url_prefix='/upload')
 def unique_coll(project):
     """Generate a unique collection name for project
     and create the collection"""
-    projectcoll = f'/{current_user.irods_zone}/upload/data'
+    projectcoll = f'/{current_user.irods_zone}/projects/nonacris'
 
     if not project is None:
         pl, result = projects.rest_call('GET', 'projects/{}'.format(project))
         if 'default_collection' in pl:
             projectcoll = pl['default_collection']
-    datestr = time.strftime('%Y%m%d_%H%M')
+    datestr = time.strftime('%Y%m%d_%H%M%S')
     collname = os.path.join(projectcoll, datestr)
     i = 0
     while current_user.irods_session.collections.exists(collname):
