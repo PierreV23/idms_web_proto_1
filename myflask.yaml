@@ -23,6 +23,7 @@ dependencies:
   - flask-sqlalchemy
   - flask-script
   - sqlite
+  - xlrd
   - pip:
     - pymssql==2.1.5
     - python-irodsclient==0.8.3
