@@ -1,0 +1,69 @@
+{% extends 'base2.html' %}
+
+{% block heading %}
+{% endblock %}
+
+{% block content %}
+<script>
+
+$(document).on('click', '.processname', function() {
+  process=$(this).data('processname');
+  $('.processname').removeClass('active')
+  $(this).addClass("active")
+  $('#details').html('<div class="card">Loading settings for ' + process + " ... </div>")
+  $.get('{{ url_for('projects.show_processdetails') }}', {
+    name: process
+  }, function(data) {
+    $('#details').html(data);
+  });
+});
+
+$(document).on('click', '.add_button', function() {
+  action = 'add_process2';
+  process = $("#new_pname").val();
+  $.post("{{ url_for('projects.update_projectsettings') }}", {
+    action: action,
+    process: process
+  });
+});
+
+$(window).on('load', function() {
+  $("li[data-processname='{{ process }}']").trigger('click');
+});
+
+
+</script>
+<div class="d-flex">
+  <div class="wrap viewport d-flex flex-column sidebar">
+    <div class="p-2 header card d-flex flex-row align-items-center">
+      <a href="{{ url_for('projects.show_projects') }}?page=projects">
+        <button class="btn btn-outline-primary">
+          Projects
+        </button>
+      </a>
+      <button class="btn btn-outline-primary active">
+        Processes
+      </button>
+    </div>
+    <div class="sidebar-content card">
+      <UL class="list-group">
+        {% for process in processes | sort %}
+          <LI class="processname list-group-item" data-processname="{{ process }}">{{ process }}</LI>
+        {% endfor %}
+      </UL>
+    </div>
+    <div class="p-2 footer card d-flex">
+      <form class="">
+        <INPUT TYPE="text" id='new_pname'>
+        <button class="btn btn-primary add_button">ADD</button>
+      </form>
+    </div>
+  </div>
+  <div class="content flex-fill">
+    <div id="details" class="viewport d-flex flex-column">
+      .. PLEASE SELECT A PROCESS ...
+    </div>
+  </div>
+</div>
+
+{% endblock %}

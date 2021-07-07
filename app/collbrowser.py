@@ -195,7 +195,8 @@ def coll_actions():
     #print( archival_state )
     return render_template('actions.html', collection=path, 
         name=coll_name, archival_state=archival_state,
-        processes=processes, processid=processid, processrequest=processrequest )
+        processes=processes, processid=processid, processrequest=processrequest,
+        admin=current_user.is_admin)
 
 
 @bp.route('_startprocess')

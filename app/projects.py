@@ -35,7 +35,7 @@ REQUESTS_METHODS = {
 def rest_call(request_type, endpoint, data={}):    
     url = 'http://{}/api/1.0/{}'.format(current_user.irods_server, endpoint)
     #TODO: remove this testing line:
-    url = 'http://{}/api/1.0/{}'.format('0.0.0.0:5000', endpoint)
+    #url = 'http://{}/api/1.0/{}'.format('0.0.0.0:5000', endpoint)
     auth = HTTPBasicAuth('alt\\{}'.format(current_user.username), current_user.ntlm_hash)
     return_data = {}
     if request_type in REQUESTS_METHODS:
@@ -75,10 +75,26 @@ def get_process2list():
 def show_projects():
     """
     Return a web page with a list of all projects
+
+    url params:
+        project: switch to projects page and show <project>
+        process: swicth to processes  page and show <processid> 
     """
-    projectlist = get_projectlist()
+    # TODO: refactor passing of arguments
+    page = request.args.get('page', 'projects')
+
+    project = request.args.get('project', '')
+    process = request.args.get('process', '')
+    pp = request.args.get('pp', '')
+    processgroup = request.args.get('processgroup', '')
     processlist = get_process2list()
-    return render_template('projects2.html', projects=projectlist, processes=processlist)
+    if page == 'processes':
+        return render_template('processes3.html', processes=processlist, process=process)
+    else:
+        projectlist = get_projectlist()
+        return render_template('projects3.html', projects=projectlist, processes=processlist, 
+            project=project, process=process, pp=pp, processgroup=processgroup)
+
 
 
 @BP.route('/details')
@@ -89,6 +105,7 @@ def show_projectdetails():
     """
     projectnaam = request.args.get('name', '', type=str)
     processnaam = request.args.get('process', '', type=str)
+    processgroup = request.args.get('processgroup', 'default', type=str) 
 
     projectlist, result = rest_call('GET', 'projects')
     all_projects = [ project['name'] for project in projectlist]
@@ -139,7 +156,7 @@ def show_projectdetails():
     # return render_template('projectdetails.html', PD=projectdetails,
     #                        conf=config, processnaam=processnaam)
     return render_template('projectdetails.html', PD=projectdetails, all_projects = all_projects,
-                           processnaam=processnaam)
+                           processnaam=processnaam, processgroup=processgroup)
 
 
 @BP.route('/processdetails')
@@ -153,31 +170,6 @@ def show_processdetails():
     pl, result = rest_call('GET', f'processes/{processnaam}')
 
     return render_template('processdetails.html', details=pl)
-
-
-
-@login_required
-# def write_jsonfile(filepath, jsondict):
-#     """
-#     Writes dict object <jsondict> to the json file in <filepath>
-#     """
-#     ifs = current_user.ifs
-#     jsonstr = json.dumps(jsondict, sort_keys=True, indent=4)
-#     obj = ifs.getfile(filepath)
-#     with obj.open('w') as jsonfile:
-#         jsonfile.write(jsonstr.encode())
-
-
-# @login_required
-# def read_jsonfile(filepath):
-#     """
-#     Returns a dictionary from json file <filepath>
-#     """
-#     ifs = current_user.ifs
-#     obj = ifs.getfile(filepath)
-#     with obj.open('r') as jsonfile:
-#         jsondict = json.load(jsonfile)
-#     return jsondict
 
 
 def add_checkbox(data, attr, name):
@@ -197,16 +189,12 @@ def update_projectsettings():
     """
 
     requestdata = request.form.to_dict()
-    viewprocess = ''
-    project = requestdata['project']
-    try:
-        process = requestdata['process']
-    except:
-        process = 'none'
+    location = ''
+    project = requestdata.get('project')
+    process = requestdata.get('process')
+    action = requestdata.get('action')
 
-    redirecturl = ''
-
-    if requestdata['action'] == 'update_process':
+    if action == 'update_process':
         data = {}
         for attr in ['description', 'repo', 'tag', 'lsf_queue']:
             if attr in requestdata:
@@ -223,31 +211,41 @@ def update_projectsettings():
             data['next_projectid'] = 0
             data['next_processid'] = 0
         rest_call('PUT', 'projects/{}/processes/{}'.format(project, process), data=data)
-        viewprocess = requestdata['process']
-    elif requestdata['action'] == 'add_process':
-        if requestdata['process']:
-            data = {'name': requestdata['process']}
+        location=f'project={project}&process={process}'
+    elif action == 'add_process':
+        if process:
+            data = {'name': process}
             response, result = rest_call('POST', 'projects/{}/processes'.format(project), data=data)
-            viewprocess = requestdata['process']
-    elif requestdata['action'] == 'delete_process':
+        location=f'project={project}&process={process}'
+    elif action == 'add_process2':
+        if process:
+            data = {'name': process}
+            response, result = rest_call('POST', 'processes', data=data)
+        location=f'page=processes&process={process}'
+    elif action == 'add_processgroup':
+        name = requestdata.get('name')
+        if project and name:
+            data = {'name' : name }
+            response, result = rest_call('POST', f'projects/{project}/processgroups', data=data)
+        location=f'project={project}&pp=processgroups&processgroup={name}'
+    elif action == 'delete_process':
         response, result = rest_call('DELETE', 'projects/{}/processes/{}'.format(project, process))
-        viewprocess = 'none'
-    elif requestdata['action'] == 'update_project':
+        location=f'project={project}'
+    elif action == 'update_project':
         data = {}
         for attr in ['description', 'default_collection', 'service_account']:
             if attr in requestdata:
                 data[attr] = requestdata[attr]
         rest_call('PUT', 'projects/{}'.format(project), data=data)
-    elif requestdata['action'] == 'add_project':
+        location=f'project={project}'
+    elif action == 'add_project':
         rest_call('POST', 'projects'.format(project), data={'name': project})
-        redirecturl = url_for('projects.show_projects')
-    elif requestdata['action'] == 'remove_project':
+        location=f'project={project}'
+    elif action == 'remove_project':
         response, result = rest_call('DELETE', 'projects/{}'.format(project))
-        redirecturl = url_for('projects.show_projects')
-    if redirecturl:
-        return redirect(redirecturl)
+        location='page=projects'
 
-    return redirect(url_for('projects.show_projectdetails') + "?name={0}&process={1}".format(project, viewprocess))
+    return redirect(f'{url_for("projects.show_projects")}?{location}')
 
 @BP.route('/_updateproc', methods=['POST'])
 @login_required
@@ -255,6 +253,7 @@ def update_process():
     requestdata = request.form.to_dict()
     data = {}
     procid = requestdata.get('procid')
+    process = requestdata.get('process')
     for attr in ['description', 'repo', 'tag']:
         if attr in requestdata:
             data[attr] = requestdata[attr]
@@ -263,7 +262,7 @@ def update_process():
     add_checkbox(data, requestdata, 'restartable')
     add_checkbox(data, requestdata, 'distribution')
     rest_call('PUT', f'processes/{procid}', data=data)
-    return redirect(f'{ url_for("projects.show_projects") }?page=processes%processid={procid}')
+    return redirect(f'{ url_for("projects.show_projects") }?page=processes&process={process}')
 
 @BP.route('/get_process', methods=['GET','POST'])
 def get_process():
@@ -371,20 +370,6 @@ def pg_graph():
             label: '<name>', with name being the name from pgprocess
             id: 'proc,id,name'
     """
-
-    def add_coll(name, procid):
-        collname = f'out,{procid}'
-        if procid ==0:
-            label = 'NEW DATA'
-        else:
-            label = f'out\n{name}'
-        graph.node(collname, label=label, shape='box', id=collname)
-        return collname
-        # Create a small 'add' node
-        # addnode = f'add,{procid}'
-        # graph.node(addnode, label='+', id=addnode, shape='circle', fontsize='20')
-        # graph.edge(name, addnode)
-
     def add_process(name, procid, selected):
         extra_settings = {}
         if selected:
@@ -392,34 +377,38 @@ def pg_graph():
                 'style': 'filled',
                 'fillcolor': 'lightblue'
             }
-        nodename = f'proc,{procid}'
-        nodeid = f'proc,{procid},{name}'
+        nodename = f'n,{procid}'
+        nodeid = f'n,{procid},{name}'
         graph.node(nodename, label=name, shape='cds', id=nodeid, **extra_settings)
-        collname = add_coll(name, procid)
-        graph.edge(nodename, collname, style='bold')
 
     project = request.args.get('project')
     group = request.args.get('group', 'default')
     selected_process = request.args.get('selected_process')
     pl, result = rest_call('GET', f'projects/{project}/processgroups/{group}/processes')
+    if result != 200:
+        return ""
     # Create the process group graph
     graph = Digraph('datagraph')
     graph.graph_attr['rankdir'] = 'LR'
     # There is always a node for NEW_DATA
-    add_coll('DATA', 0)
+    graph.node('d,0', label="NEW DATA", shape='box', id='d,0')
     for process in pl:
         pname = process.get('name')
         add_process(pname, process.get('id'), pname==selected_process)
     for process in pl:
-        processname = f'proc,{process.get("id")}'
-        dataname = f'out,{process.get("input_from", 0)}'
-        graph.edge(dataname, processname, style='bold')
+        processname = f'n,{process.get("id")}'
+        input_from = process.get("input_from")
+        if input_from:
+            precessor = f'n,{input_from}'
+        else:
+            precessor = f'd,0'
+        graph.edge(precessor, processname, style='bold')
         # get the dependencies
         pd, r2  = rest_call('GET', f'projects/{project}/processgroups/{group}/processes/{process.get("id")}/dependencies')
         for dep in pd:
             depend_id = dep.get('depends_on')
             if depend_id is not None:
-                depnode = f'out,{depend_id}'
+                depnode = f'n,{depend_id}'
                 graph.edge(depnode, processname, style='dashed')
 
     graph_output = graph.pipe(format='svg').decode('utf-8')
@@ -435,30 +424,32 @@ def pg_details():
     mode = request.args.get('mode')
     pl, result = rest_call('GET', f'projects/{project}/processgroups/{group}/processes')
     all_processes, result = rest_call('GET', f'processes')
-    dependencies = []
+    dependency_names = []
     if selected_process:
         dependencies, r2 = rest_call('GET', f'projects/{project}/processgroups/{group}/processes/{selected_process}/dependencies')
-        print(dependencies)
+        dependency_names = [ p['name'] for p in pl if p['id'] in [ d['depends_on'] for d in dependencies ]]
+        # print('DEP ', dependencies)
+        # print(all_processes)
     message = ''
     if mode == 'select_input':
         message = f'Please select input for process {selected_process}'
     elif mode == 'add_dependency':
-        message =f'Please select a required process or collection for {selected_process}'
+        message =f'Please select a required process for {selected_process}'
     return render_template('pg_details.html', project=project, group=group, 
         all_processes=all_processes, pg_processes=pl, selected_process=selected_process,
-        dependencies=dependencies, message=message)
+        dependencies=dependency_names, message=message)
 
 @BP.route('processgroups', methods=['GET'])
 @login_required
 def processgroups():
     # Retrieve the list of processes in a group
     project = request.args.get('project')
-    group = request.args.get('group', 'default')
+    processgroup = request.args.get('group', 'default')
     # find all groups
     pl, result = rest_call('GET', f'projects/{project}/processgroups')
     groups = [ g.get('name') for g in pl ]
 
-    return render_template('processgroups.html', project=project, group=group, processgroups=groups)
+    return render_template('processgroups.html', project=project, processgroup=processgroup, processgroups=groups)
 
 @BP.route('processes', methods=['GET'])
 @login_required

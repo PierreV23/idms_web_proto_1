@@ -1,0 +1,116 @@
+{% extends 'base2.html' %}
+
+{% block heading %}
+{% endblock %}
+
+{% block content %}
+<script>
+
+$(document).on('click', '.projectname', function() {
+  project=$(this).data('projectname');
+  $('.projectname').removeClass('active')
+  $('.processname').removeClass('active')
+  $(this).addClass("active")
+  $('#details').html('Loading settings for ' + project + " ... ")
+  $.get('{{ url_for('projects.show_projectdetails') }}', {
+    name: project,
+    processgroup: "{{ processgroup }}"
+  }, function(data) {
+    $('#details').html(data);
+    $("button[id='{{ pp }}-tab']").trigger('click')
+  });
+});
+
+$(document).on('click', '.processname', function() {
+  process=$(this).data('processname');
+  $('.projectname').removeClass('active')
+  $('.processname').removeClass('active')
+  $(this).addClass("active")
+  $('#details').html('Loading settings for ' + process + " ... ")
+  $.get('{{ url_for('projects.show_processdetails') }}', {
+    name: process
+  }, function(data) {
+    $('#details').html(data);
+  });
+});
+
+$(document).on('click', '.add_button', function() {
+  page = $(".sidebar-select.active").attr("id");
+  action = "";
+  if (page == "projects-tab") {
+    action = 'add_project';
+    project = $("#new_pname").val();
+    process = "";
+  };
+  if (page == "processes2-tab") {
+    action = 'add_process2';
+    process = project = $("#new_pname").val();
+    project = "";
+  };
+  if (action) {
+    $.post("{{ url_for('projects.update_projectsettings') }}", {
+      action: action,
+      project: project,
+      process: process
+    });
+  }
+});
+
+$('.nav-pills').on('shown.bs.tab', function(event){
+  activetab = event.target.getAttribute('href')
+});
+
+
+$(window).on('load', function() {
+  $("li[data-projectname='{{ project }}']").trigger('click');
+  $("li[data-processname='{{ process }}']").trigger('click');
+});
+
+// Some functions for the processgroup graphs 
+
+$(document).on('click', '#select_input_button', function(){
+    if (mode != 'select_input') {
+        mode = 'select_input';
+        console.log('Mode: select_input')
+    } else {
+        mode = 'display'
+    }
+    
+    load_pgpage();
+})
+
+</script>
+<div class="d-flex">
+  <div class="wrap viewport d-flex flex-column sidebar">
+    <div class="p-2 header card d-flex flex-row align-items-center">
+      <button class="btn btn-outline-primary active">
+        Projects
+      </button>
+      <a href="{{ url_for('projects.show_projects') }}?page=processes">
+        <button class="btn btn-outline-primary">
+          Processes
+        </button>
+      </a>
+    </div>
+    <div class="sidebar-content card">
+      <UL class="list-group">
+        {% for project in projects | sort %}
+          <li class="list-group-item projectname " data-projectname="{{ project }}">{{ project }}</LI>
+        {% endfor %}
+      </UL>
+    </div>
+    <div class="p-2 footer card d-flex">
+      <form>
+        <INPUT TYPE="text" id='new_pname'>
+        <button class="add_button">ADD</button>
+      </form>
+    </div>
+  </div>
+  <div class="content flex-fill">
+    <div id="details" class="viewport d-flex flex-column">
+      .. PLEASE SELECT A PROJECT ...
+    </div>
+  </div>
+</div>
+
+{% endblock %}

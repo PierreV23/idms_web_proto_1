@@ -1,8 +1,12 @@
-<h1>Process details for : {{ details['name'] }}</h1><form action="{{ url_for('projects.update_process') }}" method="post">
+<div class="header card p-2">
+  <h2>Process details for : {{ details['name'] }}</h2>
+</div>
+<div class="card sidebar-content p-2">
+<form action="{{ url_for('projects.update_process') }}" method="post">
 
-    <input type="hidden" id="action" name="action" value="update_process">
+    <input type="hidden" id="action" name="action" value="update_process2">
     <input type="hidden" id="process" name="process" value="{{ details['name'] }}">
-    <input type="hidden" id="procid" name="procid" value="{{ details['id'] }}"
+    <input type="hidden" id="procid" name="procid" value="{{ details['id'] }}">
 
 
     <div class="form-group">
@@ -63,14 +67,14 @@
           Distribution pipeline
         </label>
       </div>
-
+      <hr>
       <button type="submit" class="btn btn-primary">Submit</button>
-      <button type="button" class="btn btn-primary" data-href="/remove_process?name={{details['name']}}" data-toggle="modal" data-target="#confirm-delete">
+      <!-- <button type="button" class="btn btn-primary" data-href="/remove_process2?name={{details['name']}}" data-toggle="modal" data-target="#confirm-delete">
         Remove process
-      </button>
+      </button> -->
 
 </form>
-
+</div>
 
 <!-- PROCESS DELETE CONFIMATION DIALOG -->
 

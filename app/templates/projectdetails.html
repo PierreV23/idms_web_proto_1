@@ -1,6 +1,6 @@
 <script>
 
-processgroup = 'default'
+processgroup = '{{ processgroup }}'
 
 function load_pg() {
   $.get('{{ url_for('projects.processgroups') }}', {
@@ -24,8 +24,8 @@ $('.nav2').on('shown.bs.tab', function(event){
 
 </script>
 <!-- PROJECT SETTINGS -->
-<H2>Project details for {{ PD.name }} </H2>
-<div class="card border-primary md-2 scroll2">
+<div class="header card p-2"><H2>Project details for {{ PD.name }}</H2></div>
+<div class="card sidebar-content">
   <div class="card-header">
     <ul class="nav nav-pills nav2">
       <li class="nav-item mx-2">
@@ -56,9 +56,7 @@ $('.nav2').on('shown.bs.tab', function(event){
     </ul>
   </div>
   <div class="card card-body tab-content">
-
     <!-- Settings -->
-
     <div class="tab-pane active" id="settings" role="tabpanel" aria-labelledby="settings-tab">
       <form action="update_project" method="post">
         <input type="hidden" id="action" name="action" value="update_project">
@@ -102,7 +100,7 @@ $('.nav2').on('shown.bs.tab', function(event){
       <div class="collapse {% if processnaam == process %}show{% endif %}" id="collapse{{process}}">
       <div class="card card-body" >
       <form action="update_project" method="post">
-        <input type="hidden" id="action" name="action" value="update_process">
+        <input type="hidden" id="action_update_process" name="action" value="update_process">
         <input type="hidden" id="project" name="project" value="{{PD.name}}">
         <input type="hidden" id="process" name="process" value="{{process}}">
         <div class="form-group">
@@ -216,7 +214,7 @@ $('.nav2').on('shown.bs.tab', function(event){
       </div>
       </form>
       <form action="update_project" method="post">
-        <input type="hidden" id="action" name="action" value="delete_process">
+        <input type="hidden" id="action_delete_process" name="action" value="delete_process">
         <input type="hidden" id="project" name="project" value="{{PD.name}}">
         <input type="hidden" id="process" name="process" value="{{process}}">
       <button type="submit" class="btn btn-secondary">Delete</button>
@@ -227,7 +225,7 @@ $('.nav2').on('shown.bs.tab', function(event){
       {% endfor %}
       
       <form class="form-inline" action="update_project" method="post">
-        <input type="hidden" id="action" name="action" value="add_process">
+        <input type="hidden" id="action_add_process" name="action" value="add_process">
         <input type="hidden" id="process" name="project" value="{{PD.name}}">
         <div class="form-group mx-sm-3 mb-2">
       <!--    <label for="inputPassword2" class="sr-only">Dummy</label> -->
@@ -283,7 +281,8 @@ $('.nav2').on('shown.bs.tab', function(event){
     </div>
   </div>
 </div>
-<div class="card card-body">
+<div class="p-2 footer card d-flex">
+</div>
 
 <!-- PROJECT DELETE CONFIMATION DIALOG -->
 
@@ -298,7 +297,7 @@ $('.nav2').on('shown.bs.tab', function(event){
             </div>
             <div class="modal-footer">
                 <form method="post" action="update_project">
-                <input type="hidden" id="action" name="action" value="remove_project">
+                <input type="hidden" id="action_remove_project" name="action" value="remove_project">
                 <input type="hidden" id="project" name="project" value="{{PD.name}}">
                 <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                 <button type="submit" class="btn btn-danger btn-ok">Delete</a>

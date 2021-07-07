@@ -73,6 +73,12 @@ html {
   white-space: nowrap;
 }
 
+.sidebar {
+  min-width: 20%;
+  max-width: 20%;
+}
+
+
 #content {
   width:100%;
 }
@@ -217,7 +223,7 @@ html, body {
 }
 
 .viewport {
-  min-height: 100%;
+  min-height: 88vh;
   max-height: 100%;
 }
 
@@ -231,4 +237,26 @@ html, body {
 svg {
   max-height: 30%;
   max-width: 100%;
+}
+
+.wrap {
+  height:88vh;
+}
+
+.header, .footer {
+  min-height: 60px;
+}
+
+.sidebar-content {
+  flex:1;
+  overflow-y:scroll;
+}
+
+.scrollbox {
+  flex: 1;
+  overflow-y: scroll;
+}
+
+.center {
+  top: 50%;
 }

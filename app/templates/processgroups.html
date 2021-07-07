@@ -2,12 +2,12 @@
 
 selected_process = null
 mode = 'display'
-group = '{{ group }}'
 
 function load_pggraph() {
+  console.log('load_pggraph called')
   $.get('{{ url_for('projects.pg_graph') }}', {
     project: project,
-    group: group,
+    group: $('#groupselect option:selected').text(),
     selected_process: selected_process,
     mode: mode
   }, function(data) {
@@ -19,7 +19,7 @@ function load_pggraph() {
 function load_pgdetails() {
     $.get('{{ url_for('projects.pg_details') }}', {
     project: project,
-    group: group,
+    group: $('#groupselect option:selected').text(),
     selected_process: selected_process,
     mode: mode
   }, function(data) {
@@ -33,35 +33,27 @@ function load_pgpage() {
     load_pgdetails();
 };
 
-$(document).on('click', '#select_input_button', function(){
-    if (mode != 'select_input') {
-        mode = 'select_input';
-    } else {
-        mode = 'display'
-    }
-    
-    load_pgpage();
-})
 
-$(document).on('click', '.node', function(){
+$(document).on('click', '.node', function(event){
+    event.stopPropagation();
     console.log('Click on ' + this)
     object = this.id.split(',')
     console.log(object[0])
     oldmode = mode
     mode = 'display'
     if (oldmode == 'display') {
-        if (object[0] == 'proc') {
+        if (object[0] == 'n') {
             selected_process = object[2];
             console.log('set process to ' + selected_process)
             load_pgpage();
         }
     } else if (oldmode == 'select_input') {
         console.log('Select input ...')
-        if (object[0] == 'proc' || object[0] == 'out' ) {
+        if (object[0] == 'n' ) {
             console.log('Set input to proc output')
             $.get('{{ url_for("projects.pgaction") }}', {
                 project: "{{ project }}",
-                group: "{{ group }}",
+                group: $('#groupselect option:selected').text(),
                 action: 'set_input',
                 process: selected_process,
                 input: object[1]
@@ -71,11 +63,11 @@ $(document).on('click', '.node', function(){
         }
     } else if (oldmode == 'add_dependency') {
         console.log('Add dependency')
-        if (object[0] == 'proc' || object[0] == 'out' ) {
-            console.log('Set depend to proc output');
+        if (object[0] == 'n') {
+            console.log('Set depend to proc output ' + object);
             $.get('{{ url_for("projects.pgaction") }}', {
                 project: "{{ project }}",
-                group: "{{ group }}",
+                group: $('#groupselect option:selected').text(),
                 action: 'add_dependency',
                 process: selected_process,
                 depend: object[1]
@@ -94,7 +86,6 @@ $(document).on('click', '.node', function(){
 // })
 
 $(document).on('click', '.select-process', function() {
-  //history.pushState({"coll": collection}, 'Browse ' + collection, '/collbrowser?path=' + collection);
   selected_process=$(this).data('process');
   load_pgpage();
 });
@@ -105,22 +96,41 @@ $(window).on('load', function() {
 });
 
 </script>
-<div class="form-group row">
-<label for="groupselect" class="col-sm-4 col-form-label">Process group</label>
-<div class="col-sm-4">
-<SELECT class="form-control" id="groupselect">
-    {% for processgroup in processgroups %}
-    <OPTION {% if processgroup == group %}SELECTED{% endif %}>{{ processgroup }}</OPTION>
-    {% endfor %}
-</SELECT>
-</div>
-</div>
-<hr>
 
-<div class="h30" id="pg_graph">
-    <CENTER>Loading process group graph ...</CENTER>
+
+<div class="d-flex flex-column">
+  <div class="d-flex flex-row align-items-top justify-content-between">
+    <div class="form-group row flex-fill">
+      <label class="col-sm-4" for="groupselect">Process group</label>
+      <SELECT class="form-control col-sm-8" id="groupselect">
+        {% for pg in processgroups %}
+        <OPTION {% if processgroup == pg %}SELECTED{% endif %}>{{ pg }}</OPTION>
+        {% endfor %}
+      </SELECT>
+    </div>
+<div class="flex-fill"></div>
+    <form class="p-2 flex-fill" action="{{ url_for('projects.update_projectsettings') }}" method="POST">
+      <div class="form-group row">
+        <label class="col-sm-4" for="groupselect">New process group</label>
+        <INPUT TYPE="text" class="form-control col-sm-4" id="new_groupname" name="name">
+      
+      <input type="hidden" name="project" value="{{ project }}">
+      <input type="hidden" name="action" value="add_processgroup">
+      <BUTTON class="btn btn-primary col-sm-2" type="SUBMIT" id="add_group_button">ADD</BUTTON>
+        </div>
+    </form>
+  </div>
+  <hr>
+  <div class="h30">
+      <CENTER id="pg_graph">Loading process group graph ...</CENTER>
+  </div>
+  <hr>
+  <div id="pg_details">
+      <CENTER >Loading process group details ...</CENTER>
+  </div>
 </div>
-<hr>
-<div id="pg_details">
-    <CENTER>Loading process group details ...</CENTER>
-</div>
+<script>
+$('#groupselect').on('change', function() {
+    load_pgpage();
+})
+</script>
