@@ -251,7 +251,8 @@ def validate_results():
     result = { 'Error': { '0': 'Unknown error' },
                 'Description' : { '0' : 'Unknown validation error' },
                 'Type': {'0': '' }
-    }     
+    }
+    validation_passed = False
     try:
         batch = get_batch(settings)
     except Exception as ex:
@@ -269,7 +270,6 @@ def validate_results():
                     'Description' : { '0' : ex },
                     'Type': {'0': type(ex) }
             }
-            validation_passed = False
     content = { 'report': render_template('validate_results.html', data=result),
                 'result': validation_passed }
     return content
