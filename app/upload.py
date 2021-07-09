@@ -25,6 +25,8 @@ SEQUENCEID = 'SendingOrganisationSequenceId'
 
 UPLOAD_DIR = '/tmp/upload'
 
+FASTA_EXT = [ '.fasta', '.fa', '.fa.gz', '.fas', '.fas.gz', '.fasta.gz']
+
 UPLOAD_KEY = 'current_upload'
 DEFAULT_UPLOAD = {
     'directory': None,
@@ -245,17 +247,29 @@ def validate_results():
     settings = upload_data()
     if settings['directory'] is None:
         return redirect(url_for('upload.upload_page'))
-    batch = get_batch(settings)
+    batch = None
+    result = { 'Error': { '0': 'Unknown error' },
+                'Description' : { '0' : 'Unknown validation error' },
+                'Type': {'0': '' }
+    }     
     try:
-        batch.parse()
-        result = batch.data['Parse.Validation.Table'].to_dict()
-        validation_passed = not batch.data['Parse.Validation.HasError']
+        batch = get_batch(settings)
     except Exception as ex:
         result = { 'Error': { '0': 'System error in validation module' },
                    'Description' : { '0' : ex },
                    'Type': {'0': type(ex) }
         }
-        validation_passed = False
+    if batch:    
+        try:
+            batch.parse()
+            result = batch.data['Parse.Validation.Table'].to_dict()
+            validation_passed = not batch.data['Parse.Validation.HasError']
+        except Exception as ex:
+            result = { 'Error': { '0': 'System error in validation module' },
+                    'Description' : { '0' : ex },
+                    'Type': {'0': type(ex) }
+            }
+            validation_passed = False
     content = { 'report': render_template('validate_results.html', data=result),
                 'result': validation_passed }
     return content
@@ -270,7 +284,7 @@ def get_batch(settings):
         fullpath = os.path.join(directory, filepath)
         if os.path.isfile(fullpath):
             _, extension = os.path.splitext(fullpath)
-            if extension == '.fasta':
+            if extension in FASTA_EXT:
                 batch.setInputSequenceFile(fullpath)
             if extension in [ '.xlsx', '.csv', '.tsv']:
                 batch.setInputDataFile(fullpath)
