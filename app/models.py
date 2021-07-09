@@ -32,6 +32,11 @@ IRODS_ENVS = {
         'host': 'rivm-bioir-l01t.rivm.ssc-campus.nl',
         'zone': 'rivmZone_test_01',
         'default': False
+    },
+    'MIL': {
+        'host': 'rivm-milir-l01p.rivm.ssc-campus.nl',
+        'zone': 'milZone',
+        'default': False
     }
 }
 
