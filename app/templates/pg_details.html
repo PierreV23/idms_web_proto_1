@@ -1,5 +1,3 @@
-<!-- PG_DETAILS
-<BUTTON type="button" class="btn btn-primary" onClick='load_pgpage()'>RELOAD</BUTTON> -->
 <div class="container-wide">
     {% if message %}
     <div class="row card bg-warning "><H3><center>{{ message }}</center></H3></div>
@@ -36,23 +34,23 @@
         </div>
         <div class="col col-mb-4">
             {% if selected_process %}
-            Settings for {{ selected_process }}
+            Actions for {{ selected_process }}
             <hr>
-            <div>
-                <label>INPUT: {{ procinput }}</label>
-                <text>{{ procinput }}</text>
-            </div>
-            <button type="button" class="btn btn-primary" id="select_input_button">select</button>
+            <button type="button" class="btn btn-primary" id="select_input_button">Select input</button>
             {% endif %}
         </div>
         <div class="col col-mb-4">
             {% if selected_process %}
             Dependencies for {{ selected_process }}
-            <BUTTON type="button" class="btn btn-primary float-right" id="add_dep">Add dependency</BUTTON>
+            <hr>
+            <div>
+            <BUTTON type="button" class="btn btn-primary" id="add_dep">Add dependency</BUTTON>
+            <BUTTON type="button" class="btn btn-danger disabled" id="del_dep">Delete dependency</BUTTON>
+            </div>
             <hr>
             <ul class="list-group">
             {% for dep in dependencies %}
-            <li class="list-group-item">{{ dep }}</li>
+            <li class="list-group-item {% if dep == selected_dependency %} active {% endif %} select-dep">{{ dep }}</li>
             {% endfor %}
             </ul>
             {% endif %}           
@@ -97,5 +95,24 @@ $('#add_dep').on('click', function() {
         mode = 'display';
     }
         load_pgpage()
+})
+
+$('.select-dep').on('click', function() {
+    $('.select-dep').removeClass('active')
+    $(this).addClass('active')
+    $('#del_dep').removeClass('disabled')
+})
+
+$('#del_dep').on('click', function() {
+    console.log('del dep')
+    $.get('{{ url_for("projects.pgaction") }}', {
+        project: "{{ project }}",
+        group: "{{ group }}",
+        action: 'delete_dependency',
+        process: "{{ selected_process }}",
+        depend: $('.select-dep.active').text()
+    }, function(data) {
+        load_pgpage();
+    });
 })
 </script>

@@ -352,6 +352,11 @@ def pgaction():
         pl, result = rest_call('POST',
             f'projects/{project}/processgroups/{group}/processes/{process}/dependencies',
             { 'depends_on': depend })
+    elif action == 'delete_dependency':
+        process = request.args.get('process')
+        depend = request.args.get('depend')
+        pl, result = rest_call('DELETE',
+            f'projects/{project}/processgroups/{group}/processes/{process}/dependencies/{depend}')
     return "OK"
 
 @BP.route('_pggraph', methods=['GET'])
@@ -421,6 +426,7 @@ def pg_details():
     project = request.args.get('project')
     group = request.args.get('group', 'default')
     selected_process = request.args.get('selected_process')
+    selected_dependency =  request.args.get('selected_dependency')
     mode = request.args.get('mode')
     pl, result = rest_call('GET', f'projects/{project}/processgroups/{group}/processes')
     all_processes, result = rest_call('GET', f'processes')
