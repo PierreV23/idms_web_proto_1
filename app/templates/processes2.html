@@ -18,15 +18,6 @@ $(document).on('click', '.processname', function() {
   });
 });
 
-$(document).on('click', '.add_button', function() {
-  action = 'add_process2';
-  process = $("#new_pname").val();
-  $.post("{{ url_for('projects.update_projectsettings') }}", {
-    action: action,
-    process: process
-  });
-});
-
 $(window).on('load', function() {
   $("li[data-processname='{{ process }}']").trigger('click');
 });
@@ -53,9 +44,10 @@ $(window).on('load', function() {
       </UL>
     </div>
     <div class="p-2 footer card d-flex">
-      <form class="">
-        <INPUT TYPE="text" id='new_pname'>
-        <button class="btn btn-primary add_button">ADD</button>
+      <form class="" action="{{ url_for('projects.update_projectsettings') }}" method="post">
+        <INPUT TYPE="text" id='new_pname' name="process">
+        <INPUT TYPE="hidden" name="action" value="add_process2">
+        <button class="btn btn-primary add_button" type="submit">ADD</button>
       </form>
     </div>
   </div>

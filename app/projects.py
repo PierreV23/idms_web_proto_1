@@ -89,7 +89,7 @@ def show_projects():
     processgroup = request.args.get('processgroup', '')
     processlist = get_process2list()
     if page == 'processes':
-        return render_template('processes3.html', processes=processlist, process=process)
+        return render_template('processes2.html', processes=processlist, process=process)
     else:
         projectlist = get_projectlist()
         return render_template('projects3.html', projects=projectlist, processes=processlist, 
