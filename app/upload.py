@@ -227,7 +227,11 @@ def upload_batch():
         collname = unique_coll('upload')
         coll = current_user.irods_session.collections.get(collname)
         batch.setIrodsCollection(coll)
-        upload_result = batch.store()
+        try:
+            batch.store()
+            upload_result = not batch.data.get('Upload.Verify.HasDifference', False)
+        except:
+            pass
     # TODO: Evaluate upload result
     clear_upload()
     # TODO: Show some result
@@ -270,6 +274,8 @@ def validate_results():
                     'Description' : { '0' : ex },
                     'Type': {'0': type(ex) }
             }
+    if not validation_passed:
+        clear_upload()
     content = { 'report': render_template('validate_results.html', data=result),
                 'result': validation_passed }
     return content

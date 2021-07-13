@@ -12,7 +12,7 @@
             <h2>Upload result</h2>
         </div>
         <div class="card card-body">
-{% if upload_result['error'] is none %}
+{% if upload_result == True %}
 <h3>Your dataset was successfully uploaded<p>
 Upload batch ID is {{ upload_result['uploadBatchId'] }}
 </h3>
