@@ -11,34 +11,11 @@ import binascii
 import hashlib
 import ssl
 from flask_login import UserMixin
-from flask import session
+from flask import session, current_app
 from irods.session import iRODSSession
 from irods.models import User, UserGroup
 from irods.column import Criterion
 from fs_irods import fs_irods
-
-IRODS_ENVS = {
-    'Productie':   {
-        'host': 'rivm-bioir-l01p.rivm.ssc-campus.nl',
-        'zone': 'rivmZone',
-        'default': True
-    },
-    'Acceptatie':   {
-        'host': 'rivm-bioir-l01a.rivm.ssc-campus.nl',
-        'zone': 'rivmZone_acc_01',
-        'default': False
-    },
-    'Test_01':   {
-        'host': 'rivm-bioir-l01t.rivm.ssc-campus.nl',
-        'zone': 'rivmZone_test_01',
-        'default': False
-    },
-    'MIL': {
-        'host': 'rivm-milir-l01p.rivm.ssc-campus.nl',
-        'zone': 'milZone',
-        'default': False
-    }
-}
 
 
 def obfuscate(data):
@@ -79,10 +56,12 @@ class WebUser(UserMixin):
         self.irods_server = None
         self.irods_zone = None
         self._irods_session = None
-        irods_env = IRODS_ENVS.get(environment, None)
+        self.features = []
+        irods_env = current_app.config["IRODS_ENVS"].get(environment, None)
         if irods_env:
             self.irods_server = irods_env.get('host')
             self.irods_zone = irods_env.get('zone')
+            self.features = irods_env.get('features', [])
         self.configure_irods_session(username, password)
     
     @property    

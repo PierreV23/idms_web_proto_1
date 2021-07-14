@@ -6,7 +6,60 @@ SQLALCHEMY_DATABASE_URI = 'sqlite:///{}/ngsruns.db'.format(basedir)
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 LABSURV_DB_CRED = {
-    'Acceptatie': ('IDS_labsurv_user_acc', 'xxx')
+    'Acceptatie': { 
+        'host': r'rivm-sqldb-w04p.rivm.ssc-campus.nl\rivm01_acc',
+        'database': 'IDS_labsurv_covid_Acc',
+        'user': 'IDS_labsurv_user_acc',
+        'password': 'xxx'
+    },
+    'Test_01': {
+        'host': r'rivm-sqldb-w04p.rivm.ssc-campus.nl\rivm01_acc',
+        'database': 'IDS_labsurv_covid_Acc',
+        'user': 'IDS_labsurv_user_acc',
+        'password': 'xxx'        
+    }
 }
 
-LABSURV_TRANSFORM = os.path.join(basedir, 'transform.json')
+
+IRODS_ENVS = {
+    'Productie':   {
+        'host': 'rivm-bioir-l01p.rivm.ssc-campus.nl',
+        'zone': 'rivmZone',
+        'default': True,
+        'features': [
+            'JOBS',
+            'MINILIMS',
+            'PROJECTS'
+        ]
+    },
+    'Acceptatie':   {
+        'host': 'rivm-bioir-l01a.rivm.ssc-campus.nl',
+        'zone': 'rivmZone_acc_01',
+        'default': False,
+        'features': [
+            'JOBS',
+            'MINILIMS',
+            'PROJECTS',
+            'NONACRIS'
+        ]
+    },
+    'Test_01':   {
+        'host': 'rivm-bioir-l01t.rivm.ssc-campus.nl',
+        'zone': 'rivmZone_test_01',
+        'default': False,
+        'features': [
+            'JOBS',
+            'MINILIMS',
+            'PROJECTS',
+            'NONACRIS'
+        ]
+    },
+    'MIL': {
+        'host': 'rivm-milir-l01p.rivm.ssc-campus.nl',
+        'zone': 'milZone',
+        'default': False,
+        'features': [
+            
+        ]
+    }
+}
