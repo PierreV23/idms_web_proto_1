@@ -31,11 +31,20 @@ REQUESTS_METHODS = {
     'DELETE':requests.delete
 }
 
+def search(l, f, v):
+    """Find an item x in a list l of objects
+    where f(x) = v
+    """
+    matches = [ x for x in l if f(x) == v ]
+    if not matches:
+        matches = None
+    return matches
+
 @login_required
 def rest_call(request_type, endpoint, data={}):    
     url = 'http://{}/api/1.0/{}'.format(current_user.irods_server, endpoint)
     #TODO: remove this testing line:
-    #url = 'http://{}/api/1.0/{}'.format('0.0.0.0:5000', endpoint)
+    url = 'http://{}/api/1.0/{}'.format('0.0.0.0:5000', endpoint)
     auth = HTTPBasicAuth('alt\\{}'.format(current_user.username), current_user.ntlm_hash)
     return_data = {}
     if request_type in REQUESTS_METHODS:
@@ -337,6 +346,17 @@ def pgaction():
             'processid': pr.get('id')
         }
         pl, result = rest_call('POST', f'projects/{project}/processgroups/{group}/processes', new_process)
+    elif action == 'update_process':
+        process = request.args.get('process')
+        lsf_queue = request.args.get('lsf_queue')
+        pl, result = rest_call('PUT', f'projects/{project}/processgroups/{group}/processes/{process}', data = { 'lsf_queue': lsf_queue })
+    elif action == 'update_processes':
+        lsf_queue = request.args.get('lsf_queue')
+        pl, result = rest_call('GET', f'projects/{project}/processgroups/{group}/processes')
+        if result == 200:
+            for procref in pl:
+                p2, result = rest_call('PUT', f'projects/{project}/processgroups/{group}/processes/{procref.get("id")}', 
+                    data = { 'lsf_queue': lsf_queue })
     elif action == 'delete_process':
         process = request.args.get('process')
         pl, result = rest_call('DELETE', f'projects/{project}/processgroups/{group}/processes/{process}')
@@ -400,6 +420,8 @@ def pg_graph():
     for process in pl:
         pname = process.get('name')
         add_process(pname, process.get('id'), pname==selected_process)
+    # get the dependencies
+    pd, r2 = rest_call('GET', f'projects/{project}/processgroups/{group}/dependencies')
     for process in pl:
         processname = f'n,{process.get("id")}'
         input_from = process.get("input_from")
@@ -408,9 +430,7 @@ def pg_graph():
         else:
             precessor = f'd,0'
         graph.edge(precessor, processname, style='bold')
-        # get the dependencies
-        pd, r2  = rest_call('GET', f'projects/{project}/processgroups/{group}/processes/{process.get("id")}/dependencies')
-        for dep in pd:
+        for dep in [ p for p in pd if p.get('processrefid') == process.get('id') ]:
             depend_id = dep.get('depends_on')
             if depend_id is not None:
                 depnode = f'n,{depend_id}'
@@ -431,18 +451,19 @@ def pg_details():
     pl, result = rest_call('GET', f'projects/{project}/processgroups/{group}/processes')
     all_processes, result = rest_call('GET', f'processes')
     dependency_names = []
+    selected_details = None
     if selected_process:
+        sel_list = search(pl, lambda x: x.get('name'), selected_process)
+        selected_details  = sel_list[0] if sel_list else None
         dependencies, r2 = rest_call('GET', f'projects/{project}/processgroups/{group}/processes/{selected_process}/dependencies')
         dependency_names = [ p['name'] for p in pl if p['id'] in [ d['depends_on'] for d in dependencies ]]
-        # print('DEP ', dependencies)
-        # print(all_processes)
     message = ''
     if mode == 'select_input':
         message = f'Please select input for process {selected_process}'
     elif mode == 'add_dependency':
         message =f'Please select a required process for {selected_process}'
     return render_template('pg_details.html', project=project, group=group, 
-        all_processes=all_processes, pg_processes=pl, selected_process=selected_process,
+        all_processes=all_processes, pg_processes=pl, selected_details=selected_details,
         dependencies=dependency_names, message=message)
 
 @BP.route('processgroups', methods=['GET'])

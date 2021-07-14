@@ -5,16 +5,9 @@
     <div class="row">
         <div class="col col-mb-4">
             Processes  
-            <button type="button" class="btn btn-danger float-right {% if not selected_process %}disabled{% endif %}" 
+            <button type="button" class="btn btn-danger float-right {% if not selected_details %}disabled{% endif %}" 
                 id="delete_process_button">Delete selected</button>
             <hr>
-            <!-- <ul class="list-group">
-                {% for process in pg_processes %}
-                <li class="list-group-item select-process {% if process.name == selected_process %} active {% endif %}" data-process="{{ process.name }}">
-                    {{ process.name }}
-                </li>
-                {% endfor %}
-            </ul> -->
 
             <form>
                 <div class="form-group">
@@ -33,15 +26,24 @@
 
         </div>
         <div class="col col-mb-4">
-            {% if selected_process %}
-            Actions for {{ selected_process }}
+            {% if selected_details %}
+            Actions for {{ selected_details.name }}
             <hr>
             <button type="button" class="btn btn-primary" id="select_input_button">Select input</button>
+            <hr>
+            <form action="{{ url_for('projects.pgaction') }}">
+                <div class="form-group">
+                    <label for="process_name">LSF queue</label>
+                    <INPUT TYPE="text" class="form-control" id="lsf_queue" value="{{ selected_details.lsf_queue }}"></INPUT>
+                </div>
+                <BUTTON type="button" class="btn btn-primary disabled" id="update_process_button">Submit</BUTTON>
+                <BUTTON type="button" class="btn btn-primary" id="update_allprocs_button">Set for all processes</BUTTON>
+            </form>
             {% endif %}
         </div>
         <div class="col col-mb-4">
-            {% if selected_process %}
-            Dependencies for {{ selected_process }}
+            {% if selected_details %}
+            Dependencies for {{ selected_details.name }}
             <hr>
             <div>
             <BUTTON type="button" class="btn btn-primary" id="add_dep">Add dependency</BUTTON>
@@ -71,11 +73,37 @@ function pgadd_process() {
         selected_process = data.selected_process;
         load_pgpage();
     });
-    console.log('pg add process');
 }
 
+$('#lsf_queue').on('input', function(){
+    $('#update_process_button').removeClass('disabled')
+})
+
+$('#update_allprocs_button').on('click', function(){
+    waiting()
+    $.get('{{ url_for("projects.pgaction") }}', {
+        project: "{{ project }}",
+        group: "{{ group }}",
+        action: 'update_processes',
+        lsf_queue: $('#lsf_queue').val()    
+    }, function(data) {
+        load_pgpage();        
+    });
+})
+
+$('#update_process_button').on('click', function(){
+    $.get('{{ url_for("projects.pgaction") }}', {
+        project: "{{ project }}",
+        group: "{{ group }}",
+        action: 'update_process',
+        process: selected_process,
+        lsf_queue: $('#lsf_queue').val()    
+    }, function(data) {
+        load_pgpage();
+    });
+})
+
 $('#delete_process_button').on('click', function(){
-    console.log('delete selected')
     $.get('{{ url_for("projects.pgaction") }}', {
         project: "{{ project }}",
         group: "{{ group }}",
@@ -88,7 +116,6 @@ $('#delete_process_button').on('click', function(){
 })
 
 $('#add_dep').on('click', function() {
-    console.log('add dep')
     if (mode != 'add_dependency') {
         mode = 'add_dependency';
     } else {
@@ -104,12 +131,11 @@ $('.select-dep').on('click', function() {
 })
 
 $('#del_dep').on('click', function() {
-    console.log('del dep')
     $.get('{{ url_for("projects.pgaction") }}', {
         project: "{{ project }}",
         group: "{{ group }}",
         action: 'delete_dependency',
-        process: "{{ selected_process }}",
+        process: "{{ selected_details.name }}",
         depend: $('.select-dep.active').text()
     }, function(data) {
         load_pgpage();

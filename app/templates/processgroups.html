@@ -3,8 +3,11 @@
 selected_process = null
 mode = 'display'
 
+function waiting() {
+  $('#pg_graph').html("<div><img src={{ url_for('static', filename='img/loading.gif') }}></img></div>")
+}
+
 function load_pggraph() {
-  console.log('load_pggraph called')
   $.get('{{ url_for('projects.pg_graph') }}', {
     project: project,
     group: $('#groupselect option:selected').text(),
@@ -28,7 +31,7 @@ function load_pgdetails() {
 };
 
 function load_pgpage() {
-    console.log('Loading pgpage ...')
+    waiting()
     load_pggraph();
     load_pgdetails();
 };
@@ -36,21 +39,16 @@ function load_pgpage() {
 
 $(document).on('click', '.node', function(event){
     event.stopPropagation();
-    console.log('Click on ' + this)
     object = this.id.split(',')
-    console.log(object[0])
     oldmode = mode
     mode = 'display'
     if (oldmode == 'display') {
         if (object[0] == 'n') {
             selected_process = object[2];
-            console.log('set process to ' + selected_process)
             load_pgpage();
         }
     } else if (oldmode == 'select_input') {
-        console.log('Select input ...')
         if (object[0] == 'n' ) {
-            console.log('Set input to proc output')
             $.get('{{ url_for("projects.pgaction") }}', {
                 project: "{{ project }}",
                 group: $('#groupselect option:selected').text(),
@@ -62,9 +60,7 @@ $(document).on('click', '.node', function(event){
             });       
         }
     } else if (oldmode == 'add_dependency') {
-        console.log('Add dependency')
         if (object[0] == 'n') {
-            console.log('Set depend to proc output ' + object);
             $.get('{{ url_for("projects.pgaction") }}', {
                 project: "{{ project }}",
                 group: $('#groupselect option:selected').text(),
@@ -80,18 +76,12 @@ $(document).on('click', '.node', function(event){
     }
 })
 
-// $(document).on('click', '.edge', function(){
-//     console.log('click edge');
-//     console.log(this);
-// })
-
 $(document).on('click', '.select-process', function() {
   selected_process=$(this).data('process');
   load_pgpage();
 });
 
 $(window).on('load', function() {
-    console.log('loading pgdetails...');
     load_page();
 });
 
