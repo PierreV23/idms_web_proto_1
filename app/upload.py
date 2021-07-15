@@ -25,7 +25,9 @@ SEQUENCEID = 'SendingOrganisationSequenceId'
 
 UPLOAD_DIR = '/tmp/upload'
 
-FASTA_EXT = [ '.fasta', '.fa', '.fa.gz', '.fas', '.fas.gz', '.fasta.gz']
+# FASTA_EXT = [ '.fasta', '.fa', '.fa.gz', '.fas', '.fas.gz', '.fasta.gz']
+
+FASTA_EXT = [ '.fasta', '.fa', '.fas', '.gz' ]
 
 UPLOAD_KEY = 'current_upload'
 DEFAULT_UPLOAD = {
