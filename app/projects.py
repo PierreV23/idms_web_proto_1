@@ -241,18 +241,16 @@ def my_projects():
     for g in usr_groups:
         try:
             project = g.metadata.get_one('projectID')
-        except KeyError:
-            project = None
-        if project:
             my_projects.append(project.value)
+        except KeyError:
+            pass
 
     projectlist = {}
 
     pl, result = rest_call('GET', 'projects')
 
     if result == 200:
-        projectcolls = { p['name']: p['default_collection'] for p in pl }
-        projectlist = { project : coll for project, coll in projectcolls.items() if project in my_projects }
+        projectlist = { project['name'] : project['default_collection'] for project in pl if project['name'] in my_projects }
 
     columns = min(4, 1 + len(projectlist) // 20)
 
