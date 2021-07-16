@@ -246,15 +246,13 @@ def my_projects():
         if project:
             my_projects.append(project.value)
 
-    projectlist = { x: '' for x in sorted(my_projects) }
+    projectlist = {}
 
     pl, result = rest_call('GET', 'projects')
 
     if result == 200:
         projectcolls = { p['name']: p['default_collection'] for p in pl }
-        for project in projectlist:
-            if project in projectcolls:
-                projectlist[project] = projectcolls[project]
+        projectlist = { project : coll for project, coll in projectcolls.items() if project in my_projects }
 
     columns = min(4, 1 + len(projectlist) // 20)
 
