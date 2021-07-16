@@ -63,11 +63,15 @@ class WebUser(UserMixin):
         if self._is_admin is None:
             self._is_admin = False
             if self._is_authenticated:
-                groups = self._irods_session.query(UserGroup).filter(
-                    Criterion('=', User.name, self.username)).filter(
-                        Criterion('=', UserGroup.name, 'rodsadmin'))
-                for q in groups:
-                    self._is_admin = True
+                try:
+                    groups = self._irods_session.query(UserGroup).filter(
+                        Criterion('=', User.name, self.username)).filter(
+                            Criterion('=', UserGroup.name, 'rodsadmin'))
+                    for q in groups:
+                        self._is_admin = True
+                except:
+                    self._is_admin = None
+                    return False
         return self._is_admin
 
     def __init__(self, username='', password='', environment='', is_authenticated=False):
