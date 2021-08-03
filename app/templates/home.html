@@ -29,7 +29,7 @@ $(window).on('load', function() {
       </ul>
     </div>
   </div>
-
+  {% if 'NONACRIS' in current_user.features %}
   <div class="card border-primary mb-3" style="width: 25rem;">
     <div class="card-header">
   Kiemsurveillance
@@ -40,7 +40,9 @@ $(window).on('load', function() {
       </ul>
     </div>
   </div>
+  {% endif %}
 
+  {% if 'PROJECTS' in current_user.features %}
   <div class="card border-primary mb-3" style="width: 25rem;">
     <div class="card-header">
       My Projects
@@ -49,7 +51,7 @@ $(window).on('load', function() {
       <IMG SRC="{{ url_for('static', filename='img/loading.gif') }}"></IMG>
     </div>
   </div>
-
+  {% endif %}
 </div>
 
 {% endblock %}
