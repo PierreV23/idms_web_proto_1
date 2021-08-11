@@ -1,5 +1,5 @@
 import os
-from flask import Flask, redirect, render_template, url_for
+from flask import Flask, redirect, render_template, request, url_for
 from flask_login import current_user, LoginManager, login_required, logout_user
 from flask_migrate import Migrate
 from app.models import WebUser
@@ -62,3 +62,14 @@ def home():
 def invalid_session(e):
     """Session may be stale. Destroy it and redirect to login page."""
     return auth.logout()
+
+# irods.exception.CAT_NO_ACCESS_PERMISSION
+@app.errorhandler(irods.exception.CAT_NO_ACCESS_PERMISSION)
+def unauthorized(e):
+    """Log trial of access to object or collection for which user has no 
+    authorization."""
+    # N.B. we can't extract the object that was accessed (tried to) from 
+    # the exception, so just log the request path instead.
+    app.logger.warn("Unauthorized access attempt: '{}' on '{}'".format(current_user.get_id()), request.path)
+    # Re-raise, since we don't have a solution.
+    raise irods.exception.CAT_NO_ACCESS_PERMISSION
