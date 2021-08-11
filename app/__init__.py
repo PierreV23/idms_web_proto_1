@@ -3,10 +3,29 @@ from flask import Flask, redirect, render_template, request, url_for
 from flask_login import current_user, LoginManager, login_required, logout_user
 from flask_migrate import Migrate
 from app.models import WebUser
+import logging.config
+import irods.exception
+
 from . import auth, collbrowser, jobs, docviewer
 from . import projects, cluster, admin, reports, userinfo
 from . import ngsruns, upload
-import irods.exception
+
+
+logging.config.dictConfig({
+    'version': 1,
+    'handlers': {
+        'wsgi': {
+            'class': 'logging.StreamHandler',
+        },
+        'syslog': {
+            'class': 'logging.handlers.SysLogHandler'
+        }
+    },
+    'root': {
+        'level': 'DEBUG',
+        'handlers': ['wsgi', 'syslog']
+    }
+})
 
 app = Flask(__name__)
 
@@ -70,6 +89,6 @@ def unauthorized(e):
     authorization."""
     # N.B. we can't extract the object that was accessed (tried to) from 
     # the exception, so just log the request path instead.
-    app.logger.warn("Unauthorized access attempt: '{}' on '{}'".format(current_user.get_id()), request.path)
+    app.logger.warning("Unauthorized access attempt: '{}' on '{}'".format(current_user.get_id()), request.path)
     # Re-raise, since we don't have a solution.
-    raise irods.exception.CAT_NO_ACCESS_PERMISSION
+    raise Exception(e)
