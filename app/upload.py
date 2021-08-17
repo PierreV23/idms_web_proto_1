@@ -17,6 +17,7 @@ from app import projects
 from Bio import SeqIO
 import pymssql
 import openpyxl
+import json
 
 from nonacris.web import NncWeb
 
@@ -258,6 +259,12 @@ def validate_results():
                 'Description' : { '0' : 'Unknown validation error' },
                 'Type': {'0': '' }
     }
+    parsedDataContext = {
+                        'data': {}, 
+                        'dataJSON': "{}",
+                        'columns': [],
+                        'columnsJSON': "[]"
+    }
     parsedData = {}
     validation_passed = False
     try:
@@ -271,17 +278,20 @@ def validate_results():
         try:
             batch.parse()
             result = batch.data['Parse.Validation.Table'].to_dict()
-            parsedData = batch.getParsedDataForDisplay()
+            parsedData = batch.getParsedDataForDisplay( add_variable_mapping=False)
             #Format the column headers for the Bootstrap table, they're just a list of field names, 
             #duplicated and turned into dicts like this: {'field': 'foo', 'title: 'foo'}
             columns = [{'field': f, 'title': f} for f in parsedData.columns]
+            columnsJson = json.dumps( columns )
             #Write the DataFrame to JSON (as easy as can be)
             parsedDataJson = parsedData.to_json(orient='records')  # output just the records (no fieldnames) as a collection of tuples
             #Proceed to create your context object containing the columns and the data
             parsedDataContext = {
-                        'data': parsedData, #parsedDataJson,
-                        'columns': columns
-                        }
+                        'data': parsedData, 
+                        'dataJSON': parsedDataJson,
+                        'columns': columns,
+                        'columnsJSON': columnsJson
+            }
 
             validation_passed = not batch.data['Parse.Validation.HasError']
         except Exception as ex:
