@@ -7,6 +7,21 @@
 
 {% block content %}
 
+<style>
+    .panel-resizable {
+        resize: vertical;
+      overflow: auto;
+    }
+
+    #panel-report {
+        height: 40%
+    }
+
+    #panel-parsed-data {
+        height: 40%
+    }
+</style>
+
 <script>
 
 var collection="{{ collection }}"
@@ -23,10 +38,11 @@ function load_contents() {
     }, function(content) {
         $('#report').html(content.report)
         $('#result').html(content.result)
+        $('#parsed-data').html(content.parsedData)
         if (content.result == true) {
             $('#upload-btn').show()
         }
-    })
+    });
 }
 
 
@@ -42,15 +58,30 @@ $(window).on('load', function() {
 <div class="container-wide">
     <div class="card">
         <div class="card card-header">
-            <h3>Data upload validation result: <emp><span id="result"> ... </span></h3></emp>
+            <h3>Data upload validation result: <emp><span id="result"> ... </span></emp></h3>
             <div class ="float-right">
             <a href="{{ url_for('upload.upload_page') }}"><button class="button btn-secondary" id="back-button">Go back</button></a>
             <a href="{{ url_for('upload.upload_batch') }}"><button class="button btn-primary float-right" id="upload-btn">Upload data</button></a>
             </div>
         </div>
-        <div class="card card-body">
+        <div id="panel-report" class="card card-body panel-resizable">
             <div class="seqlist" id="report">
                 <center>Please wait while loading validation results ...</center>
+            </div>
+        </div>
+    </div>
+</div>
+
+<br>
+
+<div class="container-wide">
+    <div class="card">
+        <div class="card card-header">
+            <h3>Uploaded content after parsing:</h3>
+        </div>
+        <div id="panel-parsed-data" class="card card-body panel-resizable">
+            <div class="seqlist" id="parsed-data">
+                <center>Please wait while loading the parsed data results ...</center>
             </div>
         </div>
     </div>

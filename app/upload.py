@@ -258,6 +258,7 @@ def validate_results():
                 'Description' : { '0' : 'Unknown validation error' },
                 'Type': {'0': '' }
     }
+    parsedData = {}
     validation_passed = False
     try:
         batch = get_batch(settings)
@@ -270,6 +271,18 @@ def validate_results():
         try:
             batch.parse()
             result = batch.data['Parse.Validation.Table'].to_dict()
+            parsedData = batch.getParsedDataForDisplay()
+            #Format the column headers for the Bootstrap table, they're just a list of field names, 
+            #duplicated and turned into dicts like this: {'field': 'foo', 'title: 'foo'}
+            columns = [{'field': f, 'title': f} for f in parsedData.columns]
+            #Write the DataFrame to JSON (as easy as can be)
+            parsedDataJson = parsedData.to_json(orient='records')  # output just the records (no fieldnames) as a collection of tuples
+            #Proceed to create your context object containing the columns and the data
+            parsedDataContext = {
+                        'data': parsedData, #parsedDataJson,
+                        'columns': columns
+                        }
+
             validation_passed = not batch.data['Parse.Validation.HasError']
         except Exception as ex:
             result = { 'Error': { '0': 'System error in validation module' },
@@ -278,7 +291,8 @@ def validate_results():
             }
     if not validation_passed:
         clear_upload()
-    content = { 'report': render_template('validate_results.html', data=result),
+    content = { 'parsedData': render_template('parsed_data.html', data=parsedDataContext),
+                'report': render_template('validate_results.html', data=result),
                 'result': validation_passed }
     return content
 
