@@ -2,6 +2,8 @@
 
   
 {% block header %}
+
+
 <h2>{% block title %}Data validation report{% endblock %}</h2>
 {% endblock %}
 
@@ -28,6 +30,7 @@ var collection="{{ collection }}"
 
 function load_contents() {
     $('#upload-btn').hide()
+    $("#set_missing_variables-button").hide()
     $.get("{{ url_for('upload.seq_list') }}", {
       collection: collection
     }, function(data) {
@@ -42,8 +45,37 @@ function load_contents() {
         if (content.result == true) {
             $('#upload-btn').show()
         }
+        if (content.hasMissingVariables) {
+            $('#missingVariablesContent').html( content.missingVariablesForm )
+            if( content.missingVariablesForm ) {
+                  $("#set_missing_variables-button").show()
+            }
+        }
     });
+    
+    $("#set_missing_variables-button").on('submit','#missing-variables-form',function(e){
+      e.preventDefault();
+      e.target.reportValidity();
+
+      if( e.target.checkValidity() == false ) {
+          return
+      }
+
+      $.ajax({
+        type:'POST',
+        url:"{{ url_for('upload.set_missing_variables') }}",
+        contentType: 'application/json;charset=UTF-8',
+        data: $('#missing-variables-form"').serialize(),
+        success:function()
+        {
+          alert('saved');
+          $( '#missingVariablesBody').collapse()
+        }
+      })
+    });
+    
 }
+
 
 
 $(window).on('load', function() {
@@ -52,17 +84,38 @@ $(window).on('load', function() {
 
 </script>
 
+<div class="container-wide hidden" id="missingVariables">
+    <div class="card">
+      <div class="card-header" id="missingVariablesHeader">
+          <h3 data-toggle="collapse" data-target="#missingVariablesBody" aria-expanded="true" aria-controls="missingVariablesBody">Missing variables:
+            <div class ="float-right">
+                <a href="{{ url_for('upload.set_missing_variables') }}"><button class="button btn-secondary" id="set_missing_variables-button">use</button></a>
+            </div>
+          </h3>
+      </div>
+  
+      <div id="missingVariablesBody" class="collapse show" aria-labelledby="missingVariablesHeader" data-parent="#missingVariables">
+        <div id="missingVariablesContent" class="card-body">
+            <center>Please wait while creating form ...</center>
+        </div>
+      </div>
+    </div>
+</div>
+
+<br>
+
 <!-- <div class="seqlist" id="seqlist">
     <center>Please wait while loading data ...</center>
 </div> -->
 <div class="container-wide">
     <div class="card">
         <div class="card card-header">
-            <h3>Data upload validation result: <emp><span id="result"> ... </span></emp></h3>
-            <div class ="float-right">
-            <a href="{{ url_for('upload.upload_page') }}"><button class="button btn-secondary" id="back-button">Go back</button></a>
-            <a href="{{ url_for('upload.upload_batch') }}"><button class="button btn-primary float-right" id="upload-btn">Upload data</button></a>
-            </div>
+            <h3>Data upload validation result: <emp><span id="result"> ... </span></emp>
+                <div class ="float-right">
+                <a href="{{ url_for('upload.upload_page') }}"><button class="button btn-secondary" id="back-button">Go back</button></a>
+                <a href="{{ url_for('upload.upload_batch') }}"><button class="button btn-primary float-right" id="upload-btn">Upload data</button></a>
+                </div>
+            </h3>
         </div>
         <div id="panel-report" class="card card-body panel-resizable">
             <div class="seqlist" id="report">

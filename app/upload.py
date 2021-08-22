@@ -214,6 +214,15 @@ def validate():
 
 
 @login_required
+@bp.route('_set_missing_variables', methods=['GET','POST'])
+def set_missing_variables():
+    data = request.form.to_dict()  #request.json['missingVariables'] 
+    use_case = data.get('usecase')
+    missing_variables = {}
+
+
+
+@login_required
 @bp.route('_uploadbatch', methods=['GET'])
 def upload_batch():
     settings = upload_data()
@@ -285,6 +294,41 @@ def validate_results():
             columnsJson = json.dumps( columns )
             #Write the DataFrame to JSON (as easy as can be)
             parsedDataJson = parsedData.to_json(orient='records')  # output just the records (no fieldnames) as a collection of tuples
+
+            x = batch.getSingleValueVariableMetadata( filter_by_input=False)
+            #for testing purposes...
+            x = { 'SendingOrganisationId': {
+                    'is_required': False,
+                    'schema': {'enum': ['RIVM', 'Meander MC', 'Atal-Medial BV - Loc...Amstelland', 'Streeklab - GGD Amsterdam', 'BovenIJ Ziekenhuis', 'OLVG - Locatie West ', 'Atal-Medial BV - Loc...rvaart MCS', 'OLVG Lab BV', 'Amsterdam UMC - Loca...robiologie'], 'type': 'string'},
+                    'default': None
+                    },
+              'SamplingFrame': {
+                    'is_required': False,
+                    'schema': {'enum': ['ZORG', 'TESTSTRAAT', 'STUDIE', 'NIVEL', 'CLUSTER'], 'type': 'string'},
+                    'default': None
+                    },
+              'SequencingProtocol': {
+                    'is_required': False,
+                    'schema': {"type": "string", "maxLength": 200},
+                    'default': None
+                    },
+              'PangolinScorpioVersion': {
+                    'is_required': True,
+                    'schema': {"type": "string", "maxLength": 200},
+                    'default': None
+                },
+              'NextCladeVersion': {
+                    'is_required': True,
+                    'schema': {"type": "string", "maxLength": 1, "enum": ["J", "N", "NA_VACCINATIE", "HERINFECTIE", "NA_VACCINATIE_1X", "NA_VACCINATIE_2X"]},
+                    'default': None
+                },
+              'RivmSequencingProtocol': {
+                    'is_required': True,
+                    "schema": {"type": "string", "maxLength": 10, "pattern": "^\\d\\d\\d\\d-\\d\\d-\\d\\d$"},
+                    'default': "1234"
+                }
+            }
+
             #Proceed to create your context object containing the columns and the data
             parsedDataContext = {
                         'data': parsedData, 
@@ -292,7 +336,6 @@ def validate_results():
                         'columns': columns,
                         'columnsJSON': columnsJson
             }
-
             validation_passed = not batch.data['Parse.Validation.HasError']
         except Exception as ex:
             result = { 'Error': { '0': 'System error in validation module' },
@@ -301,7 +344,9 @@ def validate_results():
             }
     if not validation_passed:
         clear_upload()
-    content = { 'parsedData': render_template('parsed_data.html', data=parsedDataContext),
+    content = { 'hasMissingVariables': len(x)>0,
+                'missingVariablesForm': render_template( 'missing_variables.html', data=x),
+                'parsedData': render_template('parsed_data.html', data=parsedDataContext),
                 'report': render_template('validate_results.html', data=result),
                 'result': validation_passed }
     return content

@@ -1,0 +1,59 @@
+
+  <h5>The file does not contain several variables. Please provide the necessary values here.</h5>
+
+  <form id="missing-variables-form">
+    {% for key in data %}
+    <div class="form-group row">
+        <label class="col-2 col-form-label font-weight-bold" for="{{key}}">{{key}}</label>
+        {%  set variableMeta = data[key] %}
+        {%  set isRequiredAttr = '' %}
+        {%  if "is_required" in variableMeta %}
+        {%     set isRequiredAttr = 'required' %}
+        {%  endif  %}
+        {%   
+            if "enum" in variableMeta.schema
+        %}
+
+                <!--render_template('missing_variable_enum.html', data=data ) -->
+                <div class="col-4">
+                  <select id="{{key}}" name="{{key}}" class="form-select form-select-sm" {{isRequiredAttr}}>
+                  {% for optionValue in variableMeta['schema']['enum'] %}
+                    <option value="{{optionValue}}">{{optionValue}}</option>
+                  {% endfor %}
+                  </select>
+                </div>
+                <small class="form-text text-muted">
+                  {{isRequiredAttr}}
+                </small>
+        {%
+            else
+        %}  
+        {% set maxlengthAttr = '' %}
+        {% if "maxLength" in variableMeta.schema %}
+        {%   set maxlengthAttr = 'maxlength=' ~ variableMeta.schema.maxLength  %}
+        {% endif  %}
+        {% set patternAttr = '' %}
+        {% if "pattern" in variableMeta.schema %}
+        {%   set patternAttr = 'pattern=' ~ variableMeta.schema.pattern  %}
+        {% endif  %}
+        {% set defaultValueAttr = '' %}
+        {% if "default" in variableMeta and variableMeta.default is not none %}
+        {%   set defaultValueAttr = 'value=' ~variableMeta.default  %}
+        {% endif  %}
+               <!-- render_template('missing_variable_text.html', data=data ) -->
+               <div class="col-4">
+                <input id="{{key}}" name="{{key}}" placeholder="{{maxlengthAttr}} {{patternAttr}}" type="text" 
+                      class="form-control COMMENT-is-invalid" COMMENT-aria-describedby="{{variableMeta.key}}Feedback" 
+                      {{maxlengthAttr}} {{patternAttr}} {{defaultValueAttr}} {{isRequiredAttr}} >
+                <!--div id="{{variableMeta.key}}Feedback" class="invalid-feedback">
+                  The value is not correct!
+                </div-->
+                <small  class="form-text text-muted">{{isRequiredAttr}}</small>
+              </div> 
+          {%
+            endif
+        %}
+    </div>
+    {% endfor %}
+    <button class="button btn-primary float-right" id="upload-btn">Save</button>
+  </form>
