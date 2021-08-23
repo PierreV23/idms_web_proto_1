@@ -31,6 +31,7 @@ var collection="{{ collection }}"
 function load_contents() {
     $('#upload-btn').hide()
     $("#set_missing_variables-button").hide()
+    $("#missingVariables").hide()
     $.get("{{ url_for('upload.seq_list') }}", {
       collection: collection
     }, function(data) {
@@ -47,31 +48,54 @@ function load_contents() {
         }
         if (content.hasMissingVariables) {
             $('#missingVariablesContent').html( content.missingVariablesForm )
+            $("#missingVariables").show()
             if( content.missingVariablesForm ) {
                   $("#set_missing_variables-button").show()
             }
         }
     });
     
-    $("#set_missing_variables-button").on('submit','#missing-variables-form',function(e){
-      e.preventDefault();
-      e.target.reportValidity();
+    //always prevent the hidden submit button from actually submitting the form content.
+    $('#missing-variables-form').on( 'submit', function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }, false );
 
-      if( e.target.checkValidity() == false ) {
-          return
-      }
-
-      $.ajax({
-        type:'POST',
-        url:"{{ url_for('upload.set_missing_variables') }}",
-        contentType: 'application/json;charset=UTF-8',
-        data: $('#missing-variables-form"').serialize(),
-        success:function()
-        {
-          alert('saved');
-          $( '#missingVariablesBody').collapse()
+    $("#set_missing_variables-button").on('click', function(event){
+        event.preventDefault();
+        var form = $('#missing-variables-form')[0];
+        if ( !form.checkValidity()) {
+            // If the form is invalid, submit it. The form won't actually submit;
+            // this will just cause the browser to display the native HTML5 error messages.
+            $("#missing-variables-form").find("#form-submit-hidden").click();
+            $( '#missing-variables-form input').removeClass('is-invalid')
+            var invalidList = document.querySelectorAll(':invalid');
+            $( '#missing-variables-form input').addClass('is-valid')
+            if ( typeof invalidList !== 'undefined' && invalidList.length > 0 ) {
+                for (var item of invalidList) {
+                    console.log(item)
+                    $( item ).removeClass('is-valid')
+                    $( item ).addClass('is-invalid')
+                    //M.toast({html: "Please fill the "+item.label.innerHTML+"", classes: 'bg-danger text-white'});
+                }
+            }
+            return false
         }
-      })
+        else {  
+            $.ajax({
+                type:'POST',
+                url:"{{ url_for('upload.set_missing_variables') }}",
+                contentType: 'application/json;charset=UTF-8',
+                data: JSON.stringify( $('#missing-variables-form').serializeArray() ), //$('#missing-variables-form').serialize(),
+                success: function(result){
+                    $( '#missingVariablesBody').collapse()
+                    console.log(result)
+                },
+                error: function(){
+
+                }
+            }) 
+        }
     });
     
 }

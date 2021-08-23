@@ -38,6 +38,9 @@ DEFAULT_UPLOAD = {
     'use_case': 'UploadRivmSampleForm'
 }
 
+USER_DEFINED_VARIABLES = 'user_defined_variables'
+MISSING_VARIABLES = 'missing_variables'
+
 bp = Blueprint('upload', __name__, url_prefix='/upload')
 
 
@@ -213,12 +216,65 @@ def validate():
     return render_template('validate_report.html', collection=settings['directory'])
 
 
+def check_variables( defined_vars, missing_vars):
+    test_missing_vars = {
+        'NextCladeVersion': {
+                    'is_required': True,
+                    'schema': {"type": "string", "maxLength": 1, "enum": ["J", "N", "NA_VACCINATIE", "HERINFECTIE", "NA_VACCINATIE_1X", "NA_VACCINATIE_2X"]},
+                    'default': None
+                },
+        'RivmSequencingProtocol': {
+                    'is_required': True,
+                    "schema": {"type": "string", "maxLength": 10, "pattern": "^\\d\\d\\d\\d-\\d\\d-\\d\\d$"},
+                    'default': "1234"
+                }
+    }
+    test_defined_vars = {
+        'SendingOrganisationId': 'RIVM',
+        'SamplingFrame': 'ZORG',
+        'SequencingProtocol': '',
+        'PangolinScorpioVersion': 'fff',
+        'NextCladeVersion': 'J',
+        'RivmSequencingProtocol': '1234-12-12'
+    }
+    all_ok = True
+    response = {}
+    #check for all missing vars, if they are set (if required) and correct...
+    for key in missing_vars.keys():
+        message = {}
+        if missing_vars[key]['is_required']:
+            if key not in defined_vars:
+                message['missing'] = True
+                all_ok=False
+        if key in defined_vars:
+            value = defined_vars[key]
+            schema = missing_vars[key]['schema']
+            #check min length
+            if 'minLength' in schema:
+                if len(value) < schema['minLength']:
+                    message['minLength'] = True
+                    all_ok=False
+            #check max length
+            #check if value in enum
+            #check if value matches pattern
+        response[key] = message
+    return (all_ok, response)
+
 @login_required
-@bp.route('_set_missing_variables', methods=['GET','POST'])
+@bp.route('_set_missing_variables', methods=['POST'])
 def set_missing_variables():
-    data = request.form.to_dict()  #request.json['missingVariables'] 
-    use_case = data.get('usecase')
-    missing_variables = {}
+    user_defined_variables = {}
+    for dict in request.json:
+        user_defined_variables[ dict['name'] ] = dict['value']
+    #server side check of the variables
+    missingVariables = session[current_user.environment][MISSING_VARIABLES] 
+    #store them....
+    all_ok, response = check_variables( user_defined_variables, missingVariables )
+    if all_ok:
+        session[current_user.environment][USER_DEFINED_VARIABLES] = user_defined_variables
+        session.modified = True
+    return jsonify(response)
+
 
 
 
@@ -295,9 +351,9 @@ def validate_results():
             #Write the DataFrame to JSON (as easy as can be)
             parsedDataJson = parsedData.to_json(orient='records')  # output just the records (no fieldnames) as a collection of tuples
 
-            x = batch.getSingleValueVariableMetadata( filter_by_input=False)
+            missingVariables = batch.getSingleValueVariableMetadata( filter_by_input=False)
             #for testing purposes...
-            x = { 'SendingOrganisationId': {
+            missingVariables = { 'SendingOrganisationId': {
                     'is_required': False,
                     'schema': {'enum': ['RIVM', 'Meander MC', 'Atal-Medial BV - Loc...Amstelland', 'Streeklab - GGD Amsterdam', 'BovenIJ Ziekenhuis', 'OLVG - Locatie West ', 'Atal-Medial BV - Loc...rvaart MCS', 'OLVG Lab BV', 'Amsterdam UMC - Loca...robiologie'], 'type': 'string'},
                     'default': None
@@ -314,7 +370,7 @@ def validate_results():
                     },
               'PangolinScorpioVersion': {
                     'is_required': True,
-                    'schema': {"type": "string", "maxLength": 200},
+                    'schema': {"type": "string", "minLength": 2, "maxLength": 200},
                     'default': None
                 },
               'NextCladeVersion': {
@@ -328,6 +384,8 @@ def validate_results():
                     'default': "1234"
                 }
             }
+            session[current_user.environment][MISSING_VARIABLES]=missingVariables
+            session.modified = True
 
             #Proceed to create your context object containing the columns and the data
             parsedDataContext = {
@@ -344,8 +402,8 @@ def validate_results():
             }
     if not validation_passed:
         clear_upload()
-    content = { 'hasMissingVariables': len(x)>0,
-                'missingVariablesForm': render_template( 'missing_variables.html', data=x),
+    content = { 'hasMissingVariables': len(missingVariables)>0,
+                'missingVariablesForm': render_template( 'missing_variables.html', data=missingVariables),
                 'parsedData': render_template('parsed_data.html', data=parsedDataContext),
                 'report': render_template('validate_results.html', data=result),
                 'result': validation_passed }
