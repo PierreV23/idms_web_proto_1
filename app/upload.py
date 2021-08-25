@@ -217,26 +217,6 @@ def validate():
 
 
 def check_variables( defined_vars, missing_vars):
-    test_missing_vars = {
-        'NextCladeVersion': {
-                    'is_required': True,
-                    'schema': {"type": "string", "maxLength": 1, "enum": ["J", "N", "NA_VACCINATIE", "HERINFECTIE", "NA_VACCINATIE_1X", "NA_VACCINATIE_2X"]},
-                    'default': None
-                },
-        'RivmSequencingProtocol': {
-                    'is_required': True,
-                    "schema": {"type": "string", "maxLength": 10, "pattern": "^\\d\\d\\d\\d-\\d\\d-\\d\\d$"},
-                    'default': "1234"
-                }
-    }
-    test_defined_vars = {
-        'SendingOrganisationId': 'RIVM',
-        'SamplingFrame': 'ZORG',
-        'SequencingProtocol': '',
-        'PangolinScorpioVersion': 'fff',
-        'NextCladeVersion': 'J',
-        'RivmSequencingProtocol': '1234-12-12'
-    }
     all_ok = True
     response = {}
     #check for all missing vars, if they are set (if required) and correct...
@@ -271,6 +251,10 @@ def set_missing_variables():
     #store them....
     all_ok, response = check_variables( user_defined_variables, missingVariables )
     if all_ok:
+        settings = upload_data()
+        batch = get_batch(settings)
+        for key, value in user_defined_variables.items():
+            batch.setSingleValueVariable( key, value )
         session[current_user.environment][USER_DEFINED_VARIABLES] = user_defined_variables
         session.modified = True
     return jsonify(response)
@@ -314,6 +298,56 @@ def filelist():
     return render_template('upload_filelist.html', files=files)
 
 @login_required
+@bp.route('_missing_variables', methods=['GET'])
+def missing_variables():
+    settings = upload_data()
+    if settings['directory'] is None:
+        return redirect(url_for('upload.upload_page'))
+    directory = settings['directory']
+    batch = get_batch(settings)
+    content = {}
+    if batch:
+        missingVariables = batch.getSingleValueVariableMetadata( filter_by_input=False)
+        if False:
+            missingVariables = { 'SendingOrganisationId': {
+                        'is_required': False,
+                        'schema': {'enum': ['RIVM', 'Meander MC', 'Atal-Medial BV - Loc...Amstelland', 'Streeklab - GGD Amsterdam', 'BovenIJ Ziekenhuis', 'OLVG - Locatie West ', 'Atal-Medial BV - Loc...rvaart MCS', 'OLVG Lab BV', 'Amsterdam UMC - Loca...robiologie'], 'type': 'string'},
+                        'default': None
+                        },
+                'SamplingFrame': {
+                        'is_required': False,
+                        'schema': {'enum': ['ZORG', 'TESTSTRAAT', 'STUDIE', 'NIVEL', 'CLUSTER'], 'type': 'string'},
+                        'default': None
+                        },
+                'SequencingProtocol': {
+                        'is_required': False,
+                        'schema': {"type": "string", "maxLength": 200},
+                        'default': None
+                        },
+                'PangolinScorpioVersion': {
+                        'is_required': True,
+                        'schema': {"type": "string", "minLength": 2, "maxLength": 200},
+                        'default': None
+                    },
+                'NextCladeVersion': {
+                        'is_required': True,
+                        'schema': {"type": "string", "maxLength": 1, "enum": ["J", "N", "NA_VACCINATIE", "HERINFECTIE", "NA_VACCINATIE_1X", "NA_VACCINATIE_2X"]},
+                        'default': None
+                    },
+                'RivmSequencingProtocol': {
+                        'is_required': True,
+                        "schema": {"type": "string", "maxLength": 10, "pattern": "^\\d\\d\\d\\d-\\d\\d-\\d\\d$"},
+                        'default': "1234"
+                    }
+                }
+        session[current_user.environment][MISSING_VARIABLES]=missingVariables
+        session.modified = True
+        content = { 'hasMissingVariables': len(missingVariables.keys())>0,
+                    'missingVariablesForm': render_template( 'missing_variables.html', data=missingVariables) }
+    return content
+
+
+@login_required
 @bp.route('_validate_results', methods=['GET'])
 def validate_results():
     settings = upload_data()
@@ -350,43 +384,6 @@ def validate_results():
             columnsJson = json.dumps( columns )
             #Write the DataFrame to JSON (as easy as can be)
             parsedDataJson = parsedData.to_json(orient='records')  # output just the records (no fieldnames) as a collection of tuples
-
-            missingVariables = batch.getSingleValueVariableMetadata( filter_by_input=False)
-            #for testing purposes...
-            missingVariables = { 'SendingOrganisationId': {
-                    'is_required': False,
-                    'schema': {'enum': ['RIVM', 'Meander MC', 'Atal-Medial BV - Loc...Amstelland', 'Streeklab - GGD Amsterdam', 'BovenIJ Ziekenhuis', 'OLVG - Locatie West ', 'Atal-Medial BV - Loc...rvaart MCS', 'OLVG Lab BV', 'Amsterdam UMC - Loca...robiologie'], 'type': 'string'},
-                    'default': None
-                    },
-              'SamplingFrame': {
-                    'is_required': False,
-                    'schema': {'enum': ['ZORG', 'TESTSTRAAT', 'STUDIE', 'NIVEL', 'CLUSTER'], 'type': 'string'},
-                    'default': None
-                    },
-              'SequencingProtocol': {
-                    'is_required': False,
-                    'schema': {"type": "string", "maxLength": 200},
-                    'default': None
-                    },
-              'PangolinScorpioVersion': {
-                    'is_required': True,
-                    'schema': {"type": "string", "minLength": 2, "maxLength": 200},
-                    'default': None
-                },
-              'NextCladeVersion': {
-                    'is_required': True,
-                    'schema': {"type": "string", "maxLength": 1, "enum": ["J", "N", "NA_VACCINATIE", "HERINFECTIE", "NA_VACCINATIE_1X", "NA_VACCINATIE_2X"]},
-                    'default': None
-                },
-              'RivmSequencingProtocol': {
-                    'is_required': True,
-                    "schema": {"type": "string", "maxLength": 10, "pattern": "^\\d\\d\\d\\d-\\d\\d-\\d\\d$"},
-                    'default': "1234"
-                }
-            }
-            session[current_user.environment][MISSING_VARIABLES]=missingVariables
-            session.modified = True
-
             #Proceed to create your context object containing the columns and the data
             parsedDataContext = {
                         'data': parsedData, 
@@ -402,8 +399,9 @@ def validate_results():
             }
     if not validation_passed:
         clear_upload()
-    content = { 'hasMissingVariables': len(missingVariables)>0,
-                'missingVariablesForm': render_template( 'missing_variables.html', data=missingVariables),
+    content = { 
+                # 'hasMissingVariables': len(missingVariables)>0,
+                # 'missingVariablesForm': render_template( 'missing_variables.html', data=missingVariables),
                 'parsedData': render_template('parsed_data.html', data=parsedDataContext),
                 'report': render_template('validate_results.html', data=result),
                 'result': validation_passed }

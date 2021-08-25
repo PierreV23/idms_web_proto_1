@@ -1,10 +1,10 @@
-
+<div class="container-fluid">
   <h5>The file does not contain several variables. Please provide the necessary values here.</h5>
 
   <form id="missing-variables-form" method="POST">
     {% for key in data %}
     <div class="form-group row">
-        <label class="col-2 col-form-label font-weight-bold" for="{{key}}">{{key}}</label>
+        <label class="col-4 col-form-label font-weight-bold" for="{{key}}">{{key}}</label>
         {%  set variableMeta = data[key] %}
         {%  set isRequiredAttr = '' %}
         {%  if "is_required" in variableMeta and variableMeta.is_required %}
@@ -20,9 +20,6 @@
                   {% endfor %}
                   </select>
                 </div>
-                <small class="form-text text-muted">
-                  {{isRequiredAttr}}
-                </small>
         {%
             else
         %}  
@@ -48,12 +45,15 @@
                   The value is not correct!
                 </div-->
                 </div> 
-                <small  class="form-text text-muted">{{isRequiredAttr}}</small>
               
-          {%
+       {%
             endif
         %}
+        <div class="col-1">
+          <small  class="form-text text-muted">{{isRequiredAttr}}</small>
+       </div>
     </div>
     {% endfor %}
     <input id="form-submit-hidden" type="submit" style="display: none" />
   </form>
+  </div>

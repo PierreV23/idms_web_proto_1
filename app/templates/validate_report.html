@@ -28,33 +28,18 @@
 
 var collection="{{ collection }}"
 
-function load_contents() {
-    $('#upload-btn').hide()
-    $("#set_missing_variables-button").hide()
-    $("#missingVariables").hide()
-    $.get("{{ url_for('upload.seq_list') }}", {
-      collection: collection
-    }, function(data) {
-      $('#seqlist').html(data)
-    });
-    $.get("{{ url_for('upload.validate_results') }}", {
-        collection: collection
-    }, function(content) {
+function load_validation_result_content(collectionObj) {
+    $.get("{{ url_for('upload.validate_results') }}", collectionObj, function(content) {
         $('#report').html(content.report)
         $('#result').html(content.result)
         $('#parsed-data').html(content.parsedData)
         if (content.result == true) {
             $('#upload-btn').show()
         }
-        if (content.hasMissingVariables) {
-            $('#missingVariablesContent').html( content.missingVariablesForm )
-            $("#missingVariables").show()
-            if( content.missingVariablesForm ) {
-                  $("#set_missing_variables-button").show()
-            }
-        }
     });
-    
+}
+
+function prepareMissingVariablesForm() {
     //always prevent the hidden submit button from actually submitting the form content.
     $('#missing-variables-form').on( 'submit', function(event) {
         event.preventDefault();
@@ -67,16 +52,15 @@ function load_contents() {
         if ( !form.checkValidity()) {
             // If the form is invalid, submit it. The form won't actually submit;
             // this will just cause the browser to display the native HTML5 error messages.
-            $("#missing-variables-form").find("#form-submit-hidden").click();
-            $( '#missing-variables-form input').removeClass('is-invalid')
+            $( "#missing-variables-form" ).find("#form-submit-hidden").click();
+            $( '#missing-variables-form input' ).removeClass('is-invalid')
             var invalidList = document.querySelectorAll(':invalid');
-            $( '#missing-variables-form input').addClass('is-valid')
+            $( '#missing-variables-form input' ).addClass('is-valid')
             if ( typeof invalidList !== 'undefined' && invalidList.length > 0 ) {
                 for (var item of invalidList) {
                     console.log(item)
                     $( item ).removeClass('is-valid')
                     $( item ).addClass('is-invalid')
-                    //M.toast({html: "Please fill the "+item.label.innerHTML+"", classes: 'bg-danger text-white'});
                 }
             }
             return false
@@ -88,8 +72,10 @@ function load_contents() {
                 contentType: 'application/json;charset=UTF-8',
                 data: JSON.stringify( $('#missing-variables-form').serializeArray() ), //$('#missing-variables-form').serialize(),
                 success: function(result){
-                    $( '#missingVariablesBody').collapse()
-                    console.log(result)
+                    //check for error messages, if there are: display in open popup,
+                    //otherwise close popup and render the parsed data.
+                    $('#missingVariablesPopup').modal('hide')
+                    load_validation_result_content(collectionObj)
                 },
                 error: function(){
 
@@ -97,7 +83,39 @@ function load_contents() {
             }) 
         }
     });
-    
+}
+
+
+function load_missing_variables_content(collectionObj) {
+    $.get( "{{ url_for('upload.missing_variables') }}", 
+           collectionObj, 
+           function( result ) {
+                if( result.hasMissingVariables ) {
+                    $('#missingVariablesPopupBody').html( result.missingVariablesForm )
+                    prepareMissingVariablesForm()
+                    $('#missingVariablesPopup').modal()
+                }
+                else {
+                    load_validation_result_content(collectionObj)
+                }
+        }
+    );
+}
+
+function load_contents() {
+    $('#upload-btn').hide()
+    //$("#set_missing_variables-button").hide()
+    //$("#missingVariables").hide()
+    collectionObj = {
+      collection: collection
+    }
+
+    $.get("{{ url_for('upload.seq_list') }}", collectionObj, function(data) {
+      $('#seqlist').html(data)
+    });
+
+    load_missing_variables_content(collectionObj)
+    //load_validation_result_content(collectionObj)
 }
 
 
@@ -108,7 +126,7 @@ $(window).on('load', function() {
 
 </script>
 
-<div class="container-wide hidden" id="missingVariables">
+<!--div class="container-wide hidden" id="missingVariables">
     <div class="card">
       <div class="card-header" id="missingVariablesHeader">
           <h3 data-toggle="collapse" data-target="#missingVariablesBody" aria-expanded="true" aria-controls="missingVariablesBody">Missing variables:
@@ -124,7 +142,7 @@ $(window).on('load', function() {
         </div>
       </div>
     </div>
-</div>
+</div-->
 
 <br>
 
@@ -163,5 +181,26 @@ $(window).on('load', function() {
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="missingVariablesPopup" tabindex="-1" role="dialog" aria-labelledby="missingVariablesPopupLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="missingVariablesPopupLabel">Missing variables</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div id="missingVariablesPopupBody" class="modal-body">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          <!--button type="button" class="btn btn-primary">Save changes</button-->
+          <a href="{{ url_for('upload.set_missing_variables') }}"><button class="button btn-primary" id="set_missing_variables-button">Save</button></a>
+           
+        </div>
+      </div>
+    </div>
+  </div>
 
 {% endblock %}
