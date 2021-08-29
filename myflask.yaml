@@ -30,4 +30,4 @@ dependencies:
     - jsonschema
     - xlrd==1.2.0
     - git+https://gitlab+deploy-token-57:Sz1nCp-zz7fW611pk1Cw@gitl01-int-p.rivm.nl/wierinve/kiemsurveillance.git@Test
-
+#    - Flask-Session==0.4.0

@@ -7,6 +7,7 @@ from . import auth, collbrowser, jobs, docviewer
 from . import projects, cluster, admin, reports, userinfo
 from . import ngsruns, upload
 import irods.exception
+#from flask_session import Session
 
 app = Flask(__name__)
 
@@ -15,12 +16,19 @@ app.config.from_mapping(
     SECRET_KEY='58gqh)5&^&877838-_P[43889rv4&*F$%q5',
 #    DATABASE=os.path.join(app.instance_path, 'ngsrun.sqlite'),
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
-    SQLALCHEMY_DATABASE_URI='sqlite:///{}/ngsruns.sqlite'.format(app.instance_path)
+    SQLALCHEMY_DATABASE_URI='sqlite:///{}/ngsruns.sqlite'.format(app.instance_path),
+# Use serverside session , seems logical to use SQLALCHEMY for session management
+# needed to store stateful Nonacris object during Kiemsurveillance upload
+# TODO: create necessary tables and switch to sqlalchemy...
+# However: the NncWeb-Object cant be 'pickled' (serialized?) since it contains the database connection: 
+#     mssql.MSSQLConnection.__reduce_cython__
+#     TypeError: no default __reduce__ due to non-trivial __cinit__
+#    SESSION_TYPE= 'filesystem'  #'sqlalchemy'
 )
 
 app.config.from_pyfile(os.path.join(app.instance_path, 'config.py'), silent=True)
 
-
+#Session(app)
 
 app.register_blueprint(auth.bp)
 app.register_blueprint(collbrowser.bp)
