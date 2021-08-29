@@ -49,8 +49,8 @@
        {%
             endif
         %}
-        <div class="col-1">
-          <small  class="form-text text-muted">{{isRequiredAttr}}</small>
+        <div class="col-4">
+          <div  id="{{key}}-alert" class="alert alert-light" role="alert"><small id="{{key}}-message" class="form-text text-muted">{{isRequiredAttr}}</small></div>
        </div>
     </div>
     {% endfor %}

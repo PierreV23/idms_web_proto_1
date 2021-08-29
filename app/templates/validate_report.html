@@ -72,13 +72,25 @@ function prepareMissingVariablesForm() {
                 contentType: 'application/json;charset=UTF-8',
                 data: JSON.stringify( $('#missing-variables-form').serializeArray() ), //$('#missing-variables-form').serialize(),
                 success: function(result){
+                    console.log(result)
                     //check for error messages, if there are: display in open popup,
                     //otherwise close popup and render the parsed data.
-                    $('#missingVariablesPopup').modal('hide')
-                    load_validation_result_content(collectionObj)
-                },
-                error: function(){
+                    if( $.isEmptyObject(result) ) {
+                        $('#missingVariablesPopup').modal('hide')
+                        load_validation_result_content(collectionObj)
+                    }
+                    else {
+                        //stay in the popup. Display error messages.
+                        $( ".alert" ).removeClass( "alert-danger" )
+                        $( ".alert" ).removeClass( "alert-light" )
+                        Object.keys(result).forEach(function(key,index) {
+                            $( `#${key}-message` ).html( result[key] )
+                            $( `#${key}-alert` ).addClass( "alert-danger" )
+                            $( `#${key}-alert` ).removeClass( "alert-light" )
+                            //console.log(`changed ${key}`)
+                        });
 
+                    }
                 }
             }) 
         }
@@ -115,7 +127,6 @@ function load_contents() {
     });
 
     load_missing_variables_content(collectionObj)
-    //load_validation_result_content(collectionObj)
 }
 
 
@@ -125,24 +136,6 @@ $(window).on('load', function() {
 });
 
 </script>
-
-<!--div class="container-wide hidden" id="missingVariables">
-    <div class="card">
-      <div class="card-header" id="missingVariablesHeader">
-          <h3 data-toggle="collapse" data-target="#missingVariablesBody" aria-expanded="true" aria-controls="missingVariablesBody">Missing variables:
-            <div class ="float-right">
-                <a href="{{ url_for('upload.set_missing_variables') }}"><button class="button btn-secondary" id="set_missing_variables-button">use</button></a>
-            </div>
-          </h3>
-      </div>
-  
-      <div id="missingVariablesBody" class="collapse show" aria-labelledby="missingVariablesHeader" data-parent="#missingVariables">
-        <div id="missingVariablesContent" class="card-body">
-            <center>Please wait while creating form ...</center>
-        </div>
-      </div>
-    </div>
-</div-->
 
 <br>
 
