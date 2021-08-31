@@ -17,24 +17,30 @@ from app import projects
 from Bio import SeqIO
 import pymssql
 import openpyxl
+import json
+import re
+#from flask_session import Session
 
 from nonacris.web import NncWeb
 
 SAMPLEID = 'SendingOrganisationSampleId'
 SEQUENCEID = 'SendingOrganisationSequenceId'
 
-UPLOAD_DIR = '/tmp/upload'
+UPLOAD_DIR = '/tmp/upload' 
 
 # FASTA_EXT = [ '.fasta', '.fa', '.fa.gz', '.fas', '.fas.gz', '.fasta.gz']
 
 FASTA_EXT = [ '.fasta', '.fa', '.fas', '.gz' ]
 
 UPLOAD_KEY = 'current_upload'
+USER_DEFINED_VARIABLES = 'user_defined_variables'
+
 DEFAULT_UPLOAD = {
     'directory': None,
     'project': None,
     'filelist': [],
-    'use_case': 'UploadRivmSampleForm'
+    'use_case': 'UploadRivmSampleForm',
+    USER_DEFINED_VARIABLES: {}
 }
 
 bp = Blueprint('upload', __name__, url_prefix='/upload')
@@ -64,13 +70,15 @@ def unique_coll(project):
 def upload_data():
     if current_user.environment not in session:
         session[current_user.environment] = {}
+        session.modified = True
     if not UPLOAD_KEY in session[current_user.environment]:
         session[current_user.environment][UPLOAD_KEY] = DEFAULT_UPLOAD
         update_setting('directory', f'{UPLOAD_DIR}/{uuid.uuid4()}')
+        session.modified = True
     return session[current_user.environment][UPLOAD_KEY]
 
 def update_setting(key, value):
-    settings = upload_data()
+    upload_data()
     session[current_user.environment][UPLOAD_KEY][key] = value
     session.modified = True
 
@@ -94,6 +102,7 @@ def clear_upload():
                 if os.path.exists(directory):
                     shutil.rmtree(directory)
             del session[current_user.environment][UPLOAD_KEY]
+#        session.clear()
     session.modified = True
 
 
@@ -212,6 +221,108 @@ def validate():
         return redirect(url_for('upload.upload_page'))
     return render_template('validate_report.html', collection=settings['directory'])
 
+def get_test_single_value_meta():
+    missingVariables = { 'SendingOrganisationId': {
+                        'is_required': False,
+                        'schema': {'enum': ['RIVM', 'Meander MC', 'Atal-Medial BV - Loc...Amstelland', 'Streeklab - GGD Amsterdam', 'BovenIJ Ziekenhuis', 'OLVG - Locatie West ', 'Atal-Medial BV - Loc...rvaart MCS', 'OLVG Lab BV', 'Amsterdam UMC - Loca...robiologie'], 'type': 'string'},
+                        'default': None
+                        },
+                'SamplingFrame': {
+                        'is_required': False,
+                        'schema': {'enum': ['ZORG', 'TESTSTRAAT', 'STUDIE', 'NIVEL', 'CLUSTER'], 'type': 'string'},
+                        'default': None
+                        },
+                'SequencingProtocol': {
+                        'is_required': False,
+                        'schema': {"type": "string", "maxLength": 200},
+                        'default': None
+                        },
+                'PangolinScorpioVersion': {
+                        'is_required': True,
+                        'schema': {"type": "string", "minLength": 2, "maxLength": 200},
+                        'default': None
+                    },
+                'NextCladeVersion': {
+                        'is_required': True,
+                        'schema': {"type": "string", "maxLength": 1, "enum": ["J", "N", "NA_VACCINATIE", "HERINFECTIE", "NA_VACCINATIE_1X", "NA_VACCINATIE_2X"]},
+                        'default': None
+                    },
+                'RivmSequencingProtocol': {
+                        'is_required': True,
+                        "schema": {"type": "string", "maxLength": 10, "pattern": "^\\d\\d\\d\\d-\\d\\d-\\d\\d$"},
+                        'default': "1234"
+                    }
+                }
+    return missingVariables
+
+def check_against_schema( value, schema ):
+    #check min length
+    message = ""
+    if 'minLength' in schema:
+        if len(value) < schema['minLength']:
+            message += f"Must have {schema['minLength']} characters. "
+    #check max length
+    if 'maxLength' in schema:
+        if len(value) > schema['maxLength']:
+            message += f"Must not exceed {schema['maxLength']} characters. "
+    #check if value in enum
+    if 'enum' in schema:
+        if value not in schema['enum']:
+            message += f"Value not in allowed set. "
+    #check if value matches pattern
+    if 'pattern' in schema:
+        regex = re.compile( schema['pattern'] )
+        if not regex.match(value):
+            message += f"Value doesn't conform to pattern \"{schema['pattern']}\". "
+    return message
+
+def check_variables( defined_vars, missing_vars_def ):
+    all_ok = True
+    response = {}
+    #check for all missing vars, if they are set (if required) and correct...
+    for key in missing_vars_def.keys():
+        message = None
+        if missing_vars_def[key]['is_required']:
+            if key not in defined_vars:
+                message = "Is required but not set."
+                continue
+        if key in defined_vars:
+            value = defined_vars[key]
+            schema = missing_vars_def[key]['schema']
+            message = check_against_schema( value, schema )
+        if message:
+            response[key] = message
+            all_ok=False
+    return (all_ok, response)
+
+@login_required
+@bp.route('_set_missing_variables', methods=['POST'])
+def set_missing_variables():
+    settings = upload_data()
+    user_defined_variables = {}
+    for dict in request.json:
+        user_defined_variables[ dict['name'] ] = dict['value']
+    #server side check of the variables
+
+    #this is shit, we parse the same files now in three different requests...
+    batch = get_batch(settings)
+    #batch.parse()
+    #tried to get the missing variables from the session (as determined in a prior step)
+    #but exceeded size-limit of cookie
+    # missingVariables = settings[MISSING_VARIABLES]
+    missingVariables = batch.getSingleValueVariableMetadata( filter_by_input=True )
+    #missingVariables = get_test_single_value_meta()
+    #store them....
+    all_ok, response = check_variables( user_defined_variables, missingVariables )
+    if all_ok:
+        #TODO: probably its not necessary to set the SingleValueVariables here, since we gat a new batch in every request anyway...
+        #for key, value in user_defined_variables.items():
+        #    batch.setSingleValueVariable( key, value )
+        update_setting(USER_DEFINED_VARIABLES,user_defined_variables)
+    return jsonify(response)
+
+
+
 
 @login_required
 @bp.route('_uploadbatch', methods=['GET'])
@@ -255,6 +366,31 @@ def filelist():
     return render_template('upload_filelist.html', files=files)
 
 @login_required
+@bp.route('_missing_variables', methods=['GET'])
+def missing_variables():
+    settings = upload_data()
+    if settings['directory'] is None:
+        return redirect(url_for('upload.upload_page'))
+    directory = settings['directory']
+    batch = get_batch(settings)
+    #this is shit, we parse the same files now in three different requests...
+    content = {}
+    try:
+        batch.parse()
+    except:
+        return { 'hasMissingVariables': False }
+    if batch:
+        missingVariables = batch.getSingleValueVariableMetadata( filter_by_input=True)
+        #missingVariables = get_test_single_value_meta()
+        #TODO: apparently the size of the session cookie might  exceed the limit of 4093 bytes, and is ignored by the browser...
+        #      instead of storing the missingvars here we have to parse the files again in _set_missing_variables!
+        #update_setting(MISSING_VARIABLES,missingVariables)
+        content = { 'hasMissingVariables': len(missingVariables.keys())>0,
+                    'missingVariablesForm': render_template( 'missing_variables.html', data=missingVariables) }
+    return content
+
+
+@login_required
 @bp.route('_validate_results', methods=['GET'])
 def validate_results():
     settings = upload_data()
@@ -265,6 +401,13 @@ def validate_results():
                 'Description' : { '0' : 'Unknown validation error' },
                 'Type': {'0': '' }
     }
+    parsedDataContext = {
+                        'data': {}, 
+                        'dataJSON': "{}",
+                        'columns': [],
+                        'columnsJSON': "[]"
+    }
+    parsedData = {}
     validation_passed = False
     try:
         batch = get_batch(settings)
@@ -277,6 +420,20 @@ def validate_results():
         try:
             batch.parse()
             result = batch.data['Parse.Validation.Table'].to_dict()
+            parsedData = batch.getParsedDataForDisplay( add_variable_mapping=False)
+            #Format the column headers for the Bootstrap table, they're just a list of field names, 
+            #duplicated and turned into dicts like this: {'field': 'foo', 'title: 'foo'}
+            columns = [{'field': f, 'title': f} for f in parsedData.columns]
+            columnsJson = json.dumps( columns )
+            #Write the DataFrame to JSON (as easy as can be)
+            parsedDataJson = parsedData.to_json(orient='records')  # output just the records (no fieldnames) as a collection of tuples
+            #Proceed to create your context object containing the columns and the data
+            parsedDataContext = {
+                        'data': parsedData, 
+                        'dataJSON': parsedDataJson,
+                        'columns': columns,
+                        'columnsJSON': columnsJson
+            }
             validation_passed = not batch.data['Parse.Validation.HasError']
         except Exception as ex:
             result = { 'Error': { '0': 'System error in validation module' },
@@ -285,7 +442,8 @@ def validate_results():
             }
     if not validation_passed:
         clear_upload()
-    content = { 'report': render_template('validate_results.html', data=result),
+    content = { 'parsedData': render_template('parsed_data.html', data=parsedDataContext),
+                'report': render_template('validate_results.html', data=result),
                 'result': validation_passed }
     return content
 
@@ -293,6 +451,11 @@ def get_batch(settings):
     directory = settings.get('directory')
     dbparms = current_app.config["LABSURV_DB_CRED"].get(current_user.environment)
     dbconn = pymssql.connect(**dbparms)
+    #tried to store the stateful batch-object in a server-session, didn't work.
+    #the_batch = settings.get(BATCH)
+    #if not the_batch:
+    #    the_batch = NncWeb(dbconn, None)
+    #    settings[BATCH]=the_batch
     batch = NncWeb(dbconn, None)
     batch.setUseCase(settings.get('use_case'))
     for filepath in os.listdir(directory):
@@ -303,6 +466,13 @@ def get_batch(settings):
                 batch.setInputSequenceFile(fullpath)
             if extension in [ '.xlsx', '.csv', '.tsv']:
                 batch.setInputDataFile(fullpath)
+    #set all user defined variables from session
+    #this is kind of a hack, since the batch/NncWeb is stateful, and we store the state 
+    #in the client session and have to reproduce the state if needed...
+    if settings.get(USER_DEFINED_VARIABLES):
+       user_defined_variables = settings.get(USER_DEFINED_VARIABLES)
+       for key, value in user_defined_variables.items():
+            batch.setSingleValueVariable( key, value )
     return batch
 
 @bp.route('_seq_list', methods=['GET'])

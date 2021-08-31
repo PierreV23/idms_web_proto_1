@@ -1,0 +1,59 @@
+<div class="container-fluid">
+  <h5>The file does not contain several variables. Please provide the necessary values here.</h5>
+
+  <form id="missing-variables-form" method="POST">
+    {% for key in data %}
+    <div class="form-group row">
+        <label class="col-4 col-form-label font-weight-bold" for="{{key}}">{{key}}</label>
+        {%  set variableMeta = data[key] %}
+        {%  set isRequiredAttr = '' %}
+        {%  if "is_required" in variableMeta and variableMeta.is_required %}
+        {%     set isRequiredAttr = 'required' %}
+        {%  endif  %}
+        {%   
+            if "enum" in variableMeta.schema
+        %}
+                <div class="col-4">
+                  <select id="{{key}}" name="{{key}}" class="form-select form-select-sm" {{isRequiredAttr}}>
+                  {% for optionValue in variableMeta['schema']['enum'] %}
+                    <option value="{{optionValue}}">{{optionValue}}</option>
+                  {% endfor %}
+                  </select>
+                </div>
+        {%
+            else
+        %}  
+        {% set maxlengthAttr = '' %}
+        {% if "maxLength" in variableMeta.schema %}
+        {%   set maxlengthAttr = 'maxlength=' ~ variableMeta.schema.maxLength  %}
+        {% endif  %}
+        {% set patternAttr = '' %}
+        {% set pattern = '' %}
+        {% if "pattern" in variableMeta.schema %}
+        {%   set pattern = variableMeta.schema.pattern %}
+        {%   set patternAttr = 'pattern=' ~ variableMeta.schema.pattern  %}
+        {% endif  %}
+        {% set defaultValueAttr = '' %}
+        {% if "default" in variableMeta and variableMeta.default is not none %}
+        {%   set defaultValueAttr = 'value=' ~variableMeta.default  %}
+        {% endif  %}
+               <div class="col-4">
+                <input id="{{key}}" name="{{key}}" placeholder="{{pattern}}" type="text" 
+                      class="form-control __is-invalid" COMMENT-aria-describedby="{{key}}Feedback" 
+                      {{maxlengthAttr}} {{patternAttr}} {{defaultValueAttr}} {{isRequiredAttr}} >
+                <!--div id="{{key}}Feedback" class="invalid-feedback">
+                  The value is not correct!
+                </div-->
+                </div> 
+              
+       {%
+            endif
+        %}
+        <div class="col-4">
+          <div  id="{{key}}-alert" class="alert alert-light" role="alert"><small id="{{key}}-message" class="form-text text-muted">{{isRequiredAttr}}</small></div>
+       </div>
+    </div>
+    {% endfor %}
+    <input id="form-submit-hidden" type="submit" style="display: none" />
+  </form>
+  </div>

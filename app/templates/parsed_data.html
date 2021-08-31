@@ -1,0 +1,49 @@
+<!--script src="{{ url_for('static', filename='css/pandas_bootstrap_table.js') }}"></script-->
+<!--script src="{{ url_for('static', filename='css/bootstrap-table.js') }}"></script>--
+<!--link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap-table.css') }}"-->
+
+<table id='parsedDataTable2'></table>
+
+<!--Creates interactive bootstrap table by using pandas_bootstrap_table -->
+<script>
+$(function() {
+    $('#parsedDataTable2').bootstrapTable({
+      striped: true,
+      pagination: true,
+      showColumns: true,
+      showToggle: true,
+      showExport: false,
+      sortable: true,
+      paginationVAlign: 'both',
+      pageSize: 25,
+      pageList: [10, 25, 50, 100, 'ALL'],
+      columns: {{ data.columnsJSON|safe }},  // here is where we use the column content from our Django View
+      data: {{ data.dataJSON|safe }} // we escape the content with the safe tag so the raw JSON isn't shown.
+    });
+  });
+</script>
+
+ 
+<!--Parses the dataframe into an HTML element with 3 Bootstrap classes assigned. -->
+<!-- df.to_html(classes=["table-bordered", "table-striped", "table-hover"]) -->
+
+
+<!--Creates bootsrap table by iterating through rows and columns -->
+<!--table class="table table-sm table-striped table-bordered">
+    <thead>
+        <tr>
+            {% for column in data.columns %}
+            <th>{{ column.title }}</th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for index in data.data.index %}
+        <tr>
+            {% for column in data.columns %}
+            <td>{{ data.data[column.field][index] }}</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table -->
