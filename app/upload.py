@@ -33,14 +33,15 @@ UPLOAD_DIR = '/tmp/upload'
 FASTA_EXT = [ '.fasta', '.fa', '.fas', '.gz' ]
 
 UPLOAD_KEY = 'current_upload'
+USER_DEFINED_VARIABLES = 'user_defined_variables'
+
 DEFAULT_UPLOAD = {
     'directory': None,
     'project': None,
     'filelist': [],
-    'use_case': 'UploadRivmSampleForm'
+    'use_case': 'UploadRivmSampleForm',
+    USER_DEFINED_VARIABLES: {}
 }
-
-USER_DEFINED_VARIABLES = 'user_defined_variables'
 
 bp = Blueprint('upload', __name__, url_prefix='/upload')
 
@@ -100,7 +101,7 @@ def clear_upload():
                 if os.path.exists(directory):
                     shutil.rmtree(directory)
             del session[current_user.environment][UPLOAD_KEY]
-        session.clear()
+#        session.clear()
     session.modified = True
 
 
@@ -366,8 +367,11 @@ def missing_variables():
     directory = settings['directory']
     batch = get_batch(settings)
     #this is shit, we parse the same files now in three different requests...
-    batch.parse()
     content = {}
+    try:
+        batch.parse()
+    except:
+        return { 'hasMissingVariables': False }
     if batch:
         missingVariables = batch.getSingleValueVariableMetadata( filter_by_input=True)
         #missingVariables = get_test_single_value_meta()
