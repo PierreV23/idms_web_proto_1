@@ -62,6 +62,7 @@ def unique_coll(project):
     while current_user.irods_session.collections.exists(collname):
         collname = os.path.join(projectcoll, f'{datestr}_{i:04}')
         i += 1
+    current_app.logger.debug('upload/unique_coll(): mkdir "{}"'.format(collname))
     current_user.ifs.mkdir(collname)
     # TODO : add some metadata?
     return collname
@@ -355,7 +356,13 @@ def upload_batch():
 def filelist():
     settings = upload_data()
     if settings['directory']:
-        files = os.listdir(settings['directory'])
+        files = []
+        try:
+            files = os.listdir(settings['directory'])
+        except FileNotFoundError:
+            # A likely thing to happen. Log and continue.
+            current_app.logger.info('upload/filelist: dir not found: {}'.format(
+                settings['directory']))
     return render_template('upload_filelist.html', files=files)
 
 @login_required
@@ -474,5 +481,10 @@ def seq_list():
     headers = []
     ids = []
     if directory:
-        headers, ids =  read_data(directory)
+        try:
+            headers, ids =  read_data(directory)
+        except FileNotFoundError:
+            # A likely thing to happen. Log and continue.
+            current_app.logger.info('upload/_seq_list: dir not found: {}'.format(directory))
+        
     return render_template('seq_list.html', headers=headers, ids=ids)
