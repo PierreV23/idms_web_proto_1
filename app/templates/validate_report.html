@@ -83,10 +83,12 @@ function prepareMissingVariablesForm() {
                         //stay in the popup. Display error messages.
                         $( ".alert" ).removeClass( "alert-danger" )
                         $( ".alert" ).removeClass( "alert-light" )
+                        $( ".alert-row").addClass( "d-none" )
                         Object.keys(result).forEach(function(key,index) {
                             $( `#${key}-message` ).html( result[key] )
                             $( `#${key}-alert` ).addClass( "alert-danger" )
                             $( `#${key}-alert` ).removeClass( "alert-light" )
+                            $( `#${key}-alert-row` ).removeClass( "d-none" )
                             //console.log(`changed ${key}`)
                         });
 
@@ -165,10 +167,14 @@ $(window).on('load', function() {
 <div class="container-wide">
     <div class="card">
         <div class="card card-header">
-            <h3>Uploaded content after parsing:</h3>
+            <h3>Data to be uploaded:
+                <div class ="float-right">
+                    <div class="buttons-toolbar"></div>
+                </div>
+            </h3>
         </div>
-        <div id="panel-parsed-data" class="card card-body panel-resizable">
-            <div class="seqlist" id="parsed-data">
+        <div id="panel-parsed-data" class="card card-body">
+            <div class="" id="parsed-data">
                 <center>Please wait while loading the parsed data results ...</center>
             </div>
         </div>
@@ -179,7 +185,7 @@ $(window).on('load', function() {
     <div class="modal-dialog modal-lg" role="document">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="missingVariablesPopupLabel">Missing variables</h5>
+          <h5 class="modal-title" id="missingVariablesPopupLabel">Please provide missing variables:</h5>
           <button type="button" class="close" data-dismiss="modal" aria-label="Close">
             <span aria-hidden="true">&times;</span>
           </button>
