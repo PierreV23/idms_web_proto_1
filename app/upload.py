@@ -216,7 +216,8 @@ def validate():
     use_case = data.get('usecase')
     settings = upload_data()
     if use_case:
-        update_setting('use_case', use_case)
+        update_setting('use_case', use_case) # I guess a chnage of useCase means the userDefinedVariables have to be reset
+        update_setting( USER_DEFINED_VARIABLES, {})
     if settings['directory'] is None:
         return redirect(url_for('upload.upload_page'))
     return render_template('validate_report.html', collection=settings['directory'])
@@ -224,7 +225,7 @@ def validate():
 def get_test_single_value_meta():
     missingVariables = { 'SendingOrganisationId': {
                         'is_required': False,
-                        'schema': {'enum': ['RIVM', 'Meander MC', 'Atal-Medial BV - Loc...Amstelland', 'Streeklab - GGD Amsterdam', 'BovenIJ Ziekenhuis', 'OLVG - Locatie West ', 'Atal-Medial BV - Loc...rvaart MCS', 'OLVG Lab BV', 'Amsterdam UMC - Loca...robiologie'], 'type': 'string'},
+                        'schema': {'enum': ['RIVM', 'Meander MC', 'Atal-Medial BV - Local in blahblubb blubb very long name Amstelland', 'Streeklab - GGD Amsterdam', 'BovenIJ Ziekenhuis', 'OLVG - Locatie West ', 'Atal-Medial BV - Loc...rvaart MCS', 'OLVG Lab BV', 'Amsterdam UMC - Loca...robiologie'], 'type': 'string'},
                         'default': None
                         },
                 'SamplingFrame': {
@@ -234,17 +235,17 @@ def get_test_single_value_meta():
                         },
                 'SequencingProtocol': {
                         'is_required': False,
-                        'schema': {"type": "string", "maxLength": 200},
+                        'schema': {"type": "string", "maxLength": 10},
                         'default': None
                         },
                 'PangolinScorpioVersion': {
                         'is_required': True,
-                        'schema': {"type": "string", "minLength": 2, "maxLength": 200},
+                        'schema': {"type": "string", "minLength": 2, "maxLength": 10},
                         'default': None
                     },
                 'NextCladeVersion': {
                         'is_required': True,
-                        'schema': {"type": "string", "maxLength": 1, "enum": ["J", "N", "NA_VACCINATIE", "HERINFECTIE", "NA_VACCINATIE_1X", "NA_VACCINATIE_2X"]},
+                        'schema': {"type": "string", "enum": ["J", "N", "NA_VACCINATIE", "HERINFECTIE", "NA_VACCINATIE_1X", "NA_VACCINATIE_2X"]},
                         'default': None
                     },
                 'RivmSequencingProtocol': {
@@ -256,24 +257,26 @@ def get_test_single_value_meta():
     return missingVariables
 
 def check_against_schema( value, schema ):
-    #check min length
     message = ""
-    if 'minLength' in schema:
-        if len(value) < schema['minLength']:
-            message += f"Must have {schema['minLength']} characters. "
-    #check max length
-    if 'maxLength' in schema:
-        if len(value) > schema['maxLength']:
-            message += f"Must not exceed {schema['maxLength']} characters. "
     #check if value in enum
     if 'enum' in schema:
         if value not in schema['enum']:
             message += f"Value not in allowed set. "
-    #check if value matches pattern
-    if 'pattern' in schema:
-        regex = re.compile( schema['pattern'] )
-        if not regex.match(value):
-            message += f"Value doesn't conform to pattern \"{schema['pattern']}\". "
+    else:
+        #check min length
+        if 'minLength' in schema:
+            if len(value) < schema['minLength']:
+                message += f"Must have {schema['minLength']} characters. "
+        #check max length
+        if 'maxLength' in schema:
+            if len(value) > schema['maxLength']:
+                message += f"Must not exceed {schema['maxLength']} characters. "
+
+        #check if value matches pattern
+        if 'pattern' in schema:
+            regex = re.compile( schema['pattern'] )
+            if not regex.match(value):
+                message += f"Value doesn't conform to pattern \"{schema['pattern']}\". "
     return message
 
 def check_variables( defined_vars, missing_vars_def ):
@@ -306,10 +309,8 @@ def set_missing_variables():
 
     #this is shit, we parse the same files now in three different requests...
     batch = get_batch(settings)
-    #batch.parse()
     #tried to get the missing variables from the session (as determined in a prior step)
     #but exceeded size-limit of cookie
-    # missingVariables = settings[MISSING_VARIABLES]
     missingVariables = batch.getSingleValueVariableMetadata( filter_by_input=True )
     #missingVariables = get_test_single_value_meta()
     #store them....
@@ -373,15 +374,12 @@ def missing_variables():
         return redirect(url_for('upload.upload_page'))
     directory = settings['directory']
     batch = get_batch(settings)
-    #this is shit, we parse the same files now in three different requests...
     content = {}
-    try:
-        batch.parse()
-    except:
+    missingVariables = batch.getSingleValueVariableMetadata( filter_by_input=True)
+    #missingVariables = get_test_single_value_meta()
+    if not missingVariables:
         return { 'hasMissingVariables': False }
-    if batch:
-        missingVariables = batch.getSingleValueVariableMetadata( filter_by_input=True)
-        #missingVariables = get_test_single_value_meta()
+    else:
         #TODO: apparently the size of the session cookie might  exceed the limit of 4093 bytes, and is ignored by the browser...
         #      instead of storing the missingvars here we have to parse the files again in _set_missing_variables!
         #update_setting(MISSING_VARIABLES,missingVariables)
@@ -402,9 +400,7 @@ def validate_results():
                 'Type': {'0': '' }
     }
     parsedDataContext = {
-                        'data': {}, 
                         'dataJSON': "{}",
-                        'columns': [],
                         'columnsJSON': "[]"
     }
     parsedData = {}
@@ -418,21 +414,36 @@ def validate_results():
         }
     if batch:    
         try:
-            batch.parse()
+            # here an error because of missing variables should not occure anymore!
+            batch.parse()  
             result = batch.data['Parse.Validation.Table'].to_dict()
-            parsedData = batch.getParsedDataForDisplay( add_variable_mapping=False)
-            #Format the column headers for the Bootstrap table, they're just a list of field names, 
-            #duplicated and turned into dicts like this: {'field': 'foo', 'title: 'foo'}
-            columns = [{'field': f, 'title': f} for f in parsedData.columns]
-            columnsJson = json.dumps( columns )
-            #Write the DataFrame to JSON (as easy as can be)
-            parsedDataJson = parsedData.to_json(orient='records')  # output just the records (no fieldnames) as a collection of tuples
-            #Proceed to create your context object containing the columns and the data
+            #The bootstrap-table component has problems whith column names in format "Teststraat of Siekenhaus -> \"\""
+            #Here we get the title with the mapping, but use the fieldname without mapping
+            #- for thetable data, use the original fieldnames (without mapping)
+            #  e.g. Sex: "Vrouw -> V"
+            parsedDataWithMapping = batch.getParsedDataForDisplay( add_variable_mapping=True)
+            #- for the column headers we use the data with mapping
+            #  e.g. geslacht -> Sex: "Vrouw -> V"
+            parsedDataWithoutMapping = batch.getParsedDataForDisplay( add_variable_mapping=False)
+            # - then we create columns, with the unmapped value as field-value, and the mapped one as title:
+            columns=[]
+            for col in parsedDataWithMapping.columns:
+                #5 possibilities:
+                #  -  UnilabSampleId
+                #  -  Teststraat of Ziekenhuis -> ""
+                #  -  4 cijferige postcode -> ResidencePostalCode
+                #  -  geboortedatum -> ""
+                #  -  "" -> SendingOrganisationId
+                split = col.split( " -> " )
+                f = split[-1]
+                if f == '""':
+                    f = split[0]
+                columns.append( { 'field': f, 'title': col } )
+
+            parsedDataJson = parsedDataWithoutMapping.to_json(orient='records')  
             parsedDataContext = {
-                        'data': parsedData, 
-                        'dataJSON': parsedDataJson,
-                        'columns': columns,
-                        'columnsJSON': columnsJson
+                    'columnsJSON': json.dumps(columns),
+                    'dataJSON': parsedDataJson
             }
             validation_passed = not batch.data['Parse.Validation.HasError']
         except Exception as ex:
@@ -451,7 +462,7 @@ def get_batch(settings):
     directory = settings.get('directory')
     dbparms = current_app.config["LABSURV_DB_CRED"].get(current_user.environment)
     dbconn = pymssql.connect(**dbparms)
-    #tried to store the stateful batch-object in a server-session, didn't work.
+    #tried to store the stateful batch-object in a server-session, didn't work. (can't be pickled because it contains the SQL-Connection)
     #the_batch = settings.get(BATCH)
     #if not the_batch:
     #    the_batch = NncWeb(dbconn, None)
