@@ -348,8 +348,12 @@ def pgaction():
         pl, result = rest_call('POST', f'projects/{project}/processgroups/{group}/processes', new_process)
     elif action == 'update_process':
         process = request.args.get('process')
-        lsf_queue = request.args.get('lsf_queue')
-        pl, result = rest_call('PUT', f'projects/{project}/processgroups/{group}/processes/{process}', data = { 'lsf_queue': lsf_queue })
+        data = {}
+        for attr in ['lsf_queue', 'tag']:
+            value = request.args.get(attr)
+            if value:
+                data[attr] = value
+        pl, result = rest_call('PUT', f'projects/{project}/processgroups/{group}/processes/{process}', data = data)
     elif action == 'update_processes':
         lsf_queue = request.args.get('lsf_queue')
         pl, result = rest_call('GET', f'projects/{project}/processgroups/{group}/processes')
@@ -452,11 +456,13 @@ def pg_details():
     all_processes, result = rest_call('GET', f'processes')
     dependency_names = []
     selected_details = None
+    selected_tags = []
     if selected_process:
         sel_list = search(pl, lambda x: x.get('name'), selected_process)
         selected_details  = sel_list[0] if sel_list else None
         dependencies, r2 = rest_call('GET', f'projects/{project}/processgroups/{group}/processes/{selected_process}/dependencies')
         dependency_names = [ p['name'] for p in pl if p['id'] in [ d['depends_on'] for d in dependencies ]]
+        selected_tags, r3 = rest_call('GET', f'processes/{selected_details.get("processid")}/tags')
     message = ''
     if mode == 'select_input':
         message = f'Please select input for process {selected_process}'
@@ -464,6 +470,7 @@ def pg_details():
         message =f'Please select a required process for {selected_process}'
     return render_template('pg_details.html', project=project, group=group, 
         all_processes=all_processes, pg_processes=pl, selected_details=selected_details,
+        selected_tags = selected_tags,
         dependencies=dependency_names, message=message)
 
 @BP.route('processgroups', methods=['GET'])

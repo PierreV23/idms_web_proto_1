@@ -33,6 +33,17 @@
             <hr>
             <form action="{{ url_for('projects.pgaction') }}">
                 <div class="form-group">
+                    <label for="process_name">GIT Tag</label>
+                    <select class="form-control form-control-lg" id="git_tag">
+                        {% for tag in selected_tags %}
+                        <option {% if tag == selected_details.tag %}selected{% endif %}>{{ tag }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <BUTTON type="button" class="btn btn-primary disabled" id="update_processtag_button">Submit</BUTTON>
+            </form>
+            <form action="{{ url_for('projects.pgaction') }}">
+                <div class="form-group">
                     <label for="process_name">LSF queue</label>
                     <INPUT TYPE="text" class="form-control" id="lsf_queue" value="{{ selected_details.lsf_queue }}"></INPUT>
                 </div>
@@ -79,6 +90,10 @@ $('#lsf_queue').on('input', function(){
     $('#update_process_button').removeClass('disabled')
 })
 
+$('#git_tag').on('change', function(){
+    $('#update_processtag_button').removeClass('disabled')
+})
+
 $('#update_allprocs_button').on('click', function(){
     waiting()
     $.get('{{ url_for("projects.pgaction") }}', {
@@ -98,6 +113,18 @@ $('#update_process_button').on('click', function(){
         action: 'update_process',
         process: selected_process,
         lsf_queue: $('#lsf_queue').val()    
+    }, function(data) {
+        load_pgpage();
+    });
+})
+
+$('#update_processtag_button').on('click', function(){
+    $.get('{{ url_for("projects.pgaction") }}', {
+        project: "{{ project }}",
+        group: "{{ group }}",
+        action: 'update_process',
+        process: selected_process,
+        tag: $('#git_tag option:selected').text()    
     }, function(data) {
         load_pgpage();
     });
