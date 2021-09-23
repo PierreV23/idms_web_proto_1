@@ -22,15 +22,20 @@ KNOWN_ATTRIBUTES = {
     'sys::access_time': 'timestamp',
     'sys::archive::lastrun': 'timestamp',
     'sys::archive::lastcheck': 'timestamp',
+    'sys::pipeline::gitrepo': 'url',
     'sys::pipeline::input_collection_id': 'collection_id',
     'sys::pipeline::last_use': 'timestamp',
     'sys::pipeline::stage_time': 'timestamp',
     'sys::pipeline::used_by': 'runsheet',
     'user::pipeline::input_collection_id': 'collection_id',
+    'sys::run::last_move_time': 'timestamp',
+    'sys::run::output_collection': 'irods_collection',
     'sys::run::start_time': 'timestamp',
+    'sys::run::finish_time': 'timestamp',
     'sys::runsheet::create_time': 'timestamp',
     'sys::runsheet::input_collection': 'irods_collection',
-    'sys::runsheet::projectID': 'projectid'
+    'sys::runsheet::projectID': 'projectid',
+    'sys::runsheet::repo': 'url'
 }
 
 KNOWN_ATTRIBUTE_TEMPLATES = {
@@ -296,6 +301,16 @@ class data_projectid(data_base):
     @staticmethod
     def factory(**kwargs):
         return data_projectid(**kwargs)
+
+class data_url(data_base):
+
+    @property
+    def htmlstring(self):
+        return '<a href="{0}">{0}</a>'.format(self.value)
+
+    @staticmethod
+    def factory(**kwargs):
+        return data_url(**kwargs)
 
 
 # Register all AVU objects
