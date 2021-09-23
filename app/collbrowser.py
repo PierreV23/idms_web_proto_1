@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from dateutil.relativedelta import relativedelta
 from flask import Blueprint, render_template, redirect, request, url_for
 from flask_login import current_user, login_required
-from irods.models import Collection, CollectionMeta, DataObject
+from irods.models import Collection, CollectionMeta, DataObject, DataObjectMeta
 from irods.column import Criterion
 from app.datafield import AVU2data, datafield
 from graphviz import Digraph
@@ -81,9 +81,10 @@ def _getmetatree(irods_obj, attr, base, default=None):
 @login_required
 def coll_meta():
     path = request.args.get('path','/', type=str)
+    object = request.args.get('object', '', type=str)
     irods_session = current_user.irods_session
-    avu = {}
 # Query for collection metadata
+    coll_avu = []
     query = irods_session.query(CollectionMeta.name, CollectionMeta.value,
                                 CollectionMeta.units).filter(
                                     Criterion('=', Collection.name, path))
@@ -92,10 +93,22 @@ def coll_meta():
         name = coll_metadata[CollectionMeta.name]
         value = coll_metadata[CollectionMeta.value]
         units = coll_metadata[CollectionMeta.units]
-        avu_id = '{}_{}'.format(name, value)
-        avu[avu_id] = AVU2data(name, value, units)
-        
-    return render_template('metadata.html', avu=avu)
+        coll_avu.append(AVU2data(name, value, units))
+
+# Query for object metadata
+    object_avu =[]
+    if object:
+        query = irods_session.query(DataObjectMeta.name, DataObjectMeta.value,
+                                    DataObjectMeta.units).filter(
+                                        Criterion('=', Collection.name, path)).filter(
+                                        Criterion('=', DataObject.name, object)
+                                    )
+        for object_metadata in query:
+            name = object_metadata[DataObjectMeta.name]
+            value = object_metadata[DataObjectMeta.value]
+            units = object_metadata[DataObjectMeta.units]
+            object_avu.append(AVU2data(name, value, units))
+    return render_template('metadata.html', coll_avu=coll_avu, object_avu=object_avu)
 
 @bp.route('_setKeepOnlineUntil', methods=['GET'])
 @login_required
@@ -218,6 +231,7 @@ def collist():
     new_path_str = request.args.get('new_path', 'true', type=str)
     options = {
         'download_btn': request.args.get('btn_download', 'true', type=str) == 'true',
+        'view_btn': request.args.get('btn_view', 'true', type=str) == 'true',
         'delete_btn': request.args.get('btn_del', 'false', type=str) == 'true'
     }
 

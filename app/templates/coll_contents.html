@@ -39,9 +39,9 @@
       {% endfor %}
 
       {% for entry in objs %}
-         <tr>
-            <td>
-               <a data-toggle="modal" data-target="#myOutput" onclick="fillModal('{{ entry.path }}','{{ entry.name}}')">{{ entry.name }}</a>
+         <tr class="objectrow" data-objectname="{{ entry.name }}">
+            <td class="objectname" data-objectname="{{ entry.name }}">
+               {{ entry.name }}
                {% if show == True %}
                   <td>  {{ entry.display_field }} </td>
                {% endif %}
@@ -56,11 +56,18 @@
                {{ entry.owner_name}}
             </td>
             <td>
-               {% if options.download_btn == True %}  
+               {% if options.download_btn == True %}
                   <a href="{{ url_for('docviewer.download_object') }}?path={{entry.path}}">
                      <IMG src="{{ url_for('static', filename='img/download-button.png' ) }}" class="mybutton">
                   </a>
                {% endif %}
+            </td>
+            <td>
+               {% if options.view_btn == True %}
+                  <a data-toggle="modal" data-target="#myOutput" onclick="fillModal('{{ entry.path }}','{{ entry.name}}')">
+                     <IMG src="{{ url_for('static', filename='img/view-button.png' ) }}" class="mybutton">
+                  </a>
+               {% endif %}               
             </td>
             <td>
                {% if options.delete_btn == True %}
@@ -75,6 +82,13 @@
 <script>
 
 var event = new CustomEvent("collchange", { "detail" : "Collection contents changed" });
+
+$('.objectname').on('click', function() {
+   selected_object = $(this).data('objectname')
+   $('.objectrow').removeClass('table-primary')
+   $('tr[data-objectname="' + selected_object + '"]').addClass('table-primary')
+   load_meta()
+});
 
 $('.deletebutton').on('click', function() {
    $(this).attr('src', "{{ url_for('static', filename='img/progress-icon.jpg' ) }}");
