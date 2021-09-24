@@ -339,7 +339,7 @@ def upload_batch():
     if result:
         # Generate a collection name for storing upload
         # TODO: add project, for now use 'upload' project
-        collname = unique_coll('upload')
+        collname = unique_coll('nonacris')
         coll = current_user.irods_session.collections.get(collname)
         batch.setIrodsCollection(coll)
         try:
