@@ -9,12 +9,12 @@ $('.nav-pills').on('shown.bs.tab', function(event){
 <div class="card-header myheader">
     <ul class="nav nav-pills">
         <li class="nav-item mx-2">
-          <button class="btn btn-outline-primary {% if not object_avu %} active {% endif %}" id="collmeta-tab" 
+          <button class="btn btn-outline-primary {% if object_avu is none %} active {% endif %}" id="collmeta-tab" 
             data-toggle="tab" href="#collmeta" role="tab" 
             aria-controls="collmeta" aria-selected="false">Collection metadata</button>
         </li>
         <li class="nav-item mx-2">
-          <button class="btn {% if object_avu %} btn-outline-primary active {% else %} btn-outline-secondary disabled {% endif %}" id="objectmeta-tab"
+          <button class="btn {% if object_avu is not none %} btn-outline-primary active {% else %} btn-outline-secondary disabled {% endif %}" id="objectmeta-tab"
             data-toggle="tab" href="#objectmeta" role="tab"
             aria-controls="objectmeta" aria-selected="false">Object metadata</button>
               <!--  if archival_state.is_dataset is sameas false btn-outline-dark disabled -->
@@ -24,7 +24,7 @@ $('.nav-pills').on('shown.bs.tab', function(event){
 
 </div>
 <div class="card card-body coll-meta tab-content">
-    <div class="tab-pane {% if not object_avu %} active {% endif %}" id="collmeta" role="tabpanel" aria-labelledby="collmeta-tab">
+    <div class="tab-pane {% if object_avu is none %} active {% endif %}" id="collmeta" role="tabpanel" aria-labelledby="collmeta-tab">
         <table class="table table-hover table-striped table-sm">
             <thead>
                 <tr>
@@ -46,8 +46,8 @@ $('.nav-pills').on('shown.bs.tab', function(event){
             </tbody>
         </table>
     </div>
-
-    <div class="tab-pane {% if object_avu %} active {% endif %}" id="objectmeta" role="tabpanel" aria-labelledby="objectmeta-tab">
+{% if object_avu is not none %}
+    <div class="tab-pane {% if object_avu is not none %} active {% endif %}" id="objectmeta" role="tabpanel" aria-labelledby="objectmeta-tab">
         <table class="table table-hover table-striped table-sm">
             <thead>
                 <tr>
@@ -57,7 +57,6 @@ $('.nav-pills').on('shown.bs.tab', function(event){
                 </tr>
             </thead>
             <tbody>
-
         {% for entry in object_avu %}
             <tr>
                 <td> {{ entry.name }} </td>
@@ -68,6 +67,7 @@ $('.nav-pills').on('shown.bs.tab', function(event){
         {% endfor %}
             </tbody>
         </table>
+{% endif %}
     </div>
 
 </div>

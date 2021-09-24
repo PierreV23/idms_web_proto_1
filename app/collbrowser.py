@@ -96,8 +96,9 @@ def coll_meta():
         coll_avu.append(AVU2data(name, value, units))
 
 # Query for object metadata
-    object_avu =[]
+    object_avu = None
     if object:
+        object_avu = []
         query = irods_session.query(DataObjectMeta.name, DataObjectMeta.value,
                                     DataObjectMeta.units).filter(
                                         Criterion('=', Collection.name, path)).filter(
