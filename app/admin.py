@@ -50,7 +50,7 @@ def admin():
     if not current_user.is_admin:
         return render_template('denied.html')
     queues = {}
-    for q in ['incoming', 'prepare', 'stage', 'queued', 'startup', 'active']:
+    for q in ['incoming', 'prepare', 'stage', 'queued', 'startup', 'active', 'postprocessing', 'waiting']:
         enabled = True
         path = f'/{current_user.irods_zone}/system/runsheet'
         metaquery = current_user.irods_session.query(CollectionMeta.value).filter(
@@ -58,12 +58,18 @@ def admin():
             Criterion('=', CollectionMeta.name, f'sys::enable::{q}'))
         for meta in metaquery:
             enabled = meta[CollectionMeta.value] == 'true'
-        items = current_user.irods_session.query(DataObject.id).filter(\
-            Criterion('=', Collection.name, '/rivmZone/system/runsheet/processing')).filter(\
-            Criterion('=', DataObjectMeta.name, 'sys::runsheet::state')).filter(\
-            Criterion('=', DataObjectMeta.value, q)).count(DataObject.id)
-        count  = items.execute()[0][DataObject.id]
-        #print(next(items.get_results()))
+        if q == 'incoming':
+            items = current_user.irods_session.query(DataObject.id).filter(\
+                Criterion('=', Collection.name, '/rivmZone/system/runsheet/processing')).filter(\
+                Criterion('=', DataObjectMeta.name, 'sys::runsheet::state')).filter(\
+                Criterion('=', DataObjectMeta.value, q)).count(DataObject.id)
+            count  = items.execute()[0][DataObject.id]
+        else:
+            items = current_user.irods_session.query(Collection.id).filter(\
+                Criterion('=', Collection.name, '/rivmZone/system/runsheet/processing')).filter(\
+                Criterion('=', CollectionMeta.name, 'sys::runsheet::state')).filter(\
+                Criterion('=', CollectionMeta.value, q)).count(Collection.id)
+            count  = items.execute()[0][Collection.id]
         queues[q] = {'enabled': enabled, 'count': count}
     return render_template('queues.html', queues=queues)
 
