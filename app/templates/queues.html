@@ -2,7 +2,7 @@
   
 {% block content %}
 
-
+<div class="container">
 <div class="card border-primary mb-3">
 <div class="card card-header">
 Runsheet queues
@@ -19,7 +19,7 @@ Runsheet queues
 <tbody>
 {% for entry in queues %}
    <TD>{{ entry }}</TD>
-   <TD>{{ queues[entry]['count'] }}</TD>
+   <TD><A HREF="{{ url_for('jobs.show_jobs') }}?items={{ entry }}">{{ queues[entry]['count'] }}</A></TD>
    <TD>
 
 {% if queues[entry]['enabled'] == True %}
@@ -46,5 +46,5 @@ Runsheet queues
  
 </div>
 </div>
-
+</div>
 {% endblock %}
