@@ -11,41 +11,28 @@
     <THEAD class="thead-dark">
         <TR>
             <TD>Name</TD>
-            <TD>Group</TD>
-            <TD>ID</TD>
-            <TD>Copies</TD>
-            <TD>Cost</TD>
-            <TD>Minimum age before copy</TD>
-            <TD>Minimum age before trim</TD>
-            <TD>Minimum free space</TD>
-            <TD>Local</TD>
-            <TD>Online</TD>
-            <TD>Stage</TD>
-            <TD>Keep</TD>
-            <TD>SURF</TD>
-            <TD>TAR</TD>
-            <TD>Available</TD>
+            {% for column in columns %}
+                <TD>{{ columns[column].label }}</TD>
+            {% endfor %}
         </TR>
     </THEAD>
     <TBODY>
         {% for resource in resources %}
         <TR>
             <TD>{{ resource }}</TD>
-            {% for property in ["group", "id", "sys::resource::copies", "sys::resource::cost", "sys::resource::min_age_before_copy", "sys::resource::min_age_before_trim"] %}
-            <TD><input type="text" class="form-control" name="{{ resource }}__{{ property }}"
-                value="{{ resources[resource].get(property, '') }}">
-            </TD>
-            {% endfor %}
-            <TD><input type="text" class="form-control" name="{{ resource }}__sys::resource::minfree"
-                value="{{ resources[resource].get('sys::resource::minfree', 0) }}">
-            </TD>
-            {% for property in [ "local", "online", "stage", "keep", "surf", "tar", "available"] %}
-            <TD><input class="" type="checkbox"
-                name="{{ resource }}__sys::resource::{{ property }}"
-                value="true"
-                {% if resources[resource].get('sys::resource::' + property) == "true" %} checked {% endif %}
-                >
-            </TD>
+            {% for property in columns %}
+                {% if columns[property].type == 'text' %}
+                    <TD><input type="text" class="form-control" name="{{ resource }}__{{ property }}"
+                        value="{{ resources[resource].get(property, '') }}">
+                    </TD>
+                {% elif columns[property].type == 'bool' %}
+                    <TD><input class="" type="checkbox"
+                        name="{{ resource }}__{{ property }}"
+                        value="true"
+                        {% if resources[resource].get(property) == "true" %} checked {% endif %}
+                        >
+                    </TD>
+                {% endif %}
             {% endfor %}
         </TR>
         {% endfor %}
