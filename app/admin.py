@@ -86,6 +86,11 @@ RESOURCE_PROPS = {
         'meta': 'sys::resource::tar',
         'type': 'bool'
     },
+    'manifest': {
+        'label': 'MANIFEST',
+        'meta': 'sys::resource::manifest',
+        'type': 'bool'
+    },
     'available': {
         'label': 'Available',
         'meta': 'sys::resource::available',

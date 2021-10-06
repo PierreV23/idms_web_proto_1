@@ -19,14 +19,14 @@
     <TBODY>
         {% for resource in resources %}
         <TR>
-            <TD>{{ resource }}</TD>
+            <TD id="{{resource}}">{{ resource }}</TD>
             {% for property in columns %}
                 {% if columns[property].type == 'text' %}
                     <TD><input type="text" class="form-control" name="{{ resource }}__{{ property }}"
                         value="{{ resources[resource].get(property, '') }}">
                     </TD>
                 {% elif columns[property].type == 'bool' %}
-                    <TD><input class="" type="checkbox"
+                    <TD><input class="checkbx" type="checkbox"
                         name="{{ resource }}__{{ property }}"
                         value="true"
                         {% if resources[resource].get(property) == "true" %} checked {% endif %}
@@ -41,4 +41,13 @@
 <INPUT TYPE="submit" class="button">
 </FORM>
 </div>
+
+<script>
+$('.checkbx').on('click', function(event){
+        var name = $(this).attr('name').split('__')
+        $('#' + name).css('color', 'red')
+    }
+)
+</script>
+
 {% endblock %}
