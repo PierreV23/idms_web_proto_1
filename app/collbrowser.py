@@ -429,7 +429,7 @@ def generate_graph():
                     Criterion('=', CollectionMeta.value, extra_coll_id))
                 extra_colls |= { c[Collection.name] for c in q } 
             for extra_coll in extra_colls:
-                coll_node(extra_coll, levels=0, post=coll, linestyle='dashed')
+                coll_node(extra_coll, levels=levels-1, post=coll, linestyle='dashed')
             # FIND collections that refer to this collection bij name or id
             q = irods_session.query(Collection.name).filter(\
                     Criterion('=', CollectionMeta.name, 'user::pipeline::input_collection_id')).filter( \
@@ -440,7 +440,7 @@ def generate_graph():
                     Criterion('=', CollectionMeta.value, coll))
             ref_colls |= { c[Collection.name] for c in q } 
             for ref_coll in ref_colls:
-                coll_node(ref_coll, levels=1, pre=coll, linestyle='dashed')
+                coll_node(ref_coll, levels=levels-1, pre=coll, linestyle='dashed')
 
 
 
