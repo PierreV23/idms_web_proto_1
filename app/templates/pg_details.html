@@ -5,8 +5,8 @@
     <div class="row">
         <div class="col col-mb-4">
             Processes  
-            <button type="button" class="btn btn-danger float-right {% if not selected_details %}disabled{% endif %}" 
-                id="delete_process_button">Delete selected</button>
+            <button type="button" class="btn btn-danger float-right {% if not selected_details %}disabled"{%else%}"id="delete_process_button"{% endif %}
+            >Delete selected</button>
             <hr>
 
             <form>
