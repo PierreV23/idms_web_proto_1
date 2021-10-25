@@ -40,6 +40,19 @@
       });
     }
 
+    function startNext() {
+        var startnext = $( "#disableContinuation").is(':checked')
+        value = startnext ? "true" : "false"
+        $.get('{{ url_for('collbrowser.setmeta') }}', {
+          collection: '{{ collection }}',
+          attr: 'user::pipeline::autostart',
+          value: value
+        }, function(data) {
+          load_meta();
+          load_actions();
+        });
+    }
+
     function overrideDatasetLocal() {
         var selected = $( "#keepLocalSwitch" ).is(':checked')
         var override = $( "#overrideLocalSwitch" ).is(':checked')
@@ -312,7 +325,7 @@ $('.nav-pills').on('shown.bs.tab', function(event){
           </form>
         </div>
         <div class="tab-pane" id="pipeline" role="tabpanel" aria-labelledby="pipeline-tab">
-          {% if processrequest == "true" %}
+          {% if processrequest != "false" %}
           <h3>Starting up process : {{ processid }}</h3>
           {% else %}
           <table>
@@ -330,6 +343,12 @@ $('.nav-pills').on('shown.bs.tab', function(event){
             </tr>
           </table>
           {% endif %}
+          <hr>
+          <div class="col-sm-4 custom-control custom-switch vertical-down">
+            <input type="checkbox" class="custom-control-input" onChange="startNext()"
+                  value="true" id="disableContinuation" {% if start_next_process == "true" %}checked{% endif %}>
+                  <label class="custom-control-label" for="disableContinuation">Start next pipeline process automatically</label>               
+          </div>
         </div>
     </div>
 </div>
