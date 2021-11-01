@@ -182,3 +182,13 @@ ul {
 .vertical-down {
     padding-top: 5px;
 }
+
+.c1 { filter: hue-rotate(0deg)   }
+.c2 { filter: hue-rotate(30deg)  }
+.c3 { filter: hue-rotate(60deg)  }
+.c4 { filter: hue-rotate(90deg)  }
+.c5 { filter: hue-rotate(120deg) }
+.c6 { filter: hue-rotate(150deg) }
+.c7 { filter: hue-rotate(180deg) }
+.c8 { filter: hue-rotate(210deg) }
+.c9 { filter: hue-rotate(240deg) }

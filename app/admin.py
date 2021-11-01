@@ -16,6 +16,94 @@ from irods.query import SpecificQuery
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
+# iRODS resource properties
+
+
+RESOURCE_PROPS = {
+    'group': {
+        'label': 'Group', 
+        'meta' : 'sys::tiering::group',
+        'type' : 'text'
+    },
+    'group_id': {
+        'label': 'ID',
+        'meta': 'sys::tiering::group',
+        'type': 'text',
+        'unit': True
+    },
+    'copies': {
+        'label': 'Copies',
+        'meta': 'sys::resource::copies',
+        'type': 'text'
+    },
+    'cost': {
+        'label': 'Cost',
+        'meta': 'sys::resource::cost',
+        'type': 'text'
+    },
+    'age_before_copy': {
+        'label': 'Minimum age before copy',
+        'meta': 'sys::resource::min_age_before_copy',
+        'type': 'text'
+    },
+    'age_before_trim': {
+        'label': 'Minimum age before trim',
+        'meta': 'sys::resource::min_age_before_trim',
+        'type': 'text'
+    },
+    'minfree': {
+        'label': 'Minimum free space',
+        'meta': 'sys::resource::minfree',
+        'type': 'text'
+    },
+    'local': {
+        'label': 'Local',
+        'meta': 'sys::resource::local',
+        'type': 'bool'
+    },
+    'online': {
+        'label': 'Online',
+        'meta': 'sys::resource::online',
+        'type': 'bool'
+    },
+    'stage': {
+        'label': 'Stage',
+        'meta': 'sys::resource::stage',
+        'type': 'bool'
+    },
+    'keep': {
+        'label': 'Keep',
+        'meta': 'sys::resource::keep',
+        'type': 'bool'
+    },
+    'surf': {
+        'label': 'SURF',
+        'meta': 'sys::resource::surf',
+        'type': 'bool'
+    },
+    'tar': {
+        'label': 'TAR',
+        'meta': 'sys::resource::tar',
+        'type': 'bool'
+    },
+    'manifest': {
+        'label': 'MANIFEST',
+        'meta': 'sys::resource::manifest',
+        'type': 'bool'
+    },
+    'available': {
+        'label': 'Available',
+        'meta': 'sys::resource::available',
+        'type': 'bool'
+    },
+    'enabled': {
+        'label': 'Enabled',
+        'meta': 'sys::resource::enabled',
+        'type': 'bool'
+    }
+}
+
+
 @bp.route('/_issues')
 def query_issues():
     if not current_user.is_admin:
@@ -79,59 +167,52 @@ def resources():
     resources =  {}
     q = current_user.irods_session.query(Resource.name)
     for r in q:
+        resources[r[Resource.name]] = {}
         resource = current_user.irods_session.resources.get(r[Resource.name])
-        resources[r[Resource.name]] = { m.name: m.value for m in resource.metadata.items() if m.name.startswith('sys::resource')}
-        m = resource.metadata.get_all('sys::tiering::group')
-        if m:
-            resources[r[Resource.name]]['group'] = m[0].value
-            resources[r[Resource.name]]['id'] = m[0].units
-    return render_template('resources.html', resources=resources)
+        metadata = resource.metadata.items()
+        metanames = [ m.name for m in metadata ]
+        for property in RESOURCE_PROPS:
+            meta_name = RESOURCE_PROPS[property].get('meta')
+            if meta_name:
+                if meta_name in metanames:
+                    irods_meta = resource.metadata.get_one(meta_name)
+                    if RESOURCE_PROPS[property].get('unit', False):
+                        resources[r[Resource.name]][property] = irods_meta.units
+                    else:
+                        resources[r[Resource.name]][property] = irods_meta.value
+    return render_template('resources.html', columns=RESOURCE_PROPS, resources=resources)
 
 @login_required
 @bp.route('/_update_resources', methods=['POST'])
 def update_resources():
-    TEXT_PROPERTIES = ( 
-        "sys::resource::copies",
-        "sys::resource::cost",
-        "sys::resource::minfree",
-        "sys::resource::min_age_before_copy",
-        "sys::resource::min_age_before_trim"
-    )
-    BOOL_PROPERTIES = (
-        "sys::resource::local",
-        "sys::resource::online",
-        "sys::resource::stage",
-        "sys::resource::surf",
-        "sys::resource::tar",
-        "sys::resource::keep",
-        "sys::resource::available"
-    )
+
     data = request.form.to_dict()
     # Create a dict of the form data
-    resources = {}
+    new_settings = {}
     for d in data:
         resource, attr = d.split('__')
         value = data[d]
-        if not resource in resources:
-            resources[resource] = {}
-        resources[resource][attr] = value
-    # Update resource settings
-    for resource in resources:
+        if not resource in new_settings:
+            new_settings[resource] = {}
+        new_settings[resource][attr] = value
+    for resource in new_settings:
         res_obj = current_user.irods_session.resources.get(resource)
-        for property in TEXT_PROPERTIES:
-            if property in resources[resource] and resources[resource][property]:
-                res_obj.metadata[property] = iRODSMeta(property, resources[resource][property])
+        for property in RESOURCE_PROPS:
+            meta_name = RESOURCE_PROPS[property]['meta']
+            if property in new_settings[resource]:
+                if new_settings[resource][property]:
+                    try:
+                        current_meta = res_obj.metadata.get_one(meta_name)
+                    except KeyError:
+                        current_meta = iRODSMeta(meta_name, '')
+                    new_meta = iRODSMeta(meta_name, current_meta.value, current_meta.units)
+                    if RESOURCE_PROPS[property].get('unit', False):
+                        new_meta.units = new_settings[resource][property]
+                    else:
+                        new_meta.value = new_settings[resource][property]
+                    res_obj.metadata[meta_name] = new_meta
             else:
-                del res_obj.metadata[property]
-        for property in BOOL_PROPERTIES:
-            value = resources[resource].get(property, 'false')
-            res_obj.metadata[property] = iRODSMeta(property, value)
-        group = resources[resource].get('group')
-        id = resources[resource].get('id')
-        if group and id:
-            res_obj.metadata['sys::tiering::group'] = iRODSMeta('sys::tiering::group', group, id)
-        else:
-            del res_obj.metadata['sys::tiering::group']
+                del res_obj.metadata[meta_name]
 
     return redirect(url_for('admin.resources'))
 
