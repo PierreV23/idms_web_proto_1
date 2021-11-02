@@ -18,7 +18,7 @@ from app.datafield import AVU2data, datafield
 from graphviz import Digraph
 from irods.meta import iRODSMeta
 from . import projects
-#from irods_helper import getmetaitem
+from app.irods_helper import getmetaitem
 
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
 
@@ -57,12 +57,6 @@ COLL_SHAPES = {
 PROCESS_SHAPE = 'cds'
 
 # TODO: use the irods_helper instead (role irods_cronjobs)
-def getmetaitem(irods_obj, attr, default=None): 
-    try:
-        value = irods_obj.metadata.get_one(attr).value
-    except KeyError:
-        value = default
-    return value
 
 def getmetatree(irods_obj, attr, default=None):
     return  _getmetatree(irods_obj, attr, irods_obj.path, default=None)
