@@ -42,6 +42,7 @@ ATTR_ARCHIVE_LASTRUN = f'{ATTR_ARCHIVE_PREFIX}lastrun'
 ATTR_ARCHIVE_MINSTABLE = f'{ATTR_ARCHIVE_PREFIX}min_stable'
 ATTR_ARCHIVE_ONLINEPERCENTAGE = f'{ATTR_ARCHIVE_PREFIX}online_percentage'
 ATTR_ARCHIVE_MINCOPIES = f'{ATTR_ARCHIVE_PREFIX}min_copies'
+USER_PIPELINE_AUTOSTART = 'user::pipeline::autostart'
 
 
 COLL_SHAPES = {
@@ -194,6 +195,7 @@ def coll_actions():
     processid = getmetaitem(coll_obj, ATTR_PROCESSID, "")
     processes = projects.get_processlist(projectid)
     processrequest = getmetaitem(coll_obj, ATTR_PROCESSREQUEST, "false")
+    start_next_process = getmetaitem(coll_obj, USER_PIPELINE_AUTOSTART, "true")
 
     archival_state = {
         "enabled": getmetaitem(coll_obj, ATTR_ARCHIVE_ENABLE, "false"),
@@ -209,7 +211,7 @@ def coll_actions():
     #print( archival_state )
     return render_template('actions.html', collection=path, 
         name=coll_name, archival_state=archival_state,
-        processes=processes, processid=processid, processrequest=processrequest )
+        processes=processes, processid=processid, processrequest=processrequest, start_next_process=start_next_process )
 
 
 @bp.route('_startprocess')
