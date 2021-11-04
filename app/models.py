@@ -79,7 +79,6 @@ class WebUser(UserMixin):
                     self._irods_user = self.irods_session.users.get(self.username)
                 except KeyError:
                     pass
-        print(self._irods_user)
         return self._irods_user
     
     @property
