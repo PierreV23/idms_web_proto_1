@@ -78,6 +78,10 @@ def load_user(userid):
 def home():
     return render_template('home.html')
 
+@app.route('/contacts')
+def contacts():
+    return render_template('contacts.html')
+
 # @app.teardown_request
 # def teardown(x):
 #     try:

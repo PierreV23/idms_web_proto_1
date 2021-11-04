@@ -1,7 +1,7 @@
 {% extends 'base2.html' %}
  
 {% block heading %}
-<H3><b>Collection browser:</b> <span id="path_title">{{ path_title | safe }}</span></H3>
+<H3><b>Collection:</b> <span id="path_title">{{ path_title | safe }}</span></H3>
 {% endblock %}
 
 {% block content %}
@@ -13,6 +13,7 @@ var sortkey="";
 var reverse="";
 var activetab="Files";
 var selected_object ="";
+var waiting='<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>'
 
 function fillModal(path, name) {
     var ModalHeader = document.getElementById("DocTitle")
@@ -53,15 +54,18 @@ function build_title() {
 }
 
 function load_graph() {
+  $('#datacard').html(waiting)
   $.get('{{ url_for('collbrowser.generate_graph') }}', {
     path: collection
   }, function(data) {
+     $('#datacard').html('<img src="" id="graphimg" usemap="#datagraph" />')
      $('#data_map').html(data.map)
      $('#graphimg').attr('src', 'data:image/png;base64,' + data.graph)
   });
 }
 
 function load_meta() {
+  $('#meta-card').html(waiting)
   $.get('{{ url_for('collbrowser.coll_meta') }}', {
     path: collection,
     object: selected_object
@@ -100,7 +104,7 @@ function tree_active() {
 function load_actions() {
   //path_elem = collection.split('/')
   //current_col_name = path_elem[-1]
-
+  $('#collapse-actions').html(waiting)
   $.get('{{ url_for('collbrowser.coll_actions') }}', {
     path: collection
   }, function(data) {
@@ -145,24 +149,59 @@ window.onpopstate = function(event) {
 
 </script>
 
-<div class="wrapper">
-<nav id="sidebar">
-<div class="card border-primary mb-3 h100">
-<div class="card-header sidebar-header list-pointer">
-<b>Collection tree</b>
-</div>
-<div class="card card-body scroll small-font">
-<div id="treeview">
-</div>
-</div>
+<div id="data_map"></div>
+
+<div class="browsergrid">
+
+  <div class="card border-primary browser-sidebar">
+    <div class="card-header">
+      <div class="card-title"><b>Collection tree</b></div>
+    </div>
+    <div class="card-body scroll small-font">
+      <div id="treeview">
+      </div>
+    </div>
+  </div>
+
+<div class="card browser-graph h100">
+  <div class="card-header myheader">
+      <div class="card-title">Data graph</div>
+      <div class="card-tools">
+        <button type="button" class="btn btn-tool" data-card-widget="maximize"><i class="fas fa-expand"></i></button>
+        <!-- This will cause the card to collapse when clicked -->
+        <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i></button>          
+      </div>
+  </div>
+  <div class="card-body scrollbar-y" id="datacard">
+    <img src="" id="graphimg" usemap="#datagraph" />
+  </div>
 </div>
 
-</nav>
+<div class="card browser-contents">
+  <div class="card-header myheader">
+        Collection contents
+  </div>
+  <div class="card-body coll-content" id="collapse-contents">
+    <div class="overlay">
+      <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+    </div>
+  </div>
+</div>  
 
-<div id="content">
+<div id="collapse-actions" class="card browser-actions h-100">
+  <div class="overlay">
+    <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+  </div>
+</div>
+
+<div class="card browser-meta" id="meta-card">
+
+</div>
+
+</div> <!-- browsergrid-->
 
 <script>
-$('#sidebar').on('click', '.list-close', function() {
+$('#treeview').on('click', '.list-close', function() {
   $(this).addClass('caret-down list-open');
   $(this).removeClass('list-close');
   myid=$(this).attr('id')
@@ -174,61 +213,13 @@ $('#sidebar').on('click', '.list-close', function() {
   });
 });
 
-$('#sidebar').on('click', '.list-open', function() {
+$('#treeview').on('click', '.list-open', function() {
   $(this).removeClass('caret-down list-open');
   $(this).addClass('list-close');
   sublistid = $(this).attr('id').substr(2);
   $('#' + $.escapeSelector(sublistid)).html('');
 });
 </script>
-
-<div class="container-wide">
-
-<div class="row">
-<div class="col-md-8">
-
-  <div id="data_map"></div>
-
-<div class="card border-primary mb-3 graph-height">
-    <div class="card-header myheader">
-        Data graph
-    </div>
-    <div class="card card-body">
-       <div class="collapse show" id="collapse-graph">
-          <img src="" id="graphimg" usemap="#datagraph" />
-       </div>
-    </div>
-</div>
-
-</div>
-
-<div class="col-md-4">
-<div id="collapse-actions">
-</div>
-</div>
-
-</div> <!--row-->
-
-<div class="row">
-  <div class="col-md-8">
-    <div class="card border-primary mb-3">
-      <div class="card-header myheader">
-            Collection contents
-      </div>
-      <div class="card card-body coll-content" id="collapse-contents">
-        </div>   
-    </div>
-  </div>
-
-  <div class="col-md-4">
-    <div class="card border-primary mb-3" id="meta-card">
-
-    </div>
-  </div>
-
-</div> <!--row-->
-
-</div> <!-- container-wide-->
 
 <!-- Document viewer modal dialog -->
 <div class="modal modal-tall" id="myOutput" role="dialog" >

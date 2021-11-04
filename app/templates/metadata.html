@@ -19,11 +19,13 @@ $('.nav-pills').on('shown.bs.tab', function(event){
             aria-controls="objectmeta" aria-selected="false">Object metadata</button>
               <!--  if archival_state.is_dataset is sameas false btn-outline-dark disabled -->
         </li>
-        <button class="btn btn-outline-success float-right" onclick='avu_table()' id="metatoggle">Formatted</button>
-    </ul>
+        <li>
+    <button class="btn btn-outline-success float-right right" onclick='avu_table()' id="metatoggle">Formatted</button>
+    </li></ul>
+    
 
 </div>
-<div class="card card-body coll-meta tab-content">
+<div class="card-body coll-meta tab-content">
     <div class="tab-pane {% if object_avu is none %} active {% endif %}" id="collmeta" role="tabpanel" aria-labelledby="collmeta-tab">
         <table class="table table-hover table-striped table-sm">
             <thead>

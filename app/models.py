@@ -17,6 +17,7 @@ from irods.models import User, UserGroup
 from irods.column import Criterion
 from fs_irods import fs_irods
 
+ATTR_DISPLAYNAME = 'sys::ad::displayName'
 
 def obfuscate(data):
     return base64.b64encode(data.encode('utf-8'))
@@ -67,7 +68,32 @@ class WebUser(UserMixin):
             self.irods_zone = irods_env.get('zone')
             self.features = irods_env.get('features', [])
         self.configure_irods_session(username, password)
+        self._fullname = username
+        self._irods_user = None
+
+    @property
+    def irods_user(self):
+        if self._irods_user is None:
+            if self.irods_session:
+                try:
+                    self._irods_user = self.irods_session.users.get(self.username)
+                except KeyError:
+                    pass
+        print(self._irods_user)
+        return self._irods_user
     
+    @property
+    def fullname(self):
+        if self._fullname == self.username:
+            if self.irods_session:
+                if self.irods_user:
+                    try:
+                        displayname = self.irods_user.metadata.get_one(ATTR_DISPLAYNAME)
+                    except KeyError:
+                        pass
+                    self._fullname = displayname.value
+        return self._fullname
+
     @property    
     def ntlm_hash(self):
         password = deobfuscate(self.password)

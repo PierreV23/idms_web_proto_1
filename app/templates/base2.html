@@ -32,122 +32,309 @@
 <script src="{{ url_for('static', filename='css/bootstrap.min.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/gh/xcash/bootstrap-autocomplete@v2.3.7/dist/latest/bootstrap-autocomplete.min.js"></script>
 
+<script src="https://cdn.jsdelivr.net/npm/admin-lte@3.1.0/dist/js/adminlte.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.1.0/dist/css/adminlte.min.css">
+
 <!--script src="{{ url_for('static', filename='css/bootstrap-table-locale-all.js') }}"></script-->
 <script src="{{ url_for('static', filename='css/bootstrap-table.js') }}"></script>
 
 </head>
+{% set page = request.path.split('/')[1] %}
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
-  <a class="navbar-brand" href="#">iRODS</a>
-<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-<span class="navbar-toggler-icon"></span>
-</button>
+<div class="wrapper">
 
-<div class="collapse navbar-collapse" id="navbarSupportedContent">
- <ul class="navbar-nav mr-auto">
-   <li class="nav-item active">
-     <a class="nav-link" href="/">Home <span class="sr-only">(current)</span></a>
-   </li>
-  <li class="nav-item">
-    <a class="nav-link" href="{{ url_for('collbrowser.collbrowser') }}" id="navbarCollection" role="button">
-      Data
-    </a>
-  </li>
-  {% if 'JOBS' in current_user.features %}
-  <li class="nav-item">
-    <a class="nav-link" href="{{ url_for('jobs.show_jobs') }}" id="navbarCollection" role="button">
-      Jobs
-    </a>
-  </li>
-  {% endif %}
-  {% if 'PROJECTS' in current_user.features %}
-  <li class="nav-item dropdown">
-    <a class="nav-link" href="{{ url_for('projects.show_projects') }}" id="navbarCollection" role="button">
-      Projects
-    </a>
-  </li>
-  {% endif %}
-  {% if 'MINILIMS' in current_user.features %}
-  <li class="nav-item dropdown">
-    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown_ngs" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-      Vir-ont SmplSh
-    </a>
-    <div class="dropdown-menu" aria-labbeledby="navbarDropdown_ngs">
-      <a class="dropdown-item" href="/ngsruns/new">New run</a>
-      <a class="dropdown-item" href="{{ url_for('ngsruns.run_list') }}">Run List</a>
-    </div>
-  </li>
-  {% endif %}
-{% if current_user.is_admin  %}
-  <li class="nav-item dropdown">
-    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-      Admin
-    </a>
-    <div class="dropdown-menu" aria-labbeledby="navbarDropdown">
-      <a class="dropdown-item" href="/users">Users</a>
-      <a class="dropdown-item" href="/groups">Groups</a>
-      <a class="dropdown-item" href="{{ url_for('admin.resources') }}">Resources</a>
-      <a class="dropdown-item" href="/admin/queues">Runsheet queues</a>
-      <a class="dropdown-item" href="/admin/issues">Data issues</a>
-    </div>
-  </li>  
-  <li class="nav-item dropdown">
-    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-      Reports
-    </a>
-    <div class="dropdown-menu" aria-labbeledby="navbarDropdown">
-      <a class="dropdown-item" href="/reports/space">Disk Space</a>
-    </div>
-  </li>    
-{% endif %}
-  <li class="nav-item dropdown">
-    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-      Cluster
-    </a>
-    <div class="dropdown-menu" aria-labelledby="navbarDropwdown">
-      <a class="dropdown-item" href="{{ url_for('cluster.info') }}">Cluster Information</a>
-    </div>
-  </li>
-<!--  
-  <li class="nav-item dropdown">
-    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-      HPCinfo
-    </a>
-    <div class="dropdown-menu" aria-labelledby="navbarDropwdown">
-      <a class="dropdown-item" href="/hpcinfo">HPC Information</a>
-    </div>
-  </li>
--->
-   <li class="nav-item active">
-     <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout<span class="sr-only">(current)</span></a>
-   </li>
-  </ul>
-  <span class="navbar-txt">
-     {%if current_user.is_authenticated %}
-     {{ current_user.username }}@{{ current_user.irods_server }}
-     {% endif %}
-  </span>
+  <!-- Navbar -->
+  <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+    <!-- Left navbar links -->
+    <ul class="navbar-nav">
+      <li class="nav-item">
+        <a class="nav-link" data-widget="pushmenu" data-enable-remember=True data-auto-collapse-size="200" href="#" role="button"><i class="fas fa-bars"></i></a>
+      </li>
+      <li class="nav-item d-none d-sm-inline-block">
+        <a href="/" class="nav-link">Home</a>
+      </li>
+      <li class="nav-item d-none d-sm-inline-block">
+        <a href="{{ url_for('jobs.show_jobs') }}" class="nav-link">
+          Job List
+        </a>
+      </li>
+      <li class="nav-item d-none d-sm-inline-block">
+        <a href="{{ url_for('collbrowser.collbrowser') }}" class="nav-link">
+          Collection browser
+        </a>
+      </li>
+      <li class="nav-item d-none d-sm-inline-block">
+        <a href="{{ url_for('contacts') }}" class="nav-link">Contact</a>
+      </li>
+      <li class="nav-item d-none d-sm-inline-block">
+        <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout<span class="sr-only">(current)</span></a>
+      </li>
+    </ul>
 
-  
+    <!-- Right navbar links -->
+    <ul class="navbar-nav ml-auto">
+      <!-- Navbar Search -->
+      <li class="nav-item">
+        <a class="nav-link" data-widget="navbar-search" href="#" role="button">
+          <i class="fas fa-search"></i>
+        </a>
+        <div class="navbar-search-block">
+          <form class="form-inline">
+            <div class="input-group input-group-sm">
+              <input class="form-control form-control-navbar" type="search" placeholder="Search" aria-label="Search">
+              <div class="input-group-append">
+                <button class="btn btn-navbar" type="submit">
+                  <i class="fas fa-search"></i>
+                </button>
+                <button class="btn btn-navbar" type="button" data-widget="navbar-search">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </li>
+
+      <!-- Notifications Dropdown Menu -->
+      <li class="nav-item dropdown">
+        <a class="nav-link" data-toggle="dropdown" href="#">
+          <i class="far fa-bell"></i>
+          <span class="badge badge-warning navbar-badge">0</span>
+        </a>
+        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+          <span class="dropdown-header">No notifications</span>
+          <div class="dropdown-divider"></div>
+<!--          <a href="#" class="dropdown-item">
+            <i class="fas fa-envelope mr-2"></i> 4 new messages
+            <span class="float-right text-muted text-sm">3 mins</span>
+          </a>
+          <div class="dropdown-divider"></div>
+          <a href="#" class="dropdown-item">
+            <i class="fas fa-users mr-2"></i> 8 friend requests
+            <span class="float-right text-muted text-sm">12 hours</span>
+          </a>
+          <div class="dropdown-divider"></div>
+          <a href="#" class="dropdown-item">
+            <i class="fas fa-file mr-2"></i> 3 new reports
+            <span class="float-right text-muted text-sm">2 days</span>
+          </a>
+          <div class="dropdown-divider"></div>
+          <a href="#" class="dropdown-item dropdown-footer">See All Notifications</a>
+        -->
+        </div>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-widget="fullscreen" href="#" role="button">
+          <i class="fas fa-expand-arrows-alt"></i>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" data-widget="control-sidebar" data-slide="true" href="#" role="button">
+          <i class="fas fa-th-large"></i>
+        </a>
+      </li>
+    </ul>
+  </nav>
+  <!-- /.navbar -->
+
+  <!-- Main Sidebar Container -->
+  <aside class="main-sidebar sidebar-dark-primary elevation-4">
+    <!-- Brand Logo -->
+    <a href="/" class="brand-link">
+      <!-- <img src="dist/img/AdminLTELogo.png" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity: .8"> -->
+      <span class="brand-text font-weight-light">NGSweb</span>
+    </a>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <!-- Sidebar user panel (optional) -->
+      <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+        <!-- <div class="image">
+          <img src="dist/img/user2-160x160.jpg" class="img-circle elevation-2" alt="User Image">
+        </div> -->
+        <div class="info">
+          <a href="#" class="d-block">{{ current_user.fullname }}</a>
+          <p class="white">{{ current_user.irods_zone }}</p>
+        </div>
+      </div>
+
+      <!-- SidebarSearch Form -->
+      <!-- <div class="form-inline">
+        <div class="input-group" data-widget="sidebar-search">
+          <input class="form-control form-control-sidebar" type="search" placeholder="Search" aria-label="Search">
+          <div class="input-group-append">
+            <button class="btn btn-sidebar">
+              <i class="fas fa-search fa-fw"></i>
+            </button>
+          </div>
+        </div>
+      </div> -->
+
+      <!-- Sidebar Menu -->
+      <nav class="mt-2">
+        <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+          <!-- Add icons to the links using the .nav-icon class
+               with font-awesome or any other icon font library -->
+
+          <li class="nav-item">
+            <a href="{{ url_for('jobs.show_jobs') }}" class="nav-link {% if page == 'jobs' %} active {% endif %}">
+              <i class="fas fa-tasks nav-icon"></i>
+              <p>Job list</p>
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a href="{{ url_for('collbrowser.collbrowser') }}" class="nav-link {% if page == 'collbrowser' %} active {% endif %}">
+              <i class="fas fa-sitemap nav-icon"></i>
+              <p>Collection browser</p>
+            </a>
+          </li>
+
+          {% if 'PROJECTS' in current_user.features %}
+          <li class="nav-item dropdown">
+            <a class="nav-link" href="{{ url_for('projects.show_projects') }}" id="navbarCollection" role="button">
+              <i class="fas fa-project-diagram nav-icon">
+              </i><p>Projects</p>
+            </a>
+          </li>
+          {% endif %}
+
+          {% if 'MINILIMS' in current_user.features %}
+          <li class="nav-item menu">
+            <a class="nav-link" href="#" >
+              <i class="nav-icon fas fa-vials"></i>
+              <p>Vir-ont SmplSh
+              <i class="right fas fa-angle-left"></i>
+              </p>
+            </a>
+            <ul class="nav nav-treeview">
+              <li class="nav-item">
+                <a class="nav-link" href="/ngsruns/new">
+                  <i class="nav-icon fas fa-plus"></i>
+                  <p>New run</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('ngsruns.run_list') }}">
+                  <i class="nav-icon fas fa-list"></i>
+                  <p>Run List</p></a>
+              </li>
+            </ul>
+          </li>
+          {% endif %}
+
+          {% if current_user.is_admin  %}
+          <li class="nav-item menu">
+            <a class="nav-link" href="#" >
+              <i class="nav-icon fas fa-tools"></i>
+              <p>Admin
+              <i class="right fas fa-angle-left"></i>
+              </p>
+            </a>
+            <ul class="nav nav-treeview">
+              <li class="nav-item">
+                <a class="nav-link" href="/users">
+                  <i class="nav-icon fas fa-user"></i>
+                  <p>Users</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/groups">
+                  <i class="nav-icon fas fa-users"></i>
+                  <p>Groups</p></a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('admin.resources') }}">
+                  <i class="nav-icon fas fa-database"></i>
+                  <p>Resources</p></a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/admin/queues">
+                  <i class="nav-icon fas fa-stream"></i>
+                  <p>Job queues</p></a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/admin/issues">
+                  <i class="nav-icon fas fa-exclamation"></i>
+                  <p>Data issues</p></a>
+              </li>
+            </ul>
+          </li>
+
+          <li class="nav-item menu">
+            <a class="nav-link" href="#" >
+              <i class="nav-icon fas fa-chart-pie"></i>
+              <p>Reports
+              <i class="right fas fa-angle-left"></i>
+              </p>
+            </a>
+            <ul class="nav nav-treeview">
+              <li class="nav-item">
+                <a class="nav-link" href="/reports/space">
+                  <i class="nav-icon fas fa-hdd"></i>
+                  <p>Disk Space</p>
+                </a>
+              </li>
+            </ul>
+          </li>
+
+          {% endif %}
+
+          <!-- <li class="nav-item dropdown">
+            <a class="nav-link" href="{{ url_for('projects.show_projects') }}" id="navbarCollection" role="button">
+              <i class="fas fa-project-diagram nav-icon">
+              </i><p>Projects</p>
+            </a>
+          </li> -->
+
+        </ul>
+      </nav>
+      <!-- /.sidebar-menu -->
+    </div>
+    <!-- /.sidebar -->
+  </aside>
+
+  <!-- Content Wrapper. Contains page content -->
+  <div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <div class="content-header">
+
+      <div class="info-box browser-heading item">
+        <div class="info-box-content">
+          <span class="info-box-text">{% block heading %}{% endblock %}</span>
+        </div>
+      </div>
+
+      <!-- Main content -->
+      <div class="content">
+        {% block content %} {% endblock %}
+      </div>
+      <!-- /.content-wrapper -->
+    </div>
+  </div>
+
+  <!-- Control Sidebar -->
+  <aside class="control-sidebar control-sidebar-dark">
+    <!-- Control sidebar content goes here -->
+    <div class="p-3">
+      <h5>Title</h5>
+      <p>Sidebar content</p>
+    </div>
+  </aside>
+  <!-- /.control-sidebar -->
+
+  <!-- Main Footer -->
+  <footer class="main-footer">
+    <!-- To the right -->
+    <div class="float-right d-none d-sm-inline">
+      NGSweb web interface
+    </div>
+    <!-- Default to the left -->
+    <strong>Copyright &copy; 2014-2021 <a href="https://adminlte.io">AdminLTE.io</a>.</strong> All rights reserved.
+  </footer>
 </div>
-</nav>
-
-<div class="page-wrapper">
-<div class="container-wide bg-light"><p class="text-center">
-<div class="card">
-{% block heading %}
-
-{% endblock %}
-</div>
-<p> </div> </div>
-<div class="page-wrapper">
-<div class="container-wide">
-{% block content %}
-
-{% endblock %}
-</div>
-</div>
+<!-- ./wrapper -->
 
 </body>
 </html>

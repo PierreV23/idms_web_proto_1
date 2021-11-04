@@ -218,7 +218,7 @@ def show_jobdetails():
         metadata = {meta[CollectionMeta.name] : meta[CollectionMeta.value] for meta in q2}
         D['Runsheet collection'] = datafield('runsheet',  runsheet, 'irods_collection')
         D['Create time'] = datafield('create_time', float(metadata[ATTR_RUNSHEET_CREATETIME]), 'timestamp')
-        joblog = f'/{runsheet}/log/{jobnaam}.log'
+        joblog = f'{runsheet}/log/{jobnaam}.log'
     ifs = current_user.ifs
     try:
         obj = ifs.getfile(joblog)
@@ -227,6 +227,7 @@ def show_jobdetails():
             log = a.decode('utf-8')
     except:
         log = ''
+
 
     # Find output logs
     logfiles = {}
