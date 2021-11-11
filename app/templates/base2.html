@@ -38,9 +38,11 @@
 <!--script src="{{ url_for('static', filename='css/bootstrap-table-locale-all.js') }}"></script-->
 <script src="{{ url_for('static', filename='css/bootstrap-table.js') }}"></script>
 
+{% block head %}
+{% endblock %}
 </head>
 {% set page = request.path.split('/')[1:] %}
-<body>
+<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed">
 <div class="wrapper">
 
   <!-- Navbar -->
@@ -295,43 +297,40 @@
   </aside>
 
   <!-- Content Wrapper. Contains page content -->
-  <div class="content-wrapper">
+  <div class="content-wrapper" stxyle='max-height: 90vh'>
     <!-- Content Header (Page header) -->
     <div class="content-header">
 
-      <div class="info-box browser-heading item">
+      <div class="info-box">
         <div class="info-box-content">
           <span class="info-box-text">{% block heading %}{% endblock %}</span>
         </div>
       </div>
+    </div>
 
       <!-- Main content -->
-      <div class="content">
-        {% block content %} {% endblock %}
-      </div>
-      <!-- /.content-wrapper -->
+    <div class="content">
+      {% block content %} {% endblock %}
     </div>
+      <!-- /.content-wrapper -->
   </div>
 
   <!-- Control Sidebar -->
   <aside class="control-sidebar control-sidebar-dark">
     <!-- Control sidebar content goes here -->
-    <div class="p-3">
-      <h5>Title</h5>
-      <p>Sidebar content</p>
-    </div>
+    {% block sidebar %} {% endblock %}
   </aside>
   <!-- /.control-sidebar -->
 
   <!-- Main Footer -->
-  <footer class="main-footer">
+  <!-- <footer class="main-footer"> -->
     <!-- To the right -->
-    <div class="float-right d-none d-sm-inline">
+    <!-- <div class="float-right d-none d-sm-inline">
       NGSweb web interface
-    </div>
+    </div> -->
     <!-- Default to the left -->
-    <strong>Copyright &copy; 2014-2021 <a href="https://adminlte.io">AdminLTE.io</a>.</strong> All rights reserved.
-  </footer>
+    <!-- <strong>Copyright &copy; 2014-2021 <a href="https://adminlte.io">AdminLTE.io</a>.</strong> All rights reserved.
+  </footer> -->
 </div>
 <!-- ./wrapper -->
 

@@ -2,6 +2,11 @@ html {
   font-size: 80%;
 }
 
+.content-wrapper {
+  overflow-y: auto;
+  max-height: 80vh;
+}
+
 .modal-tall modal {
   width: 100%;
 }
@@ -68,16 +73,11 @@ html {
    row-gap: 10px;
    align-items: stretch;
    grid-template-columns: [left] 220px [middle] auto [right] 30%;
-   grid-template-rows: [heading] 0px [top] 30vh [bottom] 45vh [footer] 0px;
+   grid-template-rows: [top] 30vh [bottom] 49vh [footer] 0px;
    grid-template-areas:
-     "heading heading heading"
      "sidebar graph actions"
      "sidebar contents metadata"
    
-}
-
-.browser-heading {
-  grid-area: heading;
 }
 
 .browser-sidebar {
