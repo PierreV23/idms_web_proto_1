@@ -18,12 +18,15 @@ from app.datafield import AVU2data, datafield
 from graphviz import Digraph
 from irods.meta import iRODSMeta
 from . import projects
+import json
 #from irods_helper import getmetaitem
 
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
 
 NAME_LENGTH = 20
 MAX_GRAPH_LEVELS = 3
+SEARCHPAGE_SIZE = 1000
+
 ATTR_DATASETID = 'sys::dataset_id'
 ATTR_PROJECTID = 'projectID'
 ATTR_PROCESSID = 'processID'
@@ -561,3 +564,94 @@ def delete_file():
         print(f'DELETE {path}')
         current_user.ifs.deletefile(path)
     return '', 201
+
+
+@bp.route('search')
+def search():
+    return render_template('search.html')
+
+
+@bp.route('_search', methods=['GET'])
+@login_required
+def search_result():
+    searchtext = (request.args.get('txt', '', type=str).strip())
+    searchid = request.args.get('searchId', 0)
+    useExactMatch = (request.args.get('exactMatch', 'false', type=str).strip() == 'true')
+    useSearchMeta = (request.args.get('searchMeta', 'true', type=str).strip() == 'true')
+    useSearchDatasetNames = (request.args.get('searchDatasetNames', 'true', type=str).strip() == 'true')
+    useSearchObjectNames = (request.args.get('searchObjectNames', 'true', type=str).strip() == 'true')
+
+    SEARCH_PATTERN = '%{}%'
+    SEARCH_OPTION = 'like'
+    if useExactMatch:
+        SEARCH_PATTERN = '{}'
+        SEARCH_OPTION = '='
+
+    #print( f"useExactMatch: {useExactMatch}, useSearchMeta: {useSearchMeta}, useSearchObjectNames: {useSearchObjectNames}" )
+    irods_session = current_user.irods_session
+    data = list()
+
+    if useSearchDatasetNames:
+        #search for datasets
+        query = irods_session.query(Collection.name).filter(
+            Criterion( '=', CollectionMeta.name, ATTR_DATASETID ) ).filter(
+            #EVEN IN AN EXACT SEARCH WE NEED TO DO A LIKE SEARCH ON A PATTERN, BECAUSE
+            #THE ACTUAL COLLECTION_NAME CONTAINS THE COMPLETE PATH, INCL. PARENT COLLECTION!
+            Criterion( 'like', Collection.name, ('%'+SEARCH_PATTERN).format(searchtext) ) 
+        )
+        for coll in query:
+            basename = os.path.basename(coll[Collection.name])
+            if useExactMatch:
+                if searchtext != basename:
+                    continue
+            else:
+                #this would happen by searching part of the parent path, e.g. 'minion' 
+                if searchtext not in basename:
+                    continue
+            data.append( { 'collection': datafield('collection', coll[Collection.name], 'irods_collection').htmlstring , 
+                           'dataobject': '', 
+                           'metaattribute': '', 
+                           'metavalue':'' } )
+                
+    if useSearchObjectNames:        
+        #search for data objects
+        query = irods_session.query(Collection.name, DataObject.name).filter(
+            Criterion( SEARCH_OPTION, DataObject.name, SEARCH_PATTERN.format(searchtext) )
+        )
+        for obj in query:
+            data.append( { 'collection': datafield('collection', obj[Collection.name], 'irods_collection').htmlstring ,
+                           'dataobject': obj[DataObject.name],
+                           'metaattribute': '',
+                           'metavalue':'' } )
+
+    if useSearchMeta:
+        query = irods_session.query(Collection.name, CollectionMeta.name, CollectionMeta.value).filter(
+            Criterion( SEARCH_OPTION, CollectionMeta.value, SEARCH_PATTERN.format(searchtext) )
+        )
+        for coll in query:
+            data.append({ 'collection':  datafield('collection', coll[Collection.name], 'irods_collection').htmlstring ,
+                          'dataobject': '',
+                          'metaattribute': coll[CollectionMeta.name],
+                          'metavalue': coll[CollectionMeta.value] })
+
+        #iquest "SELECT COLL_NAME, DATA_NAME, META_DATA_ATTR_NAME, META_DATA_ATTR_VALUE where META_DATA_ATTR_VALUE like 'a55f0cd5-79cf-4b27-91e8-ce10f055e817'"
+        query = irods_session.query(Collection.name, DataObject.name, DataObjectMeta.name, DataObjectMeta.value, DataObjectMeta.units).filter(
+                Criterion( SEARCH_OPTION, DataObjectMeta.value, SEARCH_PATTERN.format(searchtext)) )
+        for obj in query:
+            data.append({ 'collection':  datafield('collection', obj[Collection.name], 'irods_collection').htmlstring ,
+                          'dataobject': obj[DataObject.name],
+                          'metaattribute': obj[DataObjectMeta.name],
+                          'metavalue': obj[DataObjectMeta.value]})
+
+
+    data2 = sorted(data, key = lambda e: (e['collection'], e['dataobject'], e['metaattribute'] ) ) 
+    columns = [ { "field": "collection",    "title": "Collection", "sortable": True }, 
+                { "field": "dataobject",    "title": "File", "sortable": True  }, 
+                { "field": "metaattribute", "title": "Attr", "sortable": True  },
+                { "field": "metavalue",     "title": "Value", "sortable": True  } ]
+    searchResultsData = {
+                    'columnsJSON': json.dumps(columns),
+                    'dataJSON': json.dumps(data2)
+    }
+    content = { 'searchResults': render_template('search_results.html', data=searchResultsData), 'searchId': searchid }
+    return content
