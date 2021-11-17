@@ -282,13 +282,7 @@
 
           {% endif %}
           <li class="nav-item">
-            <a href="{{ url_for('jobs.show_jobs') }}" class="nav-link {% if page[0] == 'jobs' %} active {% endif %}">
-              <i class="fas fa-tasks nav-icon"></i>
-              <p>Job list</p>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="{{ url_for('collbrowser.search') }}" class="nav-link {% if page[0] == 'jobs' %} active {% endif %}">
+            <a href="{{ url_for('collbrowser.search') }}" class="nav-link {% if page[1] == 'search' %} active {% endif %}">
               <i class="fas fa-search nav-icon"></i>
               <p>Search</p>
             </a>
