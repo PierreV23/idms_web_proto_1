@@ -231,6 +231,10 @@ ul {
     padding-top: 5px;
 }
 
+.separator {
+  border-bottom: 1px solid #4f5962;
+}
+
 .c1 { filter: hue-rotate(0deg)   }
 .c2 { filter: hue-rotate(30deg)  }
 .c3 { filter: hue-rotate(60deg)  }

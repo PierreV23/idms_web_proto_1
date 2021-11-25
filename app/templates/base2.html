@@ -307,6 +307,13 @@
 
         </ul>
       </nav>
+      <div class="separator"></div>
+      <nav> <!-- CONTEXT_DEPENDANT MENU -->
+        <ul class="nav nav-pills nav-sidebar nav-child-indent flex-column" data-widget="treeview" role="menu" data-accordion="false">
+        {% block menuitems %}
+        {% endblock %}
+        </ul>
+      </nav>
       <!-- /.sidebar-menu -->
     </div>
     <!-- /.sidebar -->
