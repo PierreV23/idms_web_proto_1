@@ -2,6 +2,11 @@ html {
   font-size: 80%;
 }
 
+.content-wrapper {
+  overflow-y: auto;
+  max-height: 80vh;
+}
+
 .modal-tall modal {
   width: 100%;
 }
@@ -41,28 +46,64 @@ html {
     margin: 0 auto;
 }
 
-.wrapper {
-   display: flex;
+.ngsruns-grid {
+  display: grid;
+  column-gap: 10px;
+  row-gap: 10px;
+  align-items: stretch;
+  grid-template-columns: [left] 40% [middle] auto [right];
+  grid-template-rows: [top] 78vh [bottom];
+  grid-template-areas:
+    "listing details"
+}
+
+.ngsrun-list {
+  grid-area: listing;
+}
+
+.ngsrun-details {
+  grid-area: details;
+}
+
+.browsergrid {
+   display: grid;
    width: 100%;
+   height: 100vh;
+   column-gap: 10px;
+   row-gap: 10px;
    align-items: stretch;
+   grid-template-columns: [left] 220px [middle] auto [right] 30%;
+   grid-template-rows: [top] 30vh [bottom] 49vh [footer] 0px;
+   grid-template-areas:
+     "sidebar graph actions"
+     "sidebar contents metadata"
+   
+}
+
+.browser-sidebar {
+  grid-area: sidebar;
+}
+
+.browser-graph {
+  grid-area: graph;
+}
+
+.browser-contents {
+  grid-area: contents;
+}
+
+.browser-actions {
+  grid-area: actions;
+}
+
+.browser-meta {
+  grid-area: metadata;
 }
 
 .h100{
   min-height: 100%;
 }
 
-
-#sidebar{
-  min-width: 275px;
-  max-width: 275px;
-  /* min-height: 88vh;
-  max-height: 88vh; */
-  min-height: 100%;
-  max-height: 88vh;
-
-  padding-right: 8px;
-  white-space: nowrap;
-}
 
 #content {
   width:100%;
@@ -110,8 +151,8 @@ ul {
 }
 
 .scroll {
-  min-height: 71vh;
-  max-height: 84vh;
+  /* min-height: 71vh;
+  max-height: 84vh; */
   overflow-x: scroll;
   overflow-y: scroll;
 }
@@ -133,15 +174,22 @@ ul {
   float: right;
 }
 
+.white {
+  color: white;
+}
 
 .buttonbar {
     float: right;
 }
 
+.scrollbar-y {
+  overflow-y: scroll;
+}
+
 .graph-height {
   min-height: 27vh;
   max-height: 27vh;
-  overflow-y: scroll;
+  overflow-y: none;
 }
 
 .coll-meta {
@@ -151,8 +199,8 @@ ul {
 }
 
 .coll-content {
-  min-height: 55vh;
-  max-height: 55vh;
+  min-height: 45vh;
+  max-height: 45vh;
   overflow-y: scroll;
 }
 

@@ -48,7 +48,9 @@ $(window).on('load', function() {
       My Projects
     </div>
     <div class="card-body" id="myprojects">
-      <IMG SRC="{{ url_for('static', filename='img/loading.gif') }}"></IMG>
+      <div class="overlay">
+        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+      </div>
     </div>
   </div>
   {% endif %}
