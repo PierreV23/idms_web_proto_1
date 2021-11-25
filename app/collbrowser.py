@@ -650,8 +650,9 @@ def search_result():
                 { "field": "metaattribute", "title": "Attr", "sortable": True  },
                 { "field": "metavalue",     "title": "Value", "sortable": True  } ]
     searchResultsData = {
+                    'id': 'searchResult',
                     'columnsJSON': json.dumps(columns),
                     'dataJSON': json.dumps(data2)
     }
-    content = { 'searchResults': render_template('search_results.html', data=searchResultsData), 'searchId': searchid }
+    content = { 'searchResults': render_template('bootstraptable.html', data=searchResultsData), 'searchId': searchid }
     return content

@@ -14,14 +14,24 @@ from flask import jsonify
 from flask_login import current_user, login_required
 import uuid
 from app import projects
+from app.datafield import datafield
 from Bio import SeqIO
 import pymssql
 import openpyxl
 import json
 import re
+from irods.models import Collection, CollectionMeta
+from irods.column import Criterion
 #from flask_session import Session
 
 from nonacris.web import NncWeb
+
+ATTR_USER_UPLOAD = 'user::data::upload'
+
+class UploadType:
+    Pending = 'pending'
+    Ready = 'ready'
+    Done = 'done'
 
 SAMPLEID = 'SendingOrganisationSampleId'
 SEQUENCEID = 'SendingOrganisationSequenceId'
@@ -499,3 +509,59 @@ def seq_list():
             current_app.logger.info('upload/_seq_list: dir not found: {}'.format(directory))
         
     return render_template('seq_list.html', headers=headers, ids=ids)
+
+
+@bp.route('show_uploads')
+@login_required
+def show_uploads():
+    # Find pending uploads
+    pending = []
+    query = current_user.irods_session.query(Collection).filter( \
+        Criterion('=', Collection.owner_name, current_user.username)).filter( \
+        Criterion('=', CollectionMeta.name, ATTR_USER_UPLOAD)).filter( \
+        Criterion('=', CollectionMeta.value, UploadType.Pending))
+    for c in query:
+        print(c[Collection.name])
+        pending.append(c[Collection.name])
+
+
+    return render_template('uploads.html', pending=pending)
+
+
+# TODO: use the irods_helper instead (role irods_cronjobs)
+def getmetaitem(irods_obj, attr, default=None): 
+    try:
+        value = irods_obj.metadata.get_one(attr).value
+    except KeyError:
+        value = default
+    return value
+
+@bp.route('_pendinguploads')
+@login_required
+def pending_uploads():
+    pending = []
+    query = current_user.irods_session.query(Collection).filter( \
+        Criterion('=', Collection.owner_name, current_user.username)).filter( \
+        Criterion('=', CollectionMeta.name, ATTR_USER_UPLOAD)).filter( \
+        Criterion('=', CollectionMeta.value, UploadType.Pending))
+    for c in query:
+        collobj = current_user.irods_session.collections.get(c[Collection.name])
+        projectid = getmetaitem(collobj, 'user::projectid', '')
+        name = getmetaitem(collobj, 'user::data::name', collobj.path)
+        name_url = url_for('upload.upload_details', path=collobj.path)
+        namestr = f'<A HREF="{ name_url }">{name}</A>'
+        pending.append(
+            { 'name': namestr,
+              'collection':  datafield('collection', collobj.path, 'irods_collection').htmlstring,
+              'project': projectid
+            }
+        )
+        response = {
+            'rows': pending
+        }
+    return json.dumps(response)
+
+@bp.route('_uploaddetails')
+@login_required
+def upload_details():
+    return render_template('upload_details.html')
