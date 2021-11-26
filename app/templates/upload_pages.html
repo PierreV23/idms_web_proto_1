@@ -1,0 +1,23 @@
+{% extends 'base2.html' %}
+
+{% block menuitems %}
+<li class="nav-header">UPLOAD SETTINGS</li>
+<li class="nav-item">
+  <a href="{{ url_for('upload.new_upload') }}" class="nav-link">
+    <i class="fas fa-sliders-h nav-icon"></i>
+    <p>Basic settings</p>
+  </a>
+</li>
+<li class="nav-item">
+    <a href="{{ url_for('upload.new_upload') }}" class="nav-link">
+        <i class="fas fa-list"></i>
+        <p>Metadata</p>
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ url_for('upload.new_upload') }}" class="nav-link">
+        <i class="fas fa-cogs nav-icon"></i>
+        <p>Pipelines</p>
+    </a>
+</li>
+{% endblock %}

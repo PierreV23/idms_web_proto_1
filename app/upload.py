@@ -18,15 +18,19 @@ from app.datafield import datafield
 from Bio import SeqIO
 import pymssql
 import openpyxl
+import randomname
 import json
 import re
 from irods.models import Collection, CollectionMeta
 from irods.column import Criterion
+from irods.meta import iRODSMeta
 #from flask_session import Session
 
 from nonacris.web import NncWeb
 
 ATTR_USER_UPLOAD = 'user::data::upload'
+ATTR_USER_UPLOADNAME = 'user::data::name'
+ATTR_DATASETID = 'sys::dataset_id'
 
 class UploadType:
     Pending = 'pending'
@@ -55,9 +59,51 @@ DEFAULT_UPLOAD = {
 
 bp = Blueprint('upload', __name__, url_prefix='/upload')
 
+@login_required
+def unique_coll(base_coll, prefix=None, use_date=False):
+    """Create a collection with a unique collection name
+
+    The unique name will consist of an optional prefix, an optional date and a number.
+
+    Args:
+        base_coll (string): Parent collection of collection name to create
+        prefix (string): Prefix for the collection name. If the prefix name alone is unique, it
+                        will become the new collection name. If none is supplied, a prefix will be generated
+        use_date (boolean): Will append the current date to the suffix
+
+    Returns:
+        string: Full irods path to unique collection
+    """
+    if prefix is None:
+        fullprefix = 'dataset' # TODO : generate name (randomname)
+    elif prefix == '':
+        fullprefix = ''
+    else:
+        fullprefix = f'{prefix}'
+
+    if use_date:
+        datestr = time.strftime('%Y%m%d_%H%M%S')
+        if fullprefix:
+            fullprefix = f'{fullprefix}_{datestr}'
+        else:
+            fullprefix = f'{datestr}'
+    
+    if not fullprefix:
+        collname = os.path.join(base_coll,'0000')
+    else:
+        collname = os.path.join(base_coll, f'{fullprefix}')
+        fullprefix = f'{fullprefix}_'
+    i = 1
+    while current_user.irods_session.collections.exists(collname):
+        collname = os.path.join(projectcoll, f'{fullprefix}{i:04}')
+        i += 1
+    current_app.logger.debug('upload/unique_coll(): mkdir "{}"'.format(collname))
+    current_user.ifs.mkdir(collname)
+    # TODO : add some metadata?
+    return collname
 
 @login_required
-def unique_coll(project):
+def unique_projectcoll(project):
     """Generate a unique collection name for project
     and create the collection"""
     projectcoll = f'/{current_user.irods_zone}/projects/nonacris'
@@ -66,16 +112,7 @@ def unique_coll(project):
         pl, result = projects.rest_call('GET', 'projects/{}'.format(project))
         if 'default_collection' in pl:
             projectcoll = pl['default_collection']
-    datestr = time.strftime('%Y%m%d_%H%M%S')
-    collname = os.path.join(projectcoll, datestr)
-    i = 0
-    while current_user.irods_session.collections.exists(collname):
-        collname = os.path.join(projectcoll, f'{datestr}_{i:04}')
-        i += 1
-    current_app.logger.debug('upload/unique_coll(): mkdir "{}"'.format(collname))
-    current_user.ifs.mkdir(collname)
-    # TODO : add some metadata?
-    return collname
+    return unique_coll(projectcoll, prefix='', use_date=True)
 
 def upload_data():
     if current_user.environment not in session:
@@ -349,7 +386,7 @@ def upload_batch():
     if result:
         # Generate a collection name for storing upload
         # TODO: add project, for now use 'upload' project
-        collname = unique_coll('nonacris')
+        collname = unique_projectcoll('nonacris')
         coll = current_user.irods_session.collections.get(collname)
         batch.setIrodsCollection(coll)
         try:
@@ -547,7 +584,7 @@ def pending_uploads():
     for c in query:
         collobj = current_user.irods_session.collections.get(c[Collection.name])
         projectid = getmetaitem(collobj, 'user::projectid', '')
-        name = getmetaitem(collobj, 'user::data::name', collobj.path)
+        name = getmetaitem(collobj, ATTR_USER_UPLOADNAME, collobj.path)
         name_url = url_for('upload.upload_details', path=collobj.path)
         namestr = f'<A HREF="{ name_url }">{name}</A>'
         pending.append(
@@ -561,7 +598,39 @@ def pending_uploads():
         }
     return json.dumps(response)
 
+def get_or_set_uid(coll_obj):
+    """If the referred collection has no dataset_id, generate one
+    Return the dataset_id
+    """
+    uid = getmetaitem(coll_obj, ATTR_DATASETID)
+    if not uid:
+        uid = str(uuid.uuid4())
+        coll_obj.metadata[ATTR_DATASETID] = iRODSMeta(ATTR_DATASETID, uid)
+    return uid
+
 @bp.route('_uploaddetails')
 @login_required
 def upload_details():
     return render_template('upload_details.html')
+
+@bp.route('newupload')
+@login_required
+def new_upload():
+    # Create an upload-collection
+    # First generate a unique upload name
+    unique = False 
+    while not unique:
+        name = randomname.get_name()
+        q = current_user.irods_session.query(CollectionMeta.value).filter(\
+            Criterion('=', CollectionMeta.name, ATTR_USER_UPLOADNAME)).filter(\
+            Criterion('=', CollectionMeta.value, name))
+        unique = q.execute().length == 0
+
+    # Now generate a collection for the upload
+    path = unique_coll(os.path.join('/', current_user.irods_zone, 'home', current_user.username), prefix=name)
+    collobj = current_user.irods_session.collections.get(path)  
+    get_or_set_uid(collobj)
+    collobj.metadata[ATTR_USER_UPLOADNAME] = iRODSMeta(ATTR_USER_UPLOADNAME, name)
+    collobj.metadata[ATTR_USER_UPLOAD] = iRODSMeta(ATTR_USER_UPLOAD, UploadType.Pending)
+
+    return redirect(url_for('upload.upload_details', variable=path ))

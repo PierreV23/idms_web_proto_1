@@ -235,6 +235,10 @@ ul {
   border-bottom: 1px solid #4f5962;
 }
 
+.nav-header {
+  font-family: "Source Sans Pro",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+}
+
 .c1 { filter: hue-rotate(0deg)   }
 .c2 { filter: hue-rotate(30deg)  }
 .c3 { filter: hue-rotate(60deg)  }
