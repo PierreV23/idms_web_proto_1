@@ -4,18 +4,7 @@
         var selected = $( "#inputSelectDate" ).val()
         var now = moment()
         var until = moment()
-        if( selected == "1w" ) {
-          until.add( 7,'days' )
-        } else if( selected == "1M" ) {
-          until.add( 1, 'month' )
-        }
-        else if( selected == "6M" ) {
-          until.add( 6, 'month' ) 
-        }
-        else {
-          $( "#untilDate" ).html( "" )
-          return
-        }
+        until.add(selected, 'days')
         $( "#untilDate" ).html( "until:" + until.format( "YYYY-MM-DD" ))
     }
 
@@ -161,7 +150,7 @@ $('.nav-pills').on('shown.bs.tab', function(event){
               {% if archival_state.is_dataset is sameas false %} btn-outline-dark disabled {% endif %}
               " id="archive-tab" data-toggle="tab" href="#archive" role="tab" aria-controls="archive" 
               aria-selected="false">
-              {% if archival_state.is_dataset is sameas true and archival_state.is_offline is sameas true %}OFFLINE{% else %}Archive{% endif %}
+              Archive
           </button>
         </li>
         <li class="nav-item mx-2">
@@ -190,8 +179,11 @@ $('.nav-pills').on('shown.bs.tab', function(event){
         </div>
         <div class="tab-pane" id="archive" role="tabpanel" aria-labelledby="archive-tab">
             {% if archival_state.is_offline is sameas true %} 
-              This dataset is currently offline (on tape).<br>
+              This dataset is currently offline (on tape)
+            {% else %}
+              This dataset is currently online.
             {% endif %}
+            <br>
             <hr>
             <form>
               <div class="form-group">
@@ -208,13 +200,15 @@ $('.nav-pills').on('shown.bs.tab', function(event){
                 <div class="col-sm-4">
                   <select class="custom-select" id="inputSelectDate" onChange="updateUntilDate()">
                       <option selected>Choose...</option>
-                      <option value="1w">1 Week</option>
-                      <option value="1M">1 Month</option>
-                      <option value="6M">6 Month</option>
+                      <option value="7">1 Week</option>
+                      <option value="14">2 Weeks</option>
+                      <option value="30">1 Month</option>
+                      <option value="90">3 Months</option>
+                      <option value="182">6 Month</option>
                   </select>
                 </div>
                 <div class="col-sm-3">
-                    <button class="btn btn-sm btn-outline-secondary" type="button" onClick="bringDatasetOnline()">bring online</button>
+                    <button class="btn btn-outline-secondary" type="button" onClick="bringDatasetOnline()">bring online</button>
                 </div>
                 <div class="col-sm-3 vertical-down">
                     <span id="untilDate"></span>
@@ -352,3 +346,11 @@ $('.nav-pills').on('shown.bs.tab', function(event){
         </div>
     </div>
 </div>
+
+<script>
+
+{% if not current_user.is_admin %}
+$('#storage').find('input').prop("disabled", true)
+{% endif %}
+
+</script>

@@ -124,17 +124,13 @@ def setKeepOnlineUntil():
     collection = request.args.get('collection','None', type=str)
 
     now = datetime.today()
-    delta = relativedelta(days=0)
-    if selectionStr == '1w':
-        delta = relativedelta(days=7)
-    elif selectionStr == '1M':
-        delta = relativedelta(months=1)
-    elif selectionStr == '6M':
-        delta = relativedelta(months=6)
-    else:
+    days = 0
+    try:
+        days = int(selectionStr)
+    except ValueError:
         print( f"unknown selection for _setKeepOnlineUntil: {selectionStr}")
         return('DONE')
-    keepOnlineUntil = now + delta
+    keepOnlineUntil = now + relativedelta(days=days)
 
     coll_obj = irods_session.collections.get(collection)
     new_meta = iRODSMeta(ATTR_ARCHIVE_KEEP_ONLINE_TILL, str(int(datetime.timestamp(keepOnlineUntil))), 'timestamp' )
@@ -187,11 +183,13 @@ def coll_actions():
     archive_state = getmetaitem(coll_obj, ATTR_ARCHIVE_STATE, "000")
     min_copies = getmetatree(coll_obj, ATTR_ARCHIVE_MINCOPIES, 2)
     keep_online = getmetatree(coll_obj, ATTR_ARCHIVE_KEEP_ONLINE, "false")
-    is_archived = False 
+    is_archived = False
+    # TODO: This should use the sys::resource::online property of a resource to determine
+    # if a collection is online
     if archive_state[-1] == '1':
         is_archived = True 
     is_offline = False
-    if archive_state[:2] == '00':
+    if archive_state[:2] == '00' and archive_state[-1] == '0':
         is_offline = True
 
     projectid = getmetaitem(coll_obj, ATTR_PROJECTID, "")
