@@ -1,11 +1,18 @@
 {% extends 'base2.html' %}
-  
+
+{% block heading %}
+<H3>Disk space used by projects</H3>
+{% endblock %}
+
+{%block menuname %}
+menuname='diskspace'
+{% endblock %}
+
 {% block content %}
 
 <div class="card border-primary mb-3">
 <div class="card-header">
 <span>
-<H3>Disk space used by projects</H3>
 <a class="btn btn-outline-secondary text-right float-right" href="{{ url_for('reports.download_report') }}">Download CSV</a>
 </span>
 </div>

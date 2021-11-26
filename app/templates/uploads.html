@@ -4,6 +4,19 @@
 <H2>Upload collections</H2>
 {% endblock %}
 
+{%block menuname %}
+menuname='uploads'
+{% endblock %}
+
+{% block menuitems %}
+<li class="nav-item">
+    <a href="{{ url_for('upload.new_upload') }}" class="nav-link">
+      <i class="fas fa-plus nav-icon"></i>
+      <p>New Upload</p>
+    </a>
+  </li>
+{% endblock %}
+
 {% block content %}
 <div class="card">
     <div class="card-header">
