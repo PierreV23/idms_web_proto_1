@@ -1,7 +1,9 @@
 {% extends 'base2.html' %}
-  
-{% block header %}
-<h2>{% block title %}iRODS{% endblock %}</h2>
+
+{% block title %}iRODS{% endblock %}
+
+{% block heading %}
+<h3>iRODS Web Portal</h3>
 {% endblock %}
 
 {% block content %}
@@ -14,10 +16,7 @@ $(window).on('load', function() {
 });
 </script>
 
-<p class="text-center">iRODS Web Portal</p>
-
 <div >
-
   <div class="card border-primary mb-3" style="width: 25rem;">
     <div class="card-header">
       Quick Links
