@@ -59,17 +59,7 @@
         <a href="/" class="nav-link">Home</a>
       </li>
       <li class="nav-item d-none d-sm-inline-block">
-        <a href="{{ url_for('jobs.show_jobs') }}" class="nav-link">
-          Job List
-        </a>
-      </li>
-      <li class="nav-item d-none d-sm-inline-block">
-        <a href="{{ url_for('collbrowser.collbrowser') }}" class="nav-link">
-          Collection browser
-        </a>
-      </li>
-      <li class="nav-item d-none d-sm-inline-block">
-        <a href="{{ url_for('contacts') }}" class="nav-link">Contact</a>
+        <a href="{{ url_for('contacts') }}" class="nav-link">About</a>
       </li>
       <li class="nav-item d-none d-sm-inline-block">
         <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout<span class="sr-only">(current)</span></a>
@@ -79,7 +69,7 @@
     <!-- Right navbar links -->
     <ul class="navbar-nav ml-auto">
       <!-- Navbar Search -->
-      <li class="nav-item">
+      <!-- <li class="nav-item">
         <a class="nav-link" data-widget="navbar-search" href="#" role="button">
           <i class="fas fa-search"></i>
         </a>
@@ -98,10 +88,10 @@
             </div>
           </form>
         </div>
-      </li>
+      </li> -->
 
       <!-- Notifications Dropdown Menu -->
-      <li class="nav-item dropdown">
+      <!-- <li class="nav-item dropdown">
         <a class="nav-link" data-toggle="dropdown" href="#">
           <i class="far fa-bell"></i>
           <span class="badge badge-warning navbar-badge">0</span>
@@ -109,7 +99,7 @@
         <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
           <span class="dropdown-header">No notifications</span>
           <div class="dropdown-divider"></div>
-<!--          <a href="#" class="dropdown-item">
+         <a href="#" class="dropdown-item">
             <i class="fas fa-envelope mr-2"></i> 4 new messages
             <span class="float-right text-muted text-sm">3 mins</span>
           </a>
@@ -125,25 +115,25 @@
           </a>
           <div class="dropdown-divider"></div>
           <a href="#" class="dropdown-item dropdown-footer">See All Notifications</a>
-        -->
+       
         </div>
-      </li>
+      </li> -->
       <li class="nav-item">
         <a class="nav-link" data-widget="fullscreen" href="#" role="button">
           <i class="fas fa-expand-arrows-alt"></i>
         </a>
       </li>
-      <li class="nav-item">
+      <!-- <li class="nav-item">
         <a class="nav-link" data-widget="control-sidebar" data-slide="true" href="#" role="button">
           <i class="fas fa-th-large"></i>
         </a>
-      </li>
+      </li> -->
     </ul>
   </nav>
   <!-- /.navbar -->
 
   <!-- Main Sidebar Container -->
-  <aside class="main-sidebar sidebar-dark-primary elevation-4">
+  <aside class="main-sidebar sidebar-dark-primary sidebar-no-expand elevation-4">
     <!-- Brand Logo -->
     <a href="/" class="brand-link">
       <!-- <img src="dist/img/AdminLTELogo.png" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity: .8"> -->
@@ -215,9 +205,8 @@
           <li class="nav-item menu">
             <a class="nav-link" href="#" >
               <i class="nav-icon fas fa-vials"></i>
-              <p>Vir-ont SmplSh
+              <p>Vir-ont SmplSh</p>
               <i class="right fas fa-angle-left"></i>
-              </p>
             </a>
             <ul class="nav nav-treeview">
               <li class="nav-item">
@@ -239,9 +228,8 @@
           <li class="nav-item menu">
             <a class="nav-link" href="#" >
               <i class="nav-icon fas fa-tools"></i>
-              <p>Admin
+              <p>Admin</p>
               <i class="right fas fa-angle-left"></i>
-              </p>
             </a>
             <ul class="nav nav-treeview">
               <li class="nav-item">
@@ -276,9 +264,8 @@
           <li class="nav-item menu">
             <a class="nav-link" href="#" >
               <i class="nav-icon fas fa-chart-pie"></i>
-              <p>Reports
-              <i class="right fas fa-angle-left"></i>
-              </p>
+              <p>Reports</p>
+              <i class="right fas fa-angle-left"></i>    
             </a>
             <ul class="nav nav-treeview">
               <li class="nav-item">
@@ -349,8 +336,13 @@
   </footer> -->
 </div>
 <!-- ./wrapper -->
-
 <script>
+// enable tooltip on menu items
+
+$('.sidebar').find('.nav-link').each(function () {
+  $(this).attr('title', $(this).children('p').html());
+})
+
 
 let menuname="unknown"
 
