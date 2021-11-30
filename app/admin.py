@@ -6,13 +6,23 @@ Created on Wed Apr 15 10:46:50 2020
 @author: wierinve
 """
 import os
-from flask import Blueprint, render_template, redirect, request, url_for
+import irods.exception
+from flask import Blueprint, render_template, redirect, jsonify, request, url_for
 from flask_login import current_user, login_required
 from irods.meta import iRODSMeta
 from irods.models import Collection, CollectionMeta, DataObject, Resource, ResourceMeta, DataObjectMeta
 from irods.column import Criterion
 from irods.query import SpecificQuery
+from app.irods_helper import getmetaitem
+from app.datafield import datafield
 
+ATTR_ARCHIVE_STATUS = "sys::archive::status"
+ATTR_ARCHIVE_STATUSMSG = "sys::archive::statusmsg"
+ATTR_ARCHIVE_LASTCHECK = "sys::archive::lastcheck"
+ATTR_ARCHIVE_STATE = "sys::archive::state"
+
+ATTR_ARCHIVE_TARFILE = 'sys::archive::tarfile'
+ATTR_ARCHIVE_MANIFESTFILE = 'sys::archive::manifest'
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -131,6 +141,58 @@ def query_issues():
 @login_required
 def issues():
     return render_template('issues.html')
+
+@bp.route('/_aract', methods=['POST'])
+def archive_action():
+    requestdata = request.form.to_dict()
+    action = requestdata.get('action')
+    collection = requestdata.get('collection')
+    try:
+        collobj = current_user.irods_session.collections.get(collection)
+    except irods.exception.CollectionDoesNotExist:
+        return jsonify({'message': 'Collection does not exist'})
+    if action == 'remove_archive':
+        state =  getmetaitem(collobj, ATTR_ARCHIVE_STATE)
+        if state is None:
+            return jsonify({'message': 'Cannot modify collection with unknown state'})
+        if state.count('1')<2: # Dont remove archive if no other copy is present
+            return jsonify({'message': 'Cannot remove last data copy in collection'})
+        for attr in (ATTR_ARCHIVE_TARFILE, ATTR_ARCHIVE_MANIFESTFILE):
+            filename = getmetaitem(collobj, attr)
+            if filename and current_user.ifs.fileexists(filename):
+                current_user.irods_session.data_objects.unlink(filename)
+                collobj.metadata.remove(iRODSMeta(attr, filename))
+    if action in ('clear_status', 'remove_archive') :
+        for attr in (ATTR_ARCHIVE_STATUS, ATTR_ARCHIVE_STATUSMSG, ATTR_ARCHIVE_LASTCHECK):
+            val = getmetaitem(collobj, attr)
+            if val:
+                collobj.metadata.remove(iRODSMeta(attr, val))
+    return jsonify({'status':'ok'})
+
+@bp.route('_archissue', methods=['GET'])
+@login_required
+def archive_issues():
+    # Get issue collections
+    query = current_user.irods_session.query(Collection.name, CollectionMeta.value).filter(
+        Criterion('=', CollectionMeta.name, ATTR_ARCHIVE_STATUS)).filter(
+        Criterion('!=', CollectionMeta.value, 'OK'))
+    items = []
+    for result in query:
+        statusmsg = ""
+        coll = current_user.irods_session.collections.get(result[Collection.name])
+        statusmsg = getmetaitem(coll, ATTR_ARCHIVE_STATUSMSG, default="")
+        allow_remove = False
+        state = getmetaitem(coll, ATTR_ARCHIVE_STATE)
+        if state and state.count('1')>1:
+            allow_remove = True
+        items.append({ 
+            'collection': datafield('Collection', result[Collection.name], 'irods_collection'),
+            'status': result[CollectionMeta.value],
+            'statusmsg': statusmsg,
+            'allow_remove': allow_remove
+        })
+    return render_template('archive_issues.html', items=items)
+
 
 @bp.route('/queues')
 @login_required
