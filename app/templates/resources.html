@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="container-wide">
 <FORM action="{{ url_for('admin.update_resources') }}" method = "POST" enctype = "multipart/form-data">
 <TABLE class="table">
     <THEAD class="thead-dark">
@@ -17,22 +17,27 @@
         </TR>
     </THEAD>
     <TBODY>
-        {% for resource in resources %}
+        {% for resource in resources | sort %}
         <TR>
             <TD id="{{resource}}">{{ resource }}</TD>
             {% for property in columns %}
                 {% if columns[property].type == 'text' %}
                     <TD><input type="text" class="form-control" name="{{ resource }}__{{ property }}"
-                        value="{{ resources[resource].get(property, '') }}">
-                    </TD>
+                        value="{{ resources[resource].get(property, '') }}"
+                {% elif columns[property].type == 'number' %}
+                    <TD><input type="number" class="form-control" name="{{ resource }}__{{ property }}"
+                        value="{{ resources[resource].get(property, '') }}"
                 {% elif columns[property].type == 'bool' %}
                     <TD><input class="checkbx" type="checkbox"
                         name="{{ resource }}__{{ property }}"
                         value="true"
                         {% if resources[resource].get(property) == "true" %} checked {% endif %}
-                        >
-                    </TD>
                 {% endif %}
+                {% if columns[property].get('help') %}
+                title="{{ columns[property].get('help') }}"
+                {% endif %}
+                    >
+                    </TD>
             {% endfor %}
         </TR>
         {% endfor %}
@@ -44,6 +49,12 @@
 
 <script>
 $('.checkbx').on('click', function(event){
+        var name = $(this).attr('name').split('__')
+        $('#' + name).css('color', 'red')
+    }
+)
+
+$('.form-control').on('change', function(event){
         var name = $(this).attr('name').split('__')
         $('#' + name).css('color', 'red')
     }
