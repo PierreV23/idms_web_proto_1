@@ -369,7 +369,7 @@ def pgaction():
         input = request.args.get('input')
         pl, result = rest_call('PUT', 
             f'projects/{project}/processgroups/{group}/processes/{process}',
-            { 'input_from': input})
+            { 'input': input})
     elif action == 'add_dependency':
         process = request.args.get('process')
         depend = request.args.get('depend')
@@ -428,9 +428,9 @@ def pg_graph():
     pd, r2 = rest_call('GET', f'projects/{project}/processgroups/{group}/dependencies')
     for process in pl:
         processname = f'n,{process.get("id")}'
-        input_from = process.get("input_from")
-        if input_from:
-            precessor = f'n,{input_from}'
+        input = process.get("input")
+        if input:
+            precessor = f'n,{input}'
         else:
             precessor = f'd,0'
         graph.edge(precessor, processname, style='bold')
