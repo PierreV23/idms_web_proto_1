@@ -11,7 +11,7 @@ $(document).on('click', '.projectname', function() {
   $('.projectname').removeClass('active')
   $('.processname').removeClass('active')
   $(this).addClass("active")
-  $('#details').html('Loading settings for ' + project + " ... ")
+  $('#details').html('<center><IMG SRC="{{ url_for('static', filename='img/loading.gif') }}" width="30%"></IMG><center>')
   $.get('{{ url_for('projects.show_projectdetails') }}', {
     name: project,
     processgroup: "{{ processgroup }}"

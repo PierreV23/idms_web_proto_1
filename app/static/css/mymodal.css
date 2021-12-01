@@ -140,6 +140,11 @@ ul {
   height: 15px;
 }
 
+.button12 {
+  min-width: 12em;
+  max-width: 12em;
+}
+
 .alignleft {
   float: left;
 }
