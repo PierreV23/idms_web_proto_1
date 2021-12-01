@@ -92,10 +92,15 @@ def joblist(state='', page=1):
         q1 = current_user.irods_session.query(Collection.name, DataObject.name, DataObject.id, DataObject.create_time).filter( \
             Criterion('like', Collection.name, f'/{current_user.irods_zone}/system/runsheet%')).filter( \
                 Criterion('!=', Collection.name, f'/{current_user.irods_zone}/system/runsheet/archive')).filter( \
+                Criterion('!=', Collection.name, f'/{current_user.irods_zone}/system/runsheet/CONVERTED_archive')).filter( \
+                Criterion('!=', Collection.name, f'/{current_user.irods_zone}/system/runsheet/CONVERTED_error')).filter( \
+                Criterion('!=', Collection.name, f'/{current_user.irods_zone}/system/runsheet/CONVERTED_done')).filter( \
+                Criterion('!=', Collection.name, f'/{current_user.irods_zone}/system/runsheet/CONVERTED_finished')).filter( \
                 Criterion('!=', Collection.name, f'/{current_user.irods_zone}/system/runsheet/log'))
         # or runsheets could be on collections
         q1b = current_user.irods_session.query(Collection, CollectionMeta).filter( 
                 Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_STATE)).filter( 
+                Criterion('!=', CollectionMeta.value, 'archive')).filter(
                 Criterion('not like', Collection.name, f'/{current_user.irods_zone}/system/runsheet%'))
     else:
         # incoming runsheets could still be runsheet-files

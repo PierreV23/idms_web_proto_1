@@ -12,6 +12,7 @@ var collection="{{ path }}";
 var sortkey="";
 var reverse="";
 var activetab="Files";
+var selected_object ="";
 
 function fillModal(path, name) {
     var ModalHeader = document.getElementById("DocTitle")
@@ -62,9 +63,10 @@ function load_graph() {
 
 function load_meta() {
   $.get('{{ url_for('collbrowser.coll_meta') }}', {
-    path: collection
+    path: collection,
+    object: selected_object
   }, function(data) {
-    $('#collapse-meta').html(data)
+    $('#meta-card').html(data)
   });
 }
 
@@ -208,31 +210,22 @@ $('#sidebar').on('click', '.list-open', function() {
 </div> <!--row-->
 
 <div class="row">
-<div class="col-md-8">
-
-<div class="card border-primary mb-3">
-   <div class="card-header myheader">
-        Collection contents
-   </div>
-   <div class="card card-body coll-content" id="collapse-contents">
-    </div>   
-</div>
-
-
-</div>
-
-<div class="col-md-4">
-<div class="card border-primary mb-3">
-    <div class="card-header myheader">
-        Collection metadata
-        <a class="btn btn-outline-secondary text-left float-right" id="metatoggle" onclick='avu_table()'" role="button" >Formatted</a>
+  <div class="col-md-8">
+    <div class="card border-primary mb-3">
+      <div class="card-header myheader">
+            Collection contents
+      </div>
+      <div class="card card-body coll-content" id="collapse-contents">
+        </div>   
     </div>
-    <div class="card card-body coll-meta" id="collapse-meta">
+  </div>
+
+  <div class="col-md-4">
+    <div class="card border-primary mb-3" id="meta-card">
+
     </div>
-</div>
+  </div>
 
-
-</div>
 </div> <!--row-->
 
 </div> <!-- container-wide-->

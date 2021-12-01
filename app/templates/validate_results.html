@@ -2,7 +2,7 @@
     <thead>
         <tr>
             {% for column in data %}
-            <td>{{ column }}</td>
+            <th>{{ column }}</th>
             {% endfor %}
         </tr>
     </thead>
@@ -10,7 +10,7 @@
     {% for item in data['Description'] %}
         <tr>
             {% for column in data %}
-            <td>{{ data[column][item] }}</td>
+            <td>{% if data[column][item] %}{{ data[column][item] }}{% endif %}</td>
             {% endfor %}
         </tr>
 

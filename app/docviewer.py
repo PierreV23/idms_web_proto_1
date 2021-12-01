@@ -60,8 +60,8 @@ def serve_object():
 
     if mimetype:
         returnobject = send_file(objectfile, attachment_filename=os.path.split(path)[1],
-                                 as_attachment=False, mimetype=mimetype)
+                                 as_attachment=False, mimetype=mimetype, cache_timeout=-1)
     else:
         returnobject = send_file(objectfile, attachment_filename=os.path.split(path)[1],
-                                 as_attachment=False)
+                                 as_attachment=False, cache_timeout=-1)
     return returnobject

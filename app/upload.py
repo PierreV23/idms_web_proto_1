@@ -17,20 +17,30 @@ from app import projects
 from Bio import SeqIO
 import pymssql
 import openpyxl
+import json
+import re
+#from flask_session import Session
 
 from nonacris.web import NncWeb
 
 SAMPLEID = 'SendingOrganisationSampleId'
 SEQUENCEID = 'SendingOrganisationSequenceId'
 
-UPLOAD_DIR = '/tmp/upload'
+UPLOAD_DIR = '/tmp/upload' 
+
+# FASTA_EXT = [ '.fasta', '.fa', '.fa.gz', '.fas', '.fas.gz', '.fasta.gz']
+
+FASTA_EXT = [ '.fasta', '.fa', '.fas', '.gz' ]
 
 UPLOAD_KEY = 'current_upload'
+USER_DEFINED_VARIABLES = 'user_defined_variables'
+
 DEFAULT_UPLOAD = {
     'directory': None,
     'project': None,
     'filelist': [],
-    'use_case': 'UploadRivmSampleForm'
+    'use_case': 'UploadRivmSampleForm',
+    USER_DEFINED_VARIABLES: {}
 }
 
 bp = Blueprint('upload', __name__, url_prefix='/upload')
@@ -40,18 +50,19 @@ bp = Blueprint('upload', __name__, url_prefix='/upload')
 def unique_coll(project):
     """Generate a unique collection name for project
     and create the collection"""
-    projectcoll = f'/{current_user.irods_zone}/upload/data'
+    projectcoll = f'/{current_user.irods_zone}/projects/nonacris'
 
     if not project is None:
         pl, result = projects.rest_call('GET', 'projects/{}'.format(project))
         if 'default_collection' in pl:
             projectcoll = pl['default_collection']
-    datestr = time.strftime('%Y%m%d_%H%M')
+    datestr = time.strftime('%Y%m%d_%H%M%S')
     collname = os.path.join(projectcoll, datestr)
     i = 0
     while current_user.irods_session.collections.exists(collname):
         collname = os.path.join(projectcoll, f'{datestr}_{i:04}')
         i += 1
+    current_app.logger.debug('upload/unique_coll(): mkdir "{}"'.format(collname))
     current_user.ifs.mkdir(collname)
     # TODO : add some metadata?
     return collname
@@ -59,13 +70,15 @@ def unique_coll(project):
 def upload_data():
     if current_user.environment not in session:
         session[current_user.environment] = {}
+        session.modified = True
     if not UPLOAD_KEY in session[current_user.environment]:
         session[current_user.environment][UPLOAD_KEY] = DEFAULT_UPLOAD
         update_setting('directory', f'{UPLOAD_DIR}/{uuid.uuid4()}')
+        session.modified = True
     return session[current_user.environment][UPLOAD_KEY]
 
 def update_setting(key, value):
-    settings = upload_data()
+    upload_data()
     session[current_user.environment][UPLOAD_KEY][key] = value
     session.modified = True
 
@@ -89,6 +102,7 @@ def clear_upload():
                 if os.path.exists(directory):
                     shutil.rmtree(directory)
             del session[current_user.environment][UPLOAD_KEY]
+#        session.clear()
     session.modified = True
 
 
@@ -202,10 +216,113 @@ def validate():
     use_case = data.get('usecase')
     settings = upload_data()
     if use_case:
-        update_setting('use_case', use_case)
+        update_setting('use_case', use_case) # I guess a chnage of useCase means the userDefinedVariables have to be reset
+        update_setting( USER_DEFINED_VARIABLES, {})
     if settings['directory'] is None:
         return redirect(url_for('upload.upload_page'))
     return render_template('validate_report.html', collection=settings['directory'])
+
+def get_test_single_value_meta():
+    missingVariables = { 'SendingOrganisationId': {
+                        'is_required': False,
+                        'schema': {'enum': ['RIVM', 'Meander MC', 'Atal-Medial BV - Local in blahblubb blubb very long name Amstelland', 'Streeklab - GGD Amsterdam', 'BovenIJ Ziekenhuis', 'OLVG - Locatie West ', 'Atal-Medial BV - Loc...rvaart MCS', 'OLVG Lab BV', 'Amsterdam UMC - Loca...robiologie'], 'type': 'string'},
+                        'default': None
+                        },
+                'SamplingFrame': {
+                        'is_required': False,
+                        'schema': {'enum': ['ZORG', 'TESTSTRAAT', 'STUDIE', 'NIVEL', 'CLUSTER'], 'type': 'string'},
+                        'default': None
+                        },
+                'SequencingProtocol': {
+                        'is_required': False,
+                        'schema': {"type": "string", "maxLength": 10},
+                        'default': None
+                        },
+                'PangolinScorpioVersion': {
+                        'is_required': True,
+                        'schema': {"type": "string", "minLength": 2, "maxLength": 10},
+                        'default': None
+                    },
+                'NextCladeVersion': {
+                        'is_required': True,
+                        'schema': {"type": "string", "enum": ["J", "N", "NA_VACCINATIE", "HERINFECTIE", "NA_VACCINATIE_1X", "NA_VACCINATIE_2X"]},
+                        'default': None
+                    },
+                'RivmSequencingProtocol': {
+                        'is_required': True,
+                        "schema": {"type": "string", "maxLength": 10, "pattern": "^\\d\\d\\d\\d-\\d\\d-\\d\\d$"},
+                        'default': "1234"
+                    }
+                }
+    return missingVariables
+
+def check_against_schema( value, schema ):
+    message = ""
+    #check if value in enum
+    if 'enum' in schema:
+        if value not in schema['enum']:
+            message += f"Value not in allowed set. "
+    else:
+        #check min length
+        if 'minLength' in schema:
+            if len(value) < schema['minLength']:
+                message += f"Must have {schema['minLength']} characters. "
+        #check max length
+        if 'maxLength' in schema:
+            if len(value) > schema['maxLength']:
+                message += f"Must not exceed {schema['maxLength']} characters. "
+
+        #check if value matches pattern
+        if 'pattern' in schema:
+            regex = re.compile( schema['pattern'] )
+            if not regex.match(value):
+                message += f"Value doesn't conform to pattern \"{schema['pattern']}\". "
+    return message
+
+def check_variables( defined_vars, missing_vars_def ):
+    all_ok = True
+    response = {}
+    #check for all missing vars, if they are set (if required) and correct...
+    for key in missing_vars_def.keys():
+        message = None
+        if missing_vars_def[key]['is_required']:
+            if key not in defined_vars:
+                message = "Is required but not set."
+                continue
+        if key in defined_vars:
+            value = defined_vars[key]
+            schema = missing_vars_def[key]['schema']
+            message = check_against_schema( value, schema )
+        if message:
+            response[key] = message
+            all_ok=False
+    return (all_ok, response)
+
+@login_required
+@bp.route('_set_missing_variables', methods=['POST'])
+def set_missing_variables():
+    settings = upload_data()
+    user_defined_variables = {}
+    for dict in request.json:
+        user_defined_variables[ dict['name'] ] = dict['value']
+    #server side check of the variables
+
+    #this is shit, we parse the same files now in three different requests...
+    batch = get_batch(settings)
+    #tried to get the missing variables from the session (as determined in a prior step)
+    #but exceeded size-limit of cookie
+    missingVariables = batch.getSingleValueVariableMetadata( filter_by_input=True )
+    #missingVariables = get_test_single_value_meta()
+    #store them....
+    all_ok, response = check_variables( user_defined_variables, missingVariables )
+    if all_ok:
+        #TODO: probably its not necessary to set the SingleValueVariables here, since we gat a new batch in every request anyway...
+        #for key, value in user_defined_variables.items():
+        #    batch.setSingleValueVariable( key, value )
+        update_setting(USER_DEFINED_VARIABLES,user_defined_variables)
+    return jsonify(response)
+
+
 
 
 @login_required
@@ -222,10 +339,14 @@ def upload_batch():
     if result:
         # Generate a collection name for storing upload
         # TODO: add project, for now use 'upload' project
-        collname = unique_coll('upload')
+        collname = unique_coll('nonacris')
         coll = current_user.irods_session.collections.get(collname)
         batch.setIrodsCollection(coll)
-        upload_result = batch.store()
+        try:
+            batch.store()
+            upload_result = not batch.data.get('Upload.Verify.HasDifference', False)
+        except:
+            pass
     # TODO: Evaluate upload result
     clear_upload()
     # TODO: Show some result
@@ -236,8 +357,36 @@ def upload_batch():
 def filelist():
     settings = upload_data()
     if settings['directory']:
-        files = os.listdir(settings['directory'])
+        files = []
+        try:
+            files = os.listdir(settings['directory'])
+        except FileNotFoundError:
+            # A likely thing to happen. Log and continue.
+            current_app.logger.info('upload/filelist: dir not found: {}'.format(
+                settings['directory']))
     return render_template('upload_filelist.html', files=files)
+
+@login_required
+@bp.route('_missing_variables', methods=['GET'])
+def missing_variables():
+    settings = upload_data()
+    if settings['directory'] is None:
+        return redirect(url_for('upload.upload_page'))
+    directory = settings['directory']
+    batch = get_batch(settings)
+    content = {}
+    missingVariables = batch.getSingleValueVariableMetadata( filter_by_input=True)
+    #missingVariables = get_test_single_value_meta()
+    if not missingVariables:
+        return { 'hasMissingVariables': False }
+    else:
+        #TODO: apparently the size of the session cookie might  exceed the limit of 4093 bytes, and is ignored by the browser...
+        #      instead of storing the missingvars here we have to parse the files again in _set_missing_variables!
+        #update_setting(MISSING_VARIABLES,missingVariables)
+        content = { 'hasMissingVariables': len(missingVariables.keys())>0,
+                    'missingVariablesForm': render_template( 'missing_variables.html', data=missingVariables) }
+    return content
+
 
 @login_required
 @bp.route('_validate_results', methods=['GET'])
@@ -245,18 +394,67 @@ def validate_results():
     settings = upload_data()
     if settings['directory'] is None:
         return redirect(url_for('upload.upload_page'))
-    batch = get_batch(settings)
+    batch = None
+    result = { 'Error': { '0': 'Unknown error' },
+                'Description' : { '0' : 'Unknown validation error' },
+                'Type': {'0': '' }
+    }
+    parsedDataContext = {
+                        'dataJSON': "{}",
+                        'columnsJSON': "[]"
+    }
+    parsedData = {}
+    validation_passed = False
     try:
-        batch.parse()
-        result = batch.data['Parse.Validation.Table'].to_dict()
-        validation_passed = not batch.data['Parse.Validation.HasError']
+        batch = get_batch(settings)
     except Exception as ex:
         result = { 'Error': { '0': 'System error in validation module' },
                    'Description' : { '0' : ex },
                    'Type': {'0': type(ex) }
         }
-        validation_passed = False
-    content = { 'report': render_template('validate_results.html', data=result),
+    if batch:    
+        try:
+            # here an error because of missing variables should not occure anymore!
+            batch.parse()  
+            result = batch.data['Parse.Validation.Table'].to_dict()
+            #The bootstrap-table component has problems whith column names in format "Teststraat of Siekenhaus -> \"\""
+            #Here we get the title with the mapping, but use the fieldname without mapping
+            #- for thetable data, use the original fieldnames (without mapping)
+            #  e.g. Sex: "Vrouw -> V"
+            parsedDataWithMapping = batch.getParsedDataForDisplay( add_variable_mapping=True)
+            #- for the column headers we use the data with mapping
+            #  e.g. geslacht -> Sex: "Vrouw -> V"
+            parsedDataWithoutMapping = batch.getParsedDataForDisplay( add_variable_mapping=False)
+            # - then we create columns, with the unmapped value as field-value, and the mapped one as title:
+            columns=[]
+            for col in parsedDataWithMapping.columns:
+                #5 possibilities:
+                #  -  UnilabSampleId
+                #  -  Teststraat of Ziekenhuis -> ""
+                #  -  4 cijferige postcode -> ResidencePostalCode
+                #  -  geboortedatum -> ""
+                #  -  "" -> SendingOrganisationId
+                split = col.split( " -> " )
+                f = split[-1]
+                if f == '""':
+                    f = split[0]
+                columns.append( { 'field': f, 'title': col } )
+
+            parsedDataJson = parsedDataWithoutMapping.to_json(orient='records')  
+            parsedDataContext = {
+                    'columnsJSON': json.dumps(columns),
+                    'dataJSON': parsedDataJson
+            }
+            validation_passed = not batch.data['Parse.Validation.HasError']
+        except Exception as ex:
+            result = { 'Error': { '0': 'System error in validation module' },
+                    'Description' : { '0' : ex },
+                    'Type': {'0': type(ex) }
+            }
+    if not validation_passed:
+        clear_upload()
+    content = { 'parsedData': render_template('parsed_data.html', data=parsedDataContext),
+                'report': render_template('validate_results.html', data=result),
                 'result': validation_passed }
     return content
 
@@ -264,16 +462,28 @@ def get_batch(settings):
     directory = settings.get('directory')
     dbparms = current_app.config["LABSURV_DB_CRED"].get(current_user.environment)
     dbconn = pymssql.connect(**dbparms)
+    #tried to store the stateful batch-object in a server-session, didn't work. (can't be pickled because it contains the SQL-Connection)
+    #the_batch = settings.get(BATCH)
+    #if not the_batch:
+    #    the_batch = NncWeb(dbconn, None)
+    #    settings[BATCH]=the_batch
     batch = NncWeb(dbconn, None)
     batch.setUseCase(settings.get('use_case'))
     for filepath in os.listdir(directory):
         fullpath = os.path.join(directory, filepath)
         if os.path.isfile(fullpath):
             _, extension = os.path.splitext(fullpath)
-            if extension == '.fasta':
+            if extension in FASTA_EXT:
                 batch.setInputSequenceFile(fullpath)
             if extension in [ '.xlsx', '.csv', '.tsv']:
                 batch.setInputDataFile(fullpath)
+    #set all user defined variables from session
+    #this is kind of a hack, since the batch/NncWeb is stateful, and we store the state 
+    #in the client session and have to reproduce the state if needed...
+    if settings.get(USER_DEFINED_VARIABLES):
+       user_defined_variables = settings.get(USER_DEFINED_VARIABLES)
+       for key, value in user_defined_variables.items():
+            batch.setSingleValueVariable( key, value )
     return batch
 
 @bp.route('_seq_list', methods=['GET'])
@@ -282,5 +492,10 @@ def seq_list():
     headers = []
     ids = []
     if directory:
-        headers, ids =  read_data(directory)
+        try:
+            headers, ids =  read_data(directory)
+        except FileNotFoundError:
+            # A likely thing to happen. Log and continue.
+            current_app.logger.info('upload/_seq_list: dir not found: {}'.format(directory))
+        
     return render_template('seq_list.html', headers=headers, ids=ids)

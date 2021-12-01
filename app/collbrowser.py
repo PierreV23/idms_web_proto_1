@@ -12,18 +12,21 @@ from datetime import datetime, timezone
 from dateutil.relativedelta import relativedelta
 from flask import Blueprint, render_template, redirect, request, url_for
 from flask_login import current_user, login_required
-from irods.models import Collection, CollectionMeta, DataObject
+from irods.models import Collection, CollectionMeta, DataObject, DataObjectMeta
 from irods.column import Criterion
 from app.datafield import AVU2data, datafield
+from app.irods_helper import getmetaitem
 from graphviz import Digraph
 from irods.meta import iRODSMeta
 from . import projects
-#from irods_helper import getmetaitem
+import json
 
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
 
 NAME_LENGTH = 20
 MAX_GRAPH_LEVELS = 3
+SEARCHPAGE_SIZE = 1000
+
 ATTR_DATASETID = 'sys::dataset_id'
 ATTR_PROJECTID = 'projectID'
 ATTR_PROCESSID = 'processID'
@@ -43,6 +46,7 @@ ATTR_ARCHIVE_LASTRUN = f'{ATTR_ARCHIVE_PREFIX}lastrun'
 ATTR_ARCHIVE_MINSTABLE = f'{ATTR_ARCHIVE_PREFIX}min_stable'
 ATTR_ARCHIVE_ONLINEPERCENTAGE = f'{ATTR_ARCHIVE_PREFIX}online_percentage'
 ATTR_ARCHIVE_MINCOPIES = f'{ATTR_ARCHIVE_PREFIX}min_copies'
+USER_PIPELINE_AUTOSTART = 'user::pipeline::autostart'
 
 
 COLL_SHAPES = {
@@ -58,12 +62,6 @@ COLL_SHAPES = {
 PROCESS_SHAPE = 'cds'
 
 # TODO: use the irods_helper instead (role irods_cronjobs)
-def getmetaitem(irods_obj, attr, default=None): 
-    try:
-        value = irods_obj.metadata.get_one(attr).value
-    except KeyError:
-        value = default
-    return value
 
 def getmetatree(irods_obj, attr, default=None):
     return  _getmetatree(irods_obj, attr, irods_obj.path, default=None)
@@ -82,9 +80,10 @@ def _getmetatree(irods_obj, attr, base, default=None):
 @login_required
 def coll_meta():
     path = request.args.get('path','/', type=str)
+    object = request.args.get('object', '', type=str)
     irods_session = current_user.irods_session
-    avu = {}
 # Query for collection metadata
+    coll_avu = []
     query = irods_session.query(CollectionMeta.name, CollectionMeta.value,
                                 CollectionMeta.units).filter(
                                     Criterion('=', Collection.name, path))
@@ -93,10 +92,23 @@ def coll_meta():
         name = coll_metadata[CollectionMeta.name]
         value = coll_metadata[CollectionMeta.value]
         units = coll_metadata[CollectionMeta.units]
-        avu_id = '{}_{}'.format(name, value)
-        avu[avu_id] = AVU2data(name, value, units)
-        
-    return render_template('metadata.html', avu=avu)
+        coll_avu.append(AVU2data(name, value, units))
+
+# Query for object metadata
+    object_avu = None
+    if object:
+        object_avu = []
+        query = irods_session.query(DataObjectMeta.name, DataObjectMeta.value,
+                                    DataObjectMeta.units).filter(
+                                        Criterion('=', Collection.name, path)).filter(
+                                        Criterion('=', DataObject.name, object)
+                                    )
+        for object_metadata in query:
+            name = object_metadata[DataObjectMeta.name]
+            value = object_metadata[DataObjectMeta.value]
+            units = object_metadata[DataObjectMeta.units]
+            object_avu.append(AVU2data(name, value, units))
+    return render_template('metadata.html', coll_avu=coll_avu, object_avu=object_avu)
 
 @bp.route('_setKeepOnlineUntil', methods=['GET'])
 @login_required
@@ -107,17 +119,13 @@ def setKeepOnlineUntil():
     collection = request.args.get('collection','None', type=str)
 
     now = datetime.today()
-    delta = relativedelta(days=0)
-    if selectionStr == '1w':
-        delta = relativedelta(days=7)
-    elif selectionStr == '1M':
-        delta = relativedelta(months=1)
-    elif selectionStr == '6M':
-        delta = relativedelta(months=6)
-    else:
+    days = 0
+    try:
+        days = int(selectionStr)
+    except ValueError:
         print( f"unknown selection for _setKeepOnlineUntil: {selectionStr}")
         return('DONE')
-    keepOnlineUntil = now + delta
+    keepOnlineUntil = now + relativedelta(days=days)
 
     coll_obj = irods_session.collections.get(collection)
     new_meta = iRODSMeta(ATTR_ARCHIVE_KEEP_ONLINE_TILL, str(int(datetime.timestamp(keepOnlineUntil))), 'timestamp' )
@@ -170,11 +178,13 @@ def coll_actions():
     archive_state = getmetaitem(coll_obj, ATTR_ARCHIVE_STATE, "000")
     min_copies = getmetatree(coll_obj, ATTR_ARCHIVE_MINCOPIES, 2)
     keep_online = getmetatree(coll_obj, ATTR_ARCHIVE_KEEP_ONLINE, "false")
-    is_archived = False 
+    is_archived = False
+    # TODO: This should use the sys::resource::online property of a resource to determine
+    # if a collection is online
     if archive_state[-1] == '1':
         is_archived = True 
     is_offline = False
-    if archive_state[:2] == '00':
+    if archive_state[:2] == '00' and archive_state[-1] == '0':
         is_offline = True
 
     projectid = getmetaitem(coll_obj, ATTR_PROJECTID, "")
@@ -182,6 +192,7 @@ def coll_actions():
     processes = projects.get_processlist(projectid)
     processgroups = projects.get_processgrouplist(projectid)
     processrequest = getmetaitem(coll_obj, ATTR_PROCESSREQUEST, "false")
+    start_next_process = getmetaitem(coll_obj, USER_PIPELINE_AUTOSTART, "true")
 
     archival_state = {
         "enabled": getmetaitem(coll_obj, ATTR_ARCHIVE_ENABLE, "false"),
@@ -199,7 +210,7 @@ def coll_actions():
         name=coll_name, archival_state=archival_state,
         processes=processes, processid=processid, processrequest=processrequest,
         processgroups=processgroups,
-        admin=current_user.is_admin)
+        admin=current_user.is_admin, start_next_process=start_next_process)
 
 
 @bp.route('_startprocess')
@@ -233,6 +244,7 @@ def collist():
     new_path_str = request.args.get('new_path', 'true', type=str)
     options = {
         'download_btn': request.args.get('btn_download', 'true', type=str) == 'true',
+        'view_btn': request.args.get('btn_view', 'true', type=str) == 'true',
         'delete_btn': request.args.get('btn_del', 'false', type=str) == 'true'
     }
 
@@ -429,7 +441,7 @@ def generate_graph():
                     Criterion('=', CollectionMeta.value, extra_coll_id))
                 extra_colls |= { c[Collection.name] for c in q } 
             for extra_coll in extra_colls:
-                coll_node(extra_coll, levels=0, post=coll, linestyle='dashed')
+                coll_node(extra_coll, levels=levels-1, post=coll, linestyle='dashed')
             # FIND collections that refer to this collection bij name or id
             q = irods_session.query(Collection.name).filter(\
                     Criterion('=', CollectionMeta.name, 'user::pipeline::input_collection_id')).filter( \
@@ -440,7 +452,7 @@ def generate_graph():
                     Criterion('=', CollectionMeta.value, coll))
             ref_colls |= { c[Collection.name] for c in q } 
             for ref_coll in ref_colls:
-                coll_node(ref_coll, levels=1, pre=coll, linestyle='dashed')
+                coll_node(ref_coll, levels=levels-1, pre=coll, linestyle='dashed')
 
 
 
@@ -559,3 +571,94 @@ def delete_file():
         print(f'DELETE {path}')
         current_user.ifs.deletefile(path)
     return '', 201
+
+
+@bp.route('search')
+def search():
+    return render_template('search.html')
+
+
+@bp.route('_search', methods=['GET'])
+@login_required
+def search_result():
+    searchtext = (request.args.get('txt', '', type=str).strip())
+    searchid = request.args.get('searchId', 0)
+    useExactMatch = (request.args.get('exactMatch', 'false', type=str).strip() == 'true')
+    useSearchMeta = (request.args.get('searchMeta', 'true', type=str).strip() == 'true')
+    useSearchDatasetNames = (request.args.get('searchDatasetNames', 'true', type=str).strip() == 'true')
+    useSearchObjectNames = (request.args.get('searchObjectNames', 'true', type=str).strip() == 'true')
+
+    SEARCH_PATTERN = '%{}%'
+    SEARCH_OPTION = 'like'
+    if useExactMatch:
+        SEARCH_PATTERN = '{}'
+        SEARCH_OPTION = '='
+
+    #print( f"useExactMatch: {useExactMatch}, useSearchMeta: {useSearchMeta}, useSearchObjectNames: {useSearchObjectNames}" )
+    irods_session = current_user.irods_session
+    data = list()
+
+    if useSearchDatasetNames:
+        #search for datasets
+        query = irods_session.query(Collection.name).filter(
+            Criterion( '=', CollectionMeta.name, ATTR_DATASETID ) ).filter(
+            #EVEN IN AN EXACT SEARCH WE NEED TO DO A LIKE SEARCH ON A PATTERN, BECAUSE
+            #THE ACTUAL COLLECTION_NAME CONTAINS THE COMPLETE PATH, INCL. PARENT COLLECTION!
+            Criterion( 'like', Collection.name, ('%'+SEARCH_PATTERN).format(searchtext) ) 
+        )
+        for coll in query:
+            basename = os.path.basename(coll[Collection.name])
+            if useExactMatch:
+                if searchtext != basename:
+                    continue
+            else:
+                #this would happen by searching part of the parent path, e.g. 'minion' 
+                if searchtext not in basename:
+                    continue
+            data.append( { 'collection': datafield('collection', coll[Collection.name], 'irods_collection').htmlstring , 
+                           'dataobject': '', 
+                           'metaattribute': '', 
+                           'metavalue':'' } )
+                
+    if useSearchObjectNames:        
+        #search for data objects
+        query = irods_session.query(Collection.name, DataObject.name).filter(
+            Criterion( SEARCH_OPTION, DataObject.name, SEARCH_PATTERN.format(searchtext) )
+        )
+        for obj in query:
+            data.append( { 'collection': datafield('collection', obj[Collection.name], 'irods_collection').htmlstring ,
+                           'dataobject': obj[DataObject.name],
+                           'metaattribute': '',
+                           'metavalue':'' } )
+
+    if useSearchMeta:
+        query = irods_session.query(Collection.name, CollectionMeta.name, CollectionMeta.value).filter(
+            Criterion( SEARCH_OPTION, CollectionMeta.value, SEARCH_PATTERN.format(searchtext) )
+        )
+        for coll in query:
+            data.append({ 'collection':  datafield('collection', coll[Collection.name], 'irods_collection').htmlstring ,
+                          'dataobject': '',
+                          'metaattribute': coll[CollectionMeta.name],
+                          'metavalue': coll[CollectionMeta.value] })
+
+        #iquest "SELECT COLL_NAME, DATA_NAME, META_DATA_ATTR_NAME, META_DATA_ATTR_VALUE where META_DATA_ATTR_VALUE like 'a55f0cd5-79cf-4b27-91e8-ce10f055e817'"
+        query = irods_session.query(Collection.name, DataObject.name, DataObjectMeta.name, DataObjectMeta.value, DataObjectMeta.units).filter(
+                Criterion( SEARCH_OPTION, DataObjectMeta.value, SEARCH_PATTERN.format(searchtext)) )
+        for obj in query:
+            data.append({ 'collection':  datafield('collection', obj[Collection.name], 'irods_collection').htmlstring ,
+                          'dataobject': obj[DataObject.name],
+                          'metaattribute': obj[DataObjectMeta.name],
+                          'metavalue': obj[DataObjectMeta.value]})
+
+
+    data2 = sorted(data, key = lambda e: (e['collection'], e['dataobject'], e['metaattribute'] ) ) 
+    columns = [ { "field": "collection",    "title": "Collection", "sortable": True }, 
+                { "field": "dataobject",    "title": "File", "sortable": True  }, 
+                { "field": "metaattribute", "title": "Attr", "sortable": True  },
+                { "field": "metavalue",     "title": "Value", "sortable": True  } ]
+    searchResultsData = {
+                    'columnsJSON': json.dumps(columns),
+                    'dataJSON': json.dumps(data2)
+    }
+    content = { 'searchResults': render_template('search_results.html', data=searchResultsData), 'searchId': searchid }
+    return content

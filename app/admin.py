@@ -6,15 +6,113 @@ Created on Wed Apr 15 10:46:50 2020
 @author: wierinve
 """
 import os
-from flask import Blueprint, render_template, redirect, request, url_for
+import irods.exception
+from flask import Blueprint, render_template, redirect, jsonify, request, url_for
 from flask_login import current_user, login_required
 from irods.meta import iRODSMeta
 from irods.models import Collection, CollectionMeta, DataObject, Resource, ResourceMeta, DataObjectMeta
 from irods.column import Criterion
 from irods.query import SpecificQuery
+from app.irods_helper import getmetaitem
+from app.datafield import datafield
 
+ATTR_ARCHIVE_STATUS = "sys::archive::status"
+ATTR_ARCHIVE_STATUSMSG = "sys::archive::statusmsg"
+ATTR_ARCHIVE_LASTCHECK = "sys::archive::lastcheck"
+ATTR_ARCHIVE_STATE = "sys::archive::state"
+
+ATTR_ARCHIVE_TARFILE = 'sys::archive::tarfile'
+ATTR_ARCHIVE_MANIFESTFILE = 'sys::archive::manifest'
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
+
+# iRODS resource properties
+
+
+RESOURCE_PROPS = {
+    'group': {
+        'label': 'Group', 
+        'meta' : 'sys::tiering::group',
+        'type' : 'text'
+    },
+    'group_id': {
+        'label': 'ID',
+        'meta': 'sys::tiering::group',
+        'type': 'text',
+        'unit': True
+    },
+    'copies': {
+        'label': 'Copies',
+        'meta': 'sys::resource::copies',
+        'type': 'text'
+    },
+    'cost': {
+        'label': 'Cost',
+        'meta': 'sys::resource::cost',
+        'type': 'text'
+    },
+    'age_before_copy': {
+        'label': 'Minimum age before copy',
+        'meta': 'sys::resource::min_age_before_copy',
+        'type': 'text'
+    },
+    'age_before_trim': {
+        'label': 'Minimum age before trim',
+        'meta': 'sys::resource::min_age_before_trim',
+        'type': 'text'
+    },
+    'minfree': {
+        'label': 'Minimum free space',
+        'meta': 'sys::resource::minfree',
+        'type': 'text'
+    },
+    'local': {
+        'label': 'Local',
+        'meta': 'sys::resource::local',
+        'type': 'bool'
+    },
+    'online': {
+        'label': 'Online',
+        'meta': 'sys::resource::online',
+        'type': 'bool'
+    },
+    'stage': {
+        'label': 'Stage',
+        'meta': 'sys::resource::stage',
+        'type': 'bool'
+    },
+    'keep': {
+        'label': 'Keep',
+        'meta': 'sys::resource::keep',
+        'type': 'bool'
+    },
+    'surf': {
+        'label': 'SURF',
+        'meta': 'sys::resource::surf',
+        'type': 'bool'
+    },
+    'tar': {
+        'label': 'TAR',
+        'meta': 'sys::resource::tar',
+        'type': 'bool'
+    },
+    'manifest': {
+        'label': 'MANIFEST',
+        'meta': 'sys::resource::manifest',
+        'type': 'bool'
+    },
+    'available': {
+        'label': 'Available',
+        'meta': 'sys::resource::available',
+        'type': 'bool'
+    },
+    'enabled': {
+        'label': 'Enabled',
+        'meta': 'sys::resource::enabled',
+        'type': 'bool'
+    }
+}
+
 
 @bp.route('/_issues')
 def query_issues():
@@ -44,13 +142,65 @@ def query_issues():
 def issues():
     return render_template('issues.html')
 
+@bp.route('/_aract', methods=['POST'])
+def archive_action():
+    requestdata = request.form.to_dict()
+    action = requestdata.get('action')
+    collection = requestdata.get('collection')
+    try:
+        collobj = current_user.irods_session.collections.get(collection)
+    except irods.exception.CollectionDoesNotExist:
+        return jsonify({'message': 'Collection does not exist'})
+    if action == 'remove_archive':
+        state =  getmetaitem(collobj, ATTR_ARCHIVE_STATE)
+        if state is None:
+            return jsonify({'message': 'Cannot modify collection with unknown state'})
+        if state.count('1')<2: # Dont remove archive if no other copy is present
+            return jsonify({'message': 'Cannot remove last data copy in collection'})
+        for attr in (ATTR_ARCHIVE_TARFILE, ATTR_ARCHIVE_MANIFESTFILE):
+            filename = getmetaitem(collobj, attr)
+            if filename and current_user.ifs.fileexists(filename):
+                current_user.irods_session.data_objects.unlink(filename)
+                collobj.metadata.remove(iRODSMeta(attr, filename))
+    if action in ('clear_status', 'remove_archive') :
+        for attr in (ATTR_ARCHIVE_STATUS, ATTR_ARCHIVE_STATUSMSG, ATTR_ARCHIVE_LASTCHECK):
+            val = getmetaitem(collobj, attr)
+            if val:
+                collobj.metadata.remove(iRODSMeta(attr, val))
+    return jsonify({'status':'ok'})
+
+@bp.route('_archissue', methods=['GET'])
+@login_required
+def archive_issues():
+    # Get issue collections
+    query = current_user.irods_session.query(Collection.name, CollectionMeta.value).filter(
+        Criterion('=', CollectionMeta.name, ATTR_ARCHIVE_STATUS)).filter(
+        Criterion('!=', CollectionMeta.value, 'OK'))
+    items = []
+    for result in query:
+        statusmsg = ""
+        coll = current_user.irods_session.collections.get(result[Collection.name])
+        statusmsg = getmetaitem(coll, ATTR_ARCHIVE_STATUSMSG, default="")
+        allow_remove = False
+        state = getmetaitem(coll, ATTR_ARCHIVE_STATE)
+        if state and state.count('1')>1:
+            allow_remove = True
+        items.append({ 
+            'collection': datafield('Collection', result[Collection.name], 'irods_collection'),
+            'status': result[CollectionMeta.value],
+            'statusmsg': statusmsg,
+            'allow_remove': allow_remove
+        })
+    return render_template('archive_issues.html', items=items)
+
+
 @bp.route('/queues')
 @login_required
 def admin():
     if not current_user.is_admin:
         return render_template('denied.html')
     queues = {}
-    for q in ['incoming', 'prepare', 'stage', 'queued', 'startup', 'active']:
+    for q in ['incoming', 'prepare', 'stage', 'queued', 'startup', 'active', 'postprocessing', 'waiting']:
         enabled = True
         path = f'/{current_user.irods_zone}/system/runsheet'
         metaquery = current_user.irods_session.query(CollectionMeta.value).filter(
@@ -58,12 +208,18 @@ def admin():
             Criterion('=', CollectionMeta.name, f'sys::enable::{q}'))
         for meta in metaquery:
             enabled = meta[CollectionMeta.value] == 'true'
-        items = current_user.irods_session.query(DataObject.id).filter(\
-            Criterion('=', Collection.name, '/rivmZone/system/runsheet/processing')).filter(\
-            Criterion('=', DataObjectMeta.name, 'sys::runsheet::state')).filter(\
-            Criterion('=', DataObjectMeta.value, q)).count(DataObject.id)
-        count  = items.execute()[0][DataObject.id]
-        #print(next(items.get_results()))
+        if q == 'incoming':
+            items = current_user.irods_session.query(DataObject.id).filter(\
+                Criterion('=', Collection.name, '/rivmZone/system/runsheet/processing')).filter(\
+                Criterion('=', DataObjectMeta.name, 'sys::runsheet::state')).filter(\
+                Criterion('=', DataObjectMeta.value, q)).count(DataObject.id)
+            count  = items.execute()[0][DataObject.id]
+        else:
+            items = current_user.irods_session.query(Collection.id).filter(\
+                Criterion('=', Collection.name, '/rivmZone/system/runsheet/processing')).filter(\
+                Criterion('=', CollectionMeta.name, 'sys::runsheet::state')).filter(\
+                Criterion('=', CollectionMeta.value, q)).count(Collection.id)
+            count  = items.execute()[0][Collection.id]
         queues[q] = {'enabled': enabled, 'count': count}
     return render_template('queues.html', queues=queues)
 
@@ -73,59 +229,52 @@ def resources():
     resources =  {}
     q = current_user.irods_session.query(Resource.name)
     for r in q:
+        resources[r[Resource.name]] = {}
         resource = current_user.irods_session.resources.get(r[Resource.name])
-        resources[r[Resource.name]] = { m.name: m.value for m in resource.metadata.items() if m.name.startswith('sys::resource')}
-        m = resource.metadata.get_all('sys::tiering::group')
-        if m:
-            resources[r[Resource.name]]['group'] = m[0].value
-            resources[r[Resource.name]]['id'] = m[0].units
-    return render_template('resources.html', resources=resources)
+        metadata = resource.metadata.items()
+        metanames = [ m.name for m in metadata ]
+        for property in RESOURCE_PROPS:
+            meta_name = RESOURCE_PROPS[property].get('meta')
+            if meta_name:
+                if meta_name in metanames:
+                    irods_meta = resource.metadata.get_one(meta_name)
+                    if RESOURCE_PROPS[property].get('unit', False):
+                        resources[r[Resource.name]][property] = irods_meta.units
+                    else:
+                        resources[r[Resource.name]][property] = irods_meta.value
+    return render_template('resources.html', columns=RESOURCE_PROPS, resources=resources)
 
 @login_required
 @bp.route('/_update_resources', methods=['POST'])
 def update_resources():
-    TEXT_PROPERTIES = ( 
-        "sys::resource::copies",
-        "sys::resource::cost",
-        "sys::resource::minfree",
-        "sys::resource::min_age_before_copy",
-        "sys::resource::min_age_before_trim"
-    )
-    BOOL_PROPERTIES = (
-        "sys::resource::local",
-        "sys::resource::online",
-        "sys::resource::stage",
-        "sys::resource::surf",
-        "sys::resource::tar",
-        "sys::resource::keep",
-        "sys::resource::available"
-    )
+
     data = request.form.to_dict()
     # Create a dict of the form data
-    resources = {}
+    new_settings = {}
     for d in data:
         resource, attr = d.split('__')
         value = data[d]
-        if not resource in resources:
-            resources[resource] = {}
-        resources[resource][attr] = value
-    # Update resource settings
-    for resource in resources:
+        if not resource in new_settings:
+            new_settings[resource] = {}
+        new_settings[resource][attr] = value
+    for resource in new_settings:
         res_obj = current_user.irods_session.resources.get(resource)
-        for property in TEXT_PROPERTIES:
-            if property in resources[resource] and resources[resource][property]:
-                res_obj.metadata[property] = iRODSMeta(property, resources[resource][property])
+        for property in RESOURCE_PROPS:
+            meta_name = RESOURCE_PROPS[property]['meta']
+            if property in new_settings[resource]:
+                if new_settings[resource][property]:
+                    try:
+                        current_meta = res_obj.metadata.get_one(meta_name)
+                    except KeyError:
+                        current_meta = iRODSMeta(meta_name, '')
+                    new_meta = iRODSMeta(meta_name, current_meta.value, current_meta.units)
+                    if RESOURCE_PROPS[property].get('unit', False):
+                        new_meta.units = new_settings[resource][property]
+                    else:
+                        new_meta.value = new_settings[resource][property]
+                    res_obj.metadata[meta_name] = new_meta
             else:
-                del res_obj.metadata[property]
-        for property in BOOL_PROPERTIES:
-            value = resources[resource].get(property, 'false')
-            res_obj.metadata[property] = iRODSMeta(property, value)
-        group = resources[resource].get('group')
-        id = resources[resource].get('id')
-        if group and id:
-            res_obj.metadata['sys::tiering::group'] = iRODSMeta('sys::tiering::group', group, id)
-        else:
-            del res_obj.metadata['sys::tiering::group']
+                del res_obj.metadata[meta_name]
 
     return redirect(url_for('admin.resources'))
 

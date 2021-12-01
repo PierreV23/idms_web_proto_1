@@ -11,6 +11,11 @@
 <!-- FROM : https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css -->
 <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/mymodal.css') }}">
+<!--link rel="stylesheet" href="{{ url_for('static', filename='css/font-awesome.min.css') }}"-->
+<!-- <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.0/css/all.css" integrity="sha384-lZN37f5QGtY3VHgisS14W3ExzMWZxybE1SJSEsQp9S+oqd12jhcu+A56Ebc1zFSJ" crossorigin="anonymous"> -->
+<!-- <link rel="stylesheet" href="{{ url_for('static', filename='font-awesome-4.7.0/css/font-awesome.css') }}"> -->
+<link rel="stylesheet" href="{{ url_for('static', filename='font-awesome-5.15.4/css/all.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap-table.css') }}">
 <title>iRODS</title>
 
 <!-- Optional JavaScript -->
@@ -28,6 +33,9 @@
 <script src="{{ url_for('static', filename='css/popper.min.js') }}"></script>
 <script src="{{ url_for('static', filename='css/bootstrap.min.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/gh/xcash/bootstrap-autocomplete@v2.3.7/dist/latest/bootstrap-autocomplete.min.js"></script>
+
+<!--script src="{{ url_for('static', filename='css/bootstrap-table-locale-all.js') }}"></script-->
+<script src="{{ url_for('static', filename='css/bootstrap-table.js') }}"></script>
 
 </head>
 <body>
@@ -47,17 +55,27 @@
     <a class="nav-link" href="{{ url_for('collbrowser.collbrowser') }}" id="navbarCollection" role="button">
       Data
     </a>
-  </li>
+  </li> 
+  <li class="nav-item">
+    <a class="nav-link" href="{{ url_for('collbrowser.search') }}" id="navbarCollection" role="button">
+      Search
+    </a>
+  </li>  
+  {% if 'JOBS' in current_user.features %}
   <li class="nav-item">
     <a class="nav-link" href="{{ url_for('jobs.show_jobs') }}" id="navbarCollection" role="button">
       Jobs
     </a>
   </li>
+  {% endif %}
+  {% if 'PROJECTS' in current_user.features %}
   <li class="nav-item dropdown">
     <a class="nav-link" href="{{ url_for('projects.show_projects') }}" id="navbarCollection" role="button">
       Projects
     </a>
   </li>
+  {% endif %}
+  {% if 'MINILIMS' in current_user.features %}
   <li class="nav-item dropdown">
     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown_ngs" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
       Vir-ont SmplSh
@@ -66,7 +84,8 @@
       <a class="dropdown-item" href="/ngsruns/new">New run</a>
       <a class="dropdown-item" href="{{ url_for('ngsruns.run_list') }}">Run List</a>
     </div>
-  </li>   
+  </li>
+  {% endif %}
 {% if current_user.is_admin  %}
   <li class="nav-item dropdown">
     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -78,6 +97,7 @@
       <a class="dropdown-item" href="{{ url_for('admin.resources') }}">Resources</a>
       <a class="dropdown-item" href="/admin/queues">Runsheet queues</a>
       <a class="dropdown-item" href="/admin/issues">Data issues</a>
+      <a class="dropdown-item" href="{{ url_for('admin.archive_issues') }}">Archive issues</a>
     </div>
   </li>  
   <li class="nav-item dropdown">
