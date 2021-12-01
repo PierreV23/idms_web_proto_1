@@ -72,6 +72,14 @@ def get_processlist(project):
     return processes
 
 @login_required
+def get_processgrouplist(project):
+    pl, result = rest_call('GET', f'projects/{project}/processgroups')
+    processgroups = []
+    if result == 200:
+        processgroups = [ p['name'] for p in pl ]
+    return processgroups
+
+@login_required
 def get_process2list():
     pl, result = rest_call('GET', 'processes')
     processes = []

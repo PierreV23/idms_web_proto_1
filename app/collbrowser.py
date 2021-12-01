@@ -27,6 +27,7 @@ MAX_GRAPH_LEVELS = 3
 ATTR_DATASETID = 'sys::dataset_id'
 ATTR_PROJECTID = 'projectID'
 ATTR_PROCESSID = 'processID'
+ATTR_PROCESSGROUPID = 'processgroupID'
 #TODO: use constants.py (role irods_cronjobs)
 ATTR_ARCHIVE_PREFIX = 'sys::archive::'
 ATTR_ARCHIVE_ENABLE = f'{ATTR_ARCHIVE_PREFIX}enable'
@@ -179,6 +180,7 @@ def coll_actions():
     projectid = getmetaitem(coll_obj, ATTR_PROJECTID, "")
     processid = getmetaitem(coll_obj, ATTR_PROCESSID, "")
     processes = projects.get_processlist(projectid)
+    processgroups = projects.get_processgrouplist(projectid)
     processrequest = getmetaitem(coll_obj, ATTR_PROCESSREQUEST, "false")
 
     archival_state = {
@@ -196,6 +198,7 @@ def coll_actions():
     return render_template('actions.html', collection=path, 
         name=coll_name, archival_state=archival_state,
         processes=processes, processid=processid, processrequest=processrequest,
+        processgroups=processgroups,
         admin=current_user.is_admin)
 
 
@@ -203,11 +206,22 @@ def coll_actions():
 @login_required
 def startprocess():
     collection = request.args.get('collection')
-    processid = request.args.get('processid')
     if current_user.ifs.folderexists(collection):
         c = current_user.irods_session.collections.get(collection)
+    else:
+        return 'FAILED'
+
+    processid = request.args.get('processid')
+    processgroupid = request.args.get('processgroupid')
+    if processid:
         c.metadata[ATTR_PROCESSID] = iRODSMeta(ATTR_PROCESSID, processid)
-        c.metadata[ATTR_PROCESSREQUEST] = iRODSMeta(ATTR_PROCESSREQUEST, current_user.username)
+    elif processgroupid:
+        c.metadata._delete_all_values(ATTR_PROCESSID)
+        c.metadata[ATTR_PROCESSGROUPID] = iRODSMeta(ATTR_PROCESSGROUPID, processgroupid)
+    else:
+        return 'FAILED'
+    c.metadata[ATTR_PROCESSREQUEST] = iRODSMeta(ATTR_PROCESSREQUEST, current_user.username)
+
     return 'DONE'
 
 @bp.route('_collist')

@@ -40,6 +40,17 @@
       });
     }
 
+    function startProcessGroup() {
+      var processgroupid = $("#processgroupSelect").val()
+      $.get('{{ url_for('collbrowser.startprocess') }}', {
+        collection: '{{ collection }}',
+        processgroupid: processgroupid
+      }, function(data) {
+        load_meta();
+        load_actions();
+      });
+    }
+
     function overrideDatasetLocal() {
         var selected = $( "#keepLocalSwitch" ).is(':checked')
         var override = $( "#overrideLocalSwitch" ).is(':checked')
@@ -328,6 +339,18 @@ $('.nav-pills').on('shown.bs.tab', function(event){
               </td>
               <td>
                 <button class="btn btn-outline-secondary" onClick="startProcess()">START PROCESS</button>
+              </td>              
+            </tr>
+            <tr>
+              <td>
+                <select class="custom-select" style="width:150px;" id="processgroupSelect">
+                  {% for p in processgroups %}
+                  <option {% if p == processgroupid %}selected{% endif %}>{{ p }}</option>
+                  {% endfor %}
+                </select>
+              </td>
+              <td>
+                <button class="btn btn-outline-secondary" onClick="startProcessGroup()">START PROCESSGROUP</button>
               </td>              
             </tr>
           </table>

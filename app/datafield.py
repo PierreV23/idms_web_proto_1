@@ -22,20 +22,25 @@ KNOWN_ATTRIBUTES = {
     'sys::access_time': 'timestamp',
     'sys::archive::lastrun': 'timestamp',
     'sys::archive::lastcheck': 'timestamp',
+    'sys::collection_size' : 'bytes',
+    'sys::collection_size_time': 'timestamp',
     'sys::pipeline::input_collection_id': 'collection_id',
     'sys::pipeline::last_use': 'timestamp',
     'sys::pipeline::stage_time': 'timestamp',
     'sys::pipeline::used_by': 'runsheet',
     'user::pipeline::input_collection_id': 'collection_id',
-    'sys::run::start_time': 'timestamp',
+    'sys::runsheet::id': 'runsheet',
     'sys::runsheet::create_time': 'timestamp',
+    'sys::runsheet::depends_on': 'collection_id',
     'sys::runsheet::input_collection': 'irods_collection',
+    'sys::run::output_collection': 'irods_collection',
     'sys::runsheet::projectID': 'projectid'
 }
 
 KNOWN_ATTRIBUTE_TEMPLATES = {
     'sys::collection_size_time::.*' : 'timestamp',
     'sys::collection_size::.*' : 'bytes',
+    'sys::run::.*_time': 'timestamp',
     'sys::lock::time::.*::valid_till': 'timestamp',
     'sys::lock::time::.*::runtime': 'timedelta',
     'sys::lock::time::.*::timeout': 'timedelta'

@@ -35,6 +35,7 @@
                 <div class="form-group">
                     <label for="process_name">GIT Tag</label>
                     <select class="form-control form-control-lg" id="git_tag">
+                        <option disabled selected value> -- select a tag -- </option>
                         {% for tag in selected_tags %}
                         <option {% if tag == selected_details.tag %}selected{% endif %}>{{ tag }}</option>
                         {% endfor %}
