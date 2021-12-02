@@ -1,0 +1,44 @@
+{% extends 'base2.html' %}
+
+{% block content %}
+<script>
+
+function load_graph() {
+  $.get('{{ url_for('projects.process_grid') }}', {
+    project: 'ngslab'
+  }, function(data) {
+     $('#data_map').html(data.map)
+//     $('#graphimg').attr('src', 'data:image/svg;base64,' + data.graph)
+     $('#svg_img').html(data.graph)
+  });
+}
+
+$(window).on('load', function() {
+  load_graph();
+});
+
+$("#erwin").on('click', function() {
+  window.alert('Click node')
+});
+
+$(".node").on('click', function() {
+  window.alert('Click node')
+});
+</script>
+
+<div id="data_map"></div>
+<img src="" id="graphimg" usemap="#datagraph" />
+<div id="svg_img"></div>
+
+<script>
+$(".node").on('click', function() {
+  window.alert('Click node')
+});
+
+$("g").on('click', function() {
+  window.alert('Click node')
+});
+
+</script>
+
+{% endblock %}

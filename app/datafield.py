@@ -22,6 +22,8 @@ KNOWN_ATTRIBUTES = {
     'sys::access_time': 'timestamp',
     'sys::archive::lastrun': 'timestamp',
     'sys::archive::lastcheck': 'timestamp',
+    'sys::collection_size' : 'bytes',
+    'sys::collection_size_time': 'timestamp',
     'sys::pipeline::gitrepo': 'url',
     'sys::pipeline::input_collection_id': 'collection_id',
     'sys::pipeline::last_use': 'timestamp',
@@ -30,9 +32,9 @@ KNOWN_ATTRIBUTES = {
     'user::pipeline::input_collection_id': 'collection_id',
     'sys::run::last_move_time': 'timestamp',
     'sys::run::output_collection': 'irods_collection',
-    'sys::run::start_time': 'timestamp',
-    'sys::run::finish_time': 'timestamp',
     'sys::runsheet::create_time': 'timestamp',
+    'sys::runsheet::depends_on': 'collection_id',
+    'sys::runsheet::id': 'runsheet',
     'sys::runsheet::input_collection': 'irods_collection',
     'sys::runsheet::projectID': 'projectid',
     'sys::runsheet::repo': 'url'
@@ -41,6 +43,7 @@ KNOWN_ATTRIBUTES = {
 KNOWN_ATTRIBUTE_TEMPLATES = {
     'sys::collection_size_time::.*' : 'timestamp',
     'sys::collection_size::.*' : 'bytes',
+    'sys::run::.*_time': 'timestamp',
     'sys::lock::time::.*::valid_till': 'timestamp',
     'sys::lock::time::.*::runtime': 'timedelta',
     'sys::lock::time::.*::timeout': 'timedelta'

@@ -29,17 +29,29 @@
       });
     }
 
+    function startProcessGroup() {
+      var processgroupid = $("#processgroupSelect").val()
+      $.get('{{ url_for('collbrowser.startprocess') }}', {
+        collection: '{{ collection }}',
+        processgroupid: processgroupid
+      }, function(data) {
+        load_meta();
+        load_actions();
+      });
+    }
+
+
     function startNext() {
-        var startnext = $( "#disableContinuation").is(':checked')
-        value = startnext ? "true" : "false"
-        $.get('{{ url_for('collbrowser.setmeta') }}', {
-          collection: '{{ collection }}',
-          attr: 'user::pipeline::autostart',
-          value: value
-        }, function(data) {
-          load_meta();
-          load_actions();
-        });
+      var startnext = $( "#disableContinuation").is(':checked')
+      value = startnext ? "true" : "false"
+      $.get('{{ url_for('collbrowser.setmeta') }}', {
+        collection: '{{ collection }}',
+        attr: 'user::pipeline::autostart',
+        value: value
+      }, function(data) {
+        load_meta();
+        load_actions();
+      });
     }
 
     function overrideDatasetLocal() {
@@ -153,6 +165,7 @@ $('.nav-pills').on('shown.bs.tab', function(event){
               Archive
           </button>
         </li>
+        {% if admin is sameas True %}
         <li class="nav-item mx-2">
           <button class="btn btn-outline-primary" id="storage-tab"
             data-toggle="tab" href="#storage" role="tab"
@@ -160,6 +173,7 @@ $('.nav-pills').on('shown.bs.tab', function(event){
             Storage
           </button>
         </li>
+        {% endif %}
         {% if archival_state.is_dataset is sameas true %}
         <li class="nav-item mx-2">
           <button class="btn btn-outline-primary" id="pipeline-tab"
@@ -321,29 +335,38 @@ $('.nav-pills').on('shown.bs.tab', function(event){
         </div>
         <div class="tab-pane" id="pipeline" role="tabpanel" aria-labelledby="pipeline-tab">
           {% if processrequest != "false" %}
-          <h3>Starting up process : {{ processid }}</h3>
+            {% if processid %}
+              <h3>Starting up process : {{ processid }}</h3>
+            {% elif processgroupid %}
+              <h3>Starting up processgroup : {{ processgroupid }}</h3>
+            {% endif %}
           {% else %}
-          <table>
-            <tr>
-              <td>
                 <select class="custom-select" style="width:150px;" id="processSelect">
-                  {% for p in processes %}
+                  {% for p in processes | sort %}
                   <option {% if p == processid %}selected{% endif %}>{{ p }}</option>
                   {% endfor %}
                 </select>
-              </td>
-              <td>
-                <button class="btn btn-outline-secondary" onClick="startProcess()">START PROCESS</button>
-              </td>              
-            </tr>
-          </table>
+
+                <button class="btn btn-outline-secondary button12" onClick="startProcess()">Start process</button>
+
+                <div class="custom-control custom-switch vertical-down">
+                  <input type="checkbox" class="custom-control-input" onChange="startNext()"
+                        value="true" id="disableContinuation" {% if start_next_process == "true" %}checked{% endif %}>
+                        <label class="custom-control-label" for="disableContinuation">Start next pipeline process automatically</label>               
+                </div>
+{% if current_user.is_admin %}
+                <hr>
+
+                <select class="custom-select" style="width:150px;" id="processgroupSelect">
+                  {% for p in processgroups | sort %}
+                  <option {% if p == processgroupid %}selected{% endif %}>{{ p }}</option>
+                  {% endfor %}
+                </select>
+
+                <button class="btn btn-outline-secondary button12" onClick="startProcessGroup()">Start processgroup</button>
+{% endif %}         
           {% endif %}
-          <hr>
-          <div class="col-sm-4 custom-control custom-switch vertical-down">
-            <input type="checkbox" class="custom-control-input" onChange="startNext()"
-                  value="true" id="disableContinuation" {% if start_next_process == "true" %}checked{% endif %}>
-                  <label class="custom-control-label" for="disableContinuation">Start next pipeline process automatically</label>               
-          </div>
+
         </div>
     </div>
 </div>
