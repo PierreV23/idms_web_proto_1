@@ -189,6 +189,7 @@ def coll_actions():
 
     projectid = getmetaitem(coll_obj, ATTR_PROJECTID, "")
     processid = getmetaitem(coll_obj, ATTR_PROCESSID, "")
+    processgroupid = getmetaitem(coll_obj, ATTR_PROCESSGROUPID, "")
     processes = projects.get_processlist(projectid)
     processgroups = projects.get_processgrouplist(projectid)
     processrequest = getmetaitem(coll_obj, ATTR_PROCESSREQUEST, "false")
@@ -209,7 +210,7 @@ def coll_actions():
     return render_template('actions.html', collection=path, 
         name=coll_name, archival_state=archival_state,
         processes=processes, processid=processid, processrequest=processrequest,
-        processgroups=processgroups,
+        processgroups=processgroups, processgroupid=processgroupid,
         admin=current_user.is_admin, start_next_process=start_next_process)
 
 
