@@ -18,7 +18,7 @@
 </h3>
 
 {% else %}
-An error occurred while uploading your dataset
+An error occurred while uploading your dataset: {{ upload_result['error'] }}
 {% endif %}
         <hr>
         <a href="{{ url_for('upload.upload_page') }}"><button class="button btn-primary">Upload more data</button></a>

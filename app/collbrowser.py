@@ -15,11 +15,11 @@ from flask_login import current_user, login_required
 from irods.models import Collection, CollectionMeta, DataObject, DataObjectMeta
 from irods.column import Criterion
 from app.datafield import AVU2data, datafield
+from app.irods_helper import getmetaitem
 from graphviz import Digraph
 from irods.meta import iRODSMeta
 from . import projects
 import json
-#from irods_helper import getmetaitem
 
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
 
@@ -30,6 +30,7 @@ SEARCHPAGE_SIZE = 1000
 ATTR_DATASETID = 'sys::dataset_id'
 ATTR_PROJECTID = 'projectID'
 ATTR_PROCESSID = 'processID'
+ATTR_PROCESSGROUPID = 'processgroupID'
 #TODO: use constants.py (role irods_cronjobs)
 ATTR_ARCHIVE_PREFIX = 'sys::archive::'
 ATTR_ARCHIVE_ENABLE = f'{ATTR_ARCHIVE_PREFIX}enable'
@@ -61,12 +62,6 @@ COLL_SHAPES = {
 PROCESS_SHAPE = 'cds'
 
 # TODO: use the irods_helper instead (role irods_cronjobs)
-def getmetaitem(irods_obj, attr, default=None): 
-    try:
-        value = irods_obj.metadata.get_one(attr).value
-    except KeyError:
-        value = default
-    return value
 
 def getmetatree(irods_obj, attr, default=None):
     return  _getmetatree(irods_obj, attr, irods_obj.path, default=None)
@@ -124,17 +119,13 @@ def setKeepOnlineUntil():
     collection = request.args.get('collection','None', type=str)
 
     now = datetime.today()
-    delta = relativedelta(days=0)
-    if selectionStr == '1w':
-        delta = relativedelta(days=7)
-    elif selectionStr == '1M':
-        delta = relativedelta(months=1)
-    elif selectionStr == '6M':
-        delta = relativedelta(months=6)
-    else:
+    days = 0
+    try:
+        days = int(selectionStr)
+    except ValueError:
         print( f"unknown selection for _setKeepOnlineUntil: {selectionStr}")
         return('DONE')
-    keepOnlineUntil = now + delta
+    keepOnlineUntil = now + relativedelta(days=days)
 
     coll_obj = irods_session.collections.get(collection)
     new_meta = iRODSMeta(ATTR_ARCHIVE_KEEP_ONLINE_TILL, str(int(datetime.timestamp(keepOnlineUntil))), 'timestamp' )
@@ -187,16 +178,20 @@ def coll_actions():
     archive_state = getmetaitem(coll_obj, ATTR_ARCHIVE_STATE, "000")
     min_copies = getmetatree(coll_obj, ATTR_ARCHIVE_MINCOPIES, 2)
     keep_online = getmetatree(coll_obj, ATTR_ARCHIVE_KEEP_ONLINE, "false")
-    is_archived = False 
+    is_archived = False
+    # TODO: This should use the sys::resource::online property of a resource to determine
+    # if a collection is online
     if archive_state[-1] == '1':
         is_archived = True 
     is_offline = False
-    if archive_state[:2] == '00':
+    if archive_state[:2] == '00' and archive_state[-1] == '0':
         is_offline = True
 
     projectid = getmetaitem(coll_obj, ATTR_PROJECTID, "")
     processid = getmetaitem(coll_obj, ATTR_PROCESSID, "")
+    processgroupid = getmetaitem(coll_obj, ATTR_PROCESSGROUPID, "")
     processes = projects.get_processlist(projectid)
+    processgroups = projects.get_processgrouplist(projectid)
     processrequest = getmetaitem(coll_obj, ATTR_PROCESSREQUEST, "false")
     start_next_process = getmetaitem(coll_obj, USER_PIPELINE_AUTOSTART, "true")
 
@@ -214,18 +209,31 @@ def coll_actions():
     #print( archival_state )
     return render_template('actions.html', collection=path, 
         name=coll_name, archival_state=archival_state,
-        processes=processes, processid=processid, processrequest=processrequest, start_next_process=start_next_process )
+        processes=processes, processid=processid, processrequest=processrequest,
+        processgroups=processgroups, processgroupid=processgroupid,
+        admin=current_user.is_admin, start_next_process=start_next_process)
 
 
 @bp.route('_startprocess')
 @login_required
 def startprocess():
     collection = request.args.get('collection')
-    processid = request.args.get('processid')
     if current_user.ifs.folderexists(collection):
         c = current_user.irods_session.collections.get(collection)
+    else:
+        return 'FAILED'
+
+    processid = request.args.get('processid')
+    processgroupid = request.args.get('processgroupid')
+    if processid:
         c.metadata[ATTR_PROCESSID] = iRODSMeta(ATTR_PROCESSID, processid)
-        c.metadata[ATTR_PROCESSREQUEST] = iRODSMeta(ATTR_PROCESSREQUEST, current_user.username)
+    elif processgroupid:
+        c.metadata._delete_all_values(ATTR_PROCESSID)
+        c.metadata[ATTR_PROCESSGROUPID] = iRODSMeta(ATTR_PROCESSGROUPID, processgroupid)
+    else:
+        return 'FAILED'
+    c.metadata[ATTR_PROCESSREQUEST] = iRODSMeta(ATTR_PROCESSREQUEST, current_user.username)
+
     return 'DONE'
 
 @bp.route('_collist')

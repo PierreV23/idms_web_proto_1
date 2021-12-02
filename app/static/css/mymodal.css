@@ -41,8 +41,17 @@ html {
         font-size: 10px;
 }
 
+
+.page-heading{
+  width: 98%;
+  height: 3%;
+  margin: 0 auto;
+}
+
+
 .page-wrapper{
     width: 98%;
+    height: 90%;
     margin: 0 auto;
 }
 
@@ -103,7 +112,6 @@ html {
 .h100{
   min-height: 100%;
 }
-
 
 #content {
   width:100%;
@@ -166,6 +174,11 @@ ul {
   height: 15px;
 }
 
+.button12 {
+  min-width: 12em;
+  max-width: 12em;
+}
+
 .alignleft {
   float: left;
 }
@@ -190,6 +203,12 @@ ul {
   min-height: 27vh;
   max-height: 27vh;
   overflow-y: none;
+}
+
+.h30 {
+  min-height: 30vh;
+  max-height: 30vh;
+  overflow-y: scroll;
 }
 
 .coll-meta {
@@ -229,6 +248,62 @@ ul {
 
 .vertical-down {
     padding-top: 5px;
+}
+
+.right-line {
+  border-right: 1px dashed #333;
+}
+
+
+.fullheight {
+  min-height: 100%;
+  max-height: 100%;
+  overflow: show;
+  overflow-y: scroll;
+}
+
+html, body {
+  margin: 0px;
+  height: 100%;
+}
+
+.viewport {
+  min-height: 88vh;
+  max-height: 100%;
+}
+
+.scroll2 {
+  min-height: 88vh;
+  max-height: 88vh;
+  overflow-x: scroll;
+  overflow-y: scroll;
+}
+
+svg {
+  max-height: 30%;
+  max-width: 100%;
+}
+
+.wrap {
+  height:88vh;
+}
+
+.header, .footer {
+  min-height: 60px;
+}
+
+.sidebar-content {
+  flex:1;
+  overflow-y:scroll;
+}
+
+.scrollbox {
+  flex: 1;
+  overflow-y: scroll;
+}
+
+.center {
+  top: 50%;
 }
 
 .c1 { filter: hue-rotate(0deg)   }
