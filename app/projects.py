@@ -87,6 +87,62 @@ def get_process2list():
         processes = [ p['name'] for p in pl ]
     return processes
 
+
+def get_contactlist(project):
+    cl, result = rest_call('GET', f'projects/{project}/contacts')
+    contacts = []
+    if result == 200:
+        contacts = cl
+    return contacts
+
+
+@BP.route('/projects/delete_contact', methods=['POST'])
+@login_required
+def delete_contact():
+    json = request.get_json(force=True)
+    project_id = json['project_id']
+    contact_id = json['contact_id']
+    result, status = rest_call('DELETE', f"projects/{project_id}/contacts/{contact_id}")
+    ret = {}
+    if status == 200:
+        ret = { "success": True }
+    else:
+        ret = { "msg": f"Error: {result['msg']}"}
+    return ret
+
+
+@BP.route('/projects/update_contact', methods=['POST'])
+@login_required
+def update_contact():
+    json = request.get_json(force=True)
+    project_id = json['project_id']
+    contact_id = json['contact_id']
+    contact = json['contact']
+    result, status = rest_call('PUT', f"projects/{project_id}/contacts/{contact_id}", contact)
+    ret = {}
+    if status == 200:
+        ret = { "success": True }
+    else:
+        print( result )
+        ret = { "msg": f"Error: {result['msg']}", "contact": result['contact'] }
+    return ret
+
+
+@BP.route('/projects/create_contact', methods=['POST'])
+@login_required
+def create_contact():
+    json = request.get_json(force=True)
+    project_id = json['project_id']
+    contact = json['contact']
+    result, status = rest_call('POST', f"projects/{project_id}/contacts", contact)
+    ret = {}
+    if status == 201:
+        ret = { "success": True , "contact": result }
+    else:
+        ret = { "msg": f"Error: {result['msg']}"}
+    return ret
+
+
 @BP.route('/')
 @login_required
 def show_projects():
@@ -162,8 +218,9 @@ def show_projectdetails():
                 projectdetails['processes'][name]['next_processID'] = next_processes.get(proces['next_processid'], '')
                 projectdetails['processes'][name]['next_processes'] = [ next_processes[x] for x in next_processes ]
         
-    
-        
+    #Contacts
+    contacts, result = rest_call('GET', '/projects/{}/contacts'.format(projectnaam))
+    projectdetails['contacts'] = contacts
 
     # Retrieve collections associated with project
     query = irods_session.query(Collection.name).filter(
