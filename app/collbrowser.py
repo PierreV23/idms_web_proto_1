@@ -384,8 +384,15 @@ def generate_graph():
         penwidth = '3' if coll == center else '1'
     
         projectid = collmeta.get('projectID', '') + '\n'
+        if coll == center:
+            penwidth = '3'
+            clss = { 'class' : 'path-change center-coll'}
+        else:
+            penwidth = '1'
+            clss = { 'class' : 'path-change' }
+
         graph.node(coll, projectid + shortname(coll,NAME_LENGTH), shape=shape, fillcolor=shape_color, style='filled', penwidth=penwidth,
-                   URL=url_for('collbrowser.collbrowser') + '?path=' + coll, fontsize='8')
+                   fontsize='8', setting='extra', **clss, id=coll)
         if post:
             graph.edge(coll, post, style=linestyle)
         # Create the GIT node if present
@@ -460,15 +467,15 @@ def generate_graph():
 
     graph.graph_attr['rankdir'] = 'LR'
     graph.graph_attr['fontsize'] = '15'
-    graph.graph_attr['size'] = '10,8'
+    graph.graph_attr['size'] = '8,10'
 
     coll_node(coll, center=coll, levels=MAX_GRAPH_LEVELS)
 
-    graph_output = graph.pipe(format='png')
+    graph_output = graph.pipe(format='svg').decode('utf-8')
     graph_imagemap = graph.pipe(format='cmapx').decode('utf-8')
-    data_graph = base64.b64encode(graph_output).decode('utf-8')
+    #data_graph = base64.b64encode(graph_output).decode('utf-8')
     result = {}
-    result['graph'] = data_graph
+    result['graph'] = graph_output
     result['map'] = graph_imagemap
     return result
 

@@ -161,7 +161,12 @@ ul {
 .graph-height {
   min-height: 27vh;
   max-height: 27vh;
-  overflow-y: scroll;
+  overflow-y: hidden;
+}
+
+.graph-height2 {
+  min-height: 27vh;
+  max-height: 27vh;
 }
 
 .h30 {
@@ -207,6 +212,10 @@ ul {
 
 .vertical-down {
     padding-top: 5px;
+}
+
+.nopadding {
+  padding: 1px;
 }
 
 .right-line {
