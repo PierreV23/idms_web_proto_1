@@ -19,6 +19,8 @@ from app.irods_helper import getmetaitem
 from graphviz import Digraph
 from irods.meta import iRODSMeta
 from . import projects
+from . import cacheqry
+from . import flaskcache
 import json
 
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
@@ -63,16 +65,16 @@ PROCESS_SHAPE = 'cds'
 
 # TODO: use the irods_helper instead (role irods_cronjobs)
 
-def getmetatree(irods_obj, attr, default=None):
-    return  _getmetatree(irods_obj, attr, irods_obj.path, default=None)
+def getmetatree(irods_coll, attr, default=None):
+    return  _getmetatree(irods_coll, attr, irods_coll, default=None)
 
 @login_required
-def _getmetatree(irods_obj, attr, base, default=None):
-    value = getmetaitem(irods_obj, attr, default=None)
+def _getmetatree(irods_coll, attr, base, default=None):
+    value = cacheqry.qcollmetaval(irods_coll, attr)
     if value is not None:
-        return value, datafield('collection', irods_obj.path, 'irods_collection'), irods_obj.path == base
-    if irods_obj.path != '/':
-        parent = current_user.irods_session.collections.get(os.path.dirname(irods_obj.path))
+        return value, datafield('collection', irods_coll, 'irods_collection'), irods_coll == base
+    if irods_coll != '/':
+        parent = os.path.dirname(irods_coll)
         return _getmetatree(parent, attr, base, default=None)
     return default, None, True
 
@@ -84,10 +86,7 @@ def coll_meta():
     irods_session = current_user.irods_session
 # Query for collection metadata
     coll_avu = []
-    query = irods_session.query(CollectionMeta.name, CollectionMeta.value,
-                                CollectionMeta.units).filter(
-                                    Criterion('=', Collection.name, path))
-     # TODO: why not use a simple list of AVUs here? The template is not accessing the dictionary by key anyway...
+    query = cacheqry.qcollmeta(path)
     for coll_metadata in query:
         name = coll_metadata[CollectionMeta.name]
         value = coll_metadata[CollectionMeta.value]
@@ -171,13 +170,12 @@ def coll_actions():
     coll_name = path.split('/')[-1]
     irods_session = current_user.irods_session
 
-    coll_obj = irods_session.collections.get(path)
-    is_dataset = getmetaitem(coll_obj, ATTR_DATASETID, "") != ""
-    keep_local = getmetatree(coll_obj, ATTR_ARCHIVE_LOCAL, False)
-    online_percentage = int(getmetaitem(coll_obj, ATTR_ARCHIVE_ONLINEPERCENTAGE, 0 ))
-    archive_state = getmetaitem(coll_obj, ATTR_ARCHIVE_STATE, "000")
-    min_copies = getmetatree(coll_obj, ATTR_ARCHIVE_MINCOPIES, 2)
-    keep_online = getmetatree(coll_obj, ATTR_ARCHIVE_KEEP_ONLINE, "false")
+    is_dataset = cacheqry.qcollmetaval(path, ATTR_DATASETID, "") != ""
+    keep_local = getmetatree(path, ATTR_ARCHIVE_LOCAL, False)
+    online_percentage = int(cacheqry.qcollmetaval(path, ATTR_ARCHIVE_ONLINEPERCENTAGE, 0 ))
+    archive_state = cacheqry.qcollmetaval(path, ATTR_ARCHIVE_STATE, "000")
+    min_copies = getmetatree(path, ATTR_ARCHIVE_MINCOPIES, 2)
+    keep_online = getmetatree(path, ATTR_ARCHIVE_KEEP_ONLINE, "false")
     is_archived = False
     # TODO: This should use the sys::resource::online property of a resource to determine
     # if a collection is online
@@ -187,16 +185,16 @@ def coll_actions():
     if archive_state[:2] == '00' and archive_state[-1] == '0':
         is_offline = True
 
-    projectid = getmetaitem(coll_obj, ATTR_PROJECTID, "")
-    processid = getmetaitem(coll_obj, ATTR_PROCESSID, "")
-    processgroupid = getmetaitem(coll_obj, ATTR_PROCESSGROUPID, "")
+    projectid = cacheqry.qcollmetaval(path, ATTR_PROJECTID, "")
+    processid = cacheqry.qcollmetaval(path, ATTR_PROCESSID, "")
+    processgroupid = cacheqry.qcollmetaval(path, ATTR_PROCESSGROUPID, "")
     processes = projects.get_processlist(projectid)
     processgroups = projects.get_processgrouplist(projectid)
-    processrequest = getmetaitem(coll_obj, ATTR_PROCESSREQUEST, "false")
-    start_next_process = getmetaitem(coll_obj, USER_PIPELINE_AUTOSTART, "true")
+    processrequest = cacheqry.qcollmetaval(path, ATTR_PROCESSREQUEST, "false")
+    start_next_process = cacheqry.qcollmetaval(path, USER_PIPELINE_AUTOSTART, "true")
 
     archival_state = {
-        "enabled": getmetaitem(coll_obj, ATTR_ARCHIVE_ENABLE, "false"),
+        "enabled": cacheqry.qcollmetaval(path, ATTR_ARCHIVE_ENABLE, "false"),
         "is_dataset": is_dataset,
         "is_archived": is_archived,
         "is_offline": is_offline,
@@ -255,10 +253,8 @@ def collist():
     objs = []
 
 # Look for metadate attrs starting with ngsweb:: on the collection
-    q1 = irods_session.query(CollectionMeta.name, CollectionMeta.value).filter( \
-        Criterion('=', Collection.name, path)).filter( \
-        Criterion('like', CollectionMeta.name, 'ngsweb::%'))
-    display_settings = { m[CollectionMeta.name][8:] : m[CollectionMeta.value] for m in q1 }
+    q1 = cacheqry.qcollmeta(path)
+    display_settings = { m[CollectionMeta.name][8:] : m[CollectionMeta.value] for m in q1 if m[CollectionMeta.name].startswith('ngsweb::') }
 
     display_field = display_settings.get('display_field')
     if new_path_str == 'true':
@@ -272,7 +268,7 @@ def collist():
                                 Collection.name,
                                 Collection.create_time,
                                 Collection.owner_name).filter( \
-        Criterion('like', Collection.parent_name, path))
+        Criterion('=', Collection.parent_name, path))
     for obj in query:
         objdict = {'name': obj[Collection.name].split('/')[-1], 'path': obj[Collection.name]}
         ctime = obj[Collection.create_time]
@@ -282,18 +278,14 @@ def collist():
 
         objdict['display_field'] = ''
         if display_field:
-            q1 = irods_session.query(CollectionMeta.value).filter( \
-                Criterion('=', Collection.id, obj[Collection.id])).filter( \
-                Criterion('=', CollectionMeta.name, display_field))
-            for m in q1:
-                objdict['display_field'] = m[CollectionMeta.value]
+            df = cacheqry.qcollmetaval(obj[Collection.name], display_field)
+            if df:
+                objdict['display_field'] = df
 
-        q2 = irods_session.query(CollectionMeta.value).filter( \
-            Criterion('=', Collection.id, obj[Collection.id])).filter( \
-            Criterion('=', CollectionMeta.name, 'sys::data::type'))
         objdict['type'] = 'unknown'
-        for m in q2:
-            objdict['type'] = m[CollectionMeta.value]
+        dt = cacheqry.qcollmetaval(obj[Collection.name], 'sys::data::type')
+        if dt:
+            objdict['type'] = dt
         cols.append(objdict)
 
 
@@ -303,7 +295,7 @@ def collist():
                                 DataObject.owner_name,
                                 DataObject.size).min(
                                     DataObject.create_time).filter( \
-                                        Criterion('like', Collection.name, path))
+                                        Criterion('=', Collection.name, path))
     for obj in query:
         objdict = {'name': obj[DataObject.name], 'path': '/'.join(
             (obj[Collection.name], obj[DataObject.name]))}
@@ -372,10 +364,7 @@ def generate_graph():
             return True
         history.append(coll)
         collmeta = Dictlist()
-        query = irods_session.query(CollectionMeta.name, CollectionMeta.value).filter(
-                Criterion('=', Collection.name, coll))
-        for m in query:
-            collmeta[m[CollectionMeta.name]] = m[CollectionMeta.value]
+        coometa = cacheqry.qcollmetadict(coll)
 
         # create the collection graph node
         coll_type = collmeta.get('sys::data::type', 'unknown')
@@ -405,9 +394,7 @@ def generate_graph():
             # FIND MY INPUT
         input_id =  collmeta.get('sys::pipeline::input_collection_id')
         if input_id:
-            q = irods_session.query(Collection.name).filter(
-                    Criterion('=', CollectionMeta.name, ATTR_DATASETID)).filter(
-                    Criterion('=', CollectionMeta.value, input_id))
+            q = cacheqry.qcollbymeta(ATTR_DATASETID, input_id)
             for c in q:
                 input_coll = c[Collection.name]
                 if levels:
@@ -421,9 +408,7 @@ def generate_graph():
         # FIND  OUTPUTS
         dataset_id = collmeta.get(ATTR_DATASETID)
         if dataset_id:
-            q = irods_session.query(Collection.name).filter(
-                    Criterion('=', CollectionMeta.name, 'sys::pipeline::input_collection_id')).filter(
-                    Criterion('=', CollectionMeta.value, dataset_id))
+            q = cacheqry.qcollbymeta('sys::pipeline::input_collection_id', dataset_id)
             for c in q:
                 output_coll = c[Collection.name]
                 if levels:
@@ -437,20 +422,14 @@ def generate_graph():
             extra_colls = set(collmeta.get_all('user::pipeline::input_collection', []))
             extra_coll_ids = collmeta.get_all('user::pipeline::input_collection_id', [])
             for extra_coll_id in extra_coll_ids:
-                q = irods_session.query(Collection.name).filter(
-                    Criterion('=', CollectionMeta.name, ATTR_DATASETID)).filter(
-                    Criterion('=', CollectionMeta.value, extra_coll_id))
+                q = cacheqry.qcollbymeta(ATTR_DATASETID, extra_coll_id)
                 extra_colls |= { c[Collection.name] for c in q } 
             for extra_coll in extra_colls:
                 coll_node(extra_coll, levels=levels-1, post=coll, linestyle='dashed')
             # FIND collections that refer to this collection bij name or id
-            q = irods_session.query(Collection.name).filter(\
-                    Criterion('=', CollectionMeta.name, 'user::pipeline::input_collection_id')).filter( \
-                    Criterion('=', CollectionMeta.value, dataset_id))
+            q = cacheqry.qcollbymeta('user::pipeline::input_collection_id', dataset_id)
             ref_colls = { c[Collection.name] for c in q }
-            q = irods_session.query(Collection.name).filter(\
-                    Criterion('=', CollectionMeta.name, 'user::pipeline::input_collection')).filter( \
-                    Criterion('=', CollectionMeta.value, coll))
+            q = cacheqry.qcollbymeta('user::pipeline::input_collection', coll)
             ref_colls |= { c[Collection.name] for c in q } 
             for ref_coll in ref_colls:
                 coll_node(ref_coll, levels=levels-1, pre=coll, linestyle='dashed')
@@ -475,6 +454,7 @@ def generate_graph():
 @login_required
 def add_items(path, level, active):
     
+    @flaskcache.cache.memoize(timeout=120)
     def subitems(path):
         count = 0
         query = irods_session.query(Collection.id).filter(
@@ -488,8 +468,7 @@ def add_items(path, level, active):
     print(path, level, active)
     parts = active.split('/')
     irods_session = current_user.irods_session
-    query = irods_session.query(Collection.name).filter(
-        Criterion('=', Collection.parent_name, path))
+    query = cacheqry.qcollchildren(path)
     for coll in query:
         collpath = coll[Collection.name]
         collname = collpath.split('/')[-1]
@@ -544,9 +523,9 @@ def clickable_path(path):
 @login_required
 def collbrowser():
     path = request.args.get('path', f'/{current_user.irods_zone}/projects', type=str)
-    path_title = clickable_path(path) 
+    #path_title = clickable_path(path) 
 
-    return render_template('collbrowser.html', path_title=path_title,
+    return render_template('collbrowser.html', path_title='',
                            path=path, archived=True)
 
 

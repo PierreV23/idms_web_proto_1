@@ -8,7 +8,7 @@ import irods.exception
 
 from . import auth, collbrowser, jobs, docviewer
 from . import projects, cluster, admin, reports, userinfo
-from . import ngsruns, upload
+from . import ngsruns, upload, flaskcache
 import irods.exception
 
 
@@ -63,6 +63,9 @@ app.register_blueprint(userinfo.bp)
 
 from .ngsruns import db
 db.init_app(app)
+
+flaskcache.init(app)
+
 migrate = Migrate(app, db)
 
 login_manager = LoginManager()
@@ -78,12 +81,17 @@ def load_user(userid):
 def home():
     return render_template('home.html')
 
-# @app.teardown_request
-# def teardown(x):
-#     try:
-#         current_user.irods_session.cleanup()
-#     except:
-#         pass
+from . import stats
+
+@app.teardown_request
+def teardown(x):
+    stats.statstore.report()
+    stats.statstore2.report()
+    #flaskcache.cache_report()
+    try:
+        current_user.irods_session.cleanup()
+    except:
+        pass
 
 @app.errorhandler(irods.exception.PAM_AUTH_PASSWORD_FAILED)
 def invalid_session(e):
