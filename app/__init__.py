@@ -85,9 +85,6 @@ from . import stats
 
 @app.teardown_request
 def teardown(x):
-    stats.statstore.report()
-    stats.statstore2.report()
-    #flaskcache.cache_report()
     try:
         current_user.irods_session.cleanup()
     except:

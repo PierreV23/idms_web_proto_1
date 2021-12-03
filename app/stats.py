@@ -41,15 +41,5 @@ def stats(func):
     inner = wraps(func)(inner)
     return inner
 
-def stats2(func):
-    def inner(*args, **kwargs):
-        starttime = time.time()
-        result = func(*args, **kwargs)
-        statstore2.add(func.__name__, time.time() - starttime)
-        return result
-    inner = wraps(func)(inner)
-    return inner
-
-statstore = Statstore(name='outer')
-statstore2 = Statstore(name='inner')
+statstore = Statstore()
 

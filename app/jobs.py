@@ -17,6 +17,7 @@ import os
 import sys
 import time
 from datetime import datetime, timezone
+from . import flaskcache
 
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
 
@@ -37,6 +38,9 @@ ATTR_RUNSHEET_ID = '{}id'.format(ATTR_RUNSHEET_PREFIX)
 ATTR_RUNSHEET_CREATETIME = '{}create_time'.format(ATTR_RUNSHEET_PREFIX)
 
 MAX_READ_LOG_BYTES = 100000
+
+def make_key():
+    return request.full_path
 
 def utc_to_local(utc_dt):
     return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=None)
@@ -74,6 +78,7 @@ def pagebuttons(page_size, count, current_page, max_buttons, template):
     return before + after
 
 @login_required
+@flaskcache.cache.memoize(timeout=30)
 def joblist(state='', page=1):
     """Create a list of jobs in state state
     
@@ -165,6 +170,7 @@ def joblist(state='', page=1):
 
 @bp.route('/')
 @login_required
+@flaskcache.cache.cached(timeout=30, key_prefix=make_key)
 def show_jobs():
     state = request.args.get('items', 'all', type=str)
     page = request.args.get('page', 1, type=int)

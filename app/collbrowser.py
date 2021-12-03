@@ -65,6 +65,9 @@ PROCESS_SHAPE = 'cds'
 
 # TODO: use the irods_helper instead (role irods_cronjobs)
 
+def make_key():
+    return request.full_path
+
 def getmetatree(irods_coll, attr, default=None):
     return  _getmetatree(irods_coll, attr, irods_coll, default=None)
 
@@ -80,6 +83,7 @@ def _getmetatree(irods_coll, attr, base, default=None):
 
 @bp.route('_meta')
 @login_required
+@flaskcache.cache.cached(timeout=60, key_prefix=make_key)
 def coll_meta():
     path = request.args.get('path','/', type=str)
     object = request.args.get('object', '', type=str)
@@ -163,8 +167,10 @@ def setoverride():
             coll_obj.metadata[attr] = new_meta
     return('DONE')    
 
+
 @bp.route('_actions')
 @login_required
+@flaskcache.cache.cached(timeout=60, key_prefix=make_key)
 def coll_actions():
     path = request.args.get('path','/', type=str)
     coll_name = path.split('/')[-1]
@@ -235,7 +241,8 @@ def startprocess():
     return 'DONE'
 
 @bp.route('_collist')
-@login_required    
+@login_required
+@flaskcache.cache.cached(timeout=60, key_prefix=make_key)
 def collist():
     path = request.args.get('path','/', type=str)
     sortkey = request.args.get('sortkey', None, type=str)
@@ -264,11 +271,7 @@ def collist():
         reverse = reverse_str == 'true'
 
 # Query for collection subcollections
-    query = irods_session.query(Collection.id,
-                                Collection.name,
-                                Collection.create_time,
-                                Collection.owner_name).filter( \
-        Criterion('=', Collection.parent_name, path))
+    query = cacheqry.qcollchildren(path)
     for obj in query:
         objdict = {'name': obj[Collection.name].split('/')[-1], 'path': obj[Collection.name]}
         ctime = obj[Collection.create_time]
@@ -290,15 +293,10 @@ def collist():
 
 
 # Query for dataobjects in collection
-    query = irods_session.query(Collection.name,
-                                DataObject.name,
-                                DataObject.owner_name,
-                                DataObject.size).min(
-                                    DataObject.create_time).filter( \
-                                        Criterion('=', Collection.name, path))
+    query = cacheqry.qcolldataobjects(path)
     for obj in query:
         objdict = {'name': obj[DataObject.name], 'path': '/'.join(
-            (obj[Collection.name], obj[DataObject.name]))}
+            (path, obj[DataObject.name]))}
         objdict['size'] = obj[DataObject.size]
         ctime = obj[DataObject.create_time]
         ctime = ctime.replace(tzinfo=timezone.utc).astimezone()
@@ -354,6 +352,7 @@ class Dictlist(dict):
 
 @bp.route('/_graph')
 @login_required
+@flaskcache.cache.cached(timeout=60, key_prefix=make_key)
 def generate_graph():
     coll = request.args.get('path', '/', type=str)
     irods_session = current_user.irods_session
@@ -364,7 +363,9 @@ def generate_graph():
             return True
         history.append(coll)
         collmeta = Dictlist()
-        coometa = cacheqry.qcollmetadict(coll)
+        q = cacheqry.qcollmetadict(coll)
+        for m in q:
+            collmeta[m] = q[m]
 
         # create the collection graph node
         coll_type = collmeta.get('sys::data::type', 'unknown')
