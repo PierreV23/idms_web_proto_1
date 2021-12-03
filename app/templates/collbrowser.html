@@ -56,9 +56,10 @@
     $.get('{{ url_for('collbrowser.generate_graph') }}', {
       path: collection
     }, function (data) {
-      $('#data_map').html(data.map);
-      $('#graphimg').html(data.graph) // attr('src', 'data:image/svg' + data.graph)
+      $('#graphimg').html(data)
       $('#graphdiv').scrollTop($('.center-coll').offset().top + $('#graphdiv').scrollTop() - $('#graphdiv').offset().top - $('#graphdiv').height()/2);
+      let w = $("#graphimg").width().toString() + 'pt'
+      $('svg').width(w)
     });
   }
 

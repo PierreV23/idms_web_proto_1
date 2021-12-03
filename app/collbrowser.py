@@ -471,13 +471,7 @@ def generate_graph():
 
     coll_node(coll, center=coll, levels=MAX_GRAPH_LEVELS)
 
-    graph_output = graph.pipe(format='svg').decode('utf-8')
-    graph_imagemap = graph.pipe(format='cmapx').decode('utf-8')
-    #data_graph = base64.b64encode(graph_output).decode('utf-8')
-    result = {}
-    result['graph'] = graph_output
-    result['map'] = graph_imagemap
-    return result
+    return graph.pipe(format='svg').decode('utf-8')
 
 @login_required
 def add_items(path, level, active):
