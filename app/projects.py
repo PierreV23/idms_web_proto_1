@@ -51,7 +51,6 @@ def rest_call(request_type, endpoint, data={}):
     auth = HTTPBasicAuth('alt\\{}'.format(current_user.username), current_user.ntlm_hash)
     return_data = {}
     if request_type in REQUESTS_METHODS:
-        print(f'REST: {request_type} {url} {data}')
         response = REQUESTS_METHODS[request_type](url, auth=auth, json=data)
     try:
         return_data = response.json()
@@ -129,7 +128,6 @@ def update_contact():
     if status == 200:
         ret = { "success": True }
     else:
-        print( result )
         ret = { "msg": f"Error: {result['msg']}", "contact": result['contact'] }
     return ret
 
@@ -384,13 +382,11 @@ def pgaction():
     project = request.args.get('project')
     group = request.args.get('group')
     action = request.args.get('action')
-    print(f'Project {project}, group {group}, action {action}')
     if action == 'add_process':
         process = request.args.get('process')
         name = request.args.get('name')
         # Check if the process exists:
         pr, r2 = rest_call('GET', f'processes/{process}')
-        print(pr)
         if r2 != 200:
             # TODO: some error message???
             return 'FAILED'

@@ -207,7 +207,6 @@ def coll_actions():
         "keep_online": keep_online
     }
 
-    #print( archival_state )
     return render_template('actions.html', collection=path, 
         name=coll_name, archival_state=archival_state,
         processes=processes, processid=processid, processrequest=processrequest,
@@ -464,7 +463,6 @@ def add_items(path, level, active):
         
     
     result = ''
-    print(path, level, active)
     parts = active.split('/')
     irods_session = current_user.irods_session
     query = cacheqry.qcollchildren(path)
@@ -548,7 +546,6 @@ def delete_file():
     requestdata = request.form.to_dict()
     if 'path' in requestdata:
         path = requestdata['path']
-        print(f'DELETE {path}')
         current_user.ifs.deletefile(path)
     return '', 201
 
