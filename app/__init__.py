@@ -83,12 +83,12 @@ def home():
 
 from . import stats
 
-@app.teardown_request
-def teardown(x):
-    try:
-        current_user.irods_session.cleanup()
-    except:
-        pass
+# @app.teardown_request
+# def teardown(x):
+#     try:
+#         current_user.irods_session.cleanup()
+#     except:
+#         pass
 
 @app.errorhandler(irods.exception.PAM_AUTH_PASSWORD_FAILED)
 def invalid_session(e):

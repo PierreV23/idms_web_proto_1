@@ -20,6 +20,8 @@ from irods.user import iRODSUser, iRODSUserGroup
 from app.datafield import AVU2data, datafield
 from app.models import deobfuscate
 from graphviz import Digraph
+from . import cacheqry
+from .flaskcache import cache, makekey, makename
 
 
 BP = Blueprint('projects', __name__, url_prefix='/projects')
@@ -41,6 +43,7 @@ def search(l, f, v):
     return matches
 
 @login_required
+@cache.memoize(timeout=30)
 def rest_call(request_type, endpoint, data={}):    
     url = 'http://{}/api/1.0/{}'.format(current_user.irods_server, endpoint)
     #TODO: remove this testing line:
@@ -54,9 +57,12 @@ def rest_call(request_type, endpoint, data={}):
         return_data = response.json()
     except:
         return_data = {}
+    if request_type != 'GET':
+        cache.delete_memoized(rest_call)
     return return_data, response.status_code
 
 @login_required
+@cache.memoize(timeout=60, make_name=makename)
 def get_projectlist():
     pl, result = rest_call('GET', 'projects')
     projectlist = { p['name']: p for p in pl }
@@ -223,9 +229,7 @@ def show_projectdetails():
     projectdetails['contacts'] = contacts
 
     # Retrieve collections associated with project
-    query = irods_session.query(Collection.name).filter(
-        Criterion('=', CollectionMeta.name, 'projectID')).filter(
-            Criterion('=', CollectionMeta.value, projectnaam))
+    query = cacheqry.qcollbystaticmeta('projectID', projectnaam)
     projectdetails['colls'] = [datafield('col', q[Collection.name], 'irods_collection') for q in query]
     # return render_template('projectdetails.html', PD=projectdetails,
     #                        conf=config, processnaam=processnaam)
@@ -235,6 +239,7 @@ def show_projectdetails():
 
 @BP.route('/processdetails')
 @login_required
+@cache.cached(timeout=60, key_prefix=makekey)
 def show_processdetails():
     """
     Shows page with process settings

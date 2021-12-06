@@ -20,7 +20,7 @@ from graphviz import Digraph
 from irods.meta import iRODSMeta
 from . import projects
 from . import cacheqry
-from . import flaskcache
+from .flaskcache import cache, makekey, makename
 import json
 
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
@@ -65,8 +65,6 @@ PROCESS_SHAPE = 'cds'
 
 # TODO: use the irods_helper instead (role irods_cronjobs)
 
-def make_key():
-    return request.full_path
 
 def getmetatree(irods_coll, attr, default=None):
     return  _getmetatree(irods_coll, attr, irods_coll, default=None)
@@ -83,7 +81,7 @@ def _getmetatree(irods_coll, attr, base, default=None):
 
 @bp.route('_meta')
 @login_required
-@flaskcache.cache.cached(timeout=60, key_prefix=make_key)
+@cache.cached(timeout=60, key_prefix=makekey)
 def coll_meta():
     path = request.args.get('path','/', type=str)
     object = request.args.get('object', '', type=str)
@@ -170,13 +168,12 @@ def setoverride():
 
 @bp.route('_actions')
 @login_required
-@flaskcache.cache.cached(timeout=60, key_prefix=make_key)
+@cache.cached(timeout=60, key_prefix=makekey)
 def coll_actions():
     path = request.args.get('path','/', type=str)
     coll_name = path.split('/')[-1]
-    irods_session = current_user.irods_session
 
-    is_dataset = cacheqry.qcollmetaval(path, ATTR_DATASETID, "") != ""
+    is_dataset = cacheqry.qcollmetavalstatic(path, ATTR_DATASETID, "") != ""
     keep_local = getmetatree(path, ATTR_ARCHIVE_LOCAL, False)
     online_percentage = int(cacheqry.qcollmetaval(path, ATTR_ARCHIVE_ONLINEPERCENTAGE, 0 ))
     archive_state = cacheqry.qcollmetaval(path, ATTR_ARCHIVE_STATE, "000")
@@ -191,7 +188,7 @@ def coll_actions():
     if archive_state[:2] == '00' and archive_state[-1] == '0':
         is_offline = True
 
-    projectid = cacheqry.qcollmetaval(path, ATTR_PROJECTID, "")
+    projectid = cacheqry.qcollmetavalstatic(path, ATTR_PROJECTID, "")
     processid = cacheqry.qcollmetaval(path, ATTR_PROCESSID, "")
     processgroupid = cacheqry.qcollmetaval(path, ATTR_PROCESSGROUPID, "")
     processes = projects.get_processlist(projectid)
@@ -242,7 +239,7 @@ def startprocess():
 
 @bp.route('_collist')
 @login_required
-@flaskcache.cache.cached(timeout=60, key_prefix=make_key)
+@cache.cached(timeout=60, key_prefix=makekey)
 def collist():
     path = request.args.get('path','/', type=str)
     sortkey = request.args.get('sortkey', None, type=str)
@@ -352,7 +349,7 @@ class Dictlist(dict):
 
 @bp.route('/_graph')
 @login_required
-@flaskcache.cache.cached(timeout=60, key_prefix=make_key)
+@cache.cached(timeout=60, key_prefix=makekey)
 def generate_graph():
     coll = request.args.get('path', '/', type=str)
     irods_session = current_user.irods_session
@@ -395,7 +392,7 @@ def generate_graph():
             # FIND MY INPUT
         input_id =  collmeta.get('sys::pipeline::input_collection_id')
         if input_id:
-            q = cacheqry.qcollbymeta(ATTR_DATASETID, input_id)
+            q = cacheqry.qcollbystaticmeta(ATTR_DATASETID, input_id)
             for c in q:
                 input_coll = c[Collection.name]
                 if levels:
@@ -409,7 +406,7 @@ def generate_graph():
         # FIND  OUTPUTS
         dataset_id = collmeta.get(ATTR_DATASETID)
         if dataset_id:
-            q = cacheqry.qcollbymeta('sys::pipeline::input_collection_id', dataset_id)
+            q = cacheqry.qcollbystaticmeta('sys::pipeline::input_collection_id', dataset_id)
             for c in q:
                 output_coll = c[Collection.name]
                 if levels:
@@ -423,14 +420,14 @@ def generate_graph():
             extra_colls = set(collmeta.get_all('user::pipeline::input_collection', []))
             extra_coll_ids = collmeta.get_all('user::pipeline::input_collection_id', [])
             for extra_coll_id in extra_coll_ids:
-                q = cacheqry.qcollbymeta(ATTR_DATASETID, extra_coll_id)
+                q = cacheqry.qcollbystaticmeta(ATTR_DATASETID, extra_coll_id)
                 extra_colls |= { c[Collection.name] for c in q } 
             for extra_coll in extra_colls:
                 coll_node(extra_coll, levels=levels-1, post=coll, linestyle='dashed')
             # FIND collections that refer to this collection bij name or id
-            q = cacheqry.qcollbymeta('user::pipeline::input_collection_id', dataset_id)
+            q = cacheqry.qcollbystaticmeta('user::pipeline::input_collection_id', dataset_id)
             ref_colls = { c[Collection.name] for c in q }
-            q = cacheqry.qcollbymeta('user::pipeline::input_collection', coll)
+            q = cacheqry.qcollbystaticmeta('user::pipeline::input_collection', coll)
             ref_colls |= { c[Collection.name] for c in q } 
             for ref_coll in ref_colls:
                 coll_node(ref_coll, levels=levels-1, pre=coll, linestyle='dashed')
@@ -453,9 +450,10 @@ def generate_graph():
     return result
 
 @login_required
+@cache.memoize(timeout=60)
 def add_items(path, level, active):
     
-    @flaskcache.cache.memoize(timeout=120)
+    @cache.memoize(timeout=300)
     def subitems(path):
         count = 0
         query = irods_session.query(Collection.id).filter(
@@ -501,6 +499,7 @@ def add_items(path, level, active):
 
 @bp.route('/_tree')
 @login_required
+@cache.cached(timeout=60, key_prefix=makekey)
 def colltree():
     active = request.args.get('active', '', type=str)
     current = request.args.get('root', '/', type=str)

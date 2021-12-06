@@ -17,7 +17,8 @@ import os
 import sys
 import time
 from datetime import datetime, timezone
-from . import flaskcache
+from .flaskcache import cache, makekey, makename
+from . import cacheqry
 
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
 
@@ -38,9 +39,6 @@ ATTR_RUNSHEET_ID = '{}id'.format(ATTR_RUNSHEET_PREFIX)
 ATTR_RUNSHEET_CREATETIME = '{}create_time'.format(ATTR_RUNSHEET_PREFIX)
 
 MAX_READ_LOG_BYTES = 100000
-
-def make_key():
-    return request.full_path
 
 def utc_to_local(utc_dt):
     return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=None)
@@ -78,7 +76,7 @@ def pagebuttons(page_size, count, current_page, max_buttons, template):
     return before + after
 
 @login_required
-@flaskcache.cache.memoize(timeout=30)
+@cache.memoize(timeout=30, make_name=makename)
 def joblist(state='', page=1):
     """Create a list of jobs in state state
     
@@ -103,8 +101,8 @@ def joblist(state='', page=1):
                 Criterion('!=', Collection.name, f'/{current_user.irods_zone}/system/runsheet/CONVERTED_finished')).filter( \
                 Criterion('!=', Collection.name, f'/{current_user.irods_zone}/system/runsheet/log'))
         # or runsheets could be on collections
-        q1b = current_user.irods_session.query(Collection, CollectionMeta).filter( 
-                Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_STATE)).filter( 
+        q1b = current_user.irods_session.query(Collection, CollectionMeta).filter(
+                Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_STATE)).filter(
                 Criterion('!=', CollectionMeta.value, 'archive')).filter(
                 Criterion('not like', Collection.name, f'/{current_user.irods_zone}/system/runsheet%'))
     else:
@@ -114,7 +112,7 @@ def joblist(state='', page=1):
             Criterion('=', DataObjectMeta.name, ATTR_RUNSHEET_STATE)).filter(
             Criterion('=', DataObjectMeta.value, state))    
         # or runsheets could be on collections
-        q1b = current_user.irods_session.query(Collection, CollectionMeta).filter(
+        q1b = current_user.irods_session.query(Collection).filter(
                 Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_STATE)).filter(
                 Criterion('=', CollectionMeta.value, f'{state}')).filter(
                 Criterion('not like', Collection.name, f'/{current_user.irods_zone}/system/runsheet%'))
@@ -133,9 +131,7 @@ def joblist(state='', page=1):
             job_record = {}
             runsheet_collection = res[1][Collection.name] 
             #create runsheet object by reading collection meta-data
-            q1c = current_user.irods_session.query(CollectionMeta.name, CollectionMeta.value).filter( \
-                Criterion('=', Collection.name, runsheet_collection))
-            metadata = {meta[CollectionMeta.name] : meta[CollectionMeta.value] for meta in q1c}
+            metadata = cacheqry.qcollmetadict(runsheet_collection)
             state = metadata.get(ATTR_RUNSHEET_STATE, 'unknown')
             name = metadata.get(ATTR_RUNSHEET_ID, 'unknown')
     #        job_record['COLLECTION'] =  Collection.name
@@ -170,7 +166,7 @@ def joblist(state='', page=1):
 
 @bp.route('/')
 @login_required
-@flaskcache.cache.cached(timeout=30, key_prefix=make_key)
+@cache.cached(timeout=30, key_prefix=makekey)
 def show_jobs():
     state = request.args.get('items', 'all', type=str)
     page = request.args.get('page', 1, type=int)
@@ -219,9 +215,7 @@ def show_jobdetails():
         results = query.get_results()
         job = next(results)
         runsheet = job[Collection.name] 
-        q2 = current_user.irods_session.query(CollectionMeta.name, CollectionMeta.value).filter( \
-                Criterion('=', Collection.name, runsheet ))
-        metadata = {meta[CollectionMeta.name] : meta[CollectionMeta.value] for meta in q2}
+        metadata = cacheqry.qcollmetadict(runsheet)
         D['Runsheet collection'] = datafield('runsheet',  runsheet, 'irods_collection')
         D['Create time'] = datafield('create_time', float(metadata[ATTR_RUNSHEET_CREATETIME]), 'timestamp')
         joblog = f'/{runsheet}/log/{jobnaam}.log'
