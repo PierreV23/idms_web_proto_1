@@ -20,7 +20,7 @@ from irods.user import iRODSUser, iRODSUserGroup
 from app.datafield import AVU2data, datafield
 from app.models import deobfuscate
 from graphviz import Digraph
-from . import cacheqry
+from . import iqry
 from .flaskcache import cache, makekey, makename
 
 
@@ -227,7 +227,7 @@ def show_projectdetails():
     projectdetails['contacts'] = contacts
 
     # Retrieve collections associated with project
-    query = cacheqry.qcollbystaticmeta('projectID', projectnaam)
+    query = iqry.qcollbystaticmeta('projectID', projectnaam)
     projectdetails['colls'] = [datafield('col', q[Collection.name], 'irods_collection') for q in query]
     # return render_template('projectdetails.html', PD=projectdetails,
     #                        conf=config, processnaam=processnaam)

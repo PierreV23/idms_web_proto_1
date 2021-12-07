@@ -14,7 +14,7 @@ from flask_login import current_user, login_required
 from irods.models import Collection, CollectionMeta
 from irods.column import Criterion
 from app.object_factory import ObjectFactory
-from . import cacheqry
+from . import iqry
 
 KNOWN_ATTRIBUTES = {
     'Date': 'date',
@@ -242,7 +242,7 @@ class data_collection_id(data_base):
     def ref_col(self):
         if self._searched_for_ref_col:
             return self._ref_col
-        query = cacheqry.qcollbystaticmeta('sys::dataset_id', self.value)
+        query = iqry.qcollbystaticmeta('sys::dataset_id', self.value)
         for coll in query:
             self._ref_col = coll[Collection.name]
         self._searched_for_ref_col = True

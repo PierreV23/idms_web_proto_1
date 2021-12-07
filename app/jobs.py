@@ -18,7 +18,7 @@ import sys
 import time
 from datetime import datetime, timezone
 from .flaskcache import cache, makekey, makename
-from . import cacheqry
+from . import iqry
 
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
 
@@ -131,7 +131,7 @@ def joblist(state='', page=1):
             job_record = {}
             runsheet_collection = res[1][Collection.name] 
             #create runsheet object by reading collection meta-data
-            metadata = cacheqry.qcollmetadict(runsheet_collection)
+            metadata = iqry.qcollmetadict(runsheet_collection)
             state = metadata.get(ATTR_RUNSHEET_STATE, 'unknown')
             name = metadata.get(ATTR_RUNSHEET_ID, 'unknown')
     #        job_record['COLLECTION'] =  Collection.name
@@ -215,7 +215,7 @@ def show_jobdetails():
         results = query.get_results()
         job = next(results)
         runsheet = job[Collection.name] 
-        metadata = cacheqry.qcollmetadict(runsheet)
+        metadata = iqry.qcollmetadict(runsheet)
         D['Runsheet collection'] = datafield('runsheet',  runsheet, 'irods_collection')
         D['Create time'] = datafield('create_time', float(metadata[ATTR_RUNSHEET_CREATETIME]), 'timestamp')
         joblog = f'/{runsheet}/log/{jobnaam}.log'
