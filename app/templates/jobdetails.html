@@ -1,5 +1,9 @@
 {% extends 'base2.html' %}
 
+{% block meta %}
+<meta http-equiv="refresh" content="30">  
+{% endblock %}
+
 {% block content %}
 
 <script>
@@ -86,7 +90,7 @@
         <table id='pgprocessTable' data-classes='table table-bordered table-hover table-striped' data-toggle='table'
           data-url='{{ url_for("jobs.processgroupprocs", pgid=pgid) }}' data-striped="true" data-pagination="false"
           data-show-columns-toggle-all="false" data-show-pagination-switch="false" data-show-toggle="false"
-          data-show-columns="false" data-search="false">
+          data-show-columns="false" data-search="false" data-sort-name="start">
           <thead>
             <tr>
               <th data-sortable="true" data-field="runsheet">Runsheet</th>
