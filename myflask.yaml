@@ -26,6 +26,7 @@ dependencies:
   - pip:
     - pymssql==2.1.5
     - python-irodsclient==0.8.3
+    - randomname
     - graphviz
     - jsonschema
     - xlrd==1.2.0

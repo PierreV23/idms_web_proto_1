@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap-table.css') }}">
 <title>iRODS</title>
 
+
 <!-- Optional JavaScript -->
 <!-- jQuery first, then Popper.js, then Bootstrap JS -->
 <!--
@@ -41,7 +42,7 @@
 {% block head %}
 {% endblock %}
 </head>
-{% set page = request.path.split('/')[1:] %}
+
 <body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed">
 <div class="wrapper">
 
@@ -169,22 +170,29 @@
                with font-awesome or any other icon font library -->
 
           <li class="nav-item">
-            <a href="{{ url_for('jobs.show_jobs') }}" class="nav-link {% if page[0] == 'jobs' %} active {% endif %}">
+            <a href="{{ url_for('jobs.show_jobs') }}" data-menuname="joblist" class="nav-link">
               <i class="fas fa-tasks nav-icon"></i>
               <p>Job list</p>
             </a>
           </li>
 
           <li class="nav-item">
-            <a href="{{ url_for('collbrowser.collbrowser') }}" class="nav-link {% if page[0] == 'collbrowser' and page[1] != 'search' %} active {% endif %}">
+            <a href="{{ url_for('collbrowser.collbrowser') }}" data-menuname="collectionbrowser" class="nav-link">
               <i class="fas fa-sitemap nav-icon"></i>
               <p>Collection browser</p>
             </a>
           </li>
 
+          <li class="nav-item">
+            <a href="{{ url_for('upload.show_uploads') }}" data-menuname="uploads" class="nav-link">
+              <i class="fas fa-upload nav-icon"></i>
+              <p>Dataset Uploads</p>
+            </a>
+          </li>
+
           {% if 'PROJECTS' in current_user.features %}
           <li class="nav-item dropdown">
-            <a class="nav-link {% if page[0] == 'projects' %} active {% endif %}" href="{{ url_for('projects.show_projects') }}" id="navbarCollection" role="button">
+            <a class="nav-link" href="{{ url_for('projects.show_projects') }}" data-menuname="projects" role="button">
               <i class="fas fa-project-diagram nav-icon">
               </i><p>Projects</p>
             </a>
@@ -192,21 +200,21 @@
           {% endif %}
 
           {% if 'MINILIMS' in current_user.features %}
-          <li class="nav-item menu{% if page[0] == 'ngsruns' %}-open{% endif %}">
-            <a class="nav-link {% if page[0] == 'ngsruns' %}active{% endif %}" href="#" >
+          <li class="nav-item menu">
+            <a class="nav-link" href="#" >
               <i class="nav-icon fas fa-vials"></i>
               <p>Vir-ont SmplSh</p>
               <i class="right fas fa-angle-left"></i>
             </a>
             <ul class="nav nav-treeview">
               <li class="nav-item">
-                <a class="nav-link {% if page[1] == 'new' %} active {% endif %}" href="/ngsruns/new">
+                <a class="nav-link" data-menuname="newrun" href="/ngsruns/new">
                   <i class="nav-icon fas fa-plus"></i>
                   <p>New run</p>
                 </a>
               </li>
               <li class="nav-item">
-                <a class="nav-link {% if page[1] == 'list' %} active {% endif %}" href="{{ url_for('ngsruns.run_list') }}">
+                <a class="nav-link" data-menuname="runlist" href="{{ url_for('ngsruns.run_list') }}">
                   <i class="nav-icon fas fa-list"></i>
                   <p>Run List</p></a>
               </li>
@@ -215,43 +223,43 @@
           {% endif %}
 
           {% if current_user.is_admin  %}
-          <li class="nav-item menu{% if page[0] == 'admin' %}-open{% endif %}">
-            <a class="nav-link {% if page[0] == 'admin' %}active{% endif %}" href="#" >
+          <li class="nav-item menu">
+            <a class="nav-link" href="#" >
               <i class="nav-icon fas fa-tools"></i>
               <p>Admin</p>
               <i class="right fas fa-angle-left"></i>
             </a>
             <ul class="nav nav-treeview">
               <li class="nav-item">
-                <a class="nav-link {% if page[1] == 'users' %} active {% endif %}" href="/admin/users">
+                <a class="nav-link" data-menuname="users" href="/admin/users">
                   <i class="nav-icon fas fa-user"></i>
                   <p>Users</p>
                 </a>
               </li>
               <li class="nav-item">
-                <a class="nav-link {% if page[1] == 'groups' %} active {% endif %}" href="/admin/groups">
+                <a class="nav-link" data-menuname="groups" href="/admin/groups">
                   <i class="nav-icon fas fa-users"></i>
                   <p>Groups</p></a>
               </li>
               <li class="nav-item">
-                <a class="nav-link {% if page[1] == 'resources' %} active {% endif %}" href="{{ url_for('admin.resources') }}">
+                <a class="nav-link" data-menuname="resources" href="{{ url_for('admin.resources') }}">
                   <i class="nav-icon fas fa-database"></i>
                   <p>Resources</p></a>
               </li>
               <li class="nav-item">
-                <a class="nav-link {% if page[1] == 'queues' %} active {% endif %}" href="/admin/queues">
+                <a class="nav-link" data-menuname="jobqueues" href="/admin/queues">
                   <i class="nav-icon fas fa-stream"></i>
                   <p>Job queues</p></a>
               </li>
               <li class="nav-item">
-                <a class="nav-link {% if page[1] == 'issues' %} active {% endif %}" href="/admin/issues">
+                <a class="nav-link" data-menuname="dataissues" href="/admin/issues">
                   <i class="nav-icon fas fa-exclamation"></i>
                   <p>Data issues</p></a>
               </li>
             </ul>
           </li>
 
-          <li class="nav-item menu{% if page[0] == 'reports' %}-open active{% endif %}">
+          <li class="nav-item menu">
             <a class="nav-link" href="#" >
               <i class="nav-icon fas fa-chart-pie"></i>
               <p>Reports</p>
@@ -259,7 +267,7 @@
             </a>
             <ul class="nav nav-treeview">
               <li class="nav-item">
-                <a class="nav-link {% if page[1] == 'space' %} active {% endif %}" href="/reports/space">
+                <a class="nav-link" data-menuname="diskspace" href="/reports/space">
                   <i class="nav-icon fas fa-hdd"></i>
                   <p>Disk Space</p>
                 </a>
@@ -269,19 +277,19 @@
 
           {% endif %}
           <li class="nav-item">
-            <a href="{{ url_for('collbrowser.search') }}" class="nav-link {% if page[1] == 'search' %} active {% endif %}">
+            <a href="{{ url_for('collbrowser.search') }}"  data-menuname="search" class="nav-link">
               <i class="fas fa-search nav-icon"></i>
               <p>Search</p>
             </a>
           </li>  
 
-          <!-- <li class="nav-item dropdown">
-            <a class="nav-link" href="{{ url_for('projects.show_projects') }}" id="navbarCollection" role="button">
-              <i class="fas fa-project-diagram nav-icon">
-              </i><p>Projects</p>
-            </a>
-          </li> -->
-
+        </ul>
+      </nav>
+      <div class="separator"></div>
+      <nav> <!-- CONTEXT_DEPENDANT MENU -->
+        <ul class="nav nav-pills nav-sidebar nav-child-indent flex-column" data-widget="treeview" role="menu" data-accordion="false">
+        {% block menuitems %}
+        {% endblock %}
         </ul>
       </nav>
       <!-- /.sidebar-menu -->
@@ -334,6 +342,14 @@ $('.sidebar').find('.nav-link').each(function () {
 })
 
 
+let menuname="unknown"
+
+{%block menuname %}{% endblock %}
+
+$('a[data-menuname=' + menuname + ']').addClass('active')
+$('a[data-menuname=' + menuname + ']').parents("li").addClass("menu-open active")
+
 </script>
+
 </body>
 </html>

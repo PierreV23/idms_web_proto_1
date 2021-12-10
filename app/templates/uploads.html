@@ -1,0 +1,53 @@
+{% extends 'base2.html' %}
+  
+{% block heading %}
+<H2>Upload collections</H2>
+{% endblock %}
+
+{%block menuname %}
+menuname='uploads'
+{% endblock %}
+
+{% block menuitems %}
+<li class="nav-item">
+    <a href="{{ url_for('upload.new_upload') }}" class="nav-link">
+      <i class="fas fa-plus nav-icon"></i>
+      <p>New Upload</p>
+    </a>
+  </li>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5>Pending upload collections</h5>
+        <div class ="float-right">
+            <div class="buttons-toolbar"></div>
+        </div>
+    </div>
+    <div class="card-body">
+        <table id='pendingUploadTable'
+            data-classes='table table-bordered table-hover table-striped'
+            data-toggle='table'
+            data-url='{{ url_for("upload.pending_uploads") }}'
+            data-striped="true"
+            data-pagination="true"
+            data-show-columns-toggle-all="false"
+            data-show-pagination-switch="true"
+            data-show-toggle="false"
+            data-show-columns="true"
+            data-search="true"
+            data-buttons-toolbar=".buttons-toolbar">
+            <thead>
+                <tr>
+                    <th data-sortable="true" data-field="name">Name</th>
+                    <th data-field="collection">Collection</th>
+                    <th data-field="project">Project</th>
+                    <th data-field="wortel">data</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
