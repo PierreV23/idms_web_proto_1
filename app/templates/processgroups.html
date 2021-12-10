@@ -48,7 +48,6 @@ $(document).on('click', '.node', function(event){
             load_pgpage();
         }
     } else if (oldmode == 'select_input') {
-        if (object[0] == 'n' ) {
             $.get('{{ url_for("projects.pgaction") }}', {
                 project: "{{ project }}",
                 group: $('#groupselect option:selected').text(),
@@ -58,7 +57,6 @@ $(document).on('click', '.node', function(event){
             }, function(data) {
                 load_pgpage();
             });       
-        }
     } else if (oldmode == 'add_dependency') {
         if (object[0] == 'n') {
             $.get('{{ url_for("projects.pgaction") }}', {

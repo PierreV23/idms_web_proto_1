@@ -13,6 +13,7 @@ from irods.exception import DataObjectDoesNotExist
 from irods.models import Collection, DataObject, DataObjectMeta, CollectionMeta
 from irods.column import Criterion
 from app.datafield import datafield, AVU2data, INFINITE_DATE
+from graphviz import Digraph
 import os
 import sys
 import time
@@ -24,6 +25,7 @@ PAGE_SIZE = 25
 
 JOB_FIELDS = {
     'sys::runsheet::description': ('Description', 'text'),
+    'sys::runsheet::processgroupid': ('GroupInstance', 'processgroupid'),
     'sys::run::start_time': ('Start time', 'timestamp'),
     'sys::run::finish_time': ('End time', 'timestamp'),
     'sys::runsheet::projectID': ('projectID', 'projectid'),
@@ -72,6 +74,31 @@ def pagebuttons(page_size, count, current_page, max_buttons, template):
         before = pagebuttons
         after = []
     return before + after
+
+@bp.route('/api/pgprocs')
+@login_required
+def processgroupprocs():
+    PGFIELDS = {
+        'sys::runsheet::id': ('runsheet', 'runsheet'),
+        'sys::runsheet::description' : ('description', 'text'),
+        'sys::runsheet::state': ('state', 'text'),
+        'sys::run::result': ('result', 'text'),
+        'sys::run::start_time': ('start', 'timestamp'),
+        'sys::run::finish_time': ('end', 'timestamp'),
+    }
+    pgid = request.args.get('pgid')
+    q = current_user.irods_session.query(Collection).filter(
+        Criterion('=', CollectionMeta.name, 'sys::runsheet::processgroupid')).filter(
+        Criterion('=', CollectionMeta.value, pgid))
+    result = []
+    for r in q:
+        q1 = current_user.irods_session.query(CollectionMeta.name, CollectionMeta.value).filter( \
+            Criterion('=', Collection.name, r[Collection.name]))
+        metadata = {meta[CollectionMeta.name] : meta[CollectionMeta.value] for meta in q1 }   
+        job = { PGFIELDS[field][0]: datafield(PGFIELDS[field][0], metadata.get(field,''), PGFIELDS[field][1]).htmlstring for field in PGFIELDS }
+        result.append(job)
+    return { 'rows': result }
+    
 
 @login_required
 def joblist(state='', page=1):
@@ -147,6 +174,81 @@ def show_jobs():
     buttons = pagebuttons(PAGE_SIZE, total, page, 10, 'href={}?page={{}}&items={}'.format(url_for('jobs.show_jobs'), state))
     return render_template('jobs2.html', joblist=l, items=state, columns=columns, buttons=buttons)
 
+NAME_LENGTH = 15
+
+COLL_SHAPES = {
+    'source':      ('box3d', 'white'),
+    'unknown':    ('cds', 'white'),
+    'FAILED': ('cds', 'firebrick1'),
+    'OK':  ('cds',  'darkolivegreen1'),
+    'error':   ('cds', 'orange'),
+    'done':  ('cds',  'darkolivegreen1'),
+    'depends':('cds','snow3'),
+    'prepare':('cds', 'darkgoldenrod'),
+    'stage':('cds', 'gold'),
+    'queued'    :('cds', 'aquamarine'),
+    'startup' :('cds', 'aquamarine:cyan'),
+    'active'  :('cds', 'cyan'),
+    'postprocessing'  :('cds', 'cyan3')}
+
+def shortname(name,l):
+    s = name
+    if len(name)>l:
+        s = '...' + name[-l+4:]
+    return s
+
+def coll_shape(coll_type):
+    return COLL_SHAPES.get(coll_type, ('cylinder', 'white'))
+
+@bp.route('/processgraph')
+@login_required
+def processgraph():
+    runsheet_coll = request.args.get('runsheet', '/', type=str)
+    irods_session = current_user.irods_session
+    graph = Digraph('datagraph')
+
+    # We need the processgroupID
+    runsheet = irods_session.collections.get(runsheet_coll)
+    metadata = { r.name: r.value for r in runsheet.metadata.items() }
+    pgid = metadata.get('sys::runsheet::processgroupid')
+    q = irods_session.query(Collection).filter(
+        Criterion('=', CollectionMeta.name, 'sys::runsheet::processgroupid')).filter(
+        Criterion('=', CollectionMeta.value, pgid))
+    colls = { current_user.irods_session.collections.get(r[Collection.name]):{} for r in q }
+    for coll in colls:
+        colls[coll] = { r.name: r.value for r in coll.metadata.items() }
+        state = colls[coll].get('sys::runsheet::state', 'unknown')
+        if state == 'done':
+            state = colls[coll].get('sys::run::result')
+        shape, shape_color = coll_shape(state)
+        penwidth = '3' if runsheet_coll == coll.path else '1'
+        graph.node(coll.path, label=colls[coll]['sys::runsheet::description'], style='filled', penwidth=penwidth, 
+            shape=shape, fillcolor=shape_color, URL=url_for('jobs.show_jobdetails', name=colls[coll].get(ATTR_RUNSHEET_ID)))
+    for coll in colls:
+        ir = colls[coll].get('sys::runsheet::input_collection_ref')
+        input_colls = [ c for c in colls if colls[c].get('sys::dataset_id') == ir ]
+        if input_colls: 
+            for input_coll in input_colls:
+                graph.edge(input_coll.path, coll.path)
+        else:
+            q = irods_session.query(Collection).filter(
+                Criterion('=', CollectionMeta.name, 'sys::dataset_id')).filter(
+                Criterion('=', CollectionMeta.value, ir))
+            src = None
+            for r in q:
+                src = r[Collection.name]
+            if src:
+                shape, shape_color = coll_shape('source')
+                graph.node(src, shortname(src, NAME_LENGTH), shape=shape, fillcolor=shape_color, style='filled',
+                    URL=url_for('collbrowser.collbrowser', path=src))
+                graph.edge(src, coll.path)
+
+    graph.graph_attr['rankdir'] = 'LR'
+    graph.graph_attr['fontsize'] = '15'
+    graph.graph_attr['size'] = '8,10'
+
+    return graph.pipe(format='svg').decode('utf-8')   
+
 @bp.route('/jobdetails')
 @login_required
 def show_jobdetails():
@@ -197,6 +299,7 @@ def show_jobdetails():
         'sys::runsheet::description': ('Description', 'text'),
         'sys::runsheet::projectID': ('Project ID', 'projectid'),
         'sys::runsheet::processID': ('Process ID', 'processid'),
+        'sys::runsheet::processgroupid': ('Processgroup Instance', 'processgroupid'),
         'sys::runsheet::next_projectID': ('Next Project ID', 'projectid'),
         'sys::runsheet::next_processID': ('Next Process ID', 'processid'),
         'sys::run::exit_code': ('Result', 'int'),
@@ -208,10 +311,9 @@ def show_jobdetails():
         'sys::runsheet::service_account': ('Sevice account', 'irods_user'),
         'sys::run::pipeline_dir': ('Pipeline run directory', 'directory'),
         'sys::run::run_dir': ('Pipeline run directory', 'directory'),
-        'sys::runsheet::repo': ('Git repository', 'repo'),
+        'sys::runsheet::repo': ('Git repository', 'url'),
         'sys::runsheet::tag': ('Git tag', 'tag'),
         'sys::runsheet::distribution': ('Distribution pipeline', 'boolean'),
-        'sys::runsheet::restartable': ('Restarts on error', 'boolean'),
         'sys::runsheet::omit_staging': ('Omit staging', 'boolean'),
         'sys::runsheet::lsf_queue': ('LSF Queue', 'lsf_queue'),
         'sys::run::lsf_jobid': ('LSF Job ID', 'text'),
@@ -220,9 +322,10 @@ def show_jobdetails():
     for field in FIELDS:
         if field in metadata:
             D[FIELDS[field][0]] = datafield(field, metadata[field], FIELDS[field][1])
+    pgid = metadata.get('sys::runsheet::processgroupid', '')
 #    D['Git repository'] = "<a href='{0}'>{0} TAG {1}</a>".format(jd['repo'].replace('.git',''), jd['tag'])
 #    D['Next projectID'] = "<a href='/projectdetails?name={0}'>{0}</a>".format(jd['next_projectID'])
-    return render_template('jobdetails.html', details=D, jobnaam = jobnaam, runlog = log, logs = logfiles)
+    return render_template('jobdetails.html', details=D, jobnaam = jobnaam, pgid=pgid, runlog = log, logs = logfiles)
 
 
 def _get_logfiles(location, subdir=''):
