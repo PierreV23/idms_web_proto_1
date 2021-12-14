@@ -46,7 +46,7 @@ RESOURCE_PROPS = {
         'help': 'Number that indicates cost for storing data on this resource'
     },
     'maxcopies': {
-        'label': 'Max copies',
+        'label': 'Max copy actions',
         'meta': 'sys::resource::maxcopies',
         'type': 'number',
         'help': 'Maximum number of concurrent tiering actions that will copy data TO this resource'
