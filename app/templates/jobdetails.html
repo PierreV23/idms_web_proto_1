@@ -1,44 +1,16 @@
-{% extends 'base2.html' %}
-  
+{% extends 'jobdetailmenu.html' %}
+
 {% block heading %}
-<H3>Job details for {{ jobnaam }}</H3>
+<H3>Job details for {{ jobnaam.htmlstring | safe }}</H3>
 {% endblock %}
+
+{%block menuname %}
+menuname='jobdetails'
+{% endblock %}
+
 {% block content %}
 
-<script>
-function fillModal(path, name) {
-    var ModalHeader =  document.getElementById("DocTitle")
-    ModalHeader.innerHTML = name 
-    var modalEmbed =  document.getElementById("DocText")
-    newEmbed = modalEmbed.cloneNode(true)
-    source = "{{ url_for('docviewer.serve_object') }}?path=" + path
-    newEmbed.setAttribute('src', source)
-    modalEmbed.parentNode.replaceChild(newEmbed, modalEmbed)
-}  
-
-$SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
-
-let loaded_logs = new Set()
-
-$(function() {
-  $('div.logcard > a').bind('click', function(e) {
-    containerid = 'logcontainer-' + $(this).data('loglabel')
-    if (!loaded_logs.has(containerid)) {
-      $('pre#' + containerid).html('<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>')
-      $.get($SCRIPT_ROOT + '/jobs/_joblog', {
-        path: $(this).data('logpath')
-      }, function(data) {
-        $('pre#' + containerid).text(data);
-      });
-      loaded_logs.add(containerid)
-      return true;
-    }
-  });
-});
-
-
-</script>
-<div class="card">
+<div class="card h100">
   <div class="card-header">
     <div class="card-title">Job Parameters</div>
     <div class="card-tools">
@@ -47,20 +19,20 @@ $(function() {
       <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i></button>
     </div>
   </div>
-  <div class="card-body">
+  <div class="card-body h100 autoscroll">
     <TABLE class="table table-striped table-hover table-sm">
       <thead class="thead-dark">
         <TR bgcolor=cyan height=50>
-        <TH scope="col">Attribute</TH>
-        <TH scope="col">Value</TH>
-        <TH scope="col">Xtra</TH>
+          <TH scope="col">Attribute</TH>
+          <TH scope="col">Value</TH>
+          <TH scope="col">Xtra</TH>
         </TR>
       </thead>
       <tbody>
         {% for entry in details %}
-          <TD>{{ entry }}</TD>
-          <TD>{{ details[entry].htmlstring | safe }}</TD>
-          <TD></TD>
+        <TD>{{ entry }}</TD>
+        <TD>{{ details[entry].htmlstring | safe }}</TD>
+        <TD></TD>
         </TR>
         {% endfor %}
       </tbody>
@@ -68,59 +40,5 @@ $(function() {
   </div>
 </div>
 
-<div class="card collapsed-card">
-  <div class="card-header">
-    <div class="card-title" data-card-widget="collapse">Job Log</div>
-    <div class="card-tools">
-      <button type="button" class="btn btn-tool" data-card-widget="maximize"><i class="fas fa-expand"></i></button>
-      <!-- This will cause the card to collapse when clicked -->
-      <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-plus"></i></button>
-    </div>
-  </div>
-  <div class="card-body collapsed-box">
-   <pre>
-{{ runlog | safe}}
-   </pre>
-  </div>
-</div>
-
-{% for logfile in logs %}
-{% set label = logfile | replace('.','_') | replace('/', '_') %}
-
-<div class="card-body logcard">
-<a class="btn btn-outline-secondary text-left" data-toggle="collapse" data-logpath="{{ logs[logfile] }}" data-loglabel="{{ label }}" href="#collapse-{{ label }}" role="button" aria-expanded="false" aria-controls="collapse-{{ label }}">
-{{ logfile }}
-</a>
-<div class="collapse" id="collapse-{{ label }}">
-<br>
-   <pre id="logcontainer-{{ label }}">
-   </pre>
-</div>
-</div>
-
-{% endfor %}
-
-<div class="modal modal-tall" id="myOutput" role="dialog" >
-    <div class="modal-dialog modal-lg" >
-
-      <!-- Modal content-->
-      <div class="modal-content">
-        <div class="modal-header" height="30%">
-<!--          <button type="button" class="close" data-dismiss="modal">&times;</button> -->
-          <h4 class="modal-title" id="DocTitle">Modal Header</h4>
-        </div>
-        <div class="modal-body" id="mBody" height="100%" id="modalBody">
-        
-            <embed width="100%" height="100%" src="" id ="DocText">
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</div>
 
 {% endblock %}
-

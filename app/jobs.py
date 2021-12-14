@@ -149,7 +149,7 @@ def show_jobs():
 
 @bp.route('/jobdetails')
 @login_required
-def show_jobdetails():
+def jobdetails():
     #this could be either the object-name of the yaml file or meta information attached to the collection
     jobnaam = request.args.get('name', '', type=str)
 
@@ -171,26 +171,7 @@ def show_jobdetails():
     D['Runsheet collection'] = datafield('runsheet',  runsheet, 'irods_collection')
     D['Create time'] = datafield('create_time', float(metadata[ATTR_RUNSHEET_CREATETIME]), 'timestamp')
     # This is probably not the correct place for the job log anymore...
-    joblog = f'{runsheet}/log/{jobnaam}.log'
-    ifs = current_user.ifs
-    try:
-        obj = ifs.getfile(joblog)
-        with obj.open('r') as f:
-            a = f.read(500000)
-            log = a.decode('utf-8')
-    except:
-        log = ''
-
-
-    # Find output logs
-    logfiles = {}
-    try:
-        log_location = '{}/log'.format(metadata['sys::run::output_collection'])
-        if current_user.ifs.folderexists(log_location):
-            logfiles = _get_logfiles(log_location)
-    except KeyError:
-        # output collection not set as metadata. Ignore.
-        pass
+ 
 
     FIELDS = {
         'sys::run::start_time': ('Start time', 'timestamp'),
@@ -223,7 +204,37 @@ def show_jobdetails():
             D[FIELDS[field][0]] = datafield(field, metadata[field], FIELDS[field][1])
 #    D['Git repository'] = "<a href='{0}'>{0} TAG {1}</a>".format(jd['repo'].replace('.git',''), jd['tag'])
 #    D['Next projectID'] = "<a href='/projectdetails?name={0}'>{0}</a>".format(jd['next_projectID'])
-    return render_template('jobdetails.html', details=D, jobnaam = jobnaam, runlog = log, logs = logfiles)
+    return render_template('jobdetails.html', details=D, jobnaam=datafield('jobnaam', jobnaam, 'runsheet'))
+
+@bp.route('joblogs')
+@login_required
+def job_logs():
+    jobnaam = request.args.get('name', '', type=str)
+
+    # the jobnaam is refering to metainfo on a collection
+    query = current_user.irods_session.query(Collection.name, CollectionMeta).filter( 
+            Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_ID )).filter(
+            Criterion('=', CollectionMeta.value, f'{jobnaam}'))
+    # Find the job log file
+    results = query.get_results()
+    job = next(results)
+    runsheet = job[Collection.name] 
+    q2 = current_user.irods_session.query(CollectionMeta.name, CollectionMeta.value).filter( \
+            Criterion('=', Collection.name, runsheet ))
+    metadata = {meta[CollectionMeta.name] : meta[CollectionMeta.value] for meta in q2}
+    joblog = { f'Job log', f'{runsheet}/log/{jobnaam}.log' }
+    ifs = current_user.ifs
+
+    # Find output logs
+    logfiles = {}
+    try:
+        log_location = '{}/log'.format(metadata['sys::run::output_collection'])
+        if current_user.ifs.folderexists(log_location):
+            logfiles = _get_logfiles(log_location)
+    except KeyError:
+        # output collection not set as metadata. Ignore.
+        pass    
+    return render_template('joblogs.html', jobnaam = datafield('jobnaam', jobnaam, 'runsheet'), logs = logfiles)
 
 
 def _get_logfiles(location, subdir=''):

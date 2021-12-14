@@ -1,10 +1,19 @@
 html {
   font-size: 80%;
+  height: 100%;
+}
+
+body {
+  height: 100%;
+}
+
+.content {
+  height: 100%;
 }
 
 .content-wrapper {
-  overflow-y: auto;
-  max-height: 80vh;
+  overflow-y: hidden;
+  border-style: solid;
 }
 
 .modal-tall modal {
@@ -74,6 +83,29 @@ html {
   grid-area: details;
 }
 
+.selectgrid {
+  display: grid;
+  width: 100%;
+  height: 100vh;
+  column-gap: 10px;
+  row-gap: 10px;
+  align-items: stretch;
+  grid-template-columns: [left] 220px [middle] auto [right];
+  grid-template-rows: [top] 100% [bottom];
+  grid-template-areas:
+    "selectlist selectdetail"
+}
+
+
+.selectlist {
+  grid-area: selectlist;
+  height: 100%;
+}
+
+.selectdetail {
+  grid-area: selectdetail;
+}
+
 .browsergrid {
    display: grid;
    width: 100%;
@@ -82,7 +114,7 @@ html {
    row-gap: 10px;
    align-items: stretch;
    grid-template-columns: [left] 220px [middle] auto [right] 30%;
-   grid-template-rows: [top] 30vh [bottom] 49vh [footer] 0px;
+   grid-template-rows: [top] 30% [bottom] 60% [footer] 0px;
    grid-template-areas:
      "sidebar graph actions"
      "sidebar contents metadata"
@@ -91,6 +123,7 @@ html {
 
 .browser-sidebar {
   grid-area: sidebar;
+  height: 100%;
 }
 
 .browser-graph {
@@ -111,6 +144,7 @@ html {
 
 .h100{
   min-height: 100%;
+  max-height: 100%;
 }
 
 #content {
@@ -158,6 +192,7 @@ ul {
   transform: rotate(90deg)
 }
 
+
 .scroll {
   /* min-height: 71vh;
   max-height: 84vh; */
@@ -199,6 +234,17 @@ ul {
   overflow-y: scroll;
 }
 
+
+.noscroll {
+  overflow-x: hidden;
+  overflow-y: hidden; 
+}
+
+.autoscroll {
+  overflow-x: auto;
+  overflow-y: auto; 
+}
+
 .graph-height {
   min-height: 27vh;
   max-height: 27vh;
@@ -212,8 +258,8 @@ ul {
 }
 
 .coll-meta {
-  min-height: 55vh;
-  max-height: 55vh;
+  min-height: 45vh;
+  max-height: 45vh;
   overflow-y: scroll;
 }
 
@@ -261,11 +307,6 @@ ul {
   overflow-y: scroll;
 }
 
-html, body {
-  margin: 0px;
-  height: 100%;
-}
-
 .viewport {
   min-height: 88vh;
   max-height: 100%;
@@ -311,6 +352,15 @@ svg {
 
 .nav-header {
   font-family: "Source Sans Pro",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+}
+
+.file-link {
+  font-size: 12px;
+  margin: 0.1rem;
+  padding: 0.25rem;
+}
+.file-link:hover {
+  background-color: rgb(141, 141, 141);
 }
 
 .c1 { filter: hue-rotate(0deg)   }

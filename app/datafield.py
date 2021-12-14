@@ -267,7 +267,7 @@ class data_runsheet(data_base):
     @property
     def htmlstring(self):
         runsheet_id = re.sub('-runsheet.yaml', '', self.value)
-        return '<a href={0}?name={1} data-toggle="tooltip" title="{1}">{2}</a>'.format(url_for('jobs.show_jobdetails'), self.value, runsheet_id)
+        return '<a href={0}?name={1} data-toggle="tooltip" title="{1}">{2}</a>'.format(url_for('jobs.jobdetails'), self.value, runsheet_id)
 
     @staticmethod
     def factory(**kwargs):
