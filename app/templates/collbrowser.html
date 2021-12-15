@@ -57,11 +57,10 @@
       path: collection
     }, function (data) {
       $('#graphimg').html(data)
-     // $('#graphdiv').height('150')
-      console.log($('#graphdiv').height())
-      $('#graphdiv').scrollTop($('.center-coll').offset().top + $('#graphdiv').scrollTop() - $('#graphdiv').offset().top - $('#graphdiv').height()/2);
       let w = $("#graphimg").width().toString() + 'pt'
       $('svg').width(w)
+      console.log($('#graph0').attr('transform'))
+      $('#graphdiv').scrollTop($('.center-coll').offset().top + $('#graphdiv').scrollTop() - $('#graphdiv').offset().top - $('#graphdiv').height()/2);
     });
   }
 
@@ -125,7 +124,6 @@
   }
 
   $(document).on('click', '.sort-change', function () {
-    console.log('change')
     sortkey = $(this).data('key');
     reverse = $(this).data('dir');
     load_list(false);

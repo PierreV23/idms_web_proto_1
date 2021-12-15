@@ -467,7 +467,7 @@ def generate_graph():
 
     graph.graph_attr['rankdir'] = 'LR'
     graph.graph_attr['fontsize'] = '15'
-    graph.graph_attr['size'] = '8,10'
+    #graph.graph_attr['size'] = '8,10'
 
     coll_node(coll, center=coll, levels=MAX_GRAPH_LEVELS)
 
