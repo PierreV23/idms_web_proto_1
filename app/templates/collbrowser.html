@@ -57,6 +57,8 @@
       path: collection
     }, function (data) {
       $('#graphimg').html(data)
+     // $('#graphdiv').height('150')
+      console.log($('#graphdiv').height())
       $('#graphdiv').scrollTop($('.center-coll').offset().top + $('#graphdiv').scrollTop() - $('#graphdiv').offset().top - $('#graphdiv').height()/2);
       let w = $("#graphimg").width().toString() + 'pt'
       $('svg').width(w)
@@ -198,7 +200,7 @@
             <div class="card-header myheader">
               Data graph
             </div>
-            <div class="card-body scroll graph-height2 nopadding" id="graphdiv">
+            <div class="scroll card-body h100 nopadding" id="graphdiv"> 
               <div id="graphimg">
               </div>
             </div>
@@ -278,5 +280,6 @@
     </div>
 
   </div> <!-- content -->
+
 
   {% endblock %}
