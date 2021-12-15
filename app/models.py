@@ -9,6 +9,7 @@ Created on Tue Nov 12 16:39:47 2019
 import base64
 import binascii
 import hashlib
+import json
 import ssl
 from flask_login import UserMixin
 from flask import session, current_app
@@ -35,11 +36,11 @@ class IRSettings:
         return self.irods_user.manager.sess
 
     def __getitem__(self, key):
-        return self.irods_user.metadata.get_one(f'{self.prefix}{key}').value
+        return json.loads(self.irods_user.metadata.get_one(f'{self.prefix}{key}').value)
 
     def __setitem__(self, key, value):
         fullkey = f'{self.prefix}{key}'
-        self.irods_user.metadata[fullkey] = iRODSMeta(fullkey, str(value))
+        self.irods_user.metadata[fullkey] = iRODSMeta(fullkey, json.dumps(value))
 
     def get(self, key, default=None):
         try:
@@ -101,7 +102,6 @@ class WebUser(UserMixin):
         self.configure_irods_session(username, password)
         user = self._irods_session.users.get(username)
         self.settings = IRSettings(user, prefix='sys::ngsweb::')
-
 
     @property    
     def ntlm_hash(self):
