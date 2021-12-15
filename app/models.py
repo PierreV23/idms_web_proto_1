@@ -15,6 +15,7 @@ from flask import session, current_app
 from irods.session import iRODSSession
 from irods.models import User, UserGroup
 from irods.column import Criterion
+from irods.meta import iRODSMeta
 from fs_irods import fs_irods
 
 
@@ -23,6 +24,30 @@ def obfuscate(data):
 
 def deobfuscate(data):
     return base64.b64decode(data).decode('utf-8')
+
+class IRSettings:
+    def __init__(self, irods_user, prefix=''):
+        self.irods_user = irods_user
+        self.prefix = prefix
+
+    @property
+    def irods_session(self):
+        return self.irods_user.manager.sess
+
+    def __getitem__(self, key):
+        return self.irods_user.metadata.get_one(f'{self.prefix}{key}').value
+
+    def __setitem__(self, key, value):
+        fullkey = f'{self.prefix}{key}'
+        self.irods_user.metadata[fullkey] = iRODSMeta(fullkey, value)
+
+    def get(self, key, default=None):
+        try:
+            value = self[key]
+        except KeyError:
+            value = default
+        return value
+
 
 
 class WebUser(UserMixin):
@@ -67,6 +92,9 @@ class WebUser(UserMixin):
             self.irods_zone = irods_env.get('zone')
             self.features = irods_env.get('features', [])
         self.configure_irods_session(username, password)
+        user = self._irods_session.users.get(username)
+        self.settings = IRSettings(user, prefix='sys::ngsweb::')
+
     
     @property    
     def ntlm_hash(self):
