@@ -39,7 +39,7 @@ class IRSettings:
 
     def __setitem__(self, key, value):
         fullkey = f'{self.prefix}{key}'
-        self.irods_user.metadata[fullkey] = iRODSMeta(fullkey, value)
+        self.irods_user.metadata[fullkey] = iRODSMeta(fullkey, str(value))
 
     def get(self, key, default=None):
         try:
@@ -47,6 +47,13 @@ class IRSettings:
         except KeyError:
             value = default
         return value
+
+    def setdefault(self, key, default):
+        try:
+            value = self[key]
+        except KeyError:
+            self[key] = default
+        return self[key]
 
 
 
@@ -94,8 +101,9 @@ class WebUser(UserMixin):
         self.configure_irods_session(username, password)
         user = self._irods_session.users.get(username)
         self.settings = IRSettings(user, prefix='sys::ngsweb::')
+        print(self.settings.setdefault('timeout', 30))
 
-    
+
     @property    
     def ntlm_hash(self):
         password = deobfuscate(self.password)
