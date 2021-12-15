@@ -101,7 +101,6 @@ class WebUser(UserMixin):
         self.configure_irods_session(username, password)
         user = self._irods_session.users.get(username)
         self.settings = IRSettings(user, prefix='sys::ngsweb::')
-        print(self.settings.setdefault('timeout', 30))
 
 
     @property    
