@@ -50,12 +50,8 @@ def qcollbymeta(attr, value):
     return [r for r in query]
 
 
-def no_empty(arg):
-    return bool(arg)
-
-
 @login_required
-@flaskcache.cache.memoize(timeout=86400, response_filter=no_empty)
+@flaskcache.cache.memoize(timeout=86400, response_filter=lambda arg: bool(arg))
 def qcollbystaticmeta(attr, value):
     query = current_user.irods_session.query(Collection).filter(
         Criterion('=', CollectionMeta.name, attr)).filter(
@@ -75,7 +71,7 @@ def qcollmetaval(collection, attr, default=None):
     return m.get(attr, default)
 
 
-@flaskcache.cache.memoize(timeout=86400, response_filter=no_empty)
+@flaskcache.cache.memoize(timeout=86400, response_filter=lambda arg: bool(arg))
 def qcollmetavalstatic(collection, attr, default=None):
     m = qcollmetadict(collection)
     return m.get(attr, default)

@@ -205,7 +205,7 @@ def processgraph():
     graph = Digraph('datagraph')
 
     # We need the processgroupID
-    pgid = iqry.qcollmetaval(runsheet_coll, 'sys::runsheet::processgroupid')
+    pgid = iqry.qcollmetavalstatic(runsheet_coll, 'sys::runsheet::processgroupid')
     q = iqry.qcollbymeta('sys::runsheet::processgroupid', pgid)
     colls = [ r[Collection.name] for r in q ]
     for coll in colls:
@@ -214,16 +214,16 @@ def processgraph():
             state = iqry.qcollmetaval(coll, 'sys::run::result')
         shape, shape_color = coll_shape(state)
         penwidth = '3' if runsheet_coll == coll else '1'
-        graph.node(coll, label=iqry.qcollmetaval(coll, 'sys::runsheet::description'), style='filled', penwidth=penwidth, 
+        graph.node(coll, label=iqry.qcollmetavalstatic(coll, 'sys::runsheet::description'), style='filled', penwidth=penwidth, 
             shape=shape, fillcolor=shape_color, URL=url_for('jobs.show_jobdetails', name=iqry.qcollmetaval(coll, ATTR_RUNSHEET_ID)))
     for coll in colls:
         ir = iqry.qcollmetaval(coll, 'sys::runsheet::input_collection_ref')
-        input_colls = [ c for c in colls if iqry.qcollmetaval(c, 'sys::dataset_id') == ir ]
+        input_colls = [ c for c in colls if iqry.qcollmetavalstatic(c, 'sys::dataset_id') == ir ]
         if input_colls: 
             for input_coll in input_colls:
                 graph.edge(input_coll, coll)
         else:
-            q = iqry.qcollbymeta('sys::dataset_id', ir)
+            q = iqry.qcollbystaticmeta('sys::dataset_id', ir)
             src = None
             for r in q:
                 src = r[Collection.name]
@@ -249,7 +249,7 @@ def show_jobdetails():
     joblog = ''
 
     # the jobnaam is refering to metainfo on a collection
-    q = iqry.qcollbymeta(ATTR_RUNSHEET_ID, jobnaam)
+    q = iqry.qcollbystaticmeta(ATTR_RUNSHEET_ID, jobnaam)
     if len(q) != 1:
         return 'FAILED'
     runsheet = q[0][Collection.name]
