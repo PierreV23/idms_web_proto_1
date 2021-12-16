@@ -17,6 +17,7 @@ dependencies:
   - python
   - pyyaml
   - requests
+  - flask-caching
   - flask-login
   - flask-marshmallow
   - flask-migrate
