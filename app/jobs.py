@@ -245,7 +245,6 @@ def processgraph():
 
     graph.graph_attr['rankdir'] = 'LR'
     graph.graph_attr['fontsize'] = '15'
-    graph.graph_attr['size'] = '8,10'
 
     return graph.pipe(format='svg').decode('utf-8')   
 
