@@ -52,12 +52,12 @@ class WebUser(UserMixin):
                     return False
         return self._is_admin
 
-    def __init__(self, username='', password='', environment='', is_authenticated=False):
+    def __init__(self, username='', password='', environment='', is_authenticated=False, is_admin=None):
         self.username = username
         self.password = obfuscate(password)
         self.environment = environment
         self._is_authenticated = is_authenticated
-        self._is_admin = None
+        self._is_admin = is_admin
         self.irods_server = None
         self.irods_zone = None
         self._irods_session = None
@@ -108,15 +108,18 @@ class WebUser(UserMixin):
         """Store user in Flask session."""
         if 'user_store' not in session:
             session['user_store'] = {}
-        info = [self.username, self.password, self.environment, self.is_authenticated]
+        info = [self.username, self.password, self.environment, self.is_authenticated, self.is_admin]
         session['user_store'][self.username] = info
 
     @classmethod
     def retrieve(cls, username):
         """Retrieve previously stored user from Flask session."""
         if 'user_store' in session and username in session['user_store']:
-            username, pass_obfuscated, env, is_auth = session['user_store'][username]
-            return cls(username, deobfuscate(pass_obfuscated), env, is_auth)
+            try:
+                username, pass_obfuscated, env, is_auth, is_admin = session['user_store'][username]
+            except:
+                return None
+            return cls(username, deobfuscate(pass_obfuscated), env, is_auth, is_admin)
         return None
         
 
