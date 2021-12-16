@@ -34,28 +34,6 @@ $(document).on('click', '.processname', function() {
   });
 });
 
-$(document).on('click', '.add_button', function() {
-  page = $(".sidebar-select.active").attr("id");
-  action = "";
-  if (page == "projects-tab") {
-    action = 'add_project';
-    project = $("#new_pname").val();
-    process = "";
-  };
-  if (page == "processes2-tab") {
-    action = 'add_process2';
-    process = project = $("#new_pname").val();
-    project = "";
-  };
-  if (action) {
-    $.post("{{ url_for('projects.update_projectsettings') }}", {
-      action: action,
-      project: project,
-      process: process
-    });
-  }
-});
-
 $('.nav-pills').on('shown.bs.tab', function(event){
   activetab = event.target.getAttribute('href')
 });
@@ -100,8 +78,9 @@ $(document).on('click', '#select_input_button', function(){
       </UL>
     </div>
     <div class="p-2 footer card d-flex">
-      <form>
-        <INPUT TYPE="text" id='new_pname'>
+      <form class="" action="{{ url_for('projects.update_projectsettings') }}" method="post">
+        <INPUT TYPE="text" id='new_pname' name="project">
+        <INPUT TYPE="hidden" name="action" value="add_project">
         <button class="btn btn-primary add_button">Add project</button>
       </form>
     </div>
