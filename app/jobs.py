@@ -89,14 +89,10 @@ def processgroupprocs():
         'sys::run::finish_time': ('end', 'timestamp'),
     }
     pgid = request.args.get('pgid')
-    q = current_user.irods_session.query(Collection).filter(
-        Criterion('=', CollectionMeta.name, 'sys::runsheet::processgroupid')).filter(
-        Criterion('=', CollectionMeta.value, pgid))
+    q = iqry.qcollbymeta('sys::runsheet::processgroupid', pgid)
     result = []
     for r in q:
-        q1 = current_user.irods_session.query(CollectionMeta.name, CollectionMeta.value).filter( \
-            Criterion('=', Collection.name, r[Collection.name]))
-        metadata = {meta[CollectionMeta.name] : meta[CollectionMeta.value] for meta in q1 }   
+        metadata = iqry.qcollmetadict(r[Collection.name]) 
         job = { PGFIELDS[field][0]: datafield(PGFIELDS[field][0], metadata.get(field,''), PGFIELDS[field][1]).htmlstring for field in PGFIELDS }
         result.append(job)
     return { 'rows': result }
@@ -206,36 +202,28 @@ def coll_shape(coll_type):
 @login_required
 def processgraph():
     runsheet_coll = request.args.get('runsheet', '/', type=str)
-    irods_session = current_user.irods_session
     graph = Digraph('datagraph')
 
     # We need the processgroupID
-    runsheet = irods_session.collections.get(runsheet_coll)
-    metadata = { r.name: r.value for r in runsheet.metadata.items() }
-    pgid = metadata.get('sys::runsheet::processgroupid')
-    q = irods_session.query(Collection).filter(
-        Criterion('=', CollectionMeta.name, 'sys::runsheet::processgroupid')).filter(
-        Criterion('=', CollectionMeta.value, pgid))
-    colls = { current_user.irods_session.collections.get(r[Collection.name]):{} for r in q }
+    pgid = iqry.qcollmetaval(runsheet_coll, 'sys::runsheet::processgroupid')
+    q = iqry.qcollbymeta('sys::runsheet::processgroupid', pgid)
+    colls = [ r[Collection.name] for r in q ]
     for coll in colls:
-        colls[coll] = { r.name: r.value for r in coll.metadata.items() }
-        state = colls[coll].get('sys::runsheet::state', 'unknown')
+        state = iqry.qcollmetaval(coll, 'sys::runsheet::state', default='unknown')
         if state == 'done':
-            state = colls[coll].get('sys::run::result')
+            state = iqry.qcollmetaval(coll, 'sys::run::result')
         shape, shape_color = coll_shape(state)
-        penwidth = '3' if runsheet_coll == coll.path else '1'
-        graph.node(coll.path, label=colls[coll]['sys::runsheet::description'], style='filled', penwidth=penwidth, 
-            shape=shape, fillcolor=shape_color, URL=url_for('jobs.show_jobdetails', name=colls[coll].get(ATTR_RUNSHEET_ID)))
+        penwidth = '3' if runsheet_coll == coll else '1'
+        graph.node(coll, label=iqry.qcollmetaval(coll, 'sys::runsheet::description'), style='filled', penwidth=penwidth, 
+            shape=shape, fillcolor=shape_color, URL=url_for('jobs.show_jobdetails', name=iqry.qcollmetaval(coll, ATTR_RUNSHEET_ID)))
     for coll in colls:
-        ir = colls[coll].get('sys::runsheet::input_collection_ref')
-        input_colls = [ c for c in colls if colls[c].get('sys::dataset_id') == ir ]
+        ir = iqry.qcollmetaval(coll, 'sys::runsheet::input_collection_ref')
+        input_colls = [ c for c in colls if iqry.qcollmetaval(c, 'sys::dataset_id') == ir ]
         if input_colls: 
             for input_coll in input_colls:
-                graph.edge(input_coll.path, coll.path)
+                graph.edge(input_coll, coll)
         else:
-            q = irods_session.query(Collection).filter(
-                Criterion('=', CollectionMeta.name, 'sys::dataset_id')).filter(
-                Criterion('=', CollectionMeta.value, ir))
+            q = iqry.qcollbymeta('sys::dataset_id', ir)
             src = None
             for r in q:
                 src = r[Collection.name]
@@ -243,7 +231,7 @@ def processgraph():
                 shape, shape_color = coll_shape('source')
                 graph.node(src, shortname(src, NAME_LENGTH), shape=shape, fillcolor=shape_color, style='filled',
                     URL=url_for('collbrowser.collbrowser', path=src))
-                graph.edge(src, coll.path)
+                graph.edge(src, coll)
 
     graph.graph_attr['rankdir'] = 'LR'
     graph.graph_attr['fontsize'] = '15'
@@ -261,13 +249,10 @@ def show_jobdetails():
     joblog = ''
 
     # the jobnaam is refering to metainfo on a collection
-    query = current_user.irods_session.query(Collection.name, CollectionMeta).filter( 
-            Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_ID )).filter(
-            Criterion('=', CollectionMeta.value, f'{jobnaam}'))
-    # Find the job log file
-    results = query.get_results()
-    job = next(results)
-    runsheet = job[Collection.name] 
+    q = iqry.qcollbymeta(ATTR_RUNSHEET_ID, jobnaam)
+    if len(q) != 1:
+        return 'FAILED'
+    runsheet = q[0][Collection.name]
     metadata = iqry.qcollmetadict(runsheet)
     D['Runsheet collection'] = datafield('runsheet',  runsheet, 'irods_collection')
     D['Create time'] = datafield('create_time', float(metadata[ATTR_RUNSHEET_CREATETIME]), 'timestamp')
