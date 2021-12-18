@@ -9,12 +9,14 @@ Created on Tue Nov 12 16:39:47 2019
 import base64
 import binascii
 import hashlib
+import json
 import ssl
 from flask_login import UserMixin
 from flask import session, current_app
 from irods.session import iRODSSession
 from irods.models import User, UserGroup
 from irods.column import Criterion
+from irods.meta import iRODSMeta
 from fs_irods import fs_irods
 
 ATTR_DISPLAYNAME = 'sys::ad::displayName'
@@ -24,6 +26,37 @@ def obfuscate(data):
 
 def deobfuscate(data):
     return base64.b64decode(data).decode('utf-8')
+
+class IRSettings:
+    def __init__(self, irods_user, prefix=''):
+        self.irods_user = irods_user
+        self.prefix = prefix
+
+    @property
+    def irods_session(self):
+        return self.irods_user.manager.sess
+
+    def __getitem__(self, key):
+        return json.loads(self.irods_user.metadata.get_one(f'{self.prefix}{key}').value)
+
+    def __setitem__(self, key, value):
+        fullkey = f'{self.prefix}{key}'
+        self.irods_user.metadata[fullkey] = iRODSMeta(fullkey, json.dumps(value))
+
+    def get(self, key, default=None):
+        try:
+            value = self[key]
+        except KeyError:
+            value = default
+        return value
+
+    def setdefault(self, key, default):
+        try:
+            value = self[key]
+        except KeyError:
+            self[key] = default
+        return self[key]
+
 
 
 class WebUser(UserMixin):
@@ -70,6 +103,7 @@ class WebUser(UserMixin):
         self.configure_irods_session(username, password)
         self._fullname = username
         self._irods_user = None
+        self.settings = IRSettings(self.irods_user, prefix='sys::ngsweb::')
 
     @property
     def irods_user(self):
