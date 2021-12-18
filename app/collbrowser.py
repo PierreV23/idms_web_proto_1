@@ -521,7 +521,7 @@ def Xclickable_path(path):
 @login_required
 def collbrowser():
     path = request.args.get('path', f'/{current_user.irods_zone}/projects', type=str)
-    graph_levels = DEFAULT_GRAPH_LEVELS
+    graph_levels = current_user.settings.setdefault('graph_levels', DEFAULT_GRAPH_LEVELS)
 
     return render_template('collbrowser.html',  path=path, graph_levels=graph_levels)
 

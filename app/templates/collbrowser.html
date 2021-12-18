@@ -143,6 +143,10 @@ var waiting='<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i><
 
   $(document).on('change', '#graphlevels', function() {
     graph_levels = $(this).val();
+    $.post('{{ url_for("userinfo.usersetting") }}', {
+      attr: 'graph_levels',
+      value: graph_levels
+    })
     load_graph()
     console.log('change', graph_levels);
   })

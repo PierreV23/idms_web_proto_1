@@ -2,12 +2,36 @@ import random
 import sys
 import time
 from flask_login import current_user, login_required
-from irods.models import Collection, CollectionMeta, DataObject, DataObjectMeta
+from irods.models import Collection, CollectionMeta, DataObject, DataObjectMeta, User, UserMeta
+from irods.meta import iRODSMeta
 from irods.column import Criterion
 
 from . import flaskcache
 from . import stats
 
+
+@login_required
+@flaskcache.cache.memoize(timeout=600)
+def qusermeta(user):
+    print('QUSER')
+    q = current_user.irods_session.query(UserMeta.name,
+                                         UserMeta.value, UserMeta.units).filter(
+        Criterion('=', User.name, user))
+    return [r for r in q]
+
+@login_required
+def qusermetadict(user):
+    q = qusermeta(user)
+    return {r[UserMeta.name]: r[UserMeta.value] for r in q}
+
+def qusermetaval(user, attr, default=None):
+    m = qusermetadict(user)
+    return m.get(attr, default)
+
+def susermetaval(user, attr, value, unit=None):
+    u = current_user.irods_session.users.get(user)
+    u.metadata[attr] = iRODSMeta(attr, value, unit)
+    flaskcache.cache.delete_memoized(qusermeta)
 
 @login_required
 @flaskcache.cache.memoize(timeout=60)
