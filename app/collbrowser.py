@@ -26,7 +26,7 @@ import json
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
 
 NAME_LENGTH = 20
-MAX_GRAPH_LEVELS = 3
+DEFAULT_GRAPH_LEVELS = 3
 SEARCHPAGE_SIZE = 1000
 
 ATTR_DATASETID = 'sys::dataset_id'
@@ -351,9 +351,10 @@ class Dictlist(dict):
 @cache.cached(timeout=60, key_prefix=makekey)
 def generate_graph():
     coll = request.args.get('path', '/', type=str)
+    maxlevels = request.args.get('levels', DEFAULT_GRAPH_LEVELS, type=int)
     graph = Digraph('datagraph')
 
-    def coll_node(coll, pre=None, post=None, center=None, levels=0, history=[], linestyle='solid'):
+    def coll_node(coll, pre=None, post=None, center=None, levels=0, history=[], linestyle='solid', maxlevels=DEFAULT_GRAPH_LEVELS):
         if coll in history:
             return True
         history.append(coll)
@@ -401,7 +402,7 @@ def generate_graph():
             for c in q:
                 input_coll = c[Collection.name]
                 if levels:
-                    coll_node(input_coll, center=center, post=left_edge, levels=levels-1)
+                    coll_node(input_coll, center=center, post=left_edge, levels=levels-1, maxlevels=maxlevels)
                 elif not input_coll in history:
                     placeholder = '{}-b'.format(input_coll)
                     graph.node(placeholder, '', shape='none', width='0', height='0')
@@ -415,7 +416,7 @@ def generate_graph():
             for c in q:
                 output_coll = c[Collection.name]
                 if levels:
-                    coll_node(output_coll, pre=coll, center=center, levels=levels-1)
+                    coll_node(output_coll, pre=coll, center=center, levels=levels-1, maxlevels=maxlevels)
                 elif not output_coll in history:
                     placeholder = '{}-b'.format(output_coll)
                     graph.node(placeholder, '', shape='none', width='0', height='0')
@@ -428,23 +429,22 @@ def generate_graph():
                 q = iqry.qcollbystaticmeta(ATTR_DATASETID, extra_coll_id)
                 extra_colls |= { c[Collection.name] for c in q } 
             for extra_coll in extra_colls:
-                coll_node(extra_coll, levels=levels-1, post=coll, linestyle='dashed')
+                coll_node(extra_coll, levels=levels-1, post=coll, linestyle='dashed', maxlevels=maxlevels)
             # FIND collections that refer to this collection bij name or id
             q = iqry.qcollbystaticmeta('user::pipeline::input_collection_id', dataset_id)
             ref_colls = { c[Collection.name] for c in q }
             q = iqry.qcollbystaticmeta('user::pipeline::input_collection', coll)
             ref_colls |= { c[Collection.name] for c in q } 
             for ref_coll in ref_colls:
-                coll_node(ref_coll, levels=levels-1, pre=coll, linestyle='dashed')
+                coll_node(ref_coll, levels=levels-1, pre=coll, linestyle='dashed', maxlevels=maxlevels)
 
 
 
 
     graph.graph_attr['rankdir'] = 'LR'
     graph.graph_attr['fontsize'] = '15'
-    #graph.graph_attr['size'] = '8,10'
 
-    coll_node(coll, center=coll, levels=MAX_GRAPH_LEVELS)
+    coll_node(coll, center=coll, levels=maxlevels, maxlevels=maxlevels)
 
     return graph.pipe(format='svg').decode('utf-8')
 
@@ -505,7 +505,7 @@ def colltree():
     rs = add_items(current, level, active)
     return('<ul id="{}">{}</ul>'.format(current, rs))
 
-def clickable_path(path):
+def Xclickable_path(path):
     p = path[1:].split('/')
     cp = ''
     subpath = ''
@@ -521,10 +521,9 @@ def clickable_path(path):
 @login_required
 def collbrowser():
     path = request.args.get('path', f'/{current_user.irods_zone}/projects', type=str)
-    #path_title = clickable_path(path) 
+    graph_levels = DEFAULT_GRAPH_LEVELS
 
-    return render_template('collbrowser.html', path_title='',
-                           path=path, archived=True)
+    return render_template('collbrowser.html',  path=path, graph_levels=graph_levels)
 
 
 @bp.route('upload_file', methods=['GET', 'POST'])
