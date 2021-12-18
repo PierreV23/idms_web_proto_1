@@ -13,7 +13,7 @@ body {
 
 .content-wrapper {
   overflow-y: hidden;
-  border-style: solid;
+  /* border-style: solid; */
 }
 
 .modal-tall modal {
@@ -64,7 +64,7 @@ body {
     margin: 0 auto;
 }
 
-.ngsruns-grid {
+.listdetail-grid {
   display: grid;
   column-gap: 10px;
   row-gap: 10px;
@@ -75,11 +75,11 @@ body {
     "listing details"
 }
 
-.ngsrun-list {
+.grid-list {
   grid-area: listing;
 }
 
-.ngsrun-details {
+.grid-details {
   grid-area: details;
 }
 
@@ -90,7 +90,7 @@ body {
   column-gap: 10px;
   row-gap: 10px;
   align-items: stretch;
-  grid-template-columns: [left] 220px [middle] auto [right];
+  grid-template-columns: [left] 250px [middle] auto [right];
   grid-template-rows: [top] 100% [bottom];
   grid-template-areas:
     "selectlist selectdetail"
@@ -297,7 +297,7 @@ ul {
 }
 
 .nopadding {
-  padding: 1px;
+  padding: 1px !important;
 }
 
 .right-line {

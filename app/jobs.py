@@ -40,7 +40,7 @@ ATTR_RUNSHEET_STATE = '{}state'.format(ATTR_RUNSHEET_PREFIX)
 ATTR_RUNSHEET_ID = '{}id'.format(ATTR_RUNSHEET_PREFIX)
 ATTR_RUNSHEET_CREATETIME = '{}create_time'.format(ATTR_RUNSHEET_PREFIX)
 
-MAX_READ_LOG_BYTES = 100000
+MAX_READ_LOG_BYTES = 10000000
 
 def utc_to_local(utc_dt):
     return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=None)
@@ -334,6 +334,7 @@ def _get_logfiles(location, subdir=''):
 
 @bp.route('/_joblog')
 @login_required
+@cache.cached(timeout=120, key_prefix=makekey)
 def show_logfile():
     path = request.args.get('path', '', type=str)
     try:

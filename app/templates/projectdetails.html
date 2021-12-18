@@ -150,8 +150,7 @@ function createContactRow( contact ) {
 <br>
 
 <!-- PROJECT SETTINGS -->
-<div class="header card p-2"><H2>Project details for {{ PD.name }}</H2></div>
-<div class="card sidebar-content">
+<div class="card h-100">
   <div class="card-header">
     <ul class="nav nav-pills nav2">
       <li class="nav-item mx-2">
@@ -186,7 +185,8 @@ function createContactRow( contact ) {
       </li>
     </ul>
   </div>
-  <div class="card card-body tab-content">
+  <div class="card-body tab-content h-100">
+
     <!-- Settings -->
     <div class="tab-pane active" id="settings" role="tabpanel" aria-labelledby="settings-tab">
       <form action="update_project" method="post">
@@ -255,7 +255,7 @@ function createContactRow( contact ) {
 
     <!-- Processes -->
 
-    <div class="tab-pane" id="processes" role="tabpanel" aria-labelledby="processes-tab">
+    <div class="tab-pane scroll h-100" id="processes" role="tabpanel" aria-labelledby="processes-tab">
       <div class="card">
         {% for process in PD.processes | sort %}
         <a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse{{process}}" role="button" aria-expanded="false" aria-controls="collapse{{process}}">
@@ -402,7 +402,7 @@ function createContactRow( contact ) {
 
     <!-- Collections -->
 
-    <div class="tab-pane" id="collections" role="tabpanel" aria-labelledby="collections-tab">
+    <div class="tab-pane h-100 scroll" id="collections" role="tabpanel" aria-labelledby="collections-tab">
       <table class="table table-striped table-hover table-sm" >
         <thead>
           <TR>

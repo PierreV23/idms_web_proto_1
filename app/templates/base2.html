@@ -203,6 +203,14 @@
               <p>Projects</p>
             </a>
           </li>
+
+          <li class="nav-item dropdown">
+            <a class="nav-link" href="{{ url_for('projects.show_projects', page='processes') }}" data-menuname="processes" role="button">
+              <i class="fas fa-cogs nav-icon">
+              </i>
+              <p>Processes</p>
+            </a>
+          </li>          
           {% endif %}
 
           {% if 'MINILIMS' in current_user.features %}
@@ -379,6 +387,9 @@
     $('a[data-menuname=' + menuname + ']').addClass('active')
     $('a[data-menuname=' + menuname + ']').parents("li").addClass("menu-open active")
 
+    $('.menuexpand').on('click', function() {
+      $('[data-widget="pushmenu"]').PushMenu('expand');
+    })
 
 
   </script>

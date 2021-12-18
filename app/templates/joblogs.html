@@ -14,7 +14,9 @@ menuname='joblogs'
     $SCRIPT_ROOT = {{ request.script_root | tojson | safe }};
 
     $(function () {
-        $('div.logcard').bind('click', function (e) {
+        $('li.logcard').bind('click', function (e) {
+            $('li.logcard').removeClass('active')
+            $(this).addClass('active')
             $('pre#logcontainer').html('<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>')
             $('div#logname').html($(this).html())
             $.get($SCRIPT_ROOT + '/jobs/_joblog', {
@@ -28,24 +30,19 @@ menuname='joblogs'
 </script>
 <div class="selectgrid h100">
     <div class="card h100">
-        <div class="card-header">
-            Job log files
-        </div>
-        <div class="card-body h100 autoscroll">
+        <div class="card-body h100 autoscroll nopadding">
+            <ul class="list-group">
             {% for logfile in logs %}
             {% set label = logfile | replace('.','_') | replace('/', '_') %}
-            <div class="logcard file-link" data-logpath="{{ logs[logfile] }}" data-loglabel="{{ label }}">
+            <li class="logcard file-link list-group-item" data-logpath="{{ logs[logfile] }}" data-loglabel="{{ label }}">
                 {{ logfile }}
-            </div>
+            </li>
             {% endfor %}
+            </ul>
         </div>
     </div>
 
     <div class="card h100">
-        <div class="card-header" id="logname">
-            Logfile ...
-        </div>
-
                 <pre class="card-body h100 autoscroll" id="logcontainer"><center>.. select a log file ..</center></pre>
     </div>
 </div>
