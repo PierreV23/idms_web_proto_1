@@ -21,7 +21,7 @@ class NGSRun(db.Model):
     flowcell = db.Column(db.String(30), default='', nullable = False)
     creation_date = db.Column(db.TIMESTAMP, server_default=db.func.current_timestamp(), nullable=False)
     description = db.Column(db.String(250), default='', nullable = False)
-    project = db.Column(db.Integer)
+    project = db.Column(db.String(32))
     owner = db.Column(db.String(32))
 
     def __init__(self, flowcell):
@@ -33,7 +33,7 @@ class NGSBarcode(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     ngsrun = db.Column(db.Integer, db.ForeignKey('ngsruns.id'))
     barcode = db.Column(db.String(128), nullable = False)
-    unilab = db.Column(db.String(30), nullable = False)
+    sampleid = db.Column(db.String(30), nullable = False)
     primer_set = db.Column(db.String(128), nullable = True)
     virus_target = db.Column(db.String(128), nullable = True)
     description = db.Column(db.String(256), nullable = True)
@@ -58,7 +58,7 @@ class NGSRunSchema(ma.Schema):
 class NGSBarcodesSchema(ma.Schema):
     barcode = fields.String()
     primer_set = fields.String()
-    unilab = fields.String()
+    sampleid = fields.String()
     virus_target = fields.String()
     description = fields.String()
 
@@ -148,13 +148,14 @@ def run_update():
     f = request.form.to_dict()
     new_run = NGSRun(f.get('flowcell', ''))
     new_run.name = f.get('name', '')
+    new_run.project = f.get('project', '')
     new_run.description = f.get('description', '')
     db.session.add(new_run)
     db.session.commit()
     for barcode in barcodes:
-        if f.get('unilab_{}'.format(barcode)):
+        if f.get('sampleid_{}'.format(barcode)):
             new_barcode = NGSBarcode(new_run.id, barcode)
-            new_barcode.unilab = f.get('unilab_{}'.format(barcode))
+            new_barcode.sampleid = f.get('sampleid_{}'.format(barcode)).replace(" ","")
             new_barcode.virus_target = f.get('target_{}'.format(barcode))
             new_barcode.primer_set = f.get('primer_{}'.format(barcode))
             new_barcode.description = f.get('description_{}'.format(barcode))

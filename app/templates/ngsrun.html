@@ -15,15 +15,22 @@
 <form action="new" method="post">
     <input type="hidden" id="id" name="id" value="{{ id }}">
     <div class="form-group row">
-        <label for="ngs_name" class="col-sm-1 col-form label">Name</label>
-        <input type="text" class="form-control col-sm-2 input-sm" autocomplete="off" name="name" id="ngs_name" placeholder="Run Name" value="{{ data.name }}">
+        <label for="ngs_name" class="col-sm-1 col-form label">Name:</label>
+        <input type="text" class="form-control col-sm-1 input-sm" autocomplete="off" name="name" id="ngs_name" placeholder="Run Name" value="{{ data.name }}">
+        
         <label for="ngs_flowcell" class="col-sm-1 col-form-label">Flowcell:</label>
         <input type="text" class="form-control col-sm-1" autocomplete="off" name="flowcell" id="ngs_flowcell" placeholder="Flowcell" value="{{ data.flowcell }}">
+
+        <label for="ngs_project" class="col-sm-1 col-form-label">Project:</label>
+        <input type="text" class="form-control col-sm-1" autocomplete="off" name="project" id="ngs_project" placeholder="Project" value="{{ data.project }}">
+
+        <label for="ngs_description" class="col-sm-1 col-form-label">Description:</label>
+        <input type="text" class="form-control col-sm-3" autocomplete="off" name="description" id="ngs_description" placeholder="Description" value="{{ data.description }}">
       </div>
 
 <div class="form-group row">
     <label class="col-sm-1 col-form-label">Barcode</label>
-    <label class="col-sm-1 col-form-label">Unilab ID</label>
+    <label class="col-sm-1 col-form-label">ID</label>
     <label class="col-sm-1 col-form-label">Virus Target</label>
     <label class="col-sm-1 col-form-label">Primer Set</label>
     <label class="col-sm-1 col-form-label">Description</label>
@@ -31,7 +38,7 @@
 
 <div class="form-group row">
 <label class="col-sm-1 col-form-label"></label>
-<label class="col-sm-1 col-form-label"><button type="button" class="btn btn-secondary" id="databutton" data-toggle="modal" data-target="#unilab_list">Unilab List</button></label>
+<label class="col-sm-1 col-form-label"><button type="button" class="btn btn-secondary" id="databutton" data-toggle="modal" data-target="#sampleid_list">ID List</button></label>
 <label class="col-sm-2 col-form-label"><button type="button" class="btn btn-secondary" id="targetbutton">Copy down</button></label>
 <label class="col-sm-2 col-form-label"><button type="button" class="btn btn-secondary" id="primerbutton">Copy down</button></label>
 </div>
@@ -39,7 +46,7 @@
 {% for barcode in barcodes %}
 <div class="form-group form-row">
     <input readonly type="text" tabindex=-1 class="form-control col-sm-1" name="bar_{{ barcode }}" id="bar_{{ barcode }}" value="{{ barcode }}">
-    <input type="text" class="form-control col-sm-1" tabindex={{ loop.index }} autocomplete="off" name="unilab_{{ barcode }}" id="unilab_{{ barcode }}" placeholder="Unilab ID" value="{{ data[barcode].unilab }}">
+    <input type="text" class="form-control col-sm-1" tabindex={{ loop.index }} autocomplete="off" name="sampleid_{{ barcode }}" id="sampleid_{{ barcode }}" placeholder="ID" value="{{ data[barcode].sampleid }}">
     <input type="text" class="form-control col-sm-2 targetAutocomplete targetfield" tabindex={{ loop.index + 24 }} autocomplete="off" name="target_{{ barcode }}" id="target_{{ barcode }}" placeholder="Virus Target" value="{{ data[barcode].virus_target }}">
     <input type="text" class="form-control col-sm-2 primerAutocomplete primerfield" tabindex={{ loop.index + 48 }} autocomplete="off" name="primer_{{ barcode }}" id="primer_{{ barcode }}" placeholder="Primer Set" value="{{ data[barcode].primer_set }}">
     <input type="text" class="form-control col-sm-2" tabindex={{ loop.index + 72 }} autocomplete="off" name="description_{{ barcode }}" id="description_{{ barcode }}" placeholder="Description" value="{{ data[barcode].description }}">
@@ -74,15 +81,15 @@
 
 </script>
 
-<div class="modal" id="unilab_list" role="dialog" >
+<div class="modal" id="sampleid_list" role="dialog" >
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="DocTitle">Paste or enter a list of unilab IDs</h5>
+                <h5 class="modal-title" id="DocTitle">Paste or enter a list of IDs</h5>
             </div>
             <div class="modal-body">
                     <div class="form-group">  
-                        <textarea class="form-control" rows="24" name = "file" id="unilab_text" /></textarea>
+                        <textarea class="form-control" rows="24" name = "file" id="sampleid_text" /></textarea>
                     </div>  
                     <div class="form-group">  
                         <button type="button" class="btn btn-primary" data-dismiss="modal" id="modal_ok">OK</button>
@@ -95,13 +102,13 @@
 
 <script>
         $('#modal_ok').click(function () {
-            var linearray = document.getElementById("unilab_text").value.split(/\r?\n/)
+            var linearray = document.getElementById("sampleid_text").value.split(/\r?\n/)
             linearray.forEach(copy_line)
         });
 
         function copy_line(value, index, array) {
             var barcode = index + 1
-            var field_id="unilab_barcode" + ((barcode<10) ? "0" : "") + barcode.toString()
+            var field_id="sampleid_barcode" + ((barcode<10) ? "0" : "") + barcode.toString()
             $('#'+field_id).val(value)
         }
 
@@ -109,7 +116,7 @@
             var text = ""
             var v = ""
             for (barcode=1;barcode<25;barcode++) {
-                var field_id="unilab_barcode" + ((barcode<10) ? "0" : "") + barcode.toString()
+                var field_id="sampleid_barcode" + ((barcode<10) ? "0" : "") + barcode.toString()
                 v = $('#'+field_id).val()
                 if (v != "") {
                     text = text + $('#'+field_id).val() + "\n"
@@ -117,7 +124,7 @@
                     break
                 }
             }
-            $('#unilab_text').val(text)
+            $('#sampleid_text').val(text)
         });
 </script>
 

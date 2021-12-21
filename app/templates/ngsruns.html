@@ -15,9 +15,10 @@
    <TABLE class="table table-striped table-hover table-sm">
        <thead class="thead-dark">
        <TR>
-           <TH scope="col">ID</TH>
+           <!-- TH scope="col">ID</TH -->
            <TH scope="col">Name</TH>
            <TH scope="col">Flowcell</TH>
+           <TH scope="col">Project</TH>
            <TH scope="col">Data Collection</TH>
        </TR>
        </thead>
@@ -28,13 +29,14 @@
       
       <tr {% if run.id == idrequest|int  %}  class="table-success" {% endif %} class="runrow" data-id="{{ run.id }}">
          <a href="/ngsruns/list?idrequest={{ run.id }}"></a>         
-         <td>{{ run.id }}</td>
+         <!-- td>{{ run.id }}</td -->
          <td>{{ run.name }}</td>
          {% if run.flowcell in lflowcells %}
          <td><b>{{ run.flowcell }} !DUPLICATE!</b></td>
          {% else %}
          <td>{{ run.flowcell }}</td>
          {% endif %}
+         <td>{{ run.project }}</td>
          <td>{{ run.datacoll.htmlshort|safe }}</td>
          <!--{{ lflowcells.append( run.flowcell ) }}-->
       </tr>

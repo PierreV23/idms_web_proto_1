@@ -16,17 +16,21 @@
 </div>
 
 <div class="card-header">
-  <h2 class="alignleft">Barcodes in run {{ run.id }}: "{{ run.name }}" ({{ run.flowcell }})</h2>
+  {% if run.description %}
+  <h2 class="alignleft">Barcodes in run {{ run.name }} on project {{ run.project }} ({{ run.flowcell }}, {{ run.description }})</h2>
+  {% else %}
+  <h2 class="alignleft">Barcodes in run {{ run.name }} on project {{ run.project }} ({{ run.flowcell }})</h2>
+  {% endif %}
   <button type="button" class="btn btn-default btn-danger btn-sm alignright" data-toggle="modal" data-target="#confirm-delete">Delete</button>
 </div>
 <div class="card-body">
 <TABLE class="table table-striped table-hover table-sm">
 <thead class="thead-dark">
 <TR>
-  <TH scope="col">id</TH>
+  <!-- TH scope="col">id</TH -->
   <!-- <TH scope="col">ngsrunid</TH> -->
   <TH scope="col">Barcode</TH>
-  <TH scope="col">Unilab code</TH>
+  <TH scope="col">ID</TH>
   <TH scope="col">Virus target</TH>
   <TH scope="col">Primer set Collection</TH>
   <TH scope="col">Description</TH>
@@ -36,10 +40,10 @@
 <tbody>
 {% for code in barcodes %}
 <tr>
-   <td>{{ code.id }}</td>
+   <!-- td>{{ code.id }}</td -->
    <!-- <td>{{ code.ngsrun }}</td> -->
    <td>{{ code.barcode }}</td>
-   <td>{{ code.unilab }}</td>
+   <td>{{ code.sampleid }}</td>
    <td>{{ code.virus_target }}</td>
    <td>{{ code.primer_set }}</td>
    <td>{{ code.description }}</td>

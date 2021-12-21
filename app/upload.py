@@ -429,7 +429,7 @@ def validate_results():
             columns=[]
             for col in parsedDataWithMapping.columns:
                 #5 possibilities:
-                #  -  UnilabSampleId
+                #  -  SampleId
                 #  -  Teststraat of Ziekenhuis -> ""
                 #  -  4 cijferige postcode -> ResidencePostalCode
                 #  -  geboortedatum -> ""
