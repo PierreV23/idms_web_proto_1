@@ -386,9 +386,10 @@ def generate_graph():
         git = collmeta.get('sys::pipeline::gitrepo')
         githash = collmeta.get('sys::pipeline::githash')
         if git:
+            processid = collmeta.get('sys::runsheet::processID', git.split('/')[-1])
             git_node = 'G-' + coll
             git_url = '{url}/-/tree/{hash}'.format(url=git[:-4] if git.endswith('.git') else git, hash=githash)
-            graph.node(git_node, git.split('/')[-1], shape=PROCESS_SHAPE, URL=git_url, fontsize='8')
+            graph.node(git_node, processid, shape=PROCESS_SHAPE, URL=git_url, fontsize='8')
             graph.edge(git_node, coll)
             left_edge = git_node
 
