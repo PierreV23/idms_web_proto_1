@@ -17,6 +17,7 @@ except:
     CACHE_TYPE = "SimpleCache"
     print('Use Simple cache')
 
+ENV = 'test'
 
 CACHE_DEFAULT_TIMEOUT = 300
 CACHE_THRESHOLD = 10000

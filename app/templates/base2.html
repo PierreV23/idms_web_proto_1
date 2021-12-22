@@ -47,7 +47,53 @@
 </head>
 
 <body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed">
-  <!-- <div class="wrapper"> -->
+
+{% with messages = get_flashed_messages(category_filter=["modalpopup", "news"], with_categories=true) %}
+{% if messages %}
+<div class="modal" data-show="true" id="message">
+  <div class="modal-dialog modal-dialog-centxered" role="document">
+    <div class="modal-content">
+      <div class="tab-content">
+        {% for category, message in messages %}
+        <div class="tab-pane {% if loop.first %} active {% endif %}" id="message{{ loop.index }}">
+          <div class="modal-body">
+            {{ message}}
+          </div>
+          <div class="modal-footer">
+            {% if loop.last %}
+            {% if category == "news" %}
+            <div class="form-check mr-auto">
+              <input class="form-check-input" type="checkbox" value="" id="dontshow">
+              <label class="form-check-label" for="dontshow">
+                Don't show this again
+              </label>
+            </div>
+              {% endif %}
+              <button type="button" class="btn btn-primary msg-close" data-dismiss="modal">Close</button>
+              {% else %}
+              <button type="button" class="btn btn-primary" data-toggle="tab"
+                href="#message{{ loop.index + 1}}">Next</button>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  $('#message').modal()
+  $('.msg-close').on('click', function () {
+    if ($('#dontshow').is(":checked")) {
+      $.post('{{ url_for("msgconfirm") }}')
+    }
+  })  
+</script>
+  
+
+{% endif %}
+{% endwith %}
 
   <!-- Navbar -->
   <nav class="main-header navbar navbar-expand navbar-white navbar-light">
@@ -321,13 +367,9 @@
   <!-- Content Wrapper. Contains page content -->
   <div class="content-wrapper">
     <!-- Content Header (Page header) -->
-    <div class="content-header">
-      <div class="info-box">
-        <div class="info-box-content">
-          <span class="info-box-text">{% block heading %}{% endblock %}</span>
-        </div>
-      </div>
-    </div>
+
+
+    <div class="title">{% block heading %}{% endblock %}</div>
 
     <!-- Main content -->
     <div class="content">
@@ -359,7 +401,7 @@
   function sizing() {
       $('html, body').css('height', '100%');
       $('.content-wrapper').css('min-height', '60%');
-      let h = $(window).height() - $('.content-wrapper').offset().top - 10
+      let h = $(window).height() - $('.content-wrapper').offset().top
       $('.content-wrapper').css('height', h)
       h = $(window).height() - $('.content').offset().top - 10
       $('.content').css('height', h)

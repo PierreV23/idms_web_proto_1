@@ -9,6 +9,7 @@ import irods.exception
 from . import auth, collbrowser, jobs, docviewer
 from . import projects, cluster, admin, reports, userinfo
 from . import ngsruns, upload, flaskcache
+from . import messages
 import irods.exception
 
 
@@ -47,8 +48,6 @@ app.config.from_mapping(
 
 app.config.from_pyfile(os.path.join(app.instance_path, 'config.py'), silent=True)
 
-#Session(app)
-
 app.register_blueprint(auth.bp)
 app.register_blueprint(collbrowser.bp)
 app.register_blueprint(jobs.bp)
@@ -80,6 +79,11 @@ def load_user(userid):
 @login_required
 def home():
     return render_template('home.html')
+
+@app.route('/api/msgconfirm', methods=['POST'])
+def msgconfirm():
+    messages.confirm()
+    return dict(result='OK')
 
 @app.route('/contacts')
 def contacts():

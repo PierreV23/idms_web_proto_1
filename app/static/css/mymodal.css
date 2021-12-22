@@ -114,7 +114,7 @@ body {
    row-gap: 10px;
    align-items: stretch;
    grid-template-columns: [left] 220px [middle] auto [right] 30%;
-   grid-template-rows: [top] 30% [bottom] 60% [footer] 0px;
+   grid-template-rows: [top] 30% [middle] 70% [bottom] 0pt;
    grid-template-areas:
      "sidebar graph actions"
      "sidebar contents metadata"
@@ -209,6 +209,11 @@ ul {
   height: 15px;
 }
 
+.h8 {
+  height: 3rem;
+  margin: 1pt;
+}
+
 .button12 {
   min-width: 12em;
   max-width: 12em;
@@ -257,22 +262,33 @@ ul {
   overflow-y: scroll;
 }
 
-.coll-meta {
+/* .coll-meta {
   min-height: 45vh;
   max-height: 45vh;
   overflow-y: scroll;
-}
+} */
 
-.coll-content {
+/* .coll-content {
   min-height: 45vh;
   max-height: 45vh;
   overflow-y: scroll;
-}
+} */
 
 .coll-content-sm {
   min-height: 15vh;
   max-height: 15vh;
   overflow-y: scroll;
+}
+
+.title {
+  /* border-style: solid; */
+  border-radius: 0.25rem;
+  box-shadow: 0 0 1px rgba(0,0,0, 0.15), 0 1px 3px rgba(0,0,0, 0.25);
+  /* 15 rgba(0, 0, 0, 0.137), 0 1px 3px rgba(0, 0, 0, 0.205) */
+  width: 100%;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  margin-right: -0.5rem;
 }
 
 .seqlist {
