@@ -63,6 +63,26 @@ body {
     height: 90%;
     margin: 0 auto;
 }
+.jobdetail-grid {
+  display: grid;
+  column-gap: 10px;
+  row-gap: 10px;
+  align-items: stretch;
+  grid-template-columns: [left] 50% [middle] 50% [right];
+  grid-template-rows: [top] 35% [center] auto [bottom];
+  grid-template-areas:
+    "jobmeta pggraph"
+    "jobmeta pgjobs"  
+}
+.grid-jobmeta {
+  grid-area: jobmeta;
+}
+.grid-pggraph {
+  grid-area: pggraph;
+}
+.grid-pgjobs {
+  grid-area: pgjobs;
+}
 
 .listdetail-grid {
   display: grid;
@@ -114,7 +134,7 @@ body {
    row-gap: 10px;
    align-items: stretch;
    grid-template-columns: [left] 220px [middle] auto [right] 30%;
-   grid-template-rows: [top] 30% [middle] 70% [bottom] 0pt;
+   grid-template-rows: [top] 33% [middle] 67% [bottom] 0pt;
    grid-template-areas:
      "sidebar graph actions"
      "sidebar contents metadata"
@@ -337,11 +357,6 @@ ul {
   max-height: 88vh;
   overflow-x: scroll;
   overflow-y: scroll;
-}
-
-svg {
-  max-height: 30%;
-  max-width: 100%;
 }
 
 .wrap {

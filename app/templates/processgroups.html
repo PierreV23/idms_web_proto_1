@@ -15,6 +15,8 @@ function load_pggraph() {
     mode: mode
   }, function(data) {
      $('#pg_graph').html(data)
+     let w=$("#pg_graph").width().toString() + 'px';
+     $('svg').width(w);
   });
 
 };

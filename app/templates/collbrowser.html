@@ -65,7 +65,7 @@ var waiting='<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i><
       levels: graph_levels
     }, function (data) {
       $('#graphimg').html(data);
-      let w = $("#graphimg").width().toString() + 'pt';
+      let w = $("#graphimg").width().toString() + 'px';
       $('svg').width(w);
       console.log($('.center-coll').offset().top)
       $('#graphdiv').scrollTop($('.center-coll').offset().top + $('#graphdiv').scrollTop() - $('#graphdiv').offset().top - $('#graphdiv').height()/2);

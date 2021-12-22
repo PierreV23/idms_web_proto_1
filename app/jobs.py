@@ -215,7 +215,7 @@ def processgraph():
         shape, shape_color = coll_shape(state)
         penwidth = '3' if runsheet_coll == coll else '1'
         graph.node(coll, label=iqry.qcollmetavalstatic(coll, 'sys::runsheet::description'), style='filled', penwidth=penwidth, 
-            shape=shape, fillcolor=shape_color, URL=url_for('jobs.show_jobdetails', name=iqry.qcollmetaval(coll, ATTR_RUNSHEET_ID)))
+            shape=shape, fillcolor=shape_color, URL=url_for('jobs.jobdetails', name=iqry.qcollmetaval(coll, ATTR_RUNSHEET_ID)))
     for coll in colls:
         ir = iqry.qcollmetaval(coll, 'sys::runsheet::input_collection_ref')
         input_colls = [ c for c in colls if iqry.qcollmetavalstatic(c, 'sys::dataset_id') == ir ]
@@ -236,14 +236,14 @@ def processgraph():
     graph.graph_attr['rankdir'] = 'LR'
     graph.graph_attr['fontsize'] = '15'
 
-    return graph.pipe(format='svg').decode('utf-8')   
+    return graph.pipe(format='svg').decode('utf-8')
 
 @bp.route('/jobdetails')
 @login_required
 def jobdetails():
     #this could be either the object-name of the yaml file or meta information attached to the collection
     jobnaam = request.args.get('name', '', type=str)
-
+    
     D = {}
     metadata = {}
     joblog = ''
@@ -289,9 +289,7 @@ def jobdetails():
         if field in metadata:
             D[FIELDS[field][0]] = datafield(field, metadata[field], FIELDS[field][1])
     pgid = metadata.get('sys::runsheet::processgroupid', '')
-#    D['Git repository'] = "<a href='{0}'>{0} TAG {1}</a>".format(jd['repo'].replace('.git',''), jd['tag'])
-#    D['Next projectID'] = "<a href='/projectdetails?name={0}'>{0}</a>".format(jd['next_projectID'])
-    return render_template('jobdetails.html', details=D, jobnaam=datafield('jobnaam', jobnaam, 'runsheet'))
+    return render_template('jobdetails.html', details=D, runsheet=runsheet, pgid=pgid, jobnaam=datafield('jobnaam', jobnaam, 'runsheet'))
 
 @bp.route('joblogs')
 @login_required

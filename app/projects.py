@@ -547,7 +547,3 @@ def processgroups():
 
     return render_template('processgroups.html', project=project, processgroup=processgroup, processgroups=groups)
 
-@BP.route('processes', methods=['GET'])
-@login_required
-def processes():    
-    return render_template('processgrid.html')
