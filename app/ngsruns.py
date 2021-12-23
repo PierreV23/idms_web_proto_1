@@ -8,11 +8,20 @@ from sqlalchemy import ForeignKey, distinct
 from irods.models import Collection, CollectionMeta
 from irods.column import Criterion
 from app.datafield import datafield
+import requests
+from requests.auth import HTTPBasicAuth
 
 db = SQLAlchemy()
 
 bp = Blueprint('ngsruns', __name__, url_prefix='/ngsruns')
 ma = Marshmallow(bp)
+
+REQUESTS_METHODS = {
+    'GET':   requests.get,
+    'PUT':   requests.put,
+    'POST':  requests.post,
+    'DELETE':requests.delete
+}
 
 class NGSRun(db.Model):
     __tablename__ = 'ngsruns'
@@ -75,6 +84,22 @@ FIELDS = {
     'primer_set': NGSBarcode.primer_set
 }
 
+@login_required
+def rest_call(request_type, endpoint, data={}):    
+    url = 'http://{}/api/1.0/{}'.format(current_user.irods_server, endpoint)
+    #TODO: remove this testing line:
+    #url = 'http://{}/api/1.0/{}'.format('0.0.0.0:5000', endpoint)
+    auth = HTTPBasicAuth('alt\\{}'.format(current_user.username), current_user.ntlm_hash)
+    return_data = {}
+    if request_type in REQUESTS_METHODS:
+        print(f'REST: {request_type} {url} {data}')
+        response = REQUESTS_METHODS[request_type](url, auth=auth, json=data)
+    try:
+        return_data = response.json()
+    except:
+        return_data = {}
+    return return_data, response.status_code
+
 @bp.route('complete/<field>', methods=['GET'])
 def get_complete(field):
     print(request)
@@ -130,8 +155,13 @@ def edit_form():
 
 @bp.route('new', methods=['GET'])
 def run_form():
+    pl, result = rest_call('GET', 'projects')
+    projects=[]
+    if result == 200:
+        projects = [ p['name'] for p in pl ]
+    #print(projects)
     data = { barcode : None for barcode in barcodes }
-    return render_template('ngsrun.html', data=data, barcodes=barcodes, id=-1)
+    return render_template('ngsrun.html', data=data, projects=projects, barcodes=barcodes, id=-1)
 
 @bp.route('delete', methods=['GET'])
 @login_required

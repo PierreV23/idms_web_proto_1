@@ -21,8 +21,15 @@
         <label for="ngs_flowcell" class="col-sm-1 col-form-label">Flowcell:</label>
         <input type="text" class="form-control col-sm-1" autocomplete="off" name="flowcell" id="ngs_flowcell" placeholder="Flowcell" value="{{ data.flowcell }}">
 
-        <label for="ngs_project" class="col-sm-1 col-form-label">Project:</label>
-        <input type="text" class="form-control col-sm-1" autocomplete="off" name="project" id="ngs_project" placeholder="Project" value="{{ data.project }}">
+        <!-- label for="ngs_project" class="col-sm-1 col-form-label">Project:</label -->
+        <!-- input type="text" class="form-control col-sm-1" autocomplete="off" name="project" id="ngs_project" placeholder="Project" value="{{ data.project }}" -->
+
+        <label for="project" class="col-sm-1 col-form-label">Project:</label>
+        <select class="custom-select col-sm-1" name="project">
+            {% for project in projects|sort %}
+            <option>{{ project }}</option>
+            {% endfor %}
+        </select>
 
         <label for="ngs_description" class="col-sm-1 col-form-label">Description:</label>
         <input type="text" class="form-control col-sm-3" autocomplete="off" name="description" id="ngs_description" placeholder="Description" value="{{ data.description }}">
