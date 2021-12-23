@@ -450,10 +450,10 @@ def generate_graph():
     return graph.pipe(format='svg').decode('utf-8')
 
 @login_required
-@cache.memoize(timeout=60)
+@cache.memoize(timeout=60, make_name=makename)
 def add_items(path, level, active):
     
-    @cache.memoize(timeout=300)
+    @cache.memoize(timeout=300, make_name=makename)
     def subitems(path):
         count = 0
         query = irods_session.query(Collection.id).filter(
@@ -462,7 +462,6 @@ def add_items(path, level, active):
             count = a[Collection.id]
         return count
         
-    
     result = ''
     parts = active.split('/')
     irods_session = current_user.irods_session

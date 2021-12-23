@@ -49,7 +49,7 @@ def qcollmetadict(collection):
 
 
 @login_required
-@flaskcache.cache.memoize(timeout=300)
+@flaskcache.cache.memoize(timeout=300, make_name=flaskcache.makename)
 def qcollchildren(collection):
     query = current_user.irods_session.query(Collection).filter(
         Criterion('=', Collection.parent_name, collection))
