@@ -10,10 +10,10 @@ def init(app):
     cache.init_app(app)
 
 def makename(funcname):
-    return f'{current_user.irods_zone}{funcname}'
+    return f'{current_user.username}{current_user.irods_zone}{funcname}'
 
 def makekey():
-    return f'{current_user.irods_zone}{request.full_path}'
+    return f'{current_user.username}{current_user.irods_zone}{request.full_path}'
 
 
 def cache_report(prefix=''):

@@ -33,6 +33,7 @@ def susermetaval(user, attr, value, unit=None):
     u.metadata[attr] = iRODSMeta(attr, value, unit)
     flaskcache.cache.delete_memoized(qusermeta)
 
+
 @login_required
 @flaskcache.cache.memoize(timeout=60)
 def qcollmeta(collection):
@@ -41,6 +42,10 @@ def qcollmeta(collection):
         Criterion('=', Collection.name, collection))
     return [r for r in q]
 
+def scollmetaval(coll, attr, value, unit=None):
+    u = current_user.irods_session.collections.get(coll)
+    u.metadata[attr] = iRODSMeta(attr, value, unit)
+    flaskcache.cache.delete_memoized(qcollmeta)
 
 @login_required
 def qcollmetadict(collection):

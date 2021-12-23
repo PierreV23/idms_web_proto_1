@@ -14,6 +14,7 @@ import ssl
 import time
 from flask_login import UserMixin
 from flask import session, current_app
+from flask_login import current_user
 from irods.session import iRODSSession
 from irods.models import User, UserGroup
 from irods.column import Criterion
@@ -36,13 +37,13 @@ class IRSettings:
         self.prefix = prefix
 
     def __getitem__(self, key):
-        val = iqry.qusermetaval(self.user, f'{self.prefix}{key}')
+        val = iqry.qcollmetaval(f'/{current_user.irods_zone}/home/{current_user.username}', f'{self.prefix}{key}')
         if val is None:
             raise KeyError
         return json.loads(val)
 
     def __setitem__(self, key, value):
-        iqry.susermetaval(self.user, f'{self.prefix}{key}', json.dumps(value))
+        iqry.scollmetaval(f'/{current_user.irods_zone}/home/{current_user.username}', f'{self.prefix}{key}', json.dumps(value))
 
     def get(self, key, default=None):
         try:
