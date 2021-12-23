@@ -57,7 +57,7 @@
         {% for category, message in messages %}
         <div class="tab-pane {% if loop.first %} active {% endif %}" id="message{{ loop.index }}">
           <div class="modal-body">
-            {{ message}}
+            {{ message | safe }}
           </div>
           <div class="modal-footer">
             {% if loop.last %}
