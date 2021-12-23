@@ -354,7 +354,7 @@ $('.nav-pills').on('shown.bs.tab', function(event){
                         value="true" id="disableContinuation" {% if start_next_process == "true" %}checked{% endif %}>
                         <label class="custom-control-label" for="disableContinuation">Start next pipeline process automatically</label>               
                 </div>
-{% if current_user.is_admin %}
+{% if processgroups %}
                 <hr>
 
                 <select class="custom-select" style="width:150px;" id="processgroupSelect">
