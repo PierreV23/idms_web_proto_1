@@ -398,6 +398,14 @@ ul {
   background-color: rgb(141, 141, 141);
 }
 
+.vertical-center {
+  margin: 0;
+  position: absolute;
+  top: 50%;
+  -ms-transform: translateY(-50%);
+  transform: translateY(-50%);
+}
+
 .c1 { filter: hue-rotate(0deg)   }
 .c2 { filter: hue-rotate(30deg)  }
 .c3 { filter: hue-rotate(60deg)  }
