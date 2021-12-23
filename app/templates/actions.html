@@ -146,8 +146,8 @@ $('.nav-pills').on('shown.bs.tab', function(event){
 
 </script>
 
-<div class="card border-primary md-2 graph-height">
-    <div class="card-header">
+
+    <div class="card-header myheader">
       <ul class="nav nav-pills">
         <li class="nav-item mx-2">
           <button class="btn btn-outline-primary active" id="tasks-tab" 
@@ -185,7 +185,7 @@ $('.nav-pills').on('shown.bs.tab', function(event){
         {% endif %}
       </ul>
     </div>
-    <div class="card card-body tab-content">
+    <div class="card-body tab-content scrollbar-y h-100">
         <div class="tab-pane active" id="tasks" role="tabpanel" aria-labelledby="tasks-tab">
           <a class="btn btn-outline-secondary" data-toggle="modal" data-target="#upload" href="#upload" role="button">
             Upload
@@ -354,7 +354,7 @@ $('.nav-pills').on('shown.bs.tab', function(event){
                         value="true" id="disableContinuation" {% if start_next_process == "true" %}checked{% endif %}>
                         <label class="custom-control-label" for="disableContinuation">Start next pipeline process automatically</label>               
                 </div>
-{% if current_user.is_admin %}
+{% if processgroups %}
                 <hr>
 
                 <select class="custom-select" style="width:150px;" id="processgroupSelect">

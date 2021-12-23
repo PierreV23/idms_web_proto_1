@@ -5,7 +5,11 @@
 {% endblock %}
 
 {% block heading %}
-Job queue overview
+<h3>Job queue overview</h3>
+{% endblock %}
+
+{%block menuname %}
+menuname='joblist'
 {% endblock %}
 
 {% block content %}
@@ -16,124 +20,32 @@ $(document).ready(function(){
 });
 </script>
 
-
-<div class="dropdown" style="display:inline">
-<button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
- {{ items }} 
-  </button>
- <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
- <a class="dropdown-item" href="/jobs?items=incoming">Incoming</a>
- <a class="dropdown-item" href="/jobs?items=prepare">Prepare</a>
- <a class="dropdown-item" href="/jobs?items=queued">Queued</a>
- <a class="dropdown-item" href="/jobs?items=active">Active</a>
- <a class="dropdown-item" href="/jobs?items=postprocessing">Post-processing</a>
- <a class="dropdown-item" href="/jobs?items=done">Done</a>
- <a class="dropdown-item" href="/jobs?items=waiting">Waiting</a>
- <a class="dropdown-item" href="/jobs?items=error">Error</a>
- <a class="dropdown-item" href="/jobs?items=all">All</a>
- </div>
-</div>
-
-<a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse_runsheetform" role="button" aria-expanded="false" aria-controls="collapsecollapse_runsheetform">
-  New runsheet
-</a>
-<div class="collapse" id="collapse_runsheetform">
-<div class="card card-body" >
-<form action="submit_runsheet" method="post">
-<input type="hidden" id="action" name="action" value="submit_runsheet">
-<div class="form-group">
-  <label for="description">Description</label>
-  <input type="text" class="form-control" name="description" id="description" placeholder="Description" value="">
-</div>
-<div class="form-group">
-  <label for="projectID">projectID</label>
-  <input type="text" class="form-control" name="projectID" id="projectID" placeholder="ngslab" value="">
-</div>
-<div class="form-group">
-  <label for="processID">processID</label>
-  <input type="text" class="form-control" name="processID" id="processID" placeholder="nextseq_20" value="">
-</div>
-<div class="form-group">
-  <label for="input_collection">Input collection</label>
-  <input type="text" class="form-control" name="input_collection" id="input_collection" placeholder="/{{ current_user.irods_zone }}/projects/" value="">
-</div>
-<div class="form-group">
-  <label for="output_prefix">Output prefix</label>
-  <input type="text" class="form-control" name="output_prefix" id="output_prefix" placeholder="/{{ current_user.irods_zone }}/projects" value="">
-</div>
-<div class="form-group">
-  <label for="service_account">Service account</label>
-  <input type="text" class="form-control" name="service_account" id="service_account" placeholder="" value="">
-</div>
-<div class="form-group">
-  <label for="next_projectID">Next projectID</label>
-  <input type="text" class="form-control" name="next_projectID" id="next_projectID" placeholder="ngslab" value="">
-</div>
-<div class="form-group">
-  <label for="next_processID">Next processID</label>
-  <input type="text" class="form-control" name="next_processID" id="next_processID" placeholder="nextseq_20" value="">
-</div>
-<div class="form-group">
-  <label for="repo">Repository</label>
-  <input type="text" class="form-control" name="repo" id="repo" placeholder="https://" value="">
-</div>
-<div class="form-group">
-  <label for="tag">Git tag</label>
-  <input type="text" class="form-control" name="tag" id="tag" placeholder="v1.0" value="">
-</div>
-
-<div class="form-check">
-  <input class="form-check-input" type="checkbox" 
-      name="omit_staging" 
-      value="true" 
-      id="omit_staging">
-  <label class="form-check-label" for="omit_staging">
-    Omits staging of data.
-  </label>
-  </div>  
-
-<div class="form-check">
-<input class="form-check-input" type="checkbox" 
-    name="modify_in_place" 
-    value="true" 
-    id="modify_in_place">
-<label class="form-check-label" for="modify_in_place">
-  Modifes input collection, no output
-</label>
-</div>  
-
-<div class="form-check">
-<input class="form-check-input" type="checkbox" 
-    name="restartable" 
-    value="true" 
-    id="restartable">
-<label class="form-check-label" for="restartable">
-  Restarts on error
-</label>
-</div>  
-
-<div class="form-check">
-<input class="form-check-input" type="checkbox" 
-    name="distribution" 
-    value="true" 
-    id="distribution">
-<label class="form-check-label" for="distribution">
-  Distribution pipeline
-</label>
-</div>  
-
-
-<div class="form-group">  
-<button type="submit" class="btn btn-primary">Submit</button>
-</div>
-</form>
-
-
-</div>
-</div>
-
 <!-- RUNSHEET JOB TABLE STARTS HERE -->
-<div class="card card-body scroll">
+<div class="card h-100">
+  <div class="card-header">
+    <div class="dropdown" style="display:inline">
+      <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+       {{ items }}
+      </button>
+      <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+        <a class="dropdown-item" href="/jobs?items=incoming">Incoming</a>
+        <a class="dropdown-item" href="/jobs?items=prepare">Prepare</a>
+        <a class="dropdown-item" href="/jobs?items=queued">Queued</a>
+        <a class="dropdown-item" href="/jobs?items=active">Active</a>
+        <a class="dropdown-item" href="/jobs?items=postprocessing">Post-processing</a>
+        <a class="dropdown-item" href="/jobs?items=done">Done</a>
+        <a class="dropdown-item" href="/jobs?items=waiting">Waiting</a>
+        <a class="dropdown-item" href="/jobs?items=error">Error</a>
+        <a class="dropdown-item" href="/jobs?items=all">All</a>
+      </div>
+    </div>
+    <div class="buttonbar" style="display:inline">
+      {% for button in buttons %}
+      <a class="btn {{ button['class'] }}" {{ button['ref'] | safe }} role="button"> {{ button['text'] }} </a>
+      {% endfor %}
+    </div>
+  </div>
+<div class="card-body scroll">
 <TABLE class="table table-striped table-hover table-sm">
 <thead class="thead-dark">
 <TR>
@@ -189,10 +101,7 @@ $(document).ready(function(){
 </tbody>
  </TABLE>
 </div>
- <div class="buttonbar">
-  {% for button in buttons %}
-  <a class="btn {{ button['class'] }}" {{ button['ref'] | safe }} role="button"> {{ button['text'] }} </a>
-  {% endfor %}
-</div>  
+
+</div>
 {% endblock %}
 
