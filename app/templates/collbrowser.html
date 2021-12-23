@@ -12,13 +12,13 @@ menuname='collectionbrowser'
 
 <script>
 
-var collection="{{ path }}";
-var graph_levels="{{ graph_levels }}";
-var sortkey="";
-var reverse="";
-var activetab="Files";
-var selected_object ="";
-var waiting='<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>'
+  var collection = "{{ path }}";
+  var graph_levels = "{{ graph_levels }}";
+  var sortkey = "";
+  var reverse = "";
+  var activetab = "Files";
+  var selected_object = "";
+  var waiting = '<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>'
 
   function fillModal(path, name) {
     var ModalHeader = document.getElementById("DocTitle")
@@ -66,13 +66,16 @@ var waiting='<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i><
     }, function (data) {
       $('#graphimg').html(data);
       let w = $("#graphimg").width().toString() + 'px';
-      let top = $('.center-coll').offset().top + $('#graphdiv').scrollTop() - $('#graphdiv').offset().top - $('#graphdiv').height()/2    
+      $('svg').width(w);
+      let top = $('.center-coll').offset().top + $('#graphdiv').scrollTop() - $('#graphdiv').offset().top - $('#graphdiv').height() / 2
+      $('#graphdiv').scrollTop(top)
       if (top<0) {
-        $('svg').addClass('vertical-center')
+        if ($('#graphimg').height()<$('#graphdiv').height()) {
+          $('svg').addClass('vertical-center');
+        }
       } else {
         $('#graphdiv').scrollTop(top);
       }
-      $('svg').width(w);
     });
   }
 
@@ -131,7 +134,7 @@ var waiting='<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i><
     $.get('{{ url_for('collbrowser.coll_meta') }}', {
       path: collection,
       object: selected_object
-    }, function(data) {
+    }, function (data) {
       $('#meta-card').html(data)
     })
   };
@@ -145,7 +148,7 @@ var waiting='<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i><
     set_path();
   });
 
-  $(document).on('change', '#graphlevels', function() {
+  $(document).on('change', '#graphlevels', function () {
     graph_levels = $(this).val();
     $.post('{{ url_for("userinfo.usersetting") }}', {
       attr: 'graph_levels',
@@ -161,17 +164,17 @@ var waiting='<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i><
   });
 
 
-$(document).on('click', '.sort-change', function() {
-  sortkey=$(this).data('key');
-  reverse=$(this).data('dir');
-  load_list(false);
-});
+  $(document).on('click', '.sort-change', function () {
+    sortkey = $(this).data('key');
+    reverse = $(this).data('dir');
+    load_list(false);
+  });
 
 
-window.onpopstate = function(event) {
-  collection = event.state.coll;
-  set_path();
-}
+  window.onpopstate = function (event) {
+    collection = event.state.coll;
+    set_path();
+  }
 
 </script>
 
@@ -189,154 +192,155 @@ window.onpopstate = function(event) {
     </div>
   </div>
 
-<div class="card browser-graph h100">
-  <div class="card-header myheader">
-    <div class="card-title">Data graph</div>
-    <form class="form-inline float-right">
-      <div class="form-group">
-        <label for="graphlevels">Graph Levels</label>
-        <INPUT type="number" class="form-control" min="0" max="10" name="graphlevels" id="graphlevels" value="{{ graph_levels }}">
-      </div>
-      <div class="card-tools inline float-right">
-        <button type="button" class="btn btn-tool" data-card-widget="maximize"><i class="fas fa-expand"></i></button>
-        <!-- This will cause the card to collapse when clicked -->
-        <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i></button>
-      </div>
-    </form>
+  <div class="card browser-graph h100">
+    <div class="card-header myheader">
+      <div class="card-title">Data graph</div>
+      <form class="form-inline float-right">
+        <div class="form-group">
+          <label for="graphlevels">Graph Levels</label>
+          <INPUT type="number" class="form-control" min="0" max="10" name="graphlevels" id="graphlevels"
+            value="{{ graph_levels }}">
+        </div>
+        <div class="card-tools inline float-right">
+          <button type="button" class="btn btn-tool" data-card-widget="maximize"><i class="fas fa-expand"></i></button>
+          <!-- This will cause the card to collapse when clicked -->
+          <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i></button>
+        </div>
+      </form>
+    </div>
+    <div class="card-body scroll h-100 nopadding" id="graphdiv">
+      <div id="graphimg"></div>
+    </div>
   </div>
-  <div class="card-body scroll h100 nopadding" id="graphdiv">
-    <div id="graphimg"></div>
-  </div>
-</div>
 
-<div class="card browser-contents">
-  <div class="card-header myheader">
-        Collection contents
+  <div class="card browser-contents">
+    <div class="card-header myheader">
+      Collection contents
+    </div>
+    <div class="card-body scroll" id="collapse-contents">
+      <div class="overlay">
+        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+      </div>
+    </div>
   </div>
-  <div class="card-body scroll" id="collapse-contents">
+
+  <div id="collapse-actions" class="card browser-actions h-100">
     <div class="overlay">
       <i class="fas fa-2x fa-sync-alt fa-spin"></i>
     </div>
   </div>
-</div>  
 
-<div id="collapse-actions" class="card browser-actions h-100">
-  <div class="overlay">
-    <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+  <div class="card browser-meta" id="meta-card">
+
   </div>
-</div>
-
-<div class="card browser-meta" id="meta-card">
-
-</div>
 
 </div> <!-- browsergrid-->
 
 <script>
-$('#treeview').on('click', '.list-close', function() {
-  $(this).addClass('caret-down list-open');
-  $(this).removeClass('list-close');
-  myid=$(this).attr('id')
-  $.get('{{ url_for('collbrowser.colltree') }}', {
-    active: '{{ path }}',
-    root: $(this).data('path')
-  }, function(data) {
-    $('#' + $.escapeSelector(myid)).parent().after(data);
+  $('#treeview').on('click', '.list-close', function () {
+    $(this).addClass('caret-down list-open');
+    $(this).removeClass('list-close');
+    myid = $(this).attr('id')
+    $.get('{{ url_for('collbrowser.colltree') }}', {
+      active: '{{ path }}',
+      root: $(this).data('path')
+    }, function (data) {
+      $('#' + $.escapeSelector(myid)).parent().after(data);
+    });
   });
-});
 
-$('#treeview').on('click', '.list-open', function() {
-  $(this).removeClass('caret-down list-open');
-  $(this).addClass('list-close');
-  sublistid = $(this).attr('id').substr(2);
-  $('#' + $.escapeSelector(sublistid)).html('');
-});
+  $('#treeview').on('click', '.list-open', function () {
+    $(this).removeClass('caret-down list-open');
+    $(this).addClass('list-close');
+    sublistid = $(this).attr('id').substr(2);
+    $('#' + $.escapeSelector(sublistid)).html('');
+  });
 </script>
 
 <!-- Document viewer modal dialog -->
-<div class="modal modal-tall" id="myOutput" role="dialog" >
+<div class="modal modal-tall" id="myOutput" role="dialog">
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content ">
+      <div class="modal-header">
+        <!--            <button type="button" class="close" data-dismiss="modal">&times;</button> -->
+        <h5 class="modal-title" id="DocTitle">Modal Header</h5>
+        <button type="button" class="btn btn-default btn-primary btn-sm" data-dismiss="modal">Close</button>
+      </div>
+      <div class="modal-body" id="mBody">
+        <embed src="" width="100%" height="100%" id="DocText">
+      </div>
+    </div>
+  </div>
+</div>
+
+</nav>
+
+<div id="content">
+
+  <script>
+    $('#sidebar').on('click', '.list-close', function () {
+      $(this).addClass('caret-down list-open');
+      $(this).removeClass('list-close');
+      myid = $(this).attr('id')
+      $.get('{{ url_for('collbrowser.colltree') }}', {
+        active: '{{ path }}',
+        root: $(this).data('path')
+      }, function (data) {
+        $('#' + $.escapeSelector(myid)).parent().after(data);
+      });
+    });
+
+    $('#sidebar').on('click', '.list-open', function () {
+      $(this).removeClass('caret-down list-open');
+      $(this).addClass('list-close');
+      sublistid = $(this).attr('id').substr(2);
+      $('#' + $.escapeSelector(sublistid)).html('');
+    });
+  </script>
+
+
+  <!-- Document viewer modal dialog -->
+  <div class="modal modal-tall" id="myOutput" role="dialog">
     <div class="modal-dialog modal-xl" role="document">
-        <div class="modal-content " >
-            <div class="modal-header">
-<!--            <button type="button" class="close" data-dismiss="modal">&times;</button> -->
-                <h5 class="modal-title" id="DocTitle">Modal Header</h5>
-                <button type="button" class="btn btn-default btn-primary btn-sm" data-dismiss="modal">Close</button>
+      <div class="modal-content ">
+        <div class="modal-header">
+          <!--            <button type="button" class="close" data-dismiss="modal">&times;</button> -->
+          <h5 class="modal-title" id="DocTitle">Modal Header</h5>
+          <button type="button" class="btn btn-default btn-primary btn-sm" data-dismiss="modal">Close</button>
+        </div>
+        <div class="modal-body" id="mBody">
+          <embed src="" width="100%" height="100%" id="DocText">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload modal modal dialog -->
+  <div class="modal" id="upload" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="DocTitle">Modal Header</h5>
+          <button type="button" class="btn btn-default btn-primary btn-sm" data-dismiss="modal">Close</button>
+        </div>
+        <div class="modal-body" id="mBody">
+          <form action="{{ url_for('collbrowser.upload_file')}}" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+              <input type="hidden" id="collection" name="collection" value="{{ path }}">
             </div>
-            <div class="modal-body" id="mBody">
-                <embed src="" width="100%" height="100%" id ="DocText">
+            <div class="form-group">
+              <input type="file" class="form-control" name="file" />
             </div>
+            <div class="form-group">
+              <button type="submit" class="btn btn-primary">Upload</button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
+  </div>
 
-  </nav>
-
-  <div id="content">
-
-    <script>
-      $('#sidebar').on('click', '.list-close', function () {
-        $(this).addClass('caret-down list-open');
-        $(this).removeClass('list-close');
-        myid = $(this).attr('id')
-        $.get('{{ url_for('collbrowser.colltree') }}', {
-          active: '{{ path }}',
-          root: $(this).data('path')
-        }, function (data) {
-          $('#' + $.escapeSelector(myid)).parent().after(data);
-        });
-      });
-
-      $('#sidebar').on('click', '.list-open', function () {
-        $(this).removeClass('caret-down list-open');
-        $(this).addClass('list-close');
-        sublistid = $(this).attr('id').substr(2);
-        $('#' + $.escapeSelector(sublistid)).html('');
-      });
-    </script>
+</div> <!-- content -->
 
 
-    <!-- Document viewer modal dialog -->
-    <div class="modal modal-tall" id="myOutput" role="dialog">
-      <div class="modal-dialog modal-xl" role="document">
-        <div class="modal-content ">
-          <div class="modal-header">
-            <!--            <button type="button" class="close" data-dismiss="modal">&times;</button> -->
-            <h5 class="modal-title" id="DocTitle">Modal Header</h5>
-            <button type="button" class="btn btn-default btn-primary btn-sm" data-dismiss="modal">Close</button>
-          </div>
-          <div class="modal-body" id="mBody">
-            <embed src="" width="100%" height="100%" id="DocText">
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Upload modal modal dialog -->
-    <div class="modal" id="upload" role="dialog">
-      <div class="modal-dialog" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="DocTitle">Modal Header</h5>
-            <button type="button" class="btn btn-default btn-primary btn-sm" data-dismiss="modal">Close</button>
-          </div>
-          <div class="modal-body" id="mBody">
-            <form action="{{ url_for('collbrowser.upload_file')}}" method="POST" enctype="multipart/form-data">
-              <div class="form-group">
-                <input type="hidden" id="collection" name="collection" value="{{ path }}">
-              </div>
-              <div class="form-group">
-                <input type="file" class="form-control" name="file" />
-              </div>
-              <div class="form-group">
-                <button type="submit" class="btn btn-primary">Upload</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div> <!-- content -->
-
-
-  {% endblock %}
+{% endblock %}
