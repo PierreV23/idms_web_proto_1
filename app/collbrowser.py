@@ -20,7 +20,7 @@ from graphviz import Digraph
 from irods.meta import iRODSMeta
 from . import projects
 from . import iqry
-from .flaskcache import cache, makekey, makename
+from .flaskcache import cache, key_zone, key_userzone, dep_zone
 import json
 
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
@@ -81,7 +81,7 @@ def _getmetatree(irods_coll, attr, base, default=None):
 
 @bp.route('_meta')
 @login_required
-@cache.cached(timeout=60, key_prefix=makekey)
+@cache.cached(timeout=60, key_prefix=key_zone)
 def coll_meta():
     path = request.args.get('path','/', type=str)
     object = request.args.get('object', '', type=str)
@@ -168,7 +168,7 @@ def setoverride():
 
 @bp.route('_actions')
 @login_required
-@cache.cached(timeout=60, key_prefix=makekey)
+@cache.cached(timeout=60, key_prefix=key_userzone)
 def coll_actions():
     path = request.args.get('path','/', type=str)
     coll_name = path.split('/')[-1]
@@ -238,7 +238,7 @@ def startprocess():
 
 @bp.route('_collist')
 @login_required
-@cache.cached(timeout=60, key_prefix=makekey)
+@cache.cached(timeout=60, key_prefix=key_zone)
 def collist():
     path = request.args.get('path','/', type=str)
     sortkey = request.args.get('sortkey', None, type=str)
@@ -348,7 +348,7 @@ class Dictlist(dict):
 
 @bp.route('/_graph')
 @login_required
-@cache.cached(timeout=60, key_prefix=makekey)
+@cache.cached(timeout=60, key_prefix=key_zone)
 def generate_graph():
     coll = request.args.get('path', '/', type=str)
     maxlevels = request.args.get('levels', DEFAULT_GRAPH_LEVELS, type=int)
@@ -450,10 +450,10 @@ def generate_graph():
     return graph.pipe(format='svg').decode('utf-8')
 
 @login_required
-@cache.memoize(timeout=60, make_name=makename)
+@cache.memoize(timeout=60, make_name=dep_zone)
 def add_items(path, level, active):
     
-    @cache.memoize(timeout=300, make_name=makename)
+    @cache.memoize(timeout=300, make_name=dep_zone)
     def subitems(path):
         count = 0
         query = irods_session.query(Collection.id).filter(
@@ -497,7 +497,7 @@ def add_items(path, level, active):
 
 @bp.route('/_tree')
 @login_required
-@cache.cached(timeout=60, key_prefix=makekey)
+@cache.cached(timeout=60, key_prefix=key_zone)
 def colltree():
     active = request.args.get('active', '', type=str)
     current = request.args.get('root', '/', type=str)
