@@ -18,6 +18,7 @@ from app.datafield import AVU2data, datafield
 from app.irods_helper import getmetaitem
 from graphviz import Digraph
 from irods.meta import iRODSMeta
+from urllib.parse import urlparse
 from . import projects
 from . import iqry
 from .flaskcache import cache, makekey, makename
@@ -386,10 +387,13 @@ def generate_graph():
         git = collmeta.get('sys::pipeline::gitrepo')
         githash = collmeta.get('sys::pipeline::githash')
         if git:
+            repo_url = urlparse(git)
+            # Strip credentials from repo url and add commit hash.
+            repo_url = repo_url._replace(netloc=repo_url.hostname)
+            link = repo_url._replace(path='{}/tree/{}'.format(repo_url.path.replace('.git', ''), githash))
             processid = f"{collmeta.get('sys::runsheet::processID', '')}\n{git.split('/')[-1]}"
             git_node = 'G-' + coll
-            git_url = '{url}/tree/{hash}'.format(url=git[:-4] if git.endswith('.git') else git, hash=githash)
-            graph.node(git_node, processid, shape=PROCESS_SHAPE, URL=git_url, fontsize='8')
+            graph.node(git_node, processid, shape=PROCESS_SHAPE, URL=link.geturl(), fontsize='8')
             graph.edge(git_node, coll)
             left_edge = git_node
 
