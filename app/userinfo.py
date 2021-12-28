@@ -13,6 +13,15 @@ import subprocess
 
 bp = Blueprint('userinfo', __name__, url_prefix='/userinfo')
 
+@bp.route('/api/setting', methods=['GET', 'POST'])
+def usersetting():
+    if request.method == 'POST':
+        formdata = request.form.to_dict()
+        attr = formdata.get('attr')
+        value = formdata.get('value')
+        current_user.settings[attr] = value
+    return { 'result': 'OK'}, 200
+
 def userinfo(user):
     userinfo = current_user.irods_session.users.get(user)
     input_meta = { x.name: x.value for x in userinfo.metadata.items()}

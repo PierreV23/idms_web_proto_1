@@ -1,4 +1,4 @@
-<table id='searchResultTable' 
+<table id="{{ data.id }}" 
        data-toggle='table'
        data-striped="true"
        data-pagination="true"
@@ -13,7 +13,7 @@
 
 <script>
 $(function() {
-    $('#searchResultTable').bootstrapTable({
+    $('#{{ data.id }}').bootstrapTable({
       columns: {{ data.columnsJSON|safe }},  // here is where we use the column content from our Django View
       data: {{ data.dataJSON|safe }} // we escape the content with the safe tag so the raw JSON isn't shown.
     });

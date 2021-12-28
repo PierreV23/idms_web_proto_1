@@ -5,6 +5,24 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 SQLALCHEMY_DATABASE_URI = 'sqlite:///{}/ngsruns.db'.format(basedir)
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+# Configure redis cache
+
+try:
+    import redis
+    redis_test = Redis.redis()
+    redis.set('test', 'value')
+    CACHE_TYPE = "RedisCache"
+    print('Use REDIS cache')
+except:
+    CACHE_TYPE = "SimpleCache"
+    print('Use Simple cache')
+
+ENV = 'test'
+
+CACHE_DEFAULT_TIMEOUT = 300
+CACHE_THRESHOLD = 10000
+CACHE_KEY_PREFIX = "ngsweb"
+
 LABSURV_DB_CRED = {
     'Acceptatie': { 
         'host': r'rivm-sqldb-w04p.rivm.ssc-campus.nl\rivm01_acc',

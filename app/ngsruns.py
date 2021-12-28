@@ -103,7 +103,6 @@ def rest_call(request_type, endpoint, data={}):
 
 @bp.route('complete/<field>', methods=['GET'])
 def get_complete(field):
-    print(request)
     req = request.args.to_dict().get('q', '')
     data1 = db.session.query(FIELDS[field]).filter(FIELDS[field].like('%{}%'.format(req))).distinct().all()
     return jsonify(data1)
@@ -144,8 +143,6 @@ def edit_form():
     data = { barcode : None for barcode in barcodes }
     for f in barcode_obj:
         data[f.barcode] = f
-    print(run)
-    print(run.flowcell)
     data.update({"flowcell": run.flowcell})
     data.update({"name": run.name})
     data.update({"description": run.description})

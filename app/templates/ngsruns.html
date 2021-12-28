@@ -4,10 +4,14 @@
 <H3><b>NGS Run overview</b></H3>
 {% endblock %}
 
+{%block menuname %}
+menuname='runlist'
+{% endblock %}
+
 {% block content %}
 
-<div class="row">
-   <div class="scroll card border-primary col-md-4">
+<div class="row h-100">
+   <div class="h-100 card border-primary col-md-4 scroll">
       <div class="card-header">
          <H2>List of all runs</H2>
          <div class="float-right">
@@ -19,7 +23,7 @@
             sdata-toggle="table"
             data-striped="true" 
             data-pagination="true"
-            data-page-size="15"
+            data-page-size="25"
             data-filter-control="true"
             xdata-height="500"
             data-show-columns-toggle-all="false" 

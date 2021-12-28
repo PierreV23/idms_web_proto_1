@@ -1,0 +1,52 @@
+{% extends 'jobdetailmenu.html' %}
+
+{% block heading %}
+<H3>Job logs for {{ jobnaam.htmlstring | safe }}</H3>
+{% endblock %}
+
+{%block menuname %}
+menuname='joblogs'
+{% endblock %}
+
+{% block content %}
+<script>
+
+    $SCRIPT_ROOT = {{ request.script_root | tojson | safe }};
+
+    $(function () {
+        $('li.logcard').bind('click', function (e) {
+            $('li.logcard').removeClass('active')
+            $(this).addClass('active')
+            $('pre#logcontainer').html('<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>')
+            $('div#logname').html($(this).html())
+            $.get($SCRIPT_ROOT + '/jobs/_joblog', {
+                path: $(this).data('logpath')
+            }, function (data) {
+                $('pre#logcontainer').text(data);
+            })
+        })
+    })
+
+</script>
+<div class="selectgrid h100">
+    <div class="card h100">
+        <div class="card-body h100 autoscroll nopadding">
+            <ul class="list-group">
+            {% for logfile in logs %}
+            {% set label = logfile | replace('.','_') | replace('/', '_') %}
+            <li class="logcard file-link list-group-item" data-logpath="{{ logs[logfile] }}" data-loglabel="{{ label }}">
+                {{ logfile }}
+            </li>
+            {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="card h100">
+                <pre class="card-body h100 autoscroll" id="logcontainer"><center>.. select a log file ..</center></pre>
+    </div>
+</div>
+
+
+
+{% endblock %}
