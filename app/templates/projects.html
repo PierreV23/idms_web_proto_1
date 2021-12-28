@@ -1,20 +1,26 @@
 {% extends 'base2.html' %}
   
 {% block heading %}
+<h3>Projects overview</h3>
+{% endblock %}
+
+{%block menuname %}
+menuname='projects'
 {% endblock %}
 
 {% block content %}
 
 <div class="card border-primary mb-3">
-    <div class="card-header">
+    <!-- <div class="card-header">
         Projects overview
-    </div>
+    </div> -->
     <div class="card-body">
         <TABLE class="table table-striped table-hover table-sm">
             <thead>
                 <TR>
                     <TH scope="col">Project ID</TH>
                     <TH scope="col">Project Description</TH>
+                    <TH scope="col">Primary Contact</TH>
                 </TR>
             </thead>
             <tbody>
@@ -27,6 +33,17 @@
                     </td>
                     <td>
                     {{ projects[project]['description'] }}
+                    </td>
+                    <td>
+                        {% for contact in projects[project]['contacts'] %}   
+                        {% if contact.primary == 1 %}
+                            <span class="badge badge-primary">
+                        {% else %}
+                           <span class="badge badge-secondary">
+                        {% endif %}
+                               {{ contact['email']|safe}}</span>&nbsp;
+
+                        {% endfor %}
                     </td>
                 </tr>
                 {% endfor %}

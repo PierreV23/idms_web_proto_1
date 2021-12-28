@@ -1,0 +1,126 @@
+<script>
+
+selected_process = null
+mode = 'display'
+
+function waiting() {
+  $('#pg_graph').html("<div><img src={{ url_for('static', filename='img/loading.gif') }}></img></div>")
+}
+
+function load_pggraph() {
+  $.get('{{ url_for('projects.pg_graph') }}', {
+    project: project,
+    group: $('#groupselect option:selected').text(),
+    selected_process: selected_process,
+    mode: mode
+  }, function(data) {
+     $('#pg_graph').html(data)
+     let w=$("#pg_graph").width().toString() + 'px';
+     $('svg').width(w);
+  });
+
+};
+
+function load_pgdetails() {
+    $.get('{{ url_for('projects.pg_details') }}', {
+    project: project,
+    group: $('#groupselect option:selected').text(),
+    selected_process: selected_process,
+    mode: mode
+  }, function(data) {
+     $('#pg_details').html(data)
+  });
+};
+
+function load_pgpage() {
+    waiting()
+    load_pggraph();
+    load_pgdetails();
+};
+
+
+$(document).on('click', '.node', function(event){
+    event.stopPropagation();
+    object = this.id.split(',')
+    oldmode = mode
+    mode = 'display'
+    if (oldmode == 'display') {
+        if (object[0] == 'n') {
+            selected_process = object[2];
+            load_pgpage();
+        }
+    } else if (oldmode == 'select_input') {
+            $.get('{{ url_for("projects.pgaction") }}', {
+                project: "{{ project }}",
+                group: $('#groupselect option:selected').text(),
+                action: 'set_input',
+                process: selected_process,
+                input: object[1]
+            }, function(data) {
+                load_pgpage();
+            });       
+    } else if (oldmode == 'add_dependency') {
+        if (object[0] == 'n') {
+            $.get('{{ url_for("projects.pgaction") }}', {
+                project: "{{ project }}",
+                group: $('#groupselect option:selected').text(),
+                action: 'add_dependency',
+                process: selected_process,
+                depend: object[1]
+            }, function(data) {
+                load_pgpage()
+            });
+        }
+    } else {
+        load_pgpage();
+    }
+})
+
+$(document).on('click', '.select-process', function() {
+  selected_process=$(this).data('process');
+  load_pgpage();
+});
+
+$(window).on('load', function() {
+    load_page();
+});
+
+</script>
+
+
+<div class="d-flex flex-column">
+  <div class="d-flex flex-row align-items-top justify-content-between">
+    <div class="form-group row flex-fill">
+      <label class="col-sm-4" for="groupselect">Process group</label>
+      <SELECT class="form-control col-sm-8" id="groupselect">
+        {% for pg in processgroups %}
+        <OPTION {% if processgroup == pg %}SELECTED{% endif %}>{{ pg }}</OPTION>
+        {% endfor %}
+      </SELECT>
+    </div>
+<div class="flex-fill"></div>
+    <form class="p-2 flex-fill" action="{{ url_for('projects.update_projectsettings') }}" method="POST">
+      <div class="form-group row">
+        <label class="col-sm-4" for="groupselect">New process group</label>
+        <INPUT TYPE="text" class="form-control col-sm-4" id="new_groupname" name="name">
+      
+      <input type="hidden" name="project" value="{{ project }}">
+      <input type="hidden" name="action" value="add_processgroup">
+      <BUTTON class="btn btn-primary col-sm-2" type="SUBMIT" id="add_group_button">ADD</BUTTON>
+        </div>
+    </form>
+  </div>
+  <hr>
+  <div class="h30">
+      <CENTER id="pg_graph">Loading process group graph ...</CENTER>
+  </div>
+  <hr>
+  <div id="pg_details">
+      <CENTER >Loading process group details ...</CENTER>
+  </div>
+</div>
+<script>
+$('#groupselect').on('change', function() {
+    load_pgpage();
+})
+</script>

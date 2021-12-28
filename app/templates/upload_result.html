@@ -9,16 +9,16 @@
 
 <div class="container">
     <div class="card border-primary">
-        <div class="card card-header text-white bg-secondary">
+        <div class="card-header text-white bg-secondary">
             <h2>Upload result</h2>
         </div>
-        <div class="card card-body">
+        <div class="card-body">
 {% if upload_result == True %}
 <h3>Your dataset was successfully uploaded<p>
 </h3>
 
 {% else %}
-An error occurred while uploading your dataset
+An error occurred while uploading your dataset: {{ upload_result['error'] }}
 {% endif %}
         <hr>
         <a href="{{ url_for('upload.upload_page') }}"><button class="button btn-primary">Upload more data</button></a>

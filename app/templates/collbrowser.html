@@ -1,278 +1,346 @@
 {% extends 'base2.html' %}
- 
+
 {% block heading %}
-<H3><b>Collection browser:</b> <span id="path_title">{{ path_title | safe }}</span></H3>
+<H3><b>Collection:</b> <span id="path_title"></span></H3>
+{% endblock %}
+
+{%block menuname %}
+menuname='collectionbrowser'
 {% endblock %}
 
 {% block content %}
 
 <script>
 
-var collection="{{ path }}";
-var sortkey="";
-var reverse="";
-var activetab="Files";
-var selected_object ="";
+  var collection = "{{ path }}";
+  var graph_levels = "{{ graph_levels }}";
+  var sortkey = "";
+  var reverse = "";
+  var activetab = "Files";
+  var selected_object = "";
+  var waiting = '<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>'
 
-function fillModal(path, name) {
+  function fillModal(path, name) {
     var ModalHeader = document.getElementById("DocTitle")
-    ModalHeader.innerHTML = name 
-    var modalEmbed =  document.getElementById("DocText")
+    ModalHeader.innerHTML = name
+    var modalEmbed = document.getElementById("DocText")
     newEmbed = modalEmbed.cloneNode(true)
     source = "{{ url_for('docviewer.serve_object') }}?path=" + path
     newEmbed.setAttribute('src', source)
     modalEmbed.parentNode.replaceChild(newEmbed, modalEmbed)
-}
+  }
 
-function avu_table() {
+  function avu_table() {
     if ($("#metatoggle").text() == 'Formatted') {
-        d1 = 'table-cell';
-        d2 = 'none'
-        text = 'Unformatted'
+      d1 = 'table-cell';
+      d2 = 'none'
+      text = 'Unformatted'
     } else {
-        d2 = 'table-cell';
-        d1 = 'none'    
-        text = 'Formatted'
+      d2 = 'table-cell';
+      d1 = 'none'
+      text = 'Formatted'
     }
     $('.rawvalues').css('display', d1);
     $('.formatvalues').css('display', d2);
     $('#metatoggle').html(text)
-}
+  }
 
-function build_title() {
-  path_elem = collection.split('/')
-  var i;
-  title = ''
-  path = ''
-  for (i = 1; i < path_elem.length; i++) {
-    path += '/' + path_elem[i];
-    title += '/' + '<span class="path-change" data-path="' + 
-            path + '">' + path_elem[i] + '</span>' 
-  } 
-  $("#path_title").html(title)
-}
+  function build_title() {
+    path_elem = collection.split('/')
+    var i;
+    title = ''
+    path = ''
+    for (i = 1; i < path_elem.length; i++) {
+      path += '/' + path_elem[i];
+      title += '/' + '<span class="path-change" data-path="' +
+        path + '">' + path_elem[i] + '</span>'
+    }
+    $("#path_title").html(title)
+  }
 
-function load_graph() {
-  $.get('{{ url_for('collbrowser.generate_graph') }}', {
-    path: collection
-  }, function(data) {
-     $('#data_map').html(data.map)
-     $('#graphimg').attr('src', 'data:image/png;base64,' + data.graph)
+  function load_graph() {
+    $('#graphimg').html(waiting);
+    $.get('{{ url_for('collbrowser.generate_graph') }}', {
+      path: collection,
+      levels: graph_levels
+    }, function (data) {
+      $('#graphimg').html(data);
+      let w = $("#graphimg").width().toString() + 'px';
+      $('svg').width(w);
+      let top = $('.center-coll').offset().top + $('#graphdiv').scrollTop() - $('#graphdiv').offset().top - $('#graphdiv').height() / 2
+      $('#graphdiv').scrollTop(top)
+      if (top<0) {
+        if ($('#graphimg').height()<$('#graphdiv').height()) {
+          $('svg').addClass('vertical-center');
+        }
+      } else {
+        $('#graphdiv').scrollTop(top);
+      }
+    });
+  }
+
+  function load_list(new_path) {
+    $('#collapse-contents').html(waiting)
+    $.get('{{ url_for('collbrowser.collist') }}', {
+      path: collection,
+      sortkey: sortkey,
+      reverse: reverse,
+      new_path: new_path,
+      btn_download: true
+    }, function (data) {
+      $('#collapse-contents').html(data)
+    });
+  }
+
+
+  function load_tree() {
+    $.get('{{ url_for('collbrowser.colltree') }}', {
+      active: collection
+    }, function (data) {
+      $('#treeview').html(data)
+    });
+  }
+
+  function tree_active() {
+    $('.path-active').removeClass('path-active');
+    $(".tree-label[data-path='" + collection + "']").addClass('path-active');
+  }
+
+  function load_actions() {
+    //path_elem = collection.split('/')
+    //current_col_name = path_elem[-1]
+
+    $.get('{{ url_for('collbrowser.coll_actions') }}', {
+      path: collection
+    }, function (data) {
+      $('#collapse-actions').html(data)
+      $('#collection').val(collection)
+      $('.nav-pills button[href="' + activetab + '"]').tab('show')
+      //$('.nav-tabs a:last').tab('show')
+    });
+  }
+
+  function set_path() {
+    load_list(true);
+    load_graph();
+    load_meta();
+    build_title();
+    tree_active();
+    load_actions();
+  }
+
+  function load_meta() {
+    $('#meta-card').html(waiting)
+    $.get('{{ url_for('collbrowser.coll_meta') }}', {
+      path: collection,
+      object: selected_object
+    }, function (data) {
+      $('#meta-card').html(data)
+    })
+  };
+
+  $(document).on('click', '.path-change', function () {
+    history.pushState({ "coll": collection }, 'Browse ' + collection, '/collbrowser?path=' + collection);
+    collection = $(this).data('path');
+    if (typeof collection == 'undefined') {
+      collection = $(this).attr('id')
+    }
+    set_path();
   });
-}
 
-function load_meta() {
-  $.get('{{ url_for('collbrowser.coll_meta') }}', {
-    path: collection,
-    object: selected_object
-  }, function(data) {
-    $('#meta-card').html(data)
+  $(document).on('change', '#graphlevels', function () {
+    graph_levels = $(this).val();
+    $.post('{{ url_for("userinfo.usersetting") }}', {
+      attr: 'graph_levels',
+      value: graph_levels
+    })
+    load_graph()
+    console.log('change', graph_levels);
+  })
+
+  $(window).on('load', function () {
+    set_path();
+    load_tree();
   });
-}
 
 
-function load_list(new_path) {
-  $.get('{{ url_for('collbrowser.collist') }}', {
-    path: collection,
-    sortkey: sortkey,
-    reverse: reverse,
-    new_path: new_path,
-    btn_download: true
-  }, function(data) {
-    $('#collapse-contents').html(data)
+  $(document).on('click', '.sort-change', function () {
+    sortkey = $(this).data('key');
+    reverse = $(this).data('dir');
+    load_list(false);
   });
-}
 
 
-function load_tree() {
-  $.get('{{ url_for('collbrowser.colltree') }}', {
-    active: collection
-  }, function(data) {
-     $('#treeview').html(data)
-  });
-}
-
-function tree_active() {
-  $('.path-active').removeClass('path-active');
-  $(".tree-label[data-path='" + collection +"']").addClass('path-active');
-}
-
-function load_actions() {
-  //path_elem = collection.split('/')
-  //current_col_name = path_elem[-1]
-
-  $.get('{{ url_for('collbrowser.coll_actions') }}', {
-    path: collection
-  }, function(data) {
-    $('#collapse-actions').html(data)
-    $('#collection').val(collection)
-    $('.nav-pills button[href="' + activetab + '"]').tab('show')
-    //$('.nav-tabs a:last').tab('show')
-  });
-}
-
-function set_path() {
-  load_list(true);
-  load_graph();
-  load_meta();
-  build_title();
-  tree_active();
-  load_actions();
-}
-
-$(document).on('click', '.sort-change', function() {
-  console.log('change')
-  sortkey=$(this).data('key');
-  reverse=$(this).data('dir');
-  load_list(false);
-});
-
-$(document).on('click', '.path-change', function() {
-  history.pushState({"coll": collection}, 'Browse ' + collection, '/collbrowser?path=' + collection);
-  collection=$(this).data('path');
-  set_path();
-});
-
-$(window).on('load', function() {
-  set_path();
-  load_tree();
-});
-
-window.onpopstate = function(event) {
-  collection = event.state.coll;
-  set_path();
-}
+  window.onpopstate = function (event) {
+    collection = event.state.coll;
+    set_path();
+  }
 
 </script>
 
-<div class="wrapper">
-<nav id="sidebar">
-<div class="card border-primary mb-3 h100">
-<div class="card-header sidebar-header list-pointer">
-<b>Collection tree</b>
-</div>
-<div class="card card-body scroll small-font">
-<div id="treeview">
-</div>
-</div>
+<div id="data_map"></div>
+
+<div class="browsergrid h100">
+
+  <div class="card border-primary browser-sidebar">
+    <div class="card-header">
+      <div class="card-title"><b>Collection tree</b></div>
+    </div>
+    <div class="card-body scroll small-font h-100">
+      <div id="treeview">
+      </div>
+    </div>
+  </div>
+
+  <div class="card browser-graph h100">
+    <div class="card-header myheader">
+      <div class="card-title">Data graph</div>
+      <form class="form-inline float-right">
+        <div class="form-group">
+          <label for="graphlevels">Graph Levels</label>
+          <INPUT type="number" class="form-control" min="0" max="10" name="graphlevels" id="graphlevels"
+            value="{{ graph_levels }}">
+        </div>
+        <div class="card-tools inline float-right">
+          <button type="button" class="btn btn-tool" data-card-widget="maximize"><i class="fas fa-expand"></i></button>
+          <!-- This will cause the card to collapse when clicked -->
+          <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i></button>
+        </div>
+      </form>
+    </div>
+    <div class="card-body scroll h-100 nopadding" id="graphdiv">
+      <div id="graphimg"></div>
+    </div>
+  </div>
+
+  <div class="card browser-contents">
+    <div class="card-header myheader">
+      Collection contents
+    </div>
+    <div class="card-body scroll" id="collapse-contents">
+      <div class="overlay">
+        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+      </div>
+    </div>
+  </div>
+
+  <div id="collapse-actions" class="card browser-actions h-100">
+    <div class="overlay">
+      <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+    </div>
+  </div>
+
+  <div class="card browser-meta" id="meta-card">
+
+  </div>
+
+</div> <!-- browsergrid-->
+
+<script>
+  $('#treeview').on('click', '.list-close', function () {
+    $(this).addClass('caret-down list-open');
+    $(this).removeClass('list-close');
+    myid = $(this).attr('id')
+    $.get('{{ url_for('collbrowser.colltree') }}', {
+      active: '{{ path }}',
+      root: $(this).data('path')
+    }, function (data) {
+      $('#' + $.escapeSelector(myid)).parent().after(data);
+    });
+  });
+
+  $('#treeview').on('click', '.list-open', function () {
+    $(this).removeClass('caret-down list-open');
+    $(this).addClass('list-close');
+    sublistid = $(this).attr('id').substr(2);
+    $('#' + $.escapeSelector(sublistid)).html('');
+  });
+</script>
+
+<!-- Document viewer modal dialog -->
+<div class="modal modal-tall" id="myOutput" role="dialog">
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content ">
+      <div class="modal-header">
+        <!--            <button type="button" class="close" data-dismiss="modal">&times;</button> -->
+        <h5 class="modal-title" id="DocTitle">Modal Header</h5>
+        <button type="button" class="btn btn-default btn-primary btn-sm" data-dismiss="modal">Close</button>
+      </div>
+      <div class="modal-body" id="mBody">
+        <embed src="" width="100%" height="100%" id="DocText">
+      </div>
+    </div>
+  </div>
 </div>
 
 </nav>
 
 <div id="content">
 
-<script>
-$('#sidebar').on('click', '.list-close', function() {
-  $(this).addClass('caret-down list-open');
-  $(this).removeClass('list-close');
-  myid=$(this).attr('id')
-  $.get('{{ url_for('collbrowser.colltree') }}', {
-    active: '{{ path }}',
-    root: $(this).data('path')
-  }, function(data) {
-    $('#' + $.escapeSelector(myid)).parent().after(data);
-  });
-});
+  <script>
+    $('#sidebar').on('click', '.list-close', function () {
+      $(this).addClass('caret-down list-open');
+      $(this).removeClass('list-close');
+      myid = $(this).attr('id')
+      $.get('{{ url_for('collbrowser.colltree') }}', {
+        active: '{{ path }}',
+        root: $(this).data('path')
+      }, function (data) {
+        $('#' + $.escapeSelector(myid)).parent().after(data);
+      });
+    });
 
-$('#sidebar').on('click', '.list-open', function() {
-  $(this).removeClass('caret-down list-open');
-  $(this).addClass('list-close');
-  sublistid = $(this).attr('id').substr(2);
-  $('#' + $.escapeSelector(sublistid)).html('');
-});
-</script>
+    $('#sidebar').on('click', '.list-open', function () {
+      $(this).removeClass('caret-down list-open');
+      $(this).addClass('list-close');
+      sublistid = $(this).attr('id').substr(2);
+      $('#' + $.escapeSelector(sublistid)).html('');
+    });
+  </script>
 
-<div class="container-wide">
 
-<div class="row">
-<div class="col-md-8">
-
-  <div id="data_map"></div>
-
-<div class="card border-primary mb-3 graph-height">
-    <div class="card-header myheader">
-        Data graph
-    </div>
-    <div class="card card-body">
-       <div class="collapse show" id="collapse-graph">
-          <img src="" id="graphimg" usemap="#datagraph" />
-       </div>
-    </div>
-</div>
-
-</div>
-
-<div class="col-md-4">
-<div id="collapse-actions">
-</div>
-</div>
-
-</div> <!--row-->
-
-<div class="row">
-  <div class="col-md-8">
-    <div class="card border-primary mb-3">
-      <div class="card-header myheader">
-            Collection contents
-      </div>
-      <div class="card card-body coll-content" id="collapse-contents">
-        </div>   
-    </div>
-  </div>
-
-  <div class="col-md-4">
-    <div class="card border-primary mb-3" id="meta-card">
-
-    </div>
-  </div>
-
-</div> <!--row-->
-
-</div> <!-- container-wide-->
-
-<!-- Document viewer modal dialog -->
-<div class="modal modal-tall" id="myOutput" role="dialog" >
+  <!-- Document viewer modal dialog -->
+  <div class="modal modal-tall" id="myOutput" role="dialog">
     <div class="modal-dialog modal-xl" role="document">
-        <div class="modal-content " >
-            <div class="modal-header">
-<!--            <button type="button" class="close" data-dismiss="modal">&times;</button> -->
-                <h5 class="modal-title" id="DocTitle">Modal Header</h5>
-                <button type="button" class="btn btn-default btn-primary btn-sm" data-dismiss="modal">Close</button>
-            </div>
-            <div class="modal-body" id="mBody">
-                <embed src="" width="100%" height="100%" id ="DocText">
-            </div>
+      <div class="modal-content ">
+        <div class="modal-header">
+          <!--            <button type="button" class="close" data-dismiss="modal">&times;</button> -->
+          <h5 class="modal-title" id="DocTitle">Modal Header</h5>
+          <button type="button" class="btn btn-default btn-primary btn-sm" data-dismiss="modal">Close</button>
         </div>
+        <div class="modal-body" id="mBody">
+          <embed src="" width="100%" height="100%" id="DocText">
+        </div>
+      </div>
     </div>
-</div>
+  </div>
 
-<!-- Upload modal modal dialog -->
-<div class="modal" id="upload" role="dialog" >
+  <!-- Upload modal modal dialog -->
+  <div class="modal" id="upload" role="dialog">
     <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="DocTitle">Modal Header</h5>
-                <button type="button" class="btn btn-default btn-primary btn-sm" data-dismiss="modal">Close</button>
-            </div>
-            <div class="modal-body" id="mBody">
-                <form action = "{{ url_for('collbrowser.upload_file')}}" method = "POST" enctype = "multipart/form-data">
-                    <div class="form-group">  
-                        <input type="hidden" id="collection" name="collection" value ="{{ path }}">
-                    </div>
-                    <div class="form-group">  
-                        <input type = "file" class="form-control" name = "file" />
-                    </div>  
-                    <div class="form-group">  
-                        <button type="submit" class="btn btn-primary">Upload</button>
-                    </div>  
-                </form>
-            </div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="DocTitle">Modal Header</h5>
+          <button type="button" class="btn btn-default btn-primary btn-sm" data-dismiss="modal">Close</button>
         </div>
-    </div>            
-</div>
+        <div class="modal-body" id="mBody">
+          <form action="{{ url_for('collbrowser.upload_file')}}" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+              <input type="hidden" id="collection" name="collection" value="{{ path }}">
+            </div>
+            <div class="form-group">
+              <input type="file" class="form-control" name="file" />
+            </div>
+            <div class="form-group">
+              <button type="submit" class="btn btn-primary">Upload</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
 
 </div> <!-- content -->
 
+
 {% endblock %}
-
-

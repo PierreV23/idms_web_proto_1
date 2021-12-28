@@ -14,6 +14,7 @@ from flask_login import current_user, login_required
 from irods.models import Collection, CollectionMeta
 from irods.column import Criterion
 from app.object_factory import ObjectFactory
+from . import iqry
 
 KNOWN_ATTRIBUTES = {
     'Date': 'date',
@@ -22,6 +23,8 @@ KNOWN_ATTRIBUTES = {
     'sys::access_time': 'timestamp',
     'sys::archive::lastrun': 'timestamp',
     'sys::archive::lastcheck': 'timestamp',
+    'sys::collection_size' : 'bytes',
+    'sys::collection_size_time': 'timestamp',
     'sys::pipeline::gitrepo': 'url',
     'sys::pipeline::input_collection_id': 'collection_id',
     'sys::pipeline::last_use': 'timestamp',
@@ -30,9 +33,9 @@ KNOWN_ATTRIBUTES = {
     'user::pipeline::input_collection_id': 'collection_id',
     'sys::run::last_move_time': 'timestamp',
     'sys::run::output_collection': 'irods_collection',
-    'sys::run::start_time': 'timestamp',
-    'sys::run::finish_time': 'timestamp',
     'sys::runsheet::create_time': 'timestamp',
+    'sys::runsheet::depends_on': 'collection_id',
+    'sys::runsheet::id': 'runsheet',
     'sys::runsheet::input_collection': 'irods_collection',
     'sys::runsheet::projectID': 'projectid',
     'sys::runsheet::repo': 'url'
@@ -41,6 +44,7 @@ KNOWN_ATTRIBUTES = {
 KNOWN_ATTRIBUTE_TEMPLATES = {
     'sys::collection_size_time::.*' : 'timestamp',
     'sys::collection_size::.*' : 'bytes',
+    'sys::run::.*_time': 'timestamp',
     'sys::lock::time::.*::valid_till': 'timestamp',
     'sys::lock::time::.*::runtime': 'timedelta',
     'sys::lock::time::.*::timeout': 'timedelta'
@@ -238,10 +242,7 @@ class data_collection_id(data_base):
     def ref_col(self):
         if self._searched_for_ref_col:
             return self._ref_col
-        irods_session = current_user.irods_session
-        query = irods_session.query(Collection.name).filter( \
-                                   Criterion('=', CollectionMeta.name, 'sys::dataset_id')).filter( \
-                                   Criterion('=', CollectionMeta.value, self.value))
+        query = iqry.qcollbystaticmeta('sys::dataset_id', self.value)
         for coll in query:
             self._ref_col = coll[Collection.name]
         self._searched_for_ref_col = True
@@ -264,7 +265,7 @@ class data_runsheet(data_base):
     @property
     def htmlstring(self):
         runsheet_id = re.sub('-runsheet.yaml', '', self.value)
-        return '<a href={0}?name={1} data-toggle="tooltip" title="{1}">{2}</a>'.format(url_for('jobs.show_jobdetails'), self.value, runsheet_id)
+        return '<a href={0}?name={1} data-toggle="tooltip" title="{1}">{2}</a>'.format(url_for('jobs.jobdetails'), self.value, runsheet_id)
 
     @staticmethod
     def factory(**kwargs):
@@ -296,11 +297,25 @@ class data_projectid(data_base):
 
     @property
     def htmlstring(self):
-        return '<a href="{0}">{1}</a>'.format(url_for('projects.show_projectdetails', name=self.value), self.value)
+        return '<a href="{0}">{1}</a>'.format(url_for('projects.show_projects', project=self.value), self.value)
 
     @staticmethod
     def factory(**kwargs):
         return data_projectid(**kwargs)
+
+class data_processgroupid(data_base):
+
+    @property
+    def htmlstring(self):
+        return self.value
+
+    @property
+    def htmlshort(self):
+        return f'<div data-toggle="tooltip" title={self.value}>{self.value[:8]}</div'
+    @staticmethod
+    def factory(**kwargs):
+        return data_processgroupid(**kwargs)
+
 
 class data_url(data_base):
 

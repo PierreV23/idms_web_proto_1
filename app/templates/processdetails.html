@@ -1,0 +1,93 @@
+<div class="card sidebar-content p-2">
+<form action="{{ url_for('projects.update_process') }}" method="post">
+
+    <input type="hidden" id="action" name="action" value="update_process2">
+    <input type="hidden" id="process" name="process" value="{{ details['name'] }}">
+    <input type="hidden" id="procid" name="procid" value="{{ details['id'] }}">
+
+
+    <div class="form-group">
+      <label for="description">Description</label>
+      <input type="text" class="form-control" name="description" id="description" placeholder="Description" value="{{ details['description'] }}">
+    </div>
+    
+    <div class="form-group">
+      <label for="gitrepo_{{process}}">GIT Repository</label>
+      <input type="text" class="form-control" name="repo" id="repo_{{process}}" placeholder="GIT Repo" value="{{ details['repo'] }}">
+    </div>
+  
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" 
+            name="omit_staging" 
+            value="true" 
+            {% if details['omit_staging'] == 1 %}checked{% endif %} 
+            id="omit_staging_{{process}}">
+        <label class="form-check-label" for="omit_staging_{{process}}">
+          Omit the staging phase. No data will be copied to compute resource!
+        </label>
+      </div> 
+      
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" 
+            name="modify_in_place" 
+            value="true" 
+            {% if details['modify_in_place'] == 1 %}checked{% endif %} 
+            id="modify_in_place_{{process}}">
+        <label class="form-check-label" for="modify_in_place_{{process}}">
+          Modifies input collection, no output
+        </label>
+      </div>  
+      
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" 
+            name="restartable" 
+            value="true" 
+            {% if details['restartable'] == 1 %}checked{% endif %} 
+            id="restartable_{{process}}">
+        <label class="form-check-label" for="restartable_{{process}}">
+          Restarts on error
+        </label>
+      </div>  
+      
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" 
+            name="distribution" 
+            value="true" 
+            {% if details['distribution'] == 1 %}checked{% endif %} 
+            id="distribution_{{process}}">
+        <label class="form-check-label" for="distribution_{{process}}">
+          Distribution pipeline
+        </label>
+      </div>
+      <hr>
+      <button type="submit" class="btn btn-primary">Submit</button>
+      <!-- <button type="button" class="btn btn-primary" data-href="/remove_process2?name={{details['name']}}" data-toggle="modal" data-target="#confirm-delete">
+        Remove process
+      </button> -->
+
+</form>
+</div>
+
+<!-- PROCESS DELETE CONFIMATION DIALOG -->
+
+<div class="modal fade" id="confirm-delete" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                Remove process
+            </div>
+            <div class="modal-body">
+                Are you sure you want to remove project {{ details['name'] }}
+            </div>
+            <div class="modal-footer">
+                <form method="post" action="update_project">
+                <input type="hidden" id="action" name="action" value="remove_process">
+                <input type="hidden" id="project" name="project" value="{{ details['name'] }}">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-danger btn-ok">Delete</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+  
