@@ -1,5 +1,5 @@
 {% extends 'base2.html' %}
- 
+
 {% block heading %}
 <H3><b>NGS Run overview</b></H3>
 {% endblock %}
@@ -7,70 +7,73 @@
 {% block content %}
 
 <div class="row">
-<div class="scroll card border-primary col-md-4">
-<div class="card-header">
-   <H2>List of all runs</H2>
+   <div class="scroll card border-primary col-md-4">
+      <div class="card-header">
+         <H2>List of all runs</H2>
+         <div class="float-right">
+            <div class="buttons-toolbar"></div>
+         </div>
+      </div>
+      <div class="card-body">
+         <table id="runtable" class="table"
+            sdata-toggle="table"
+            data-striped="true" 
+            data-pagination="true"
+            data-page-size="15"
+            data-filter-control="true"
+            xdata-height="500"
+            data-show-columns-toggle-all="false" 
+            data-show-pagination-switch="true" 
+            data-show-toggle="false"
+            data-show-columns="true"
+            data-rows="20"
+            data-search="true" 
+            data-buttons-prefix="btn-sm btn"
+            data-buttons-toolbar=".buttons-toolbar">
+            <thead>
+               <tr>
+                  <th data-field="id" data-visible="false" data-align="center">Item ID</th>
+                  <th data-field="name" data-align="center" data-sortable="true" data-filter-control="input">Name</th>
+                  <th data-field="flowcell" data-align="" data-sortable="true" data-filter-control="input" >Flowcell</th>
+                  <th data-field="project" data-align="" data-sortable="true" data-filter-control="select">Project</th>
+                  <th data-field="datacoll" data-align="" data-sortable="true" data-filter-control="input">Collection</th>
+               </tr>
+            </thead>
+         </table>
+
+      </div>
+   </div>
+
+   <div class="scroll card border-primary col-md-8" id="barcodes">
+
+   </div>
 </div>
-<div class="card-body">   
-   <TABLE class="table table-striped table-hover table-sm">
-       <thead class="thead-dark">
-       <TR>
-           <!-- TH scope="col">ID</TH -->
-           <TH scope="col">Name</TH>
-           <TH scope="col">Flowcell</TH>
-           <TH scope="col">Project</TH>
-           <TH scope="col">Data Collection</TH>
-       </TR>
-       </thead>
-   {% set lflowcellsall=[] %}    
-   {% set lflowcells=[] %}
-
-   <-- MAKE A LIST OF FLOWCELLS THAT ARE USED MORE THAN ONCE -->
-   {% for run in data %}
-   {% if run.flowcell in lflowcellsall %}
-   <!-- {{ lflowcells.append( run.flowcell ) }} -->
-   {% endif %}
-   <!-- {{ lflowcellsall.append( run.flowcell ) }} -->
-   {% endfor %}
-
-   <tbody>
-      {% for run in data %}
-      
-      <tr {% if run.id == idrequest|int  %}  class="table-success" {% endif %} class="runrow" data-id="{{ run.id }}">
-         <a href="/ngsruns/list?idrequest={{ run.id }}"></a>         
-         <!-- td>{{ run.id }}</td -->
-         <td>{{ run.name }}</td>
-         {% if run.flowcell in lflowcells %}
-         <td><b>{{ run.flowcell }} !DUPLICATE!</b></td>
-         {% else %}
-         <td>{{ run.flowcell }}</td>
-         {% endif %}
-         <td>{{ run.project }}</td>
-         <td>{{ run.datacoll.htmlshort|safe }}</td>
-      </tr>
-      
-      {% endfor %}
-   </tbody>
-   </TABLE>
 
 <script>
-      $('.runrow').on('click', function() {
-        $('.runrow').removeClass('table-primary') 
-        myid=$(this).data('id')
-        $.get('{{ url_for('ngsruns.run_barcodes') }}', {
-          idrequest: myid
-        }, function(data) {
-          $('#barcodes').html(data)
-          $('tr[data-id=' + myid + ']').addClass('table-primary')
-        });
-      });
-      
+$(function () {
+   $('#runtable').bootstrapTable({
+      data: {{ data | safe }}
+   });
+});
+
+$('document').ready(function(){
+   $('#runtable').on('click-row.bs.table', function(e, row) {
+      $.get('{{ url_for('ngsruns.run_barcodes') }}', {
+         idrequest: row.id
+         }, function (data) {
+            $('#barcodes').html(data);
+            }
+         );
+   });
+   $('#runtable').on('column-search.bs.table', function(e, column, value) {
+      console.log('search:', column, value)
+   });
+   $('#runtable').on('created-controls.bs.table', function(e, a, b) {
+      console.log('created: ' + a + ' ' + b)
+   });
+})
+
+
+
 </script>
-</div>
-</div>
-
-<div class="scroll card border-primary col-md-8" id="barcodes">
-
-</div>
-</div>
 {% endblock %}

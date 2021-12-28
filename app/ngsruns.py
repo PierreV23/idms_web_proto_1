@@ -8,6 +8,7 @@ from sqlalchemy import ForeignKey, distinct
 from irods.models import Collection, CollectionMeta
 from irods.column import Criterion
 from app.datafield import datafield
+import json
 import requests
 from requests.auth import HTTPBasicAuth
 
@@ -119,15 +120,17 @@ def run_list():
     flowcell_list = { x[CollectionMeta.value] : x[Collection.name] for x in q }
     for run in data:
         if run['flowcell']:
-            run['datacoll'] = datafield('collection', flowcell_list.get(run['flowcell']), 'irods_collection')
+            run['datacoll'] = datafield('collection', str(flowcell_list.get(run['flowcell'])), 'irods_collection').htmlshort
         else:
-            run['datacoll'] = datafield('collection', None, 'irods_collection')
+            run['datacoll'] = ''
     data.sort(key = lambda x: x["id"], reverse=True)
-    return render_template('ngsruns.html', data=data, idrequest=id)
+    fields = ['id', 'name', 'flowcell', 'project', 'datacoll']
+    data2 = [{ p:str(x[p]) for p in fields } for x in data ]
+    return render_template('ngsruns.html', data=json.dumps(data2), idrequest=id)
 
 @bp.route('_barcodes', methods=['GET'])
 def run_barcodes():
-    id = request.args.get('idrequest')
+    id = request.args.get('idrequest', type=int)
     barcodes = NGSBarcode.query.filter(NGSBarcode.ngsrun == id).all()
     run = NGSRun.query.filter(NGSRun.id == id).one_or_none()
     return render_template('ngsbarcodes.html', barcodes=barcodes, run=run)
