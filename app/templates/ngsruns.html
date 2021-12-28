@@ -22,8 +22,17 @@
            <TH scope="col">Data Collection</TH>
        </TR>
        </thead>
+   {% set lflowcellsall=[] %}    
    {% set lflowcells=[] %}
-   
+
+   <-- MAKE A LIST OF FLOWCELLS THAT ARE USED MORE THAN ONCE -->
+   {% for run in data %}
+   {% if run.flowcell in lflowcellsall %}
+   <!-- {{ lflowcells.append( run.flowcell ) }} -->
+   {% endif %}
+   <!-- {{ lflowcellsall.append( run.flowcell ) }} -->
+   {% endfor %}
+
    <tbody>
       {% for run in data %}
       
@@ -38,7 +47,6 @@
          {% endif %}
          <td>{{ run.project }}</td>
          <td>{{ run.datacoll.htmlshort|safe }}</td>
-         <!--{{ lflowcells.append( run.flowcell ) }}-->
       </tr>
       
       {% endfor %}
