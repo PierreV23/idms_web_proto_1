@@ -1,7 +1,7 @@
 {% extends 'base2.html' %}
  
 {% block heading %}
-<H3><b>New NGS Run</b></H3>
+<H3><b>New NGS Run by {{ user }}</b></H3>
 {% endblock %}
 
 {% block content %}
@@ -14,6 +14,7 @@
     
 <form action="new" method="post">
     <input type="hidden" id="id" name="id" value="{{ id }}">
+    <input type="hidden" name="user" value="{{ user }}">
     <div class="form-group row">
         <label for="ngs_name" class="col-sm-1 col-form label">Name:</label>
         <input type="text" class="form-control col-sm-1 input-sm" autocomplete="off" name="name" id="ngs_name" placeholder="Run Name" value="{{ data.name }}">

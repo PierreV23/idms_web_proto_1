@@ -24,6 +24,7 @@ REQUESTS_METHODS = {
 }
 
 class NGSRun(db.Model):
+    #__bind_key__ = 'Production'
     __tablename__ = 'ngsruns'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), nullable = False)
@@ -38,6 +39,7 @@ class NGSRun(db.Model):
 
 
 class NGSBarcode(db.Model):
+    #__bind_key__ = current_user.environment
     __tablename__ = 'ngsbarcodes'
     id = db.Column(db.Integer, primary_key=True)
     ngsrun = db.Column(db.Integer, db.ForeignKey('ngsruns.id'))
@@ -161,7 +163,7 @@ def run_form():
         projects = [ p['name'] for p in pl ]
     #print(projects)
     data = { barcode : None for barcode in barcodes }
-    return render_template('ngsrun.html', data=data, projects=projects, barcodes=barcodes, id=-1)
+    return render_template('ngsrun.html', data=data, projects=projects, barcodes=barcodes, id=-1, user=current_user.username)
 
 @bp.route('delete', methods=['GET'])
 @login_required
@@ -179,6 +181,7 @@ def run_update():
     new_run = NGSRun(f.get('flowcell', ''))
     new_run.name = f.get('name', '')
     new_run.project = f.get('project', '')
+    new_run.owner = f.get('user', '')
     new_run.description = f.get('description', '')
     db.session.add(new_run)
     db.session.commit()

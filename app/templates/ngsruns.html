@@ -19,6 +19,7 @@
            <TH scope="col">Name</TH>
            <TH scope="col">Flowcell</TH>
            <TH scope="col">Project</TH>
+           <TH scope="col">User</TH>
            <TH scope="col">Data Collection</TH>
        </TR>
        </thead>
@@ -46,6 +47,7 @@
          <td>{{ run.flowcell }}</td>
          {% endif %}
          <td>{{ run.project }}</td>
+         <td>{{ run.owner }}</td>
          <td>{{ run.datacoll.htmlshort|safe }}</td>
       </tr>
       
