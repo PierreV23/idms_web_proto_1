@@ -48,7 +48,7 @@ menuname='runlist'
    </div>
 
    <div class="scroll card border-primary col-md-8 d-nonxe" id="barcodes">
-      <div class="card-header">
+      <div class="card-header d-none" id="barcode-title">
          <h2 class="alignleft">Barcodes in run <b class="runname"></b> on project <span class="projectname"></span> (<span class="flowcellname"></span><span class="rundescription"></span>)</h2>
          <button type="button" class="btn btn-danger alignright" data-toggle="modal" data-target="#confirm-delete">Delete</button>
        </div>
@@ -95,7 +95,7 @@ function resize_tables() {
 $('document').ready(function(){
    $('#runtable').on('click-row.bs.table', function(e, row) {
       selected_id = row.id
-      console.log('ROW CLICK ' + row) 
+      $('#barcode-title').removeClass('d-none')
       $('.runname').html(row.name);
       $('.projectname').html(row.project);
       $('.flowcellname').html(row.flowcell);
@@ -110,6 +110,8 @@ $('document').ready(function(){
    });
 
    $('#runtable').on('column-search.bs.table', function(e, column, value) {
+      $('#barcode-title').addClass('d-none')
+      $('#barcodepane').html('')
       if (column == 'project') {
          $.post('{{ url_for("userinfo.usersetting") }}', {
             attr: 'default_project',
