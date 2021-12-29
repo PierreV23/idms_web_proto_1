@@ -13,10 +13,8 @@ menuname='runlist'
 <div class="row h-100">
    <div class="h-100 card border-primary col-md-4 scroll">
       <div class="card-header">
-         <H2>List of all runs</H2>
-         <div class="float-right">
-            <div class="buttons-toolbar"></div>
-         </div>
+         <H2 class="inline">List of all runs</H2>
+         <div class="inline float-right buttons-toolbar"></div>
       </div>
       <div class="card-body">
          <table id="runtable" class="table"
@@ -31,12 +29,13 @@ menuname='runlist'
             data-show-toggle="false"
             data-show-columns="true"
             data-rows="20"
-            data-search="true" 
+            data-search="true"
+            data-unique-id="id"
             data-buttons-prefix="btn-sm btn"
             data-buttons-toolbar=".buttons-toolbar">
             <thead>
                <tr>
-                  <th data-field="id" data-visible="false" data-align="center">Item ID</th>
+                  <th data-field="id" data-visible="falzse" data-align="center">Item ID</th>
                   <th data-field="name" data-align="center" data-sortable="true" data-filter-control="input">Name</th>
                   <th data-field="flowcell" data-align="" data-sortable="true" data-filter-control="input" >Flowcell</th>
                   <th data-field="project" data-align="" data-sortable="true" data-filter-control="select">Project</th>
@@ -48,35 +47,82 @@ menuname='runlist'
       </div>
    </div>
 
-   <div class="scroll card border-primary col-md-8" id="barcodes">
+   <div class="scroll card border-primary col-md-8 d-nonxe" id="barcodes">
+      <div class="card-header">
+         <h2 class="alignleft">Barcodes in run <b class="runname"></b> on project <span class="projectname"></span> (<span class="flowcellname"></span><span class="rundescription"></span>)</h2>
+         <button type="button" class="btn btn-danger alignright" data-toggle="modal" data-target="#confirm-delete">Delete</button>
+       </div>
+       <div class="card-body" id="barcodepane">
 
+       </div>
    </div>
 </div>
 
+<div id="confirm-delete" class="modal fade" role="dialog">
+   <div class="modal-dialog">
+     <div class="modal-content">
+       <div class="modal-header">
+         <h5 class="modal-title">Confirm delete of </h5>
+       </div>
+       <div class="modal-body">
+         Are you sure you want to delete run <span class="runname"></span> and all associated barcodes?<p> This action cannot be undone! 
+       </div>
+       <div class="modal-footer">
+         <button type="button" class="btn btn-danger btn-sm" data-dismiss="modal" id="deletebutton">Delete</button>
+         <button type="button" class="btn btn-default btn-sm" data-dismiss="modal">Cancel</button>
+       </div>
+     </div>
+   </div>
+ </div>
+
 <script>
+
+var selected_id = {{ idrequest }};
+
 $(function () {
    $('#runtable').bootstrapTable({
       data: {{ data | safe }}
    });
+   $('.bootstrap-table-filter-control-project').val('{{ default_project }}')
+   $('#runtable').bootstrapTable('triggerSearch');
+   $('tr[data-uniqueid='+selected_id+'] > td:first-child').click()
 });
+
+function resize_tables() {
+   $('#barcodetable').attr('data-height', $('#barcodepane').height())
+}
 
 $('document').ready(function(){
    $('#runtable').on('click-row.bs.table', function(e, row) {
+      selected_id = row.id
+      console.log('ROW CLICK ' + row) 
+      $('.runname').html(row.name);
+      $('.projectname').html(row.project);
+      $('.flowcellname').html(row.flowcell);
       $.get('{{ url_for('ngsruns.run_barcodes') }}', {
          idrequest: row.id
          }, function (data) {
-            $('#barcodes').html(data);
+               $('#barcodepane').html(data);
+               $('tr[data-uniqueid='+selected_id+']').addClass('bg-primary').siblings().removeClass('bg-primary')
+               resize_tables();
             }
          );
    });
-   $('#runtable').on('column-search.bs.table', function(e, column, value) {
-      console.log('search:', column, value)
-   });
-   $('#runtable').on('created-controls.bs.table', function(e, a, b) {
-      console.log('created: ' + a + ' ' + b)
-   });
-})
 
+   $('#runtable').on('column-search.bs.table', function(e, column, value) {
+      if (column == 'project') {
+         $.post('{{ url_for("userinfo.usersetting") }}', {
+            attr: 'default_project',
+            value: value
+         })
+      }
+   });
+
+   $('#deletebutton').on('click', function() {
+      window.location.href = "{{ url_for("ngsruns.delete_ngs_run") }}?id=" + selected_id;
+   })
+
+})
 
 
 </script>

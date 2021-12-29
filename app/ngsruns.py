@@ -110,7 +110,7 @@ def get_complete(field):
 @bp.route('list', methods=['GET'])
 @login_required
 def run_list():
-    id = request.args.get('idrequest')
+    idrequest = request.args.get('idrequest', 0)
     data = [ vars(f) for f in NGSRun.query.all() ]
     # Create a list of flowcells and collections in irods
     q = current_user.irods_session.query(Collection.name, CollectionMeta.value).filter( \
@@ -118,21 +118,34 @@ def run_list():
             Criterion('=', Collection.parent_name, f'/{current_user.irods_zone}/projects/ngslab/minion'))
     flowcell_list = { x[CollectionMeta.value] : x[Collection.name] for x in q }
     for run in data:
-        if run['flowcell']:
+        if run['flowcell'] and flowcell_list.get(run['flowcell']):
             run['datacoll'] = datafield('collection', str(flowcell_list.get(run['flowcell'])), 'irods_collection').htmlshort
         else:
             run['datacoll'] = ''
     data.sort(key = lambda x: x["id"], reverse=True)
     fields = ['id', 'name', 'flowcell', 'project', 'datacoll']
     data2 = [{ p:str(x[p]) for p in fields } for x in data ]
-    return render_template('ngsruns.html', data=json.dumps(data2), idrequest=id)
+    return render_template('ngsruns.html', data=json.dumps(data2), idrequest=idrequest, default_project=current_user.settings.get('default_project', ''))
 
 @bp.route('_barcodes', methods=['GET'])
 def run_barcodes():
     id = request.args.get('idrequest', type=int)
     barcodes = NGSBarcode.query.filter(NGSBarcode.ngsrun == id).all()
-    run = NGSRun.query.filter(NGSRun.id == id).one_or_none()
-    return render_template('ngsbarcodes.html', barcodes=barcodes, run=run)
+    fields = [ 'barcode', 'description', 'primer_set', 'sampleid', 'virus_target']
+    data = [ { p: getattr(x, p) for p in fields } for x in barcodes ]
+    columns = [
+        { "field": "barcode", "title": "Barcode", "sortable": True },
+        { "field": "sampleid", "title": "SampleID", "sortable": True },
+        { "field": "virus_target", "title": "Virus Target", "sortable": True },
+        { "field": "primer_set", "title": "Primer Set", "sortable": True },
+        { "field": "description", "title": "Description", "sortable": True }
+    ]
+    data = {
+        'columnsJSON': json.dumps(columns),
+        'dataJSON': json.dumps(data),
+        'id': 'barcodetable'
+    }
+    return render_template('bootstraptable.html', data=data, no_page=True)
     
 @bp.route('edit', methods=['GET'])
 def edit_form():
@@ -159,9 +172,8 @@ def run_form():
     projects=[]
     if result == 200:
         projects = [ p['name'] for p in pl ]
-    #print(projects)
     data = { barcode : None for barcode in barcodes }
-    return render_template('ngsrun.html', data=data, projects=projects, barcodes=barcodes, id=-1)
+    return render_template('ngsrun.html', data=data, projects=projects, barcodes=barcodes, id=-1, default_project=current_user.settings.get('default_project', ''))
 
 @bp.route('delete', methods=['GET'])
 @login_required
@@ -191,7 +203,8 @@ def run_update():
             new_barcode.description = f.get('description_{}'.format(barcode))
             db.session.add(new_barcode)
     db.session.commit()
-    return redirect(url_for('ngsruns.run_list'))
+    current_user.settings['default_project'] = new_run.project
+    return redirect(url_for('ngsruns.run_list', idrequest=new_run.id))
 
 # GET
 

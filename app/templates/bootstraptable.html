@@ -1,7 +1,7 @@
 <table id="{{ data.id }}" 
        data-toggle='table'
        data-striped="true"
-       data-pagination="true"
+       {% if no_page is not defined %} data-pagination="true" {% endif %}
        data-height="500"  
        data-show-columns-toggle-all="false"
        data-show-pagination-switch="true"

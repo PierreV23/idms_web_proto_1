@@ -30,9 +30,9 @@ menuname='newrun'
         <!-- input type="text" class="form-control col-sm-1" autocomplete="off" name="project" id="ngs_project" placeholder="Project" value="{{ data.project }}" -->
 
         <label for="project" class="col-sm-1 col-form-label">Project:</label>
-        <select class="custom-select col-sm-1" name="project">
+        <select class="custom-select col-sm-1" name="project" id="projectselect">
             {% for project in projects|sort %}
-            <option>{{ project }}</option>
+            <option {% if project == default_project %} selected {% endif %}>{{ project }}</option>
             {% endfor %}
         </select>
 
@@ -42,9 +42,9 @@ menuname='newrun'
 <div class="form-group row">
     <label class="col-sm-1 col-form-label">Barcode</label>
     <label class="col-sm-1 col-form-label">ID</label>
-    <label class="col-sm-1 col-form-label">Virus Target</label>
-    <label class="col-sm-1 col-form-label">Primer Set</label>
-    <label class="col-sm-1 col-form-label">Description</label>
+    <label class="col-sm-2 col-form-label">Virus Target</label>
+    <label class="col-sm-2 col-form-label">Primer Set</label>
+    <label class="col-sm-2 col-form-label">Description</label>
 </div>
 
 <div class="form-group row">
