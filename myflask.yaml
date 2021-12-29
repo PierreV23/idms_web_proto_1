@@ -6,17 +6,20 @@ channels:
 dependencies:
   - biopython
   - flask
+  - freetds
   - git
   - graphviz
   - jsonschema
   - marshmallow-sqlalchemy
   - numpy
   - openpyxl=3.0.6
+  - openssl=1.1.1
   - pandas
   - pip
   - python
   - pyyaml
   - requests
+  - flask-caching
   - flask-login
   - flask-marshmallow
   - flask-migrate
@@ -26,9 +29,10 @@ dependencies:
   - psycopg2
   - pip:
     - pymssql==2.1.5
-    - python-irodsclient==0.8.3
+    - randomname
+    - python-irodsclient #==0.8.3
+    - redis
     - graphviz
     - jsonschema
     - xlrd==1.2.0
     - git+https://gitlab+deploy-token-57:Sz1nCp-zz7fW611pk1Cw@gitl01-int-p.rivm.nl/wierinve/kiemsurveillance.git@Test
-#    - Flask-Session==0.4.0

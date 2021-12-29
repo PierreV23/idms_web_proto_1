@@ -1,7 +1,11 @@
 {% extends 'base2.html' %}
  
 {% block heading %}
-<H3><b>New NGS Run by {{ user }}</b></H3>
+<H3><b>New NGS Run by {{ current_user.username }}</b></H3>
+{% endblock %}
+
+{%block menuname %}
+menuname='newrun'
 {% endblock %}
 
 {% block content %}
@@ -10,11 +14,11 @@
     var barcodes={{ barcodes | safe}}
 </script>
 
-<div class="container">
+<div class="container scroll h-100">
     
 <form action="new" method="post">
     <input type="hidden" id="id" name="id" value="{{ id }}">
-    <input type="hidden" name="user" value="{{ user }}">
+    <button type="submit" class="btn btn-primary float-right">Submit</button>
     <div class="form-group row">
         <label for="ngs_name" class="col-sm-1 col-form label">Name:</label>
         <input type="text" class="form-control col-sm-1 input-sm" autocomplete="off" name="name" id="ngs_name" placeholder="Run Name" value="{{ data.name }}">
@@ -26,22 +30,21 @@
         <!-- input type="text" class="form-control col-sm-1" autocomplete="off" name="project" id="ngs_project" placeholder="Project" value="{{ data.project }}" -->
 
         <label for="project" class="col-sm-1 col-form-label">Project:</label>
-        <select class="custom-select col-sm-1" name="project">
+        <select class="custom-select col-sm-1" name="project" id="projectselect">
             {% for project in projects|sort %}
-            <option>{{ project }}</option>
+            <option {% if project == default_project %} selected {% endif %}>{{ project }}</option>
             {% endfor %}
         </select>
 
         <label for="ngs_description" class="col-sm-1 col-form-label">Description:</label>
         <input type="text" class="form-control col-sm-3" autocomplete="off" name="description" id="ngs_description" placeholder="Description" value="{{ data.description }}">
       </div>
-
 <div class="form-group row">
     <label class="col-sm-1 col-form-label">Barcode</label>
     <label class="col-sm-1 col-form-label">ID</label>
-    <label class="col-sm-1 col-form-label">Virus Target</label>
-    <label class="col-sm-1 col-form-label">Primer Set</label>
-    <label class="col-sm-1 col-form-label">Description</label>
+    <label class="col-sm-2 col-form-label">Virus Target</label>
+    <label class="col-sm-2 col-form-label">Primer Set</label>
+    <label class="col-sm-2 col-form-label">Description</label>
 </div>
 
 <div class="form-group row">
@@ -60,7 +63,7 @@
     <input type="text" class="form-control col-sm-2" tabindex={{ loop.index + 72 }} autocomplete="off" name="description_{{ barcode }}" id="description_{{ barcode }}" placeholder="Description" value="{{ data[barcode].description }}">
 </div>
 {% endfor %}
-<button type="submit" class="btn btn-primary">Submit</button>
+<button type="submit" class="btn btn-primary float-right">Submit</button>
 </form>
 
 </div>

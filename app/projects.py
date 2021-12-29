@@ -20,6 +20,8 @@ from irods.user import iRODSUser, iRODSUserGroup
 from app.datafield import AVU2data, datafield
 from app.models import deobfuscate
 from graphviz import Digraph
+from . import iqry
+from .flaskcache import cache, makekey, makename
 
 
 BP = Blueprint('projects', __name__, url_prefix='/projects')
@@ -41,6 +43,7 @@ def search(l, f, v):
     return matches
 
 @login_required
+@cache.memoize(timeout=30)
 def rest_call(request_type, endpoint, data={}):    
     url = 'http://{}/api/1.0/{}'.format(current_user.irods_server, endpoint)
     #TODO: remove this testing line:
@@ -48,15 +51,17 @@ def rest_call(request_type, endpoint, data={}):
     auth = HTTPBasicAuth('alt\\{}'.format(current_user.username), current_user.ntlm_hash)
     return_data = {}
     if request_type in REQUESTS_METHODS:
-        print(f'REST: {request_type} {url} {data}')
         response = REQUESTS_METHODS[request_type](url, auth=auth, json=data)
     try:
         return_data = response.json()
     except:
         return_data = {}
+    if request_type != 'GET':
+        cache.delete_memoized(rest_call)
     return return_data, response.status_code
 
 @login_required
+@cache.memoize(timeout=60, make_name=makename)
 def get_projectlist():
     pl, result = rest_call('GET', 'projects')
     projectlist = { p['name']: p for p in pl }
@@ -123,7 +128,6 @@ def update_contact():
     if status == 200:
         ret = { "success": True }
     else:
-        print( result )
         ret = { "msg": f"Error: {result['msg']}", "contact": result['contact'] }
     return ret
 
@@ -223,9 +227,7 @@ def show_projectdetails():
     projectdetails['contacts'] = contacts
 
     # Retrieve collections associated with project
-    query = irods_session.query(Collection.name).filter(
-        Criterion('=', CollectionMeta.name, 'projectID')).filter(
-            Criterion('=', CollectionMeta.value, projectnaam))
+    query = iqry.qcollbystaticmeta('projectID', projectnaam)
     projectdetails['colls'] = [datafield('col', q[Collection.name], 'irods_collection') for q in query]
     # return render_template('projectdetails.html', PD=projectdetails,
     #                        conf=config, processnaam=processnaam)
@@ -235,6 +237,7 @@ def show_projectdetails():
 
 @BP.route('/processdetails')
 @login_required
+@cache.cached(timeout=60, key_prefix=makekey)
 def show_processdetails():
     """
     Shows page with process settings
@@ -379,13 +382,11 @@ def pgaction():
     project = request.args.get('project')
     group = request.args.get('group')
     action = request.args.get('action')
-    print(f'Project {project}, group {group}, action {action}')
     if action == 'add_process':
         process = request.args.get('process')
         name = request.args.get('name')
         # Check if the process exists:
         pr, r2 = rest_call('GET', f'processes/{process}')
-        print(pr)
         if r2 != 200:
             # TODO: some error message???
             return 'FAILED'
@@ -546,7 +547,3 @@ def processgroups():
 
     return render_template('processgroups.html', project=project, processgroup=processgroup, processgroups=groups)
 
-@BP.route('processes', methods=['GET'])
-@login_required
-def processes():    
-    return render_template('processgrid.html')

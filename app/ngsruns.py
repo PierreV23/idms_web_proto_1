@@ -8,6 +8,7 @@ from sqlalchemy import ForeignKey, distinct
 from irods.models import Collection, CollectionMeta
 from irods.column import Criterion
 from app.datafield import datafield
+import json
 import requests
 from requests.auth import HTTPBasicAuth
 
@@ -104,7 +105,6 @@ def rest_call(request_type, endpoint, data={}):
 
 @bp.route('complete/<field>', methods=['GET'])
 def get_complete(field):
-    print(request)
     req = request.args.to_dict().get('q', '')
     data1 = db.session.query(FIELDS[field]).filter(FIELDS[field].like('%{}%'.format(req))).distinct().all()
     return jsonify(data1)
@@ -112,7 +112,7 @@ def get_complete(field):
 @bp.route('list', methods=['GET'])
 @login_required
 def run_list():
-    id = request.args.get('idrequest')
+    idrequest = request.args.get('idrequest', 0)
     data = [ vars(f) for f in NGSRun.query.all() ]
     # Create a list of flowcells and collections in irods
     q = current_user.irods_session.query(Collection.name, CollectionMeta.value).filter( \
@@ -120,19 +120,34 @@ def run_list():
             Criterion('=', Collection.parent_name, f'/{current_user.irods_zone}/projects/ngslab/minion'))
     flowcell_list = { x[CollectionMeta.value] : x[Collection.name] for x in q }
     for run in data:
-        if run['flowcell']:
-            run['datacoll'] = datafield('collection', flowcell_list.get(run['flowcell']), 'irods_collection')
+        if run['flowcell'] and flowcell_list.get(run['flowcell']):
+            run['datacoll'] = datafield('collection', str(flowcell_list.get(run['flowcell'])), 'irods_collection').htmlshort
         else:
-            run['datacoll'] = datafield('collection', None, 'irods_collection')
+            run['datacoll'] = ''
     data.sort(key = lambda x: x["id"], reverse=True)
-    return render_template('ngsruns.html', data=data, idrequest=id)
+    fields = ['id', 'name', 'flowcell', 'project', 'owner', 'datacoll']
+    data2 = [{ p:str(x[p]) for p in fields } for x in data ]
+    return render_template('ngsruns.html', data=json.dumps(data2), idrequest=idrequest, default_project=current_user.settings.get('default_project', ''))
 
 @bp.route('_barcodes', methods=['GET'])
 def run_barcodes():
-    id = request.args.get('idrequest')
+    id = request.args.get('idrequest', type=int)
     barcodes = NGSBarcode.query.filter(NGSBarcode.ngsrun == id).all()
-    run = NGSRun.query.filter(NGSRun.id == id).one_or_none()
-    return render_template('ngsbarcodes.html', barcodes=barcodes, run=run)
+    fields = [ 'barcode', 'description', 'primer_set', 'sampleid', 'virus_target']
+    data = [ { p: getattr(x, p) for p in fields } for x in barcodes ]
+    columns = [
+        { "field": "barcode", "title": "Barcode", "sortable": True },
+        { "field": "sampleid", "title": "SampleID", "sortable": True },
+        { "field": "virus_target", "title": "Virus Target", "sortable": True },
+        { "field": "primer_set", "title": "Primer Set", "sortable": True },
+        { "field": "description", "title": "Description", "sortable": True }
+    ]
+    data = {
+        'columnsJSON': json.dumps(columns),
+        'dataJSON': json.dumps(data),
+        'id': 'barcodetable'
+    }
+    return render_template('bootstraptable.html', data=data, no_page=True)
     
 @bp.route('edit', methods=['GET'])
 def edit_form():
@@ -143,8 +158,6 @@ def edit_form():
     data = { barcode : None for barcode in barcodes }
     for f in barcode_obj:
         data[f.barcode] = f
-    print(run)
-    print(run.flowcell)
     data.update({"flowcell": run.flowcell})
     data.update({"name": run.name})
     data.update({"description": run.description})
@@ -161,9 +174,9 @@ def run_form():
     projects=[]
     if result == 200:
         projects = [ p['name'] for p in pl ]
-    #print(projects)
     data = { barcode : None for barcode in barcodes }
-    return render_template('ngsrun.html', data=data, projects=projects, barcodes=barcodes, id=-1, user=current_user.username)
+    # user=current_user.username
+    return render_template('ngsrun.html', data=data, projects=projects, barcodes=barcodes, id=-1, default_project=current_user.settings.get('default_project', ''))
 
 @bp.route('delete', methods=['GET'])
 @login_required
@@ -181,7 +194,7 @@ def run_update():
     new_run = NGSRun(f.get('flowcell', ''))
     new_run.name = f.get('name', '')
     new_run.project = f.get('project', '')
-    new_run.owner = f.get('user', '')
+    new_run.owner = current_user.username
     new_run.description = f.get('description', '')
     db.session.add(new_run)
     db.session.commit()
@@ -194,7 +207,8 @@ def run_update():
             new_barcode.description = f.get('description_{}'.format(barcode))
             db.session.add(new_barcode)
     db.session.commit()
-    return redirect(url_for('ngsruns.run_list'))
+    current_user.settings['default_project'] = new_run.project
+    return redirect(url_for('ngsruns.run_list', idrequest=new_run.id))
 
 # GET
 
