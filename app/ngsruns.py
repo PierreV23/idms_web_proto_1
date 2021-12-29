@@ -137,7 +137,7 @@ def run_barcodes():
     data = [ { p: getattr(x, p) for p in fields } for x in barcodes ]
     columns = [
         { "field": "barcode", "title": "Barcode", "sortable": True },
-        { "field": "sampleid", "title": "SampleID", "sortable": True },
+        { "field": "sampleid", "title": "ID", "sortable": True },
         { "field": "virus_target", "title": "Virus Target", "sortable": True },
         { "field": "primer_set", "title": "Primer Set", "sortable": True },
         { "field": "description", "title": "Description", "sortable": True }
