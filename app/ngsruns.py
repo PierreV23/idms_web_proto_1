@@ -119,13 +119,26 @@ def run_list():
             Criterion('=', CollectionMeta.name, 'minion::flow_cell_id')).filter( \
             Criterion('=', Collection.parent_name, f'/{current_user.irods_zone}/projects/ngslab/minion'))
     flowcell_list = { x[CollectionMeta.value] : x[Collection.name] for x in q }
+    flowcell_unique = set()
+    flowcell_duplicate = set()
     for run in data:
+        if run['flowcell'] in flowcell_unique:
+            flowcell_duplicate.add(run['flowcell'])
+        else:
+            flowcell_unique.add(run['flowcell'])
+        
         if run['flowcell'] and flowcell_list.get(run['flowcell']):
             run['datacoll'] = datafield('collection', str(flowcell_list.get(run['flowcell'])), 'irods_collection').htmlshort
         else:
             run['datacoll'] = ''
+    
+    for run in data:
+        run['flowcell_display'] = run['flowcell']
+        if run['flowcell'] in flowcell_duplicate:
+            run['flowcell_display'] += ' (DUPLICATE)'
+
     data.sort(key = lambda x: x["id"], reverse=True)
-    fields = ['id', 'name', 'flowcell', 'project', 'owner', 'datacoll']
+    fields = ['id', 'name', 'flowcell', 'flowcell_display', 'project', 'owner', 'datacoll', 'description']
     data2 = [{ p:str(x[p]) for p in fields } for x in data ]
     return render_template('ngsruns.html', data=json.dumps(data2), idrequest=idrequest, default_project=current_user.settings.get('default_project', ''))
 

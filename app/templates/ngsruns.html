@@ -37,7 +37,7 @@ menuname='runlist'
                <tr>
                   <th data-field="id" data-visible="false" data-align="center">Item ID</th>
                   <th data-field="name" data-align="center" data-sortable="true" data-filter-control="input">Name</th>
-                  <th data-field="flowcell" data-align="" data-sortable="true" data-filter-control="input" >Flowcell</th>
+                  <th data-field="flowcell_display" data-align="" data-sortable="true" data-filter-control="input" >Flowcell</th>
                   <th data-field="project" data-align="" data-sortable="true" data-filter-control="select">Project</th>
                   <th data-field="owner" data-align="" data-sortable="true" data-filter-control="select">User</th>
                   <th data-field="datacoll" data-align="" data-sortable="true" data-filter-control="input">Collection</th>
@@ -50,7 +50,10 @@ menuname='runlist'
 
    <div class="scroll card border-primary col-md-8 d-nonxe" id="barcodes">
       <div class="card-header d-none" id="barcode-title">
-         <h2 class="alignleft">Barcodes in run <b class="runname"></b> on project <span class="projectname"></span> (<span class="flowcellname"></span><span class="rundescription"></span>)</h2>
+         <h2 class="alignleft">
+            Barcodes in run <b class="runname"></b> on project 
+            <span class="projectname"></span> (<span class="flowcellname"></span><span class="rundescription"></span>)
+         </h2>
          <button type="button" class="btn btn-danger alignright" data-toggle="modal" data-target="#confirm-delete">Delete</button>
        </div>
        <div class="card-body" id="barcodepane">
@@ -100,6 +103,11 @@ $('document').ready(function(){
       $('.runname').html(row.name);
       $('.projectname').html(row.project);
       $('.flowcellname').html(row.flowcell);
+      var row_display = ''
+      if (row.description) {
+         row_display = ', ' + row.description;
+      }
+      $('.rundescription').html(row_display);
       $.get('{{ url_for('ngsruns.run_barcodes') }}', {
          idrequest: row.id
          }, function (data) {
