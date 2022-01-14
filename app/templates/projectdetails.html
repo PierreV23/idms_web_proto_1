@@ -327,17 +327,28 @@ function createContactRow( contact ) {
                   {% endfor %}
                 </select>
               </div> 
-        
+
               <div class="form-check">
                 <input class="form-check-input" type="checkbox" 
-                    name="omit_staging" 
+                    name="do_bringonline" 
                     value="true" 
-                    {% if PD['processes'][process]['omit_staging'] == 1 %}checked{% endif %} 
-                    id="omit_staging_{{process}}">
-                <label class="form-check-label" for="omit_staging_{{process}}">
-                  Omit the staging phase. No data will be copied to compute resource!
+                    {% if PD['processes'][process]['omit_bringonline'] != 1 %}checked{% endif %} 
+                    id="omit_bringonline_{{process}}">
+                <label class="form-check-label" for="omit_bringonline_{{process}}">
+                  Ensure data is online before starting process
                 </label>
               </div> 
+
+              <div class="form-check check-margin10">
+                <input class="form-check-input" type="checkbox" 
+                    name="do_staging" 
+                    value="true" 
+                    {% if PD['processes'][process]['omit_staging'] != 1 %}checked{% endif %} 
+                    id="omit_staging_{{process}}">
+                <label class="form-check-label" for="omit_staging_{{process}}">
+                  Download data from iRODS to input directory
+                </label>
+              </div>    
         
               <div class="form-check">
                 <input class="form-check-input" type="checkbox" 
@@ -499,5 +510,20 @@ function createContactRow( contact ) {
     var contact_id = $( this ).attr("data-contact_id");
     var data = { "primary" : primary }
     updateContact( "{{PD.name}}", contact_id, data );
-  })
+  });
+
+
+  function omit_check() {
+    console.log("Check")
+    if ($('input[name="do_bringonline"]').is(":checked")) {
+      $('input[name="do_staging').prop('disabled', false)
+    } else {
+      $('input[name="do_staging').prop('disabled', true).prop('checked', false)
+    }
+  }
+
+  $('input[name="do_bringonline"]').on('click', omit_check );
+  $('document').ready( omit_check )
+
+
 </script>
