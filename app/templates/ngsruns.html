@@ -48,7 +48,7 @@ menuname='runlist'
       </div>
    </div>
 
-   <div class="scroll card border-primary col-md-8 d-nonxe" id="barcodes">
+   <div class="card border-primary col-md-8 d-nonxe h-100" id="barcodes">
       <div class="card-header d-none" id="barcode-title">
          <h2 class="alignleft">
             Barcodes in run <b class="runname"></b> on project 
@@ -56,7 +56,7 @@ menuname='runlist'
          </h2>
          <button type="button" class="btn btn-danger alignright" data-toggle="modal" data-target="#confirm-delete">Delete</button>
        </div>
-       <div class="card-body" id="barcodepane">
+       <div class="scroll card-body" id="barcodepane">
 
        </div>
    </div>
@@ -112,7 +112,7 @@ $('document').ready(function(){
          idrequest: row.id
          }, function (data) {
                $('#barcodepane').html(data);
-               $('tr[data-uniqueid='+selected_id+']').addClass('bg-primary').siblings().removeClass('bg-primary')
+               $('tr[data-uniqueid='+selected_id+']').addClass('bg-secondary').siblings().removeClass('bg-secondary')
                resize_tables();
             }
          );
