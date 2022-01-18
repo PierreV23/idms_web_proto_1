@@ -1,0 +1,101 @@
+{% extends 'jobsmenu.html' %}
+
+{% block meta %}
+<!-- <meta http-equiv="refresh" content="30">   -->
+{% endblock %}
+
+{% block heading %}
+<h3>Processgroup overview</h3>
+{% endblock %}
+
+{%block menuname %}
+menuname='pglist'
+{% endblock %}
+
+{% block content %}
+<div class="scroll h-100">
+<div class="inline float-right pgtable-toolbar"></div>
+<table id="pgtable"
+    data-buttons-toolbar=".pgtable-toolbar"
+    data-classes='table table-bordered table-hover table-striped'
+    data-filter-control="true"
+    data-detail-view='true'
+    data-id-field='pgid'
+    data-pagination='true'
+    data-row-style="rowStyle"
+    data-show-columns="true"
+    data-custom-sort="sorter"
+    data-sort-name="pgstart"
+    data-sort-order="desc"></table>
+</div>
+
+<script>
+
+$(function() {
+    $.get('{{ url_for("jobs.pglist") }}', function(data){
+        $('table#pgtable').bootstrapTable({
+            columns: data['columns'],
+            data: data['rows']
+        })
+        $('.bootstrap-table-filter-control-project').val('{{ default_project }}')
+        $('table#jobtable').bootstrapTable('triggerSearch');      
+    })
+})
+
+$('table#pgtable').on('column-search.bs.table', function(e, column, value) {
+      console.log(column)
+      if (column == 'project') {
+         $.post('{{ url_for("userinfo.usersetting") }}', {
+            attr: 'default_project',
+            value: value
+         })
+      }
+  });
+
+    $('table#pgtable').on('expand-row.bs.table', function (e, index, row, $detail){
+        $.get('{{ url_for("jobs.pgjobs") }}?pgid=' + row['_pgid'], function(data){
+            console.log(data['columns'])
+            $detail.html('<table></table>').find('table').bootstrapTable({
+                columns: data['columns'],
+                data: data['rows'],
+                rowStyle: 'rowStyle',
+                sortName: 'start_time',
+                sortOrder: 'desc',
+                customSort: 'sorter'
+            });
+            data['columns'].forEach(function(x, i) {
+                if (x['visible'] == 'false') {
+                    $detail.find('table').bootstrapTable('hideColumn', x['field'])
+                }
+            })
+        })
+    })
+
+    function sorter(field, sortOrder, data){
+        var order = sortOrder === 'desc' ? -1 : 1
+        data.sort(function (a, b) {
+            var aa = a['_'+field]
+            var bb = b['_'+field]
+            if (aa<bb){
+                return order * -1 
+            }
+            if (aa>bb) {
+                return order
+            }
+            return 0
+        })
+    }
+
+    function rowStyle(row, index) {
+        var styles = {
+            'done': 'table-success',
+            'error': 'table-danger',
+            'active': 'table-info'
+        };
+        return {
+            classes: styles[row['state']]
+        }
+    }
+
+</script>
+{% endblock %}

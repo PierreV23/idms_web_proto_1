@@ -13,7 +13,9 @@ from irods.exception import DataObjectDoesNotExist
 from irods.models import Collection, DataObject, DataObjectMeta, CollectionMeta
 from irods.column import Criterion
 from app.datafield import datafield, AVU2data, INFINITE_DATE
+from app.settings import JOB_FIELDS, PG_FIELDS
 from graphviz import Digraph
+import json
 import os
 import sys
 import time
@@ -21,19 +23,12 @@ from datetime import datetime, timezone
 from .flaskcache import cache, makekey, makename
 from . import iqry
 
+from sqlalchemy import create_engine, Float
+from sqlalchemy.orm import sessionmaker
+
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
 
 PAGE_SIZE = 25
-
-JOB_FIELDS = {
-    'sys::runsheet::description': ('Description', 'text'),
-    'sys::runsheet::processgroupid': ('GroupInstance', 'processgroupid'),
-    'sys::run::start_time': ('Start time', 'timestamp'),
-    'sys::run::finish_time': ('End time', 'timestamp'),
-    'sys::runsheet::projectID': ('projectID', 'projectid'),
-    'sys::run::exit_code': ('Result', 'int'),
-    'sys::runsheet::input_collection': ('Input Collection', 'irods_collection')
-}
 
 ATTR_RUNSHEET_PREFIX = 'sys::runsheet::'
 ATTR_RUNSHEET_STATE = '{}state'.format(ATTR_RUNSHEET_PREFIX)
@@ -155,21 +150,105 @@ def joblist(state='', page=1):
 
     return job_list, coll_jobs
 
+def dbsession():
+    from sqlalchemy.ext.automap import automap_base
+    from sqlalchemy.orm import Session
+    from sqlalchemy import create_engine
+    Base = automap_base()
+    engine = create_engine('sqlite:///../bio-ansible/jobs.db', echo = False)
+    Base.prepare(engine, reflect=True)
+    Jobs = Base.classes.jobs
+    Processgroups = Base.classes.processgroups
+    session = Session(engine)
+    return session, Jobs, Processgroups
+
+@bp.route('_pglist')
+@login_required
+def pglist():
+    session, Jobs, Processgroups = dbsession()
+    result = []
+    pg = session.query(Processgroups).all()
+    for p in pg:
+        rec = {}
+        for f in PG_FIELDS:
+            dbkey = PG_FIELDS[f][2]
+            val = getattr(p, dbkey)
+            v = datafield(dbkey, val, PG_FIELDS[f][1])
+            rec |= { dbkey: v.htmlshort, f'_{dbkey}': v.value }
+        result.append(rec)
+    session = None
+    columns = []
+    for f in PG_FIELDS:
+        column = {'field': PG_FIELDS[f][2], 'title': PG_FIELDS[f][0], 'sortable': 'true', 'visible': PG_FIELDS[f][3], 'filterControl': PG_FIELDS[f][4]}
+        if column['filterControl'] == 'select':
+            filterdata = json.dumps({ v[f'_{column["field"]}']: v[f'_{column["field"]}'] for v in result })
+            print(filterdata)
+            column['filterData'] = f"json:{filterdata}"
+        columns.append(column)        
+    return { 'columns': columns, 'rows': result }
+
+@bp.route('_pgjobs')
+@login_required
+def pgjobs():
+    pgid = request.args.get('pgid', None, type=str)
+    use_filters = request.args.get('filters', 'false', type=str)
+    print(f'Loading jobs for {pgid}')
+    session, Jobs, Processgroups = dbsession()
+    result = []
+    if pgid:
+        pgj = session.query(Jobs).filter(Jobs.processgroupid==pgid)
+    else:
+        pgj = session.query(Jobs).order_by(Jobs.start_time.cast(Float).desc()).limit(1000)
+    for j in pgj:
+        rec = {}
+        for f in JOB_FIELDS:
+            dbkey = JOB_FIELDS[f][2]
+            val = getattr(j, dbkey)
+            if val:
+                v = datafield(dbkey, val, JOB_FIELDS[f][1])
+                rec |= { dbkey: v.htmlshort, f'_{dbkey}': v.value }
+        result.append(rec)
+    columns = []
+    filters = {}
+    print(f'Generating columns for {pgid}')
+    for f in JOB_FIELDS:
+        column = {'field': JOB_FIELDS[f][2], 'title': JOB_FIELDS[f][0], 'sortable': 'true', 'visible': JOB_FIELDS[f][3], 'filterControl': JOB_FIELDS[f][4]}
+        if use_filters == "true":
+            if column['filterControl'] == 'select':
+                f1 = {}
+                for v in result:
+                    key = v.get(f'_{column["field"]}')
+                    f1[key] = key
+                filterdata = json.dumps(f1)
+                column['filterData'] = f"json:{filterdata}"
+                column['filterDefault'] = current_user.settings.get(f'jobs::filter::{column["field"]}')
+        columns.append(column)
+    engine = None
+    print('READY')
+    return { 'columns': columns, 'rows': result, 'filters': filters }
+
+@bp.route('/pg')
+@login_required
+def show_pg():
+    default_project = current_user.settings.get('default_project', '')
+    return render_template('pglist.html', default_project=default_project)
+
 @bp.route('/')
 @login_required
 @cache.cached(timeout=30, key_prefix=makekey)
 def show_jobs():
-    state = request.args.get('items', 'all', type=str)
-    page = request.args.get('page', 1, type=int)
-    if state == 'all':
-        l, total = joblist(page=page)
-    else:
-        l, total = joblist(state, page=page)
-    # for a in ['waiting', 'incoming', 'queued', 'active', 'postprocessing', 'done', 'stage', 'error']:
-    #     if x in ['all', a]:
-    #         l = l + joblist(a)
-    columns = ['Name', 'State'] + [JOB_FIELDS[a][0] for a in JOB_FIELDS]
-    buttons = pagebuttons(PAGE_SIZE, total, page, 10, 'href={}?page={{}}&items={}'.format(url_for('jobs.show_jobs'), state))
+    # state = request.args.get('items', 'all', type=str)
+    # page = request.args.get('page', 1, type=int)
+    # if state == 'all':
+    #     l, total = joblist(page=page)
+    # else:
+    #     l, total = joblist(state, page=page)
+    # # for a in ['waiting', 'incoming', 'queued', 'active', 'postprocessing', 'done', 'stage', 'error']:
+    # #     if x in ['all', a]:
+    # #         l = l + joblist(a)
+    # columns = ['Name', 'State'] + [JOB_FIELDS[a][0] for a in JOB_FIELDS]
+    # buttons = pagebuttons(PAGE_SIZE, total, page, 10, 'href={}?page={{}}&items={}'.format(url_for('jobs.show_jobs'), state))
+    return render_template('jobs.html', default_project=current_user.settings.get('default_project', ''))
     return render_template('jobs2.html', joblist=l, items=state, columns=columns, buttons=buttons)
 
 NAME_LENGTH = 15
@@ -187,7 +266,8 @@ COLL_SHAPES = {
     'queued'    :('cds', 'aquamarine'),
     'startup' :('cds', 'aquamarine:cyan'),
     'active'  :('cds', 'cyan'),
-    'postprocessing'  :('cds', 'cyan3')}
+    'poststartup': ('cds', 'cyan:gold'),
+    'postprocessing'  :('cds', 'gold')}
 
 def shortname(name,l):
     s = name
@@ -271,6 +351,7 @@ def jobdetails():
         'sys::run::exit_code': ('Result', 'int'),
         'sys::runsheet::input_collection': ('Input Collection', 'irods_collection'),
         'sys::run::output_collection': ('Output Collection', 'irods_collection'),
+        'sys::run::account': ('Run Account', 'irods_user'),
         'sys::run::input_dir': ('Input directory', 'directory'),
         'sys::run::output_dir': ('Output directory', 'directory'),
         'sys::run::owner': ('Job owner', 'irods_user'),
@@ -281,6 +362,7 @@ def jobdetails():
         'sys::runsheet::tag': ('Git tag', 'tag'),
         'sys::runsheet::distribution': ('Distribution pipeline', 'boolean'),
         'sys::runsheet::omit_staging': ('Omit staging', 'boolean'),
+        'sys::runsheet::omit_bringonline': ('Omit bring input data online', 'boolean'),
         'sys::runsheet::lsf_queue': ('LSF Queue', 'lsf_queue'),
         'sys::run::lsf_jobid': ('LSF Job ID', 'text'),
         'sys::run::pid': ('Process PID', 'text')

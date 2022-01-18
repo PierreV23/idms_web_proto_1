@@ -52,14 +52,17 @@ class IRSettings:
             value = default
         return value
 
+    def items(self):
+        meta = iqry.qcollmetadict(f'/{current_user.irods_zone}/home/{current_user.username}')
+        keys = [ k[len(self.prefix):] for k in meta if k.startswith(self.prefix) ]
+        return [ (k, self[k]) for k in keys ]
+
     def setdefault(self, key, default):
         try:
             value = self[key]
         except KeyError:
             self[key] = default
         return self[key]
-
-
 
 class WebUser(UserMixin):
 
