@@ -71,6 +71,8 @@ $(document).ready(function(){
       <TR class="table-primary">
     {% elif entry.State.value == "postprocessing" %}
       <TR class="table-info">
+    {% elif entry.State.value == "poststartup" %}
+      <TR class="table-dark">
     {% elif entry.State.value == "waiting" %}
       <TR class="table-warning">
     {% else %}
