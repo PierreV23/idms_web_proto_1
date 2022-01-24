@@ -33,83 +33,115 @@ RESOURCE_PROPS = {
     'group': {
         'label': 'Group', 
         'meta' : 'sys::tiering::group',
-        'type' : 'text'
+        'type' : 'text',
+        'help' : 'The resource group that this resource belongs to'
     },
     'group_id': {
         'label': 'ID',
         'meta': 'sys::tiering::group',
-        'type': 'text',
-        'unit': True
+        'type': 'number',
+        'unit': True,
+        'help': 'Unique id within a resource group'
     },
     'copies': {
         'label': 'Copies',
         'meta': 'sys::resource::copies',
-        'type': 'text'
+        'type': 'number',
+        'help': 'The number of copies that this resource provides'
     },
     'cost': {
         'label': 'Cost',
         'meta': 'sys::resource::cost',
-        'type': 'text'
+        'type': 'number',
+        'help': 'Number that indicates cost for storing data on this resource'
+    },
+    'maxcopies': {
+        'label': 'Max copy actions',
+        'meta': 'sys::resource::maxcopies',
+        'type': 'number',
+        'help': 'Maximum number of concurrent tiering actions that will copy data TO this resource'
     },
     'age_before_copy': {
-        'label': 'Minimum age before copy',
+        'label': 'Minimum age before copy (h)',
         'meta': 'sys::resource::min_age_before_copy',
-        'type': 'text'
+        'type': 'number',
+        'factor': 3600,
+        'help': 'Data has to have this age before it will be copied to this resource'
     },
     'age_before_trim': {
-        'label': 'Minimum age before trim',
+        'label': 'Minimum age before trim (h)',
         'meta': 'sys::resource::min_age_before_trim',
-        'type': 'text'
+        'type': 'number',
+        'factor': 3600,
+        'help': 'Data has to have this age before it will be removed from this resource'
     },
     'minfree': {
-        'label': 'Minimum free space',
-        'meta': 'sys::resource::minfree',
-        'type': 'text'
+        'label': 'Minimum free space (GB)',
+        'meta': 'sys::resource::spacelimit',
+        'type': 'text',
+        'factor': 1000000000,
+        'help': 'No data will be copied (by tiering) to this resource once this limit is exceeded'
+    },
+    'targetfree': {
+        'label': 'Target free space (GB)',
+        'meta': 'sys::resource::spacetarget',
+        'type': 'number',
+        'factor': 1000000000,
+        'help': 'Tiering process will remove data from this resource once this limit is exceeded'
     },
     'local': {
         'label': 'Local',
         'meta': 'sys::resource::local',
-        'type': 'bool'
+        'type': 'bool',
+        'help': 'This resource is on-site'
     },
     'online': {
         'label': 'Online',
         'meta': 'sys::resource::online',
-        'type': 'bool'
+        'type': 'bool',
+        'help': 'Data on this resoucre can be accessed directly'
     },
     'stage': {
         'label': 'Stage',
         'meta': 'sys::resource::stage',
-        'type': 'bool'
+        'type': 'bool',
+        'help': 'Data is copied to this resource before a pipeline starts'
     },
     'keep': {
         'label': 'Keep',
         'meta': 'sys::resource::keep',
-        'type': 'bool'
+        'type': 'bool',
+        'help': 'Once data is on this resource, it will not be removed (except when "local" is required)'
     },
     'surf': {
         'label': 'SURF',
         'meta': 'sys::resource::surf',
-        'type': 'bool'
+        'type': 'bool',
+        'help': 'This resource is at SURF. Special dm functions will be used'
     },
     'tar': {
         'label': 'TAR',
         'meta': 'sys::resource::tar',
-        'type': 'bool'
+        'type': 'bool',
+        'help': 'Datasets are archived in a TAR file before being moved to this resource'
     },
     'manifest': {
         'label': 'MANIFEST',
         'meta': 'sys::resource::manifest',
-        'type': 'bool'
+        'type': 'bool',
+        'help': 'TAR manifest files are stored on this resource'
     },
     'available': {
         'label': 'Available',
         'meta': 'sys::resource::available',
-        'type': 'bool'
+        'type': 'bool',
+        'help': 'This resource is found to be available by the automatic resource test script'
     },
     'enabled': {
         'label': 'Enabled',
         'meta': 'sys::resource::enabled',
-        'type': 'bool'
+        'type': 'bool',
+        'help': 'This resource can be used'
     }
 }
 
@@ -239,9 +271,14 @@ def resources():
                 if meta_name in metanames:
                     irods_meta = resource.metadata.get_one(meta_name)
                     if RESOURCE_PROPS[property].get('unit', False):
-                        resources[r[Resource.name]][property] = irods_meta.units
+                        value = irods_meta.units
                     else:
-                        resources[r[Resource.name]][property] = irods_meta.value
+                        value = irods_meta.value
+                    factor = RESOURCE_PROPS[property].get('factor')
+                    if factor:
+                        resources[r[Resource.name]][property] = float(value) / factor
+                    else:
+                        resources[r[Resource.name]][property] = value
     return render_template('resources.html', columns=RESOURCE_PROPS, resources=resources)
 
 @login_required
@@ -268,10 +305,13 @@ def update_resources():
                     except KeyError:
                         current_meta = iRODSMeta(meta_name, '')
                     new_meta = iRODSMeta(meta_name, current_meta.value, current_meta.units)
+                    new_value = new_settings[resource][property]
+                    if RESOURCE_PROPS[property].get('factor'):
+                        new_value = str(int(float(new_value) * RESOURCE_PROPS[property].get('factor') // 1))
                     if RESOURCE_PROPS[property].get('unit', False):
-                        new_meta.units = new_settings[resource][property]
+                        new_meta.units = new_value
                     else:
-                        new_meta.value = new_settings[resource][property]
+                        new_meta.value = new_value
                     res_obj.metadata[meta_name] = new_meta
             else:
                 del res_obj.metadata[meta_name]
