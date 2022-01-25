@@ -212,6 +212,7 @@ ul {
   transform: rotate(90deg)
 }
 
+.check-margin10 { margin-left:10px; /* Set as you wish */ }
 
 .scroll {
   /* min-height: 71vh;

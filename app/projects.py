@@ -202,7 +202,7 @@ def show_projectdetails():
     projectdetails['groups'] = groups
     # Retrieve general project settings
     for attr in ['description', 'default_collection', 'service_account', 'modify_in_place',
-                 'distribution', 'restartable', 'omit_staging']:
+                 'distribution', 'restartable', 'omit_staging', 'omit_bringonline']:
         projectdetails[attr] = pl.get(attr, '')
 
 #    projectdetails['conf'] = config[projectnaam]
@@ -227,7 +227,7 @@ def show_projectdetails():
     projectdetails['contacts'] = contacts
 
     # Retrieve collections associated with project
-    query = iqry.qcollbystaticmeta('projectID', projectnaam)
+    query = iqry.qcollbymeta('projectID', projectnaam)
     projectdetails['colls'] = [datafield('col', q[Collection.name], 'irods_collection') for q in query]
     # return render_template('projectdetails.html', PD=projectdetails,
     #                        conf=config, processnaam=processnaam)
@@ -249,11 +249,13 @@ def show_processdetails():
     return render_template('processdetails.html', details=pl)
 
 
-def add_checkbox(data, attr, name):
+def add_checkbox(data, attr, name, negate=False, key=None):
+    set_value = 0 if negate else 1
+    datakey = key if key else name
     if name in attr:
-        data[name] = 1
+        data[datakey] = set_value
     else:
-        data[name] = 0
+        data[datakey] = 1 - set_value
     return data
 
 @BP.route('/update_project', methods=['GET', 'POST'])
@@ -276,7 +278,8 @@ def update_projectsettings():
         for attr in ['description', 'repo', 'tag', 'lsf_queue']:
             if attr in requestdata:
                 data[attr] = requestdata[attr]
-        add_checkbox(data, requestdata, 'omit_staging')
+        add_checkbox(data, requestdata, 'do_staging', negate = True, key='omit_staging')
+        add_checkbox(data, requestdata, 'do_bringonline', negate = True, key='omit_bringonline')
         add_checkbox(data, requestdata, 'modify_in_place')
         add_checkbox(data, requestdata, 'restartable')
         add_checkbox(data, requestdata, 'distribution')
@@ -334,7 +337,8 @@ def update_process():
     for attr in ['description', 'repo', 'tag']:
         if attr in requestdata:
             data[attr] = requestdata[attr]
-    add_checkbox(data, requestdata, 'omit_staging')
+    add_checkbox(data, requestdata, 'do_staging', negate=True, key='omit_staging')
+    add_checkbox(data, requestdata, 'do_bringonline', negate=True, key='omit_bringonline')
     add_checkbox(data, requestdata, 'modify_in_place')
     add_checkbox(data, requestdata, 'restartable')
     add_checkbox(data, requestdata, 'distribution')

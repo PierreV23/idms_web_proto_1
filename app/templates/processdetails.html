@@ -15,18 +15,29 @@
       <label for="gitrepo_{{process}}">GIT Repository</label>
       <input type="text" class="form-control" name="repo" id="repo_{{process}}" placeholder="GIT Repo" value="{{ details['repo'] }}">
     </div>
-  
+
     <div class="form-check">
+      <input class="form-check-input" type="checkbox" 
+          name="do_bringonline" 
+          value="true" 
+          {% if details['omit_bringonline'] != 1 %}checked{% endif %} 
+          id="do_bringonline_{{process}}">
+      <label class="form-check-label" for="do_bringonline_{{process}}">
+        Ensure data is online before starting process
+      </label>
+    </div>        
+    
+    <div class="form-check check-margin10">
         <input class="form-check-input" type="checkbox" 
-            name="omit_staging" 
+            name="do_staging" 
             value="true" 
-            {% if details['omit_staging'] == 1 %}checked{% endif %} 
-            id="omit_staging_{{process}}">
-        <label class="form-check-label" for="omit_staging_{{process}}">
-          Omit the staging phase. No data will be copied to compute resource!
+            {% if details['omit_staging'] != 1 %}checked{% endif %} 
+            id="do_staging_{{process}}">
+        <label class="form-check-label" for="do_staging_{{process}}">
+          Download data from iRODS to input directory
         </label>
       </div> 
-      
+
       <div class="form-check">
         <input class="form-check-input" type="checkbox" 
             name="modify_in_place" 
@@ -90,4 +101,19 @@
         </div>
     </div>
 </div>
-  
+
+
+<script>
+
+function omit_check() {
+  if ($('input[name="do_bringonline"]').is(":checked")) {
+    $('input[name="do_staging').prop('disabled', false)
+  } else {
+    $('input[name="do_staging').prop('disabled', true).prop('checked', false)
+  }
+}
+
+$('input[name="do_bringonline"]').on('click', omit_check );
+$('document').ready( omit_check )
+
+</script>
