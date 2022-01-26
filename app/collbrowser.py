@@ -82,7 +82,6 @@ def _getmetatree(irods_coll, attr, base, default=None):
 
 @bp.route('_meta')
 @login_required
-@cache.cached(timeout=60, key_prefix=key_zone)
 def coll_meta():
     path = request.args.get('path','/', type=str)
     object = request.args.get('object', '', type=str)
@@ -169,7 +168,6 @@ def setoverride():
 
 @bp.route('_actions')
 @login_required
-@cache.cached(timeout=60, key_prefix=key_userzone)
 def coll_actions():
     path = request.args.get('path','/', type=str)
     coll_name = path.split('/')[-1]
@@ -227,13 +225,13 @@ def startprocess():
     processid = request.args.get('processid')
     processgroupid = request.args.get('processgroupid')
     if processid:
-        c.metadata[ATTR_PROCESSID] = iRODSMeta(ATTR_PROCESSID, processid)
+        iqry.scollmetaval(collection, ATTR_PROCESSID, processid)
     elif processgroupid:
         c.metadata._delete_all_values(ATTR_PROCESSID)
-        c.metadata[ATTR_PROCESSGROUPID] = iRODSMeta(ATTR_PROCESSGROUPID, processgroupid)
+        iqry.scollmetaval(collection, ATTR_PROCESSGROUPID, processgroupid)
     else:
         return 'FAILED'
-    c.metadata[ATTR_PROCESSREQUEST] = iRODSMeta(ATTR_PROCESSREQUEST, current_user.username)
+    iqry.scollmetaval(collection, ATTR_PROCESSREQUEST, current_user.username)
 
     return 'DONE'
 
@@ -403,7 +401,7 @@ def generate_graph():
             # FIND MY INPUT
         input_id =  collmeta.get('sys::pipeline::input_collection_id')
         if input_id:
-            q = iqry.qcollbystaticmeta(ATTR_DATASETID, input_id)
+            q = iqry.qcollbymeta(ATTR_DATASETID, input_id)
             for c in q:
                 input_coll = c[Collection.name]
                 if levels:
@@ -417,7 +415,7 @@ def generate_graph():
         # FIND  OUTPUTS
         dataset_id = collmeta.get(ATTR_DATASETID)
         if dataset_id:
-            q = iqry.qcollbystaticmeta('sys::pipeline::input_collection_id', dataset_id)
+            q = iqry.qcollbymeta('sys::pipeline::input_collection_id', dataset_id)
             for c in q:
                 output_coll = c[Collection.name]
                 if levels:
@@ -431,14 +429,14 @@ def generate_graph():
             extra_colls = set(collmeta.get_all('user::pipeline::input_collection', []))
             extra_coll_ids = collmeta.get_all('user::pipeline::input_collection_id', [])
             for extra_coll_id in extra_coll_ids:
-                q = iqry.qcollbystaticmeta(ATTR_DATASETID, extra_coll_id)
+                q = iqry.qcollbymeta(ATTR_DATASETID, extra_coll_id)
                 extra_colls |= { c[Collection.name] for c in q } 
             for extra_coll in extra_colls:
                 coll_node(extra_coll, levels=levels-1, post=coll, linestyle='dashed', maxlevels=maxlevels)
             # FIND collections that refer to this collection bij name or id
-            q = iqry.qcollbystaticmeta('user::pipeline::input_collection_id', dataset_id)
+            q = iqry.qcollbymeta('user::pipeline::input_collection_id', dataset_id)
             ref_colls = { c[Collection.name] for c in q }
-            q = iqry.qcollbystaticmeta('user::pipeline::input_collection', coll)
+            q = iqry.qcollbymeta('user::pipeline::input_collection', coll)
             ref_colls |= { c[Collection.name] for c in q } 
             for ref_coll in ref_colls:
                 coll_node(ref_coll, levels=levels-1, pre=coll, linestyle='dashed', maxlevels=maxlevels)
