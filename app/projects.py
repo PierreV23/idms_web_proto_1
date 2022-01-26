@@ -44,7 +44,7 @@ def search(l, f, v):
 
 @login_required
 @cache.memoize(timeout=30, make_name=dep_userzone)
-def rest_call(request_type, endpoint, data={}):    
+def rest_call(request_type, endpoint, data={}):
     url = 'http://{}/api/1.0/{}'.format(current_user.irods_server, endpoint)
     #TODO: remove this testing line:
     #url = 'http://{}/api/1.0/{}'.format('0.0.0.0:5000', endpoint)
@@ -61,7 +61,6 @@ def rest_call(request_type, endpoint, data={}):
     return return_data, response.status_code
 
 @login_required
-@cache.memoize(timeout=60, make_name=dep_zone)
 def get_projectlist():
     pl, result = rest_call('GET', 'projects')
     projectlist = { p['name']: p for p in pl }
@@ -237,7 +236,6 @@ def show_projectdetails():
 
 @BP.route('/processdetails')
 @login_required
-@cache.cached(timeout=60, key_prefix=key_zone)
 def show_processdetails():
     """
     Shows page with process settings
