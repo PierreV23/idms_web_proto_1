@@ -476,7 +476,7 @@ def pg_graph():
 
     project = request.args.get('project')
     group = request.args.get('group', 'default')
-    selected_process = request.args.get('selected_process')
+    selected_processref = request.args.get('selected_processref')
     pl, result = rest_call('GET', f'projects/{project}/processgroups/{group}/processes')
     if result != 200:
         return ""
@@ -487,7 +487,7 @@ def pg_graph():
     graph.node('d,0', label="NEW DATA", shape='box', id='d,0')
     for process in pl:
         pname = process.get('name')
-        add_process(pname, process.get('id'), pname==selected_process)
+        add_process(pname, process.get('id'), pname==selected_processref)
     # get the dependencies
     pd, r2 = rest_call('GET', f'projects/{project}/processgroups/{group}/dependencies')
     for process in pl:
@@ -513,7 +513,7 @@ def pg_details():
 
     project = request.args.get('project')
     group = request.args.get('group', 'default')
-    selected_process = request.args.get('selected_process')
+    selected_processref = request.args.get('selected_processref')
     selected_dependency =  request.args.get('selected_dependency')
     mode = request.args.get('mode')
     pl, result = rest_call('GET', f'projects/{project}/processgroups/{group}/processes')
@@ -521,20 +521,24 @@ def pg_details():
     dependency_names = []
     selected_details = None
     selected_tags = []
-    if selected_process:
-        sel_list = search(pl, lambda x: x.get('name'), selected_process)
+    selected_process = datafield('process', 'NOT FOUND', 'base')
+    if selected_processref:
+        sel_list = search(pl, lambda x: x.get('name'), selected_processref)
         selected_details  = sel_list[0] if sel_list else None
-        dependencies, r2 = rest_call('GET', f'projects/{project}/processgroups/{group}/processes/{selected_process}/dependencies')
+        dependencies, r2 = rest_call('GET', f'projects/{project}/processgroups/{group}/processes/{selected_processref}/dependencies')
         dependency_names = [ p['name'] for p in pl if p['id'] in [ d['depends_on'] for d in dependencies ]]
+        selected_processlist = search(all_processes, lambda x: x.get('id'), selected_details.get('processid'))
+        if selected_processlist:
+            selected_process = datafield('process', selected_processlist[0].get('name'), 'process')
         selected_tags, r3 = rest_call('GET', f'processes/{selected_details.get("processid")}/tags')
     message = ''
     if mode == 'select_input':
-        message = f'Please select input for process {selected_process}'
+        message = f'Please select input for process {selected_processref}'
     elif mode == 'add_dependency':
-        message =f'Please select a required process for {selected_process}'
+        message =f'Please select a required process for {selected_processref}'
     return render_template('pg_details.html', project=project, group=group, 
         all_processes=all_processes, pg_processes=pl, selected_details=selected_details,
-        selected_tags = selected_tags,
+        selected_tags = selected_tags, selected_process=selected_process,
         dependencies=dependency_names, message=message)
 
 @BP.route('processgroups', methods=['GET'])

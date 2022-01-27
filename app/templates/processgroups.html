@@ -1,6 +1,6 @@
 <script>
 
-selected_process = null
+selected_processref = null
 mode = 'display'
 
 function waiting() {
@@ -11,7 +11,7 @@ function load_pggraph() {
   $.get('{{ url_for('projects.pg_graph') }}', {
     project: project,
     group: $('#groupselect option:selected').text(),
-    selected_process: selected_process,
+    selected_processref: selected_processref,
     mode: mode
   }, function(data) {
      $('#pg_graph').html(data)
@@ -25,7 +25,7 @@ function load_pgdetails() {
     $.get('{{ url_for('projects.pg_details') }}', {
     project: project,
     group: $('#groupselect option:selected').text(),
-    selected_process: selected_process,
+    selected_processref: selected_processref,
     mode: mode
   }, function(data) {
      $('#pg_details').html(data)
@@ -46,7 +46,7 @@ $(document).on('click', '.node', function(event){
     mode = 'display'
     if (oldmode == 'display') {
         if (object[0] == 'n') {
-            selected_process = object[2];
+            selected_processref = object[2];
             load_pgpage();
         }
     } else if (oldmode == 'select_input') {
@@ -54,7 +54,7 @@ $(document).on('click', '.node', function(event){
                 project: "{{ project }}",
                 group: $('#groupselect option:selected').text(),
                 action: 'set_input',
-                process: selected_process,
+                process: selected_processref,
                 input: object[1]
             }, function(data) {
                 load_pgpage();
@@ -65,7 +65,7 @@ $(document).on('click', '.node', function(event){
                 project: "{{ project }}",
                 group: $('#groupselect option:selected').text(),
                 action: 'add_dependency',
-                process: selected_process,
+                process: selected_processref,
                 depend: object[1]
             }, function(data) {
                 load_pgpage()
@@ -77,7 +77,7 @@ $(document).on('click', '.node', function(event){
 })
 
 $(document).on('click', '.select-process', function() {
-  selected_process=$(this).data('process');
+  selected_processref=$(this).data('process');
   load_pgpage();
 });
 

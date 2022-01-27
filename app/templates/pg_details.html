@@ -4,11 +4,7 @@
     {% endif %}
     <div class="row">
         <div class="col col-mb-4">
-            Processes  
-            <button type="button" class="btn btn-danger float-right {% if not selected_details %}disabled"{%else%}"id="delete_process_button"{% endif %}
-            >Delete selected</button>
-            <hr>
-
+            <h5>Add Process</h5>
             <form>
                 <div class="form-group">
                     <label for="process_name">Process name (optional)</label>
@@ -27,8 +23,9 @@
         </div>
         <div class="col col-mb-4">
             {% if selected_details %}
-            Actions for {{ selected_details.name }}
+            <h5>Actions for <em>{{ selected_details.name }}</em> ({{ selected_process.htmlshort | safe }})</h5>
             <hr>
+            <button type="button" class="btn btn-danger float-right "id="delete_process_button">Delete selected</button>
             <button type="button" class="btn btn-primary" id="select_input_button">Select input</button>
             <hr>
             <form action="{{ url_for('projects.pgaction') }}">
@@ -55,7 +52,7 @@
         </div>
         <div class="col col-mb-4">
             {% if selected_details %}
-            Dependencies for {{ selected_details.name }}
+            <h5>Dependencies for <em>{{ selected_details.name }}</em></h5>
             <hr>
             <div>
             <BUTTON type="button" class="btn btn-primary" id="add_dep">Add dependency</BUTTON>
@@ -82,7 +79,7 @@ function pgadd_process() {
         process: $("#process_select").val(),
         name: $('#process_name').val()
     }, function(data) {
-        selected_process = data.selected_process;
+        selected_processref = data.selected_processref;
         load_pgpage();
     });
 }
@@ -112,7 +109,7 @@ $('#update_process_button').on('click', function(){
         project: "{{ project }}",
         group: "{{ group }}",
         action: 'update_process',
-        process: selected_process,
+        process: selected_processref,
         lsf_queue: $('#lsf_queue').val()    
     }, function(data) {
         load_pgpage();
@@ -124,7 +121,7 @@ $('#update_processtag_button').on('click', function(){
         project: "{{ project }}",
         group: "{{ group }}",
         action: 'update_process',
-        process: selected_process,
+        process: selected_processref,
         tag: $('#git_tag option:selected').text()    
     }, function(data) {
         load_pgpage();
@@ -136,9 +133,9 @@ $('#delete_process_button').on('click', function(){
         project: "{{ project }}",
         group: "{{ group }}",
         action: 'delete_process',
-        process: selected_process      
+        process: selected_processref      
     }, function(data) {
-        selected_process = null
+        selected_processref = null
         load_pgpage();
     });
 })
