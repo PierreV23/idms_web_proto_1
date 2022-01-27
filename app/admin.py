@@ -248,7 +248,6 @@ def admin():
             count  = items.execute()[0][DataObject.id]
         else:
             items = current_user.irods_session.query(Collection.id).filter(\
-                Criterion('=', Collection.name, '/rivmZone/system/runsheet/processing')).filter(\
                 Criterion('=', CollectionMeta.name, 'sys::runsheet::state')).filter(\
                 Criterion('=', CollectionMeta.value, q)).count(Collection.id)
             count  = items.execute()[0][Collection.id]
