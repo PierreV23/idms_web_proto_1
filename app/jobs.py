@@ -157,7 +157,7 @@ def joblist(state='', page=1):
 
 @bp.route('/')
 @login_required
-@cache.cached(timeout=30, key_prefix=key_zone)
+@cache.cached(timeout=30, key_prefix=key_userzone)
 def show_jobs():
     state = request.args.get('items', 'all', type=str)
     page = request.args.get('page', 1, type=int)
