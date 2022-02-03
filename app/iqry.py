@@ -44,7 +44,12 @@ def qcollmeta(collection):
 def scollmetaval(coll, attr, value, unit=None):
     u = current_user.irods_session.collections.get(coll)
     u.metadata[attr] = iRODSMeta(attr, value, unit)
-    flaskcache.cache.delete_memoized(qcollmeta)
+    flaskcache.cache.delete_memoized(qcollmeta, coll)
+
+def rmallcollmetaattr(coll, attr):
+    u = current_user.irods_session.collections.get(coll)
+    u.metadata._delete_all_values(attr)
+    flaskcache.cache.delete_memoized(qcollmeta, coll)
 
 @login_required
 def qcollmetadict(collection):
