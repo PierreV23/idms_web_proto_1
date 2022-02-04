@@ -128,9 +128,7 @@ def setKeepOnlineUntil():
         return('DONE')
     keepOnlineUntil = now + relativedelta(days=days)
 
-    coll_obj = irods_session.collections.get(collection)
-    new_meta = iRODSMeta(ATTR_ARCHIVE_KEEP_ONLINE_TILL, str(int(datetime.timestamp(keepOnlineUntil))), 'timestamp' )
-    coll_obj.metadata[ATTR_ARCHIVE_KEEP_ONLINE_TILL] = new_meta
+    iqry.scollmetaval(collection, ATTR_ARCHIVE_KEEP_ONLINE_TILL, str(int(datetime.timestamp(keepOnlineUntil))), 'timestamp')
     return('DONE')
 
 
@@ -141,8 +139,7 @@ def setmeta():
     value = request.args.get('value')
     collection = request.args.get('collection')
     if attr and value and collection:
-        coll_obj = current_user.irods_session.collections.get(collection)
-        coll_obj.metadata[attr] = iRODSMeta(attr, value)
+        iqry.scollmetaval(collection, attr, value)
     return('DONE')
 
 
@@ -157,12 +154,10 @@ def setoverride():
         if overrideStr not in ['true', 'false']:
             print( f"unknown selection for _setKeepLocal: {overrideStr}" )
             return('DONE')
-        coll_obj = current_user.irods_session.collections.get(collection)
         if overrideStr == 'false':
-            coll_obj.metadata._delete_all_values(attr)
+            iqry.rmallcollmetaattr(collection, attr)
         else:
-            new_meta = iRODSMeta(attr, value)
-            coll_obj.metadata[attr] = new_meta
+            iqry.scollmetaval(collection, attr, value)
     return('DONE')    
 
 
@@ -227,7 +222,7 @@ def startprocess():
     if processid:
         iqry.scollmetaval(collection, ATTR_PROCESSID, processid)
     elif processgroupid:
-        c.metadata._delete_all_values(ATTR_PROCESSID)
+        iqry.rmallcollmetaattr(collection, ATTR_PROCESSID)
         iqry.scollmetaval(collection, ATTR_PROCESSGROUPID, processgroupid)
     else:
         return 'FAILED'
