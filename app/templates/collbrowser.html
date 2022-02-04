@@ -342,5 +342,11 @@ menuname='collectionbrowser'
 
 </div> <!-- content -->
 
+<script>
+
+var ro = new ResizeObserver( load_graph );
+ro.observe(document.querySelector("#graphimg"));
+
+</script>
 
 {% endblock %}
