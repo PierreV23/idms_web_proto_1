@@ -22,6 +22,7 @@ from app.models import deobfuscate
 from graphviz import Digraph
 from . import iqry
 from .flaskcache import cache, dep_zone, dep_userzone, key_zone
+from dateutil import parser as dateparser
 
 
 BP = Blueprint('projects', __name__, url_prefix='/projects')
@@ -32,6 +33,18 @@ REQUESTS_METHODS = {
     'POST':  requests.post,
     'DELETE':requests.delete
 }
+
+EPOCH = '1970-01-01T01:00:00'
+
+def iso2dt(timestr):
+    """Convert ISO8601 datetime string to datetime
+
+    Args:
+        timestr (str): ISO8601 datetime string
+    """
+    if timestr is None:
+        timestr = EPOCH
+    return dateparser.parse(timestr)
 
 def search(l, f, v):
     """Find an item x in a list l of objects
@@ -227,10 +240,11 @@ def show_projectdetails():
 
     # Retrieve collections associated with project
     query = iqry.qcollbymeta('projectID', projectnaam)
+    processing = iso2dt(pl.get('last_updated', EPOCH)) > iso2dt(pl.get('last_verified', EPOCH))
     projectdetails['colls'] = [datafield('col', q[Collection.name], 'irods_collection') for q in query]
     # return render_template('projectdetails.html', PD=projectdetails,
     #                        conf=config, processnaam=processnaam)
-    return render_template('projectdetails.html', PD=projectdetails, all_projects = all_projects,
+    return render_template('projectdetails.html', PD=projectdetails, all_projects = all_projects, processing=processing,
                            processnaam=processnaam, processgroup=processgroup)
 
 

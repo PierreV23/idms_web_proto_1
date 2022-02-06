@@ -17,6 +17,7 @@ dependencies:
   - pandas
   - pip
   - python
+  - python-dateutil
   - pyyaml
   - requests
   - flask-caching
