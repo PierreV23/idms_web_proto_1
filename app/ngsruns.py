@@ -1,18 +1,58 @@
 from flask import Flask, Blueprint, render_template, request, jsonify, redirect, url_for, session
 from flask_login import current_user, login_required
-from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from marshmallow import Schema, fields, validate
-from sqlalchemy.orm import relationship, remote, foreign
-from sqlalchemy import ForeignKey, distinct
+from sqlalchemy.orm import relationship, remote, foreign, sessionmaker, scoped_session
+from sqlalchemy import ForeignKey, distinct, create_engine, Column, Integer, String, TIMESTAMP, func
+from sqlalchemy.ext.declarative import declarative_base
 from irods.models import Collection, CollectionMeta
 from irods.column import Criterion
 from app.datafield import datafield
+import flask
 import json
 import requests
 from requests.auth import HTTPBasicAuth
 
-db = SQLAlchemy()
+
+
+class NGSRunsAlchemy:
+    '''Handle db sessions for NGSRuns minilims database.'''
+
+    def __init__(self):
+        # Define a SQLAlchemy base class to wrap.
+        self.Base = declarative_base()
+        
+    
+    def init_app(self, app, user):
+        print('db.init_app()')
+        self.engine = create_engine(user.minilims_db)
+        self.sessionmaker = sessionmaker(autocommit=False, autoflush=False,
+                                         bind=self.engine)
+        # Set up scoped_session registry
+        self.session = scoped_session(self.sessionmaker, 
+            scopefunc=flask._app_ctx_stack.__ident_func__)
+        # Make sure db is initialize and up to date
+        self.Base.metadata.create_all(bind=self.engine)
+        
+        # Add ability to query against the tables in database
+        self.Base.query = self.session.query_property()
+        
+        # Line below will raise an exception when `init_app` is called after
+        # Flask has handled the first request.
+        # app.teardown_request(self.remove_session)
+
+        # Below is a HACK, since Flask docs advise against editing 
+        # `teardown_request_funcs` directly. TODO: find another way
+        # to ensure session resource is closed after request.
+        app.teardown_request_funcs['ngsruns'].append(self.remove_session)
+
+    
+    def remove_session(self, _exc=None):
+        self.session.remove()
+
+
+
+db = NGSRunsAlchemy()
 
 bp = Blueprint('ngsruns', __name__, url_prefix='/ngsruns')
 ma = Marshmallow(bp)
@@ -24,32 +64,32 @@ REQUESTS_METHODS = {
     'DELETE':requests.delete
 }
 
-class NGSRun(db.Model):
+class NGSRun(db.Base):
     #__bind_key__ = 'Production'
     __tablename__ = 'ngsruns'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(128), nullable = False)
-    flowcell = db.Column(db.String(30), default='', nullable = False)
-    creation_date = db.Column(db.TIMESTAMP, server_default=db.func.current_timestamp(), nullable=False)
-    description = db.Column(db.String(250), default='', nullable = False)
-    project = db.Column(db.String(32))
-    owner = db.Column(db.String(32))
+    id = Column(Integer, primary_key=True)
+    name = Column(String(128), nullable = False)
+    flowcell = Column(String(30), default='', nullable = False)
+    creation_date = Column(TIMESTAMP, server_default=func.current_timestamp(), nullable=False)
+    description = Column(String(250), default='', nullable = False)
+    project = Column(String(32))
+    owner = Column(String(32))
 
     def __init__(self, flowcell):
         self.flowcell = flowcell
 
 
-class NGSBarcode(db.Model):
+class NGSBarcode(db.Base):
     #__bind_key__ = current_user.environment
     __tablename__ = 'ngsbarcodes'
-    id = db.Column(db.Integer, primary_key=True)
-    ngsrun = db.Column(db.Integer, db.ForeignKey('ngsruns.id'))
-    barcode = db.Column(db.String(128), nullable = False)
-    sampleid = db.Column(db.String(30), nullable = False)
-    primer_set = db.Column(db.String(128), nullable = True)
-    virus_target = db.Column(db.String(128), nullable = True)
-    description = db.Column(db.String(256), nullable = True)
-    creation_date = db.Column(db.TIMESTAMP, server_default=db.func.current_timestamp(), nullable=False)
+    id = Column(Integer, primary_key=True)
+    ngsrun = Column(Integer, ForeignKey('ngsruns.id'))
+    barcode = Column(String(128), nullable = False)
+    sampleid = Column(String(30), nullable = False)
+    primer_set = Column(String(128), nullable = True)
+    virus_target = Column(String(128), nullable = True)
+    description = Column(String(256), nullable = True)
+    creation_date = Column(TIMESTAMP, server_default=func.current_timestamp(), nullable=False)
 
     def __init__(self, ngsrun, barcode):
         self.ngsrun = ngsrun

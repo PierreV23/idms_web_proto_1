@@ -10,7 +10,7 @@ from . import auth, collbrowser, jobs, docviewer
 from . import projects, cluster, admin, reports, userinfo
 from . import ngsruns, upload, flaskcache
 from . import messages
-import irods.exception
+from .ngsruns import db
 
 
 logging.config.dictConfig({
@@ -60,12 +60,8 @@ app.register_blueprint(ngsruns.bp)
 app.register_blueprint(upload.bp)
 app.register_blueprint(userinfo.bp)
 
-from .ngsruns import db
-db.init_app(app)
 
 flaskcache.init(app)
-
-migrate = Migrate(app, db)
 
 login_manager = LoginManager()
 login_manager.init_app(app)

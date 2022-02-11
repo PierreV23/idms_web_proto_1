@@ -22,6 +22,7 @@ from irods.meta import iRODSMeta
 from fs_irods import fs_irods
 from . import flaskcache
 from . import iqry
+from .ngsruns import db
 
 ATTR_DISPLAYNAME = 'sys::ad::displayName'
 
@@ -99,6 +100,7 @@ class WebUser(UserMixin):
             self.irods_server = irods_env.get('host')
             self.irods_zone = irods_env.get('zone')
             self.features = irods_env.get('features', [])
+            self.minilims_db = irods_env.get('minilims_db', 'sqlite://')
         self._fullname = username
         self.settings = IRSettings(self.username, prefix='sys::ngsweb::')
         
@@ -194,3 +196,8 @@ class WebUser(UserMixin):
 
     def get_id(self):
         return self.username
+
+    def get_minilims_db_engine(self):
+        """Load engine based on selected minilims_db URL."""
+        engine_options = current_app.config['SQLALCHEMY_ENGINE_OPTIONS']
+        return db.create_engine(self.minilims_db, engine_options)

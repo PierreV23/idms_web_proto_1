@@ -5,11 +5,14 @@ Created on Tue Nov 12 14:33:10 2019
 
 @author: wierinve
 """
+import logging
+
 from datetime import timedelta
 from flask import Blueprint, flash, render_template, redirect, request, url_for, current_app
 from flask_login import login_user, logout_user, current_user, login_required
 from app.models import WebUser
 from . import messages
+from .ngsruns import db
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -26,6 +29,10 @@ def login():
             return redirect(url_for("auth.login"))
         user.store()
         login_user(user, duration=timedelta(hours=24))
+
+        # (re-)initialize ngsruns db connection, it's environment dependent.
+        db.init_app(current_app, user)
+
         # Check for messages
         for message in messages.getmessages():
             flash(message, "news")
