@@ -196,8 +196,3 @@ class WebUser(UserMixin):
 
     def get_id(self):
         return self.username
-
-    def get_minilims_db_engine(self):
-        """Load engine based on selected minilims_db URL."""
-        engine_options = current_app.config['SQLALCHEMY_ENGINE_OPTIONS']
-        return db.create_engine(self.minilims_db, engine_options)
