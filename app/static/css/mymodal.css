@@ -312,6 +312,20 @@ ul {
   margin-bottom: 0.5rem;
 }
 
+.error {
+  /* border-style: solid; */
+  border-radius: 0.25rem;
+  box-shadow: 0 0 1px rgba(0,0,0, 0.15), 0 1px 3px rgba(0,0,0, 0.25);
+  /* 15 rgba(0, 0, 0, 0.137), 0 1px 3px rgba(0, 0, 0, 0.205) */
+  /* width: 100%; */
+  padding: 0.5rem;
+  padding-left: 1rem;
+  margin:  0.5rem;
+  margin-bottom: 0.5rem;
+  color: white;
+  background-color: red;
+}
+
 .seqlist {
   min-height: 75h;
   max-height: 75vh;
