@@ -1,5 +1,5 @@
 import os
-from flask import Flask, redirect, render_template, request, url_for
+from flask import Flask, flash, redirect, render_template, request, url_for
 from flask_login import current_user, LoginManager, login_required, logout_user
 from flask_migrate import Migrate
 from app.models import WebUser
@@ -10,7 +10,7 @@ from . import auth, collbrowser, jobs, docviewer
 from . import projects, cluster, admin, reports, userinfo
 from . import ngsruns, upload, flaskcache
 from . import messages
-from .ngsruns import db
+from .ngsruns import db, NGSRunsDBUnavailableException
 
 
 logging.config.dictConfig({
@@ -47,6 +47,8 @@ app.config.from_mapping(
 )
 
 app.config.from_pyfile(os.path.join(app.instance_path, 'config.py'), silent=True)
+
+db.init_app(app)
 
 app.register_blueprint(auth.bp)
 app.register_blueprint(collbrowser.bp)
@@ -107,3 +109,8 @@ def unauthorized(e):
     app.logger.warning("Unauthorized access attempt: '{}' on '{}'".format(current_user.get_id()), request.path)
     # Re-raise, since we don't have a solution.
     raise Exception(e)
+
+@app.errorhandler(NGSRunsDBUnavailableException)
+def handle_bad_request(e):
+    flash('NGSRuns Database Unavailable', 'news')
+    return redirect(url_for('home'))

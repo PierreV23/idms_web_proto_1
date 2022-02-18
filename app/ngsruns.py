@@ -5,6 +5,7 @@ from marshmallow import Schema, fields, validate
 from sqlalchemy.orm import relationship, remote, foreign, sessionmaker, scoped_session
 from sqlalchemy import ForeignKey, distinct, create_engine, Column, Integer, String, TIMESTAMP, func
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.exc import OperationalError
 from irods.models import Collection, CollectionMeta
 from irods.column import Criterion
 from app.datafield import datafield
@@ -15,58 +16,47 @@ from requests.auth import HTTPBasicAuth
 
 Base = declarative_base()
 
+class NGSRunsDBUnavailableException(Exception):
+    pass
+
 class NGSRunsAlchemy:
     '''Handle db sessions for NGSRuns minilims database.'''
 
     def __init__(self):
         # Define a SQLAlchemy base class to wrap.
-        self._session = None
-        self._env = None
+        self._sessions = {}
+
+
+    def init_app(self, app):
+        for env in app.config.get('IRODS_ENVS', []):
+            db_connect = app.config.get('IRODS_ENVS', {}).get(env, {}).get('minilims_db', 'sqlite://')
+            try:
+                engine = create_engine(db_connect)
+                Base.metadata.create_all(bind=engine)
+            except OperationalError:
+                # Unable to create connection to db. Continue to create
+                # db engines for other envs.
+                continue
+            _sessionmaker = sessionmaker(autocommit=False, autoflush=False,
+                                         bind=engine)
+            self._sessions[env] = scoped_session(_sessionmaker, 
+                scopefunc=flask._app_ctx_stack.__ident_func__)
+        
+        app.teardown_request(self.remove_session)
+
 
     @property
     def session(self):
-        print(f'Q SESSION FOR {current_user.environment} - have {self._env}')
-        if self._env != current_user.environment:
-            self._session = None
-        if self._session is None:
-            print('INIT SESSION')
-            self._env = current_user.environment
-            db_connect = current_app.config.get('IRODS_ENVS', {}).get(self._env, {}).get('minilims_connect', 'sqlite:///')
-            engine = create_engine(db_connect)
-            Base.metadata.create_all(bind=engine)
-            _sessionmaker = sessionmaker(autocommit=False, autoflush=False,
-                                         bind=engine)
-            self._session = scoped_session(_sessionmaker, 
-                scopefunc=flask._app_ctx_stack.__ident_func__)
-        return self._session 
-    
-    def initx_app(self, app, user):
-        print('db.init_app()')
-        self.engine = create_engine(user.minilims_db)
-        self.sessionmaker = sessionmaker(autocommit=False, autoflush=False,
-                                         bind=self.engine)
-        # Set up scoped_session registry
-        self.session = scoped_session(self.sessionmaker, 
-            scopefunc=flask._app_ctx_stack.__ident_func__)
-        # Make sure db is initialize and up to date
-        self.Base.metadata.create_all(bind=self.engine)
-        
-        # Add ability to query against the tables in database
-        self.Base.query = self.session.query_property()
-        
-        # Line below will raise an exception when `init_app` is called after
-        # Flask has handled the first request.
-        # app.teardown_request(self.remove_session)
+        try:
+            return self._sessions[current_user.environment]
+        except KeyError:
+            raise NGSRunsDBUnavailableException()
 
-        # Below is a HACK, since Flask docs advise against editing 
-        # `teardown_request_funcs` directly. TODO: find another way
-        # to ensure session resource is closed after request.
-        app.teardown_request_funcs['ngsruns'].append(self.remove_session)
 
-    
     def remove_session(self, _exc=None):
-        if self._session:
-            self._session.remove()
+        if hasattr(current_user, 'environment') and \
+            current_user.environment in self._sessions:
+            self._sessions[current_user.environment].remove()
 
 
 
