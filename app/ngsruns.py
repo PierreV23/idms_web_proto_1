@@ -1,10 +1,11 @@
-from flask import Flask, Blueprint, render_template, request, jsonify, redirect, url_for, session
+from flask import Flask, Blueprint, render_template, request, jsonify, redirect, url_for, session, current_app
 from flask_login import current_user, login_required
 from flask_marshmallow import Marshmallow
 from marshmallow import Schema, fields, validate
 from sqlalchemy.orm import relationship, remote, foreign, sessionmaker, scoped_session
 from sqlalchemy import ForeignKey, distinct, create_engine, Column, Integer, String, TIMESTAMP, func
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.exc import OperationalError
 from irods.models import Collection, CollectionMeta
 from irods.column import Criterion
 from app.datafield import datafield
@@ -13,42 +14,49 @@ import json
 import requests
 from requests.auth import HTTPBasicAuth
 
+Base = declarative_base()
 
+class NGSRunsDBUnavailableException(Exception):
+    pass
 
 class NGSRunsAlchemy:
     '''Handle db sessions for NGSRuns minilims database.'''
 
     def __init__(self):
         # Define a SQLAlchemy base class to wrap.
-        self.Base = declarative_base()
-        
-    
-    def init_app(self, app, user):
-        print('db.init_app()')
-        self.engine = create_engine(user.minilims_db)
-        self.sessionmaker = sessionmaker(autocommit=False, autoflush=False,
-                                         bind=self.engine)
-        # Set up scoped_session registry
-        self.session = scoped_session(self.sessionmaker, 
-            scopefunc=flask._app_ctx_stack.__ident_func__)
-        # Make sure db is initialize and up to date
-        self.Base.metadata.create_all(bind=self.engine)
-        
-        # Add ability to query against the tables in database
-        self.Base.query = self.session.query_property()
-        
-        # Line below will raise an exception when `init_app` is called after
-        # Flask has handled the first request.
-        # app.teardown_request(self.remove_session)
+        self._sessions = {}
 
-        # Below is a HACK, since Flask docs advise against editing 
-        # `teardown_request_funcs` directly. TODO: find another way
-        # to ensure session resource is closed after request.
-        app.teardown_request_funcs['ngsruns'].append(self.remove_session)
 
-    
+    def init_app(self, app):
+        for env in app.config.get('IRODS_ENVS', []):
+            db_connect = app.config.get('IRODS_ENVS', {}).get(env, {}).get('minilims_db', 'sqlite://')
+            try:
+                engine = create_engine(db_connect)
+                Base.metadata.create_all(bind=engine)
+            except OperationalError:
+                # Unable to create connection to db. Continue to create
+                # db engines for other envs.
+                continue
+            _sessionmaker = sessionmaker(autocommit=False, autoflush=False,
+                                         bind=engine)
+            self._sessions[env] = scoped_session(_sessionmaker, 
+                scopefunc=flask._app_ctx_stack.__ident_func__)
+        
+        app.teardown_request(self.remove_session)
+
+
+    @property
+    def session(self):
+        try:
+            return self._sessions[current_user.environment]
+        except KeyError:
+            raise NGSRunsDBUnavailableException()
+
+
     def remove_session(self, _exc=None):
-        self.session.remove()
+        if hasattr(current_user, 'environment') and \
+            current_user.environment in self._sessions:
+            self._sessions[current_user.environment].remove()
 
 
 
@@ -64,7 +72,7 @@ REQUESTS_METHODS = {
     'DELETE':requests.delete
 }
 
-class NGSRun(db.Base):
+class NGSRun(Base):
     #__bind_key__ = 'Production'
     __tablename__ = 'ngsruns'
     id = Column(Integer, primary_key=True)
@@ -79,7 +87,7 @@ class NGSRun(db.Base):
         self.flowcell = flowcell
 
 
-class NGSBarcode(db.Base):
+class NGSBarcode(Base):
     #__bind_key__ = current_user.environment
     __tablename__ = 'ngsbarcodes'
     id = Column(Integer, primary_key=True)
@@ -153,7 +161,7 @@ def get_complete(field):
 @login_required
 def run_list():
     idrequest = request.args.get('idrequest', 0)
-    data = [ vars(f) for f in NGSRun.query.all() ]
+    data = [ vars(f) for f in db.session.query(NGSRun).all() ]
     # Create a list of flowcells and collections in irods
     q = current_user.irods_session.query(Collection.name, CollectionMeta.value).filter( \
             Criterion('=', CollectionMeta.name, 'minion::flow_cell_id')).filter( \
@@ -185,7 +193,7 @@ def run_list():
 @bp.route('_barcodes', methods=['GET'])
 def run_barcodes():
     id = request.args.get('idrequest', type=int)
-    barcodes = NGSBarcode.query.filter(NGSBarcode.ngsrun == id).all()
+    barcodes = db.session.query(NGSBarcode).filter(NGSBarcode.ngsrun == id).all()
     fields = [ 'barcode', 'description', 'primer_set', 'sampleid', 'virus_target']
     data = [ { p: getattr(x, p) for p in fields } for x in barcodes ]
     columns = [
@@ -205,8 +213,8 @@ def run_barcodes():
 @bp.route('edit', methods=['GET'])
 def edit_form():
     id = request.args.get('idrequest', '', type=str)
-    run = NGSRun.query.filter(NGSRun.id == id).one_or_none()
-    barcode_obj = NGSBarcode.query.filter(NGSBarcode.ngsrun == id).all()
+    run = db.session.query(NGSRun).filter(NGSRun.id == id).one_or_none()
+    barcode_obj = db.session.query(NGSBarcode).filter(NGSBarcode.ngsrun == id).all()
     #barcodes = [ f.barcode for f in barcode_obj ] # maak een list van object
     data = { barcode : None for barcode in barcodes }
     for f in barcode_obj:
@@ -236,8 +244,8 @@ def run_form():
 def delete_ngs_run():
     id = request.args.get('id', type=int)
     if id:
-        NGSBarcode.query.filter(NGSBarcode.ngsrun==id).delete()
-        NGSRun.query.filter(NGSRun.id == id).delete()
+        db.session.query(NGSBarcode).filter(NGSBarcode.ngsrun==id).delete()
+        db.session.query(NGSRun).filter(NGSRun.id == id).delete()
         db.session.commit()
     return redirect(url_for('ngsruns.run_list'))
 
@@ -269,7 +277,7 @@ def run_update():
 def get_ngs_runs():
     """Retrieve a list of all ngs runs
     """
-    all_runs = NGSRun.query.all()
+    all_runs = db.session.query(NGSRun).all()
     dump = ngsruns_schema.dump(all_runs)
     return jsonify(dump)
 
@@ -277,13 +285,13 @@ def get_ngs_runs():
 def get_ngs_run(flowcell):
     """Retrieve a single ngs runs
     """
-    ngsrun = NGSRun.query.filter(NGSRun.flowcell == flowcell).one_or_none()
+    ngsrun = db.session.query(NGSRun).filter(NGSRun.flowcell == flowcell).one_or_none()
     return jsonify(ngsrun_schema.dump(ngsrun))
 
 @bp.route('/api/runs/<flowcell>/barcodes', methods=['GET'])
 def get_ngs_barcodes(flowcell):
     """Retrieve barcodes for a single ngs runs
     """
-    ngsrun = NGSRun.query.filter(NGSRun.flowcell == flowcell).one_or_none()
-    barcodes = NGSBarcode.query.filter(NGSBarcode.ngsrun == ngsrun.id).all()
+    ngsrun = db.session.query(NGSRun).filter(NGSRun.flowcell == flowcell).one_or_none()
+    barcodes = db.session.query(NGSBarcode).filter(NGSBarcode.ngsrun == ngsrun.id).all()
     return jsonify(barcodes_schema.dump(barcodes))

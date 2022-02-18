@@ -31,7 +31,7 @@ def login():
         login_user(user, duration=timedelta(hours=24))
 
         # (re-)initialize ngsruns db connection, it's environment dependent.
-        db.init_app(current_app, user)
+        #db.init_app(current_app, user)
 
         # Check for messages
         for message in messages.getmessages():
