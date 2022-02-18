@@ -1,4 +1,4 @@
-from flask import Flask, Blueprint, render_template, request, jsonify, redirect, url_for, session, current_app
+from flask import Flask, Blueprint, render_template, request, jsonify, redirect, url_for, session
 from flask_login import current_user, login_required
 from flask_marshmallow import Marshmallow
 from marshmallow import Schema, fields, validate
