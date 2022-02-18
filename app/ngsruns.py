@@ -31,7 +31,7 @@ class NGSRunsAlchemy:
         for env in app.config.get('IRODS_ENVS', []):
             db_connect = app.config.get('IRODS_ENVS', {}).get(env, {}).get('minilims_db', 'sqlite://')
             try:
-                engine = create_engine(db_connect)
+                engine = create_engine(db_connect, connect_args={'connect_timeout': 10})
                 Base.metadata.create_all(bind=engine)
             except OperationalError:
                 # Unable to create connection to db. Continue to create
@@ -41,7 +41,6 @@ class NGSRunsAlchemy:
                                          bind=engine)
             self._sessions[env] = scoped_session(_sessionmaker, 
                 scopefunc=flask._app_ctx_stack.__ident_func__)
-        
         app.teardown_request(self.remove_session)
 
 
