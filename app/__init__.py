@@ -112,5 +112,5 @@ def unauthorized(e):
 
 @app.errorhandler(NGSRunsDBUnavailableException)
 def handle_bad_request(e):
-    flash('NGSRuns Database Unavailable', 'news')
+    flash('NGSRuns Database Unavailable', 'error')
     return redirect(url_for('home'))
