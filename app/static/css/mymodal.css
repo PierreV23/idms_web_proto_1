@@ -322,7 +322,8 @@ ul {
   padding-left: 1rem;
   margin:  0.5rem;
   margin-bottom: 0.5rem;
-  background-color: yellow;
+  color: white;
+  background-color: red;
 }
 
 .seqlist {
