@@ -2,64 +2,66 @@
     {% if message %}
     <div class="row card bg-warning "><H3><center>{{ message }}</center></H3></div>
     {% endif %}
+    {% if selected_details %}
+    <div class="row card"><h5>Selected process: <em>{{ selected_details.name }}</em> ({{ selected_process.htmlshort | safe }})</h5> </div>
+    {% else %}
+    <hr>
+    {% endif %}
     <div class="row">
         <div class="col col-mb-4">
-            Processes  
-            <button type="button" class="btn btn-danger float-right {% if not selected_details %}disabled"{%else%}"id="delete_process_button"{% endif %}
-            >Delete selected</button>
-            <hr>
-
+            <h5>Add Process</h5>
             <form>
                 <div class="form-group">
                     <label for="process_name">Process name (optional)</label>
-                    <INPUT TYPE="text" class="form-control" id="process_name"></INPUT>
+                    <INPUT TYPE="text" class="form-control form-control-sm" id="process_name"></INPUT>
                 </div>
                 <div class="form-group">
-                    <SELECT class="form-control" style="width: '100px'" id="process_select">
+                    <SELECT class="form-control form-control-sm" style="width: '100px'" id="process_select">
                         {% for proc in all_processes %}
                         <OPTION>{{ proc.name }}</OPTION>
                         {% endfor %}
                     </SELECT>
                 </div>
-                <BUTTON type="button" class="btn btn-primary" onClick='pgadd_process()''>Add Process</BUTTON>
+                <BUTTON type="button" class="btn btn-sm btn-primary" onClick='pgadd_process()''>Add Process</BUTTON>
             </form>
 
         </div>
         <div class="col col-mb-4">
             {% if selected_details %}
-            Actions for {{ selected_details.name }}
+            <h5>Actions</h5>
             <hr>
-            <button type="button" class="btn btn-primary" id="select_input_button">Select input</button>
+            <button type="button" class="btn btn-sm btn-primary" id="select_input_button">Select input</button>
+            <button type="button" class="btn btn-sm btn-danger  "id="delete_process_button">Delete selected</button>
             <hr>
             <form action="{{ url_for('projects.pgaction') }}">
                 <div class="form-group">
                     <label for="process_name">GIT Tag</label>
-                    <select class="form-control form-control-lg" id="git_tag">
+                    <select class="form-control form-control-sm" id="git_tag">
                         <option disabled selected value> -- select a tag -- </option>
                         {% for tag in selected_tags %}
                         <option {% if tag == selected_details.tag %}selected{% endif %}>{{ tag }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <BUTTON type="button" class="btn btn-primary disabled" id="update_processtag_button">Submit</BUTTON>
+                <BUTTON type="button" class="btn btn-sm btn-primary disabled" id="update_processtag_button">Submit</BUTTON>
             </form>
             <form action="{{ url_for('projects.pgaction') }}">
                 <div class="form-group">
                     <label for="process_name">LSF queue</label>
-                    <INPUT TYPE="text" class="form-control" id="lsf_queue" value="{{ selected_details.lsf_queue }}"></INPUT>
+                    <INPUT TYPE="text" class="form-control input-sm" id="lsf_queue" value="{{ selected_details.lsf_queue }}"></INPUT>
                 </div>
-                <BUTTON type="button" class="btn btn-primary disabled" id="update_process_button">Submit</BUTTON>
-                <BUTTON type="button" class="btn btn-primary" id="update_allprocs_button">Set for all processes</BUTTON>
+                <BUTTON type="button" class="btn btn-sm btn-primary disabled" id="update_process_button">Submit</BUTTON>
+                <BUTTON type="button" class="btn btn-sm btn-primary" id="update_allprocs_button">Set for all processes</BUTTON>
             </form>
             {% endif %}
         </div>
         <div class="col col-mb-4">
             {% if selected_details %}
-            Dependencies for {{ selected_details.name }}
+            <h5>Dependencies</h5>
             <hr>
             <div>
-            <BUTTON type="button" class="btn btn-primary" id="add_dep">Add dependency</BUTTON>
-            <BUTTON type="button" class="btn btn-danger disabled" id="del_dep">Delete dependency</BUTTON>
+            <BUTTON type="button" class="btn btn-sm btn-primary" id="add_dep">Add dependency</BUTTON>
+            <BUTTON type="button" class="btn btn-sm btn-danger disabled" id="del_dep">Delete dependency</BUTTON>
             </div>
             <hr>
             <ul class="list-group">
@@ -82,7 +84,7 @@ function pgadd_process() {
         process: $("#process_select").val(),
         name: $('#process_name').val()
     }, function(data) {
-        selected_process = data.selected_process;
+        selected_processref = data.selected_processref;
         load_pgpage();
     });
 }
@@ -112,7 +114,7 @@ $('#update_process_button').on('click', function(){
         project: "{{ project }}",
         group: "{{ group }}",
         action: 'update_process',
-        process: selected_process,
+        process: selected_processref,
         lsf_queue: $('#lsf_queue').val()    
     }, function(data) {
         load_pgpage();
@@ -124,7 +126,7 @@ $('#update_processtag_button').on('click', function(){
         project: "{{ project }}",
         group: "{{ group }}",
         action: 'update_process',
-        process: selected_process,
+        process: selected_processref,
         tag: $('#git_tag option:selected').text()    
     }, function(data) {
         load_pgpage();
@@ -136,9 +138,9 @@ $('#delete_process_button').on('click', function(){
         project: "{{ project }}",
         group: "{{ group }}",
         action: 'delete_process',
-        process: selected_process      
+        process: selected_processref      
     }, function(data) {
-        selected_process = null
+        selected_processref = null
         load_pgpage();
     });
 })

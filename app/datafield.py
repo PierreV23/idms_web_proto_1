@@ -303,6 +303,17 @@ class data_projectid(data_base):
     def factory(**kwargs):
         return data_projectid(**kwargs)
 
+class data_process(data_base):
+
+    @property
+    def htmlstring(self):
+        return '<a href="{0}">{1}</a>'.format(url_for('projects.show_projects', page='processes', process=self.value), self.value)
+
+    @staticmethod
+    def factory(**kwargs):
+        return data_process(**kwargs)
+
+
 class data_processgroupid(data_base):
 
     @property
@@ -312,6 +323,7 @@ class data_processgroupid(data_base):
     @property
     def htmlshort(self):
         return f'<div data-toggle="tooltip" title={self.value}>{self.value[:8]}</div'
+        
     @staticmethod
     def factory(**kwargs):
         return data_processgroupid(**kwargs)
