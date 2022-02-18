@@ -380,7 +380,13 @@
   <!-- Content Wrapper. Contains page content -->
   <div class="content-wrapper">
     <!-- Content Header (Page header) -->
-
+    {% with messages = get_flashed_messages(category_filter=["error"]) %}
+      {% if messages %}
+        {% for message in messages %}
+          <div class="error"><b>{{ message }}</b></div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
 
     <div class="title">{% block heading %}{% endblock %}</div>
 
