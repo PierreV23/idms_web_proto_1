@@ -30,8 +30,11 @@ class NGSRunsAlchemy:
     def init_app(self, app):
         for env in app.config.get('IRODS_ENVS', []):
             db_connect = app.config.get('IRODS_ENVS', {}).get(env, {}).get('minilims_db', 'sqlite://')
+            connect_args = {}
+            if db_connect.startswith('postgres'):
+                connect_args = {'connect_timeout': 10}
             try:
-                engine = create_engine(db_connect, connect_args={'connect_timeout': 10})
+                engine = create_engine(db_connect, connect_args=connect_args)
                 Base.metadata.create_all(bind=engine)
             except OperationalError:
                 # Unable to create connection to db. Continue to create
