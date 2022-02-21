@@ -1,4 +1,4 @@
-from flask import Flask, Blueprint, render_template, request, jsonify, redirect, url_for, session
+from flask import Flask, current_app, Blueprint, render_template, request, jsonify, redirect, url_for, session
 from flask_login import current_user, login_required
 from flask_marshmallow import Marshmallow
 from marshmallow import Schema, fields, validate
@@ -46,11 +46,20 @@ class NGSRunsAlchemy:
                 scopefunc=flask._app_ctx_stack.__ident_func__)
         app.teardown_request(self.remove_session)
 
+    def envs(self):
+        return list(self._sessions)
+
 
     @property
     def session(self):
         try:
             return self._sessions[current_user.environment]
+        except KeyError:
+            raise NGSRunsDBUnavailableException()
+
+    def session_for_env(self, environment):
+        try:
+            return self._sessions[environment]
         except KeyError:
             raise NGSRunsDBUnavailableException()
 
@@ -273,27 +282,49 @@ def run_update():
     current_user.settings['default_project'] = new_run.project
     return redirect(url_for('ngsruns.run_list', idrequest=new_run.id))
 
-# GET
+# MiniLIMS API GET
 
-@bp.route('/api/runs', methods=['GET'])
-def get_ngs_runs():
+@bp.route('/api/envs', methods=['GET'])
+def get_envs():
+    """Retrieve a list of all environments
+    """
+    return jsonify(db.envs())
+
+@bp.route('/api/envs/<environment>/runs', methods=['GET'])
+def get_ngs_runs(environment):
     """Retrieve a list of all ngs runs
     """
-    all_runs = db.session.query(NGSRun).all()
+    all_runs = db.session_for_env(environment).query(NGSRun).all()
     dump = ngsruns_schema.dump(all_runs)
     return jsonify(dump)
 
-@bp.route('/api/runs/<flowcell>', methods=['GET'])
-def get_ngs_run(flowcell):
+@bp.route('/api/envs/<environment>/runs/<flowcell>', methods=['GET'])
+def get_ngs_run(environment, flowcell):
     """Retrieve a single ngs runs
     """
-    ngsrun = db.session.query(NGSRun).filter(NGSRun.flowcell == flowcell).one_or_none()
+    ngsrun = db.session_for_env(environment).query(NGSRun).filter(NGSRun.flowcell == flowcell).one_or_none()
     return jsonify(ngsrun_schema.dump(ngsrun))
 
-@bp.route('/api/runs/<flowcell>/barcodes', methods=['GET'])
-def get_ngs_barcodes(flowcell):
+@bp.route('/api/envs/<environment>/runs/<flowcell>/barcodes', methods=['GET'])
+def get_ngs_barcodes(environment, flowcell):
     """Retrieve barcodes for a single ngs runs
     """
-    ngsrun = db.session.query(NGSRun).filter(NGSRun.flowcell == flowcell).one_or_none()
-    barcodes = db.session.query(NGSBarcode).filter(NGSBarcode.ngsrun == ngsrun.id).all()
+    ngsrun = db.session_for_env(environment).query(NGSRun).filter(NGSRun.flowcell == flowcell).one_or_none()
+    barcodes = db.session_for_env(environment).query(NGSBarcode).filter(NGSBarcode.ngsrun == ngsrun.id).all()
     return jsonify(barcodes_schema.dump(barcodes))
+
+
+# Backward compatible API endpoints for Productie
+
+
+@bp.route('/api/runs', methods=['GET'])
+def get_ngs_runs_prod():
+    return get_ngs_runs('Productie')
+
+@bp.route('/api/runs/<flowcell>', methods=['GET'])
+def get_ngs_run_prod(flowcell):
+    return get_ngs_run('Productie', flowcell)
+
+@bp.route('/api/runs/<flowcell>/barcodes', methods=['GET'])
+def get_ngs_barcodes_prod(flowcell):
+    return get_ngs_barcodes('Productie', flowcell)
