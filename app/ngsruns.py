@@ -1,4 +1,4 @@
-from flask import Flask, Blueprint, render_template, request, jsonify, redirect, url_for, session
+from flask import Flask, current_app, Blueprint, render_template, request, jsonify, redirect, url_for, session
 from flask_login import current_user, login_required
 from flask_marshmallow import Marshmallow
 from marshmallow import Schema, fields, validate
@@ -25,11 +25,15 @@ class NGSRunsAlchemy:
     def __init__(self):
         # Define a SQLAlchemy base class to wrap.
         self._sessions = {}
+        self.default_env = None
 
 
     def init_app(self, app):
-        for env in app.config.get('IRODS_ENVS', []):
-            db_connect = app.config.get('IRODS_ENVS', {}).get(env, {}).get('minilims_db', 'sqlite://')
+        for env_name, env in app.config.get('IRODS_ENVS', {}).items():
+            if self.default_env is None and env.get('default', False):
+                # Env in config with 'default' attr is assumed as default (e.g. 'Productie').
+                self.default_env = env_name
+            db_connect = env.get('minilims_db', 'sqlite://')
             connect_args = {}
             if db_connect.startswith('postgres'):
                 connect_args = {'connect_timeout': 10}
@@ -42,17 +46,28 @@ class NGSRunsAlchemy:
                 continue
             _sessionmaker = sessionmaker(autocommit=False, autoflush=False,
                                          bind=engine)
-            self._sessions[env] = scoped_session(_sessionmaker, 
+            self._sessions[env_name] = scoped_session(_sessionmaker, 
                 scopefunc=flask._app_ctx_stack.__ident_func__)
         app.teardown_request(self.remove_session)
 
+    def envs(self):
+        return list(self._sessions)
 
-    @property
-    def session(self):
+
+    def session(self, environment=None):
+        """Return session. If no specific environment is requested, use the one 
+        defined in the user object, eventually fall back to `default_env`."""
+        env = environment
+        if environment is None:
+            if hasattr(current_user, 'environment'):
+                env = current_user.environment
+            else:
+                env = self.default_env
+        
         try:
-            return self._sessions[current_user.environment]
+            return self._sessions[env]
         except KeyError:
-            raise NGSRunsDBUnavailableException()
+            raise NGSRunsDBUnavailableException(f'env={env}')
 
 
     def remove_session(self, _exc=None):
@@ -156,14 +171,14 @@ def rest_call(request_type, endpoint, data={}):
 @bp.route('complete/<field>', methods=['GET'])
 def get_complete(field):
     req = request.args.to_dict().get('q', '')
-    data1 = db.session.query(FIELDS[field]).filter(FIELDS[field].like('%{}%'.format(req))).distinct().all()
+    data1 = db.session().query(FIELDS[field]).filter(FIELDS[field].like('%{}%'.format(req))).distinct().all()
     return jsonify(data1)
 
 @bp.route('list', methods=['GET'])
 @login_required
 def run_list():
     idrequest = request.args.get('idrequest', 0)
-    data = [ vars(f) for f in db.session.query(NGSRun).all() ]
+    data = [ vars(f) for f in db.session().query(NGSRun).all() ]
     # Create a list of flowcells and collections in irods
     q = current_user.irods_session.query(Collection.name, CollectionMeta.value).filter( \
             Criterion('=', CollectionMeta.name, 'minion::flow_cell_id')).filter( \
@@ -195,7 +210,7 @@ def run_list():
 @bp.route('_barcodes', methods=['GET'])
 def run_barcodes():
     id = request.args.get('idrequest', type=int)
-    barcodes = db.session.query(NGSBarcode).filter(NGSBarcode.ngsrun == id).all()
+    barcodes = db.session().query(NGSBarcode).filter(NGSBarcode.ngsrun == id).all()
     fields = [ 'barcode', 'description', 'primer_set', 'sampleid', 'virus_target']
     data = [ { p: getattr(x, p) for p in fields } for x in barcodes ]
     columns = [
@@ -215,8 +230,8 @@ def run_barcodes():
 @bp.route('edit', methods=['GET'])
 def edit_form():
     id = request.args.get('idrequest', '', type=str)
-    run = db.session.query(NGSRun).filter(NGSRun.id == id).one_or_none()
-    barcode_obj = db.session.query(NGSBarcode).filter(NGSBarcode.ngsrun == id).all()
+    run = db.session().query(NGSRun).filter(NGSRun.id == id).one_or_none()
+    barcode_obj = db.session().query(NGSBarcode).filter(NGSBarcode.ngsrun == id).all()
     #barcodes = [ f.barcode for f in barcode_obj ] # maak een list van object
     data = { barcode : None for barcode in barcodes }
     for f in barcode_obj:
@@ -246,9 +261,9 @@ def run_form():
 def delete_ngs_run():
     id = request.args.get('id', type=int)
     if id:
-        db.session.query(NGSBarcode).filter(NGSBarcode.ngsrun==id).delete()
-        db.session.query(NGSRun).filter(NGSRun.id == id).delete()
-        db.session.commit()
+        db.session().query(NGSBarcode).filter(NGSBarcode.ngsrun==id).delete()
+        db.session().query(NGSRun).filter(NGSRun.id == id).delete()
+        db.session().commit()
     return redirect(url_for('ngsruns.run_list'))
 
 @bp.route('new', methods=['POST'])
@@ -259,8 +274,8 @@ def run_update():
     new_run.project = f.get('project', '')
     new_run.owner = current_user.username
     new_run.description = f.get('description', '')
-    db.session.add(new_run)
-    db.session.commit()
+    db.session().add(new_run)
+    db.session().commit()
     for barcode in barcodes:
         if f.get('sampleid_{}'.format(barcode)):
             new_barcode = NGSBarcode(new_run.id, barcode)
@@ -268,18 +283,19 @@ def run_update():
             new_barcode.virus_target = f.get('target_{}'.format(barcode))
             new_barcode.primer_set = f.get('primer_{}'.format(barcode))
             new_barcode.description = f.get('description_{}'.format(barcode))
-            db.session.add(new_barcode)
-    db.session.commit()
+            db.session().add(new_barcode)
+    db.session().commit()
     current_user.settings['default_project'] = new_run.project
     return redirect(url_for('ngsruns.run_list', idrequest=new_run.id))
 
-# GET
+# MiniLIMS API GET
 
 @bp.route('/api/runs', methods=['GET'])
 def get_ngs_runs():
     """Retrieve a list of all ngs runs
     """
-    all_runs = db.session.query(NGSRun).all()
+    env = request.args.get('env', None)
+    all_runs = db.session(env).query(NGSRun).all()
     dump = ngsruns_schema.dump(all_runs)
     return jsonify(dump)
 
@@ -287,13 +303,15 @@ def get_ngs_runs():
 def get_ngs_run(flowcell):
     """Retrieve a single ngs runs
     """
-    ngsrun = db.session.query(NGSRun).filter(NGSRun.flowcell == flowcell).one_or_none()
+    env = request.args.get('env', None)
+    ngsrun = db.session(env).query(NGSRun).filter(NGSRun.flowcell == flowcell).one_or_none()
     return jsonify(ngsrun_schema.dump(ngsrun))
 
 @bp.route('/api/runs/<flowcell>/barcodes', methods=['GET'])
 def get_ngs_barcodes(flowcell):
     """Retrieve barcodes for a single ngs runs
     """
-    ngsrun = db.session.query(NGSRun).filter(NGSRun.flowcell == flowcell).one_or_none()
-    barcodes = db.session.query(NGSBarcode).filter(NGSBarcode.ngsrun == ngsrun.id).all()
+    env = request.args.get('env', None)
+    ngsrun = db.session(env).query(NGSRun).filter(NGSRun.flowcell == flowcell).one_or_none()
+    barcodes = db.session(env).query(NGSBarcode).filter(NGSBarcode.ngsrun == ngsrun.id).all()
     return jsonify(barcodes_schema.dump(barcodes))
