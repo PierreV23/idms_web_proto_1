@@ -567,3 +567,14 @@ def processgroups():
 
     return render_template('processgroups.html', project=project, processgroup=processgroup, processgroups=groups)
 
+
+@BP.route('usermanager', methods=['GET'])
+@login_required
+def usermanager():
+    objectname = request.args.get('object')
+    objecttype = request.args.get('objecttype')
+    usertype = request.args.get('usertype')
+    url = f'/{objecttype}/{objectname}/{usertype}'
+
+    return render_template('usermanager.html', object=objectname, objecttype=objecttype, usertype=usertype)
+
