@@ -10,6 +10,10 @@
         <button class="btn btn-outline-primary" id="users-tab" data-toggle="tab" href="#users" role="tab"
           aria-controls="users" aria-selected="false">Managers</button>
       </li>
+      <li class="nav-item mx-2">
+        <button class="btn btn-outline-primary" id="usage-tab" data-toggle="tab" href="#usage-content" role="tab"
+          aria-controls="usage-content" aria-selected="false">Usage</button>
+      </li>
     </ul>
   </div>
   <div class="card-body tab-content h-100">
@@ -78,7 +82,11 @@
 
       </form>
     </div>
-    <div class=""tab-pane" id="users" role="tabpanel" aria-labelledby="users-tab">
+
+    <div class="tab-pane" id="users" role="tabpanel" aria-labelledby="users-tab">
+    </div>
+
+    <div class="tab-pane h-100" id="usage-content" role="tabpanel" aria-labelledby="usage-tab">
     </div>
   </div>
 </div>
@@ -122,6 +130,19 @@
 
   $('#users-tab').on('shown.bs.tab', function (e) {
     load_users();
+  });
+
+  function load_usage() {
+    $('#usage-content').html('').addClass('pending')
+    $.get("{{ url_for('projects.processusage') }}", {
+      process: '{{ details['name'] }}'
+    }, function(data) {
+      $('#usage-content').html(data).removeClass('pending')
+    });  
+  }
+
+  $('#usage-tab').on('shown.bs.tab', function (e) {
+    load_usage();
   });
 
   function omit_check() {
