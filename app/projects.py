@@ -368,17 +368,7 @@ def get_process():
 @BP.route('_myprojects', methods=['GET'])
 @login_required
 def my_projects():
-
-    usr_groups = [ (iRODSUserGroup ( current_user.irods_session.user_groups, result) ) \
-        for result in current_user.irods_session.query(UserGroup).filter( User.name == current_user.username ) ]
-
-    my_projects = []
-    for g in usr_groups:
-        try:
-            project = g.metadata.get_one('projectID')
-            my_projects.append(project.value)
-        except KeyError:
-            pass
+    my_projects = current_user.projects()
 
     projectlist = {}
 
