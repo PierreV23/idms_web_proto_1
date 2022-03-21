@@ -374,6 +374,13 @@ ul {
   overflow-y: scroll;
 }
 
+.pending {
+  background-attachment: fixed;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-image: url(/static/img/loading.gif);
+}
+
 .wrap {
   height:88vh;
 }

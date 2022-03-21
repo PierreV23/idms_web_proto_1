@@ -152,7 +152,7 @@ function createContactRow( contact ) {
 <!-- PROJECT SETTINGS -->
 <div class="card h-100">
   <div class="card-header">
-    <ul class="nav nav-pills nav2">
+    <ul class="nav nav-pills nav2" id="projecttabs">
       <li class="nav-item mx-2">
         <button class="btn btn-outline-primary active" id="settings-tab" 
         data-toggle="tab" href="#settings" role="tab" 
@@ -174,9 +174,19 @@ function createContactRow( contact ) {
         aria-controls="collections" aria-selected="false">Collections</button>
       </li>
       <li class="nav-item mx-2">
-        <button class="btn btn-outline-primary" id="usergroup-tab" 
-        data-toggle="tab" href="#usergroup" role="tab" 
-        aria-controls="usergroup" aria-selected="false">Users & Groups</button>
+        <button class="btn btn-outline-primary usermanager" data-usertype="users" id="users-tab" 
+        data-toggle="tab" href="#users" role="tab" 
+        aria-controls="users" aria-selected="false">Users</button>
+      </li>
+      <li class="nav-item mx-2">
+        <button class="btn btn-outline-primary usermanager" data-usertype="managers" id="managers-tab" 
+        data-toggle="tab" href="#managers" role="tab" 
+        aria-controls="managers" aria-selected="false">Managers</button>
+      </li>
+      <li class="nav-item mx-2">
+        <button class="btn btn-outline-primary" id="groups-tab" 
+        data-toggle="tab" href="#groups" role="tab" 
+        aria-controls="groups" aria-selected="false">Groups</button>
       </li>
       <li class="nav-item mx-2">
         <button class="btn btn-outline-primary" id="processes-tab" 
@@ -437,7 +447,7 @@ function createContactRow( contact ) {
       </table>
     </div>
 
-    <div class="tab-pane" id="usergroup" role="tabpanel" aria-labelledby="usergroup-tab">
+    <div class="tab-pane" id="groups" role="tabpanel" aria-labelledby="groups-tab">
       <H3>Project groups</H3>
       <TABLE class="table table-striped table-hover table-sm" >
         <thead>
@@ -457,6 +467,12 @@ function createContactRow( contact ) {
           {% endfor %}
         </tbody>
       </table>
+    </div>
+
+    <div class="tab-pane" id="managers" role="tabpanel" aria-labelledby="managers-tab">
+    </div>
+
+    <div class="tab-pane" id="users" role="tabpanel" aria-labelledby="users-tab">
     </div>
 
 <!-- PROJECT DELETE CONFIMATION DIALOG -->
@@ -483,6 +499,23 @@ function createContactRow( contact ) {
 </div>
 
 <script>
+
+  function load_users() {
+    usertype = $("ul#projecttabs li button.active").data('usertype')
+    $.get("{{ url_for('projects.usermanager') }}", {
+      object: '{{ PD.name }}',
+      objecttype: 'projects',
+      usertype: usertype
+    }, function(data) {
+      $('#' + usertype).html(data);
+    });
+  }
+
+  $('.usermanager').on('shown.bs.tab', function (event) {
+    load_users();
+  });
+
+
   $( ".toggle_next" ).each(function() {
     var check=$(this).prop('checked')
     var proc=$(this).data('process')

@@ -1,5 +1,7 @@
 import os
-from flask import Flask, flash, redirect, render_template, request, url_for
+import requests
+from requests.auth import HTTPBasicAuth
+from flask import Flask, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, LoginManager, login_required, logout_user
 from flask_migrate import Migrate
 from app.models import WebUser
@@ -11,6 +13,7 @@ from . import projects, cluster, admin, reports, userinfo
 from . import ngsruns, upload, flaskcache
 from . import messages
 from .ngsruns import db, NGSRunsDBUnavailableException
+from .flaskcache import cache
 
 
 logging.config.dictConfig({
@@ -86,6 +89,44 @@ def msgconfirm():
 @app.route('/contacts')
 def contacts():
     return render_template('contacts.html')
+
+REQUESTS_METHODS = {
+    'GET':   requests.get,
+    'PUT':   requests.put,
+    'POST':  requests.post,
+    'DELETE':requests.delete
+}
+
+@app.route('/_brs/<path:rest_endpoint>', methods=['GET', 'PUT', 'POST', 'DELETE'])
+@login_required
+def restcall(rest_endpoint):
+    """Proxy endpoint for bio-rest service
+
+    Args:
+        rest_endpoint (str): Endpoint path
+
+    Returns:
+        tuple: data, result_code
+    """    
+    if request.method in ('PUT', 'POST'):
+        data = request.json
+    else:
+        data = None
+    url = 'http://{}/api/1.0/{}'.format(current_user.irods_server, rest_endpoint)
+    #TODO: remove this testing line:
+    #url = 'http://{}/api/1.0/{}'.format('0.0.0.0:5000', rest_endpoint)
+    auth = HTTPBasicAuth('alt\\{}'.format(current_user.username), current_user.ntlm_hash)
+    return_data = {}
+    if request.method in REQUESTS_METHODS:
+        response = REQUESTS_METHODS[request.method](url, auth=auth, json=data)
+    try:
+        return_data = response.json()
+    except:
+        return_data = {}
+    if request.method != 'GET':
+        cache.delete_memoized(restcall)
+    return jsonify(return_data), response.status_code    
+
 
 # @app.teardown_request
 # def teardown(x):
