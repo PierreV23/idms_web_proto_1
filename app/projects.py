@@ -10,7 +10,7 @@ import base64
 import json
 import requests
 from requests.auth import HTTPBasicAuth
-from flask import abort, Blueprint, render_template, redirect, request, url_for, current_app
+from flask import abort, flash, Blueprint, render_template, redirect, request, url_for, current_app
 from flask_login import current_user, login_required
 from flask import jsonify
 from irods.exception import CAT_NO_ACCESS_PERMISSION, OVERWRITE_WITHOUT_FORCE_FLAG
@@ -331,8 +331,12 @@ def update_projectsettings():
         rest_call('PUT', 'projects/{}'.format(project), data=data)
         location=f'project={project}'
     elif action == 'add_project':
-        rest_call('POST', 'projects'.format(project), data={'name': project})
-        location=f'project={project}'
+        response, result = rest_call('POST', 'projects'.format(project), data={'name': project})
+        if result == 202:
+            location=f'project={project}'
+        else:            
+            flash(response.get('message', 'Unknown error'), 'error')
+            location='page=projects'
     elif action == 'remove_project':
         response, result = rest_call('DELETE', 'projects/{}'.format(project))
         location='page=projects'
@@ -368,17 +372,7 @@ def get_process():
 @BP.route('_myprojects', methods=['GET'])
 @login_required
 def my_projects():
-
-    usr_groups = [ (iRODSUserGroup ( current_user.irods_session.user_groups, result) ) \
-        for result in current_user.irods_session.query(UserGroup).filter( User.name == current_user.username ) ]
-
-    my_projects = []
-    for g in usr_groups:
-        try:
-            project = g.metadata.get_one('projectID')
-            my_projects.append(project.value)
-        except KeyError:
-            pass
+    my_projects = current_user.projects()
 
     projectlist = {}
 

@@ -54,7 +54,7 @@ menuname='runlist'
             Barcodes in run <b class="runname"></b> on project 
             <span class="projectname"></span> (<span class="flowcellname"></span><span class="rundescription"></span>)
          </h2>
-         <button type="button" class="btn btn-danger alignright" data-toggle="modal" data-target="#confirm-delete">Delete</button>
+         <button type="button" class="btn btn-danger alignright" id="delete1" data-toggle="modal" data-target="#confirm-delete">Delete</button>
        </div>
        <div class="scroll card-body" id="barcodepane">
 
@@ -100,6 +100,11 @@ $('document').ready(function(){
    $('#runtable').on('click-row.bs.table', function(e, row) {
       selected_id = row.id
       $('#barcode-title').removeClass('d-none')
+      if ({{ projects | safe }}.includes(row.project)) {
+         $('#delete1').prop('disabled', false);
+      } else {
+         $('#delete1').prop('disabled', true);
+      }
       $('.runname').html(row.name);
       $('.projectname').html(row.project);
       $('.flowcellname').html(row.flowcell);
