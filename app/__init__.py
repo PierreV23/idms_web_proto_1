@@ -50,6 +50,7 @@ app.config.from_mapping(
 )
 
 app.config.from_pyfile(os.path.join(app.instance_path, 'config.py'), silent=True)
+app.config.from_pyfile(os.path.join(app.instance_path, 'constants.py'), silent=True)
 
 db.init_app(app)
 
@@ -140,16 +141,16 @@ def invalid_session(e):
     """Session may be stale. Destroy it and redirect to login page."""
     return auth.logout()
 
-# irods.exception.CAT_NO_ACCESS_PERMISSION
-@app.errorhandler(irods.exception.CAT_NO_ACCESS_PERMISSION)
-def unauthorized(e):
-    """Log trial of access to object or collection for which user has no 
-    authorization."""
-    # N.B. we can't extract the object that was accessed (tried to) from 
-    # the exception, so just log the request path instead.
-    app.logger.warning("Unauthorized access attempt: '{}' on '{}'".format(current_user.get_id()), request.path)
-    # Re-raise, since we don't have a solution.
-    raise Exception(e)
+# # irods.exception.CAT_NO_ACCESS_PERMISSION
+# @app.errorhandler(irods.exception.CAT_NO_ACCESS_PERMISSION)
+# def unauthorized(e):
+#     """Log trial of access to object or collection for which user has no 
+#     authorization."""
+#     # N.B. we can't extract the object that was accessed (tried to) from 
+#     # the exception, so just log the request path instead.
+#     app.logger.warning("Unauthorized access attempt: '{}' on '{}'".format(current_user.get_id(), request.path))
+#     # Re-raise, since we don't have a solution.
+#     raise Exception(e)
 
 @app.errorhandler(NGSRunsDBUnavailableException)
 def handle_bad_request(e):
