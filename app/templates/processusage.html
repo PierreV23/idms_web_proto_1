@@ -41,7 +41,7 @@
     var $usageTable = $('table#usageTable')
 
     $(function() {
-        $.get("{{ url_for('restcall', rest_endpoint='/processes/' + process +'/tags') }}", 
+        $.get("{{ url_for('restcall', rest_endpoint='processes/' + process +'/tags') }}", 
             function(data) {
                 for (var i=0; i<data.length; i++) {
                     $('#new-tag').append('<option value="' + data[i] + '">' + data[i] + '</option')
