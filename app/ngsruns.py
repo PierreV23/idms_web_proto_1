@@ -251,7 +251,11 @@ def edit_form():
 
 @bp.route('new', methods=['GET'])
 def run_form():
-    projects = current_user.projects()
+#    projects = current_user.projects()
+    pl, result = rest_call('GET', 'projects')
+    projects=[]
+    if result == 200:
+        projects = [ p['name'] for p in pl ]
     data = { barcode : None for barcode in barcodes }
     # user=current_user.username
     return render_template('ngsrun.html', data=data, projects=projects, barcodes=barcodes, id=-1, default_project=current_user.settings.get('default_project', ''))
@@ -278,9 +282,9 @@ def run_update():
     new_run.owner = current_user.username
     new_run.description = f.get('description', '')
 
-    if new_run.project not in current_user.projects():
-            flash(f'You are not authorized to create a sample sheet for project {new_run.project}', 'error')
-            return redirect(url_for('ngsruns.run_list'))  
+    # if new_run.project not in current_user.projects():
+    #         flash(f'You are not authorized to create a sample sheet for project {new_run.project}', 'error')
+    #         return redirect(url_for('ngsruns.run_list'))  
 
     db.session().add(new_run)
     db.session().commit()
