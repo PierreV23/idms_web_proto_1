@@ -1,4 +1,4 @@
-from flask import Flask, current_app, Blueprint, render_template, request, jsonify, redirect, url_for, session
+from flask import Flask, current_app, Blueprint, flash, render_template, request, jsonify, redirect, url_for, session
 from flask_login import current_user, login_required
 from flask_marshmallow import Marshmallow
 from marshmallow import Schema, fields, validate
@@ -205,7 +205,10 @@ def run_list():
     data.sort(key = lambda x: x["id"], reverse=True)
     fields = ['id', 'name', 'flowcell', 'flowcell_display', 'project', 'owner', 'datacoll', 'description']
     data2 = [{ p:str(x[p]) for p in fields } for x in data ]
-    return render_template('ngsruns.html', data=json.dumps(data2), idrequest=idrequest, default_project=current_user.settings.get('default_project', ''))
+    return render_template('ngsruns.html', data=json.dumps(data2), 
+        idrequest=idrequest, 
+        default_project=current_user.settings.get('default_project', ''),
+        projects = current_user.projects())
 
 @bp.route('_barcodes', methods=['GET'])
 def run_barcodes():
@@ -248,10 +251,7 @@ def edit_form():
 
 @bp.route('new', methods=['GET'])
 def run_form():
-    pl, result = rest_call('GET', 'projects')
-    projects=[]
-    if result == 200:
-        projects = [ p['name'] for p in pl ]
+    projects = current_user.projects()
     data = { barcode : None for barcode in barcodes }
     # user=current_user.username
     return render_template('ngsrun.html', data=data, projects=projects, barcodes=barcodes, id=-1, default_project=current_user.settings.get('default_project', ''))
@@ -259,8 +259,11 @@ def run_form():
 @bp.route('delete', methods=['GET'])
 @login_required
 def delete_ngs_run():
-    id = request.args.get('id', type=int)
-    if id:
+    if id := request.args.get('id', type=int):
+        record = db.session().query(NGSRun).filter(NGSRun.id == id).one()
+        if (project := record.project) not in current_user.projects():
+            flash(f'You are not authorized to remove a sample sheet for project {project}', 'error')
+            return redirect(url_for('ngsruns.run_list', idrequest=id))
         db.session().query(NGSBarcode).filter(NGSBarcode.ngsrun==id).delete()
         db.session().query(NGSRun).filter(NGSRun.id == id).delete()
         db.session().commit()
@@ -274,6 +277,11 @@ def run_update():
     new_run.project = f.get('project', '')
     new_run.owner = current_user.username
     new_run.description = f.get('description', '')
+
+    if new_run.project not in current_user.projects():
+            flash(f'You are not authorized to create a sample sheet for project {new_run.project}', 'error')
+            return redirect(url_for('ngsruns.run_list'))  
+
     db.session().add(new_run)
     db.session().commit()
     for barcode in barcodes:

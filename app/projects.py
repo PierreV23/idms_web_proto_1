@@ -10,7 +10,7 @@ import base64
 import json
 import requests
 from requests.auth import HTTPBasicAuth
-from flask import abort, Blueprint, render_template, redirect, request, url_for
+from flask import abort, flash, Blueprint, render_template, redirect, request, url_for, current_app
 from flask_login import current_user, login_required
 from flask import jsonify
 from irods.exception import CAT_NO_ACCESS_PERMISSION, OVERWRITE_WITHOUT_FORCE_FLAG
@@ -58,9 +58,9 @@ def search(l, f, v):
 @login_required
 @cache.memoize(timeout=30, make_name=dep_userzone)
 def rest_call(request_type, endpoint, data={}):
-    url = 'http://{}/api/1.0/{}'.format(current_user.irods_server, endpoint)
-    #TODO: remove this testing line:
-    #url = 'http://{}/api/1.0/{}'.format('0.0.0.0:5000', endpoint)
+    if (hostname := current_app.config.get('API_HOST')) is None:
+        hostname = current_user.irods_server
+    url = 'http://{}/api/1.0/{}'.format(hostname, endpoint)
     auth = HTTPBasicAuth('alt\\{}'.format(current_user.username), current_user.ntlm_hash)
     return_data = {}
     if request_type in REQUESTS_METHODS:
@@ -331,8 +331,12 @@ def update_projectsettings():
         rest_call('PUT', 'projects/{}'.format(project), data=data)
         location=f'project={project}'
     elif action == 'add_project':
-        rest_call('POST', 'projects'.format(project), data={'name': project})
-        location=f'project={project}'
+        response, result = rest_call('POST', 'projects'.format(project), data={'name': project})
+        if result == 202:
+            location=f'project={project}'
+        else:            
+            flash(response.get('message', 'Unknown error'), 'error')
+            location='page=projects'
     elif action == 'remove_project':
         response, result = rest_call('DELETE', 'projects/{}'.format(project))
         location='page=projects'
@@ -368,17 +372,7 @@ def get_process():
 @BP.route('_myprojects', methods=['GET'])
 @login_required
 def my_projects():
-
-    usr_groups = [ (iRODSUserGroup ( current_user.irods_session.user_groups, result) ) \
-        for result in current_user.irods_session.query(UserGroup).filter( User.name == current_user.username ) ]
-
-    my_projects = []
-    for g in usr_groups:
-        try:
-            project = g.metadata.get_one('projectID')
-            my_projects.append(project.value)
-        except KeyError:
-            pass
+    my_projects = current_user.projects()
 
     projectlist = {}
 
@@ -567,3 +561,19 @@ def processgroups():
 
     return render_template('processgroups.html', project=project, processgroup=processgroup, processgroups=groups)
 
+
+@BP.route('usermanager', methods=['GET'])
+@login_required
+def usermanager():
+    objectname = request.args.get('object')
+    objecttype = request.args.get('objecttype')
+    usertype = request.args.get('usertype')
+    url = f'/{objecttype}/{objectname}/{usertype}'
+
+    return render_template('usermanager.html', object=objectname, objecttype=objecttype, usertype=usertype)
+
+@BP.route('processusage', methods=['GET'])
+@login_required
+def processusage():
+    process = request.args.get('process')
+    return render_template('processusage.html', process=process)
