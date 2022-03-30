@@ -103,7 +103,7 @@ class WebUser(UserMixin):
             self.features = irods_env.get('features', [])
             self.minilims_db = irods_env.get('minilims_db', 'sqlite://')
         self._fullname = username
-        self.settings = IRSettings(self.username, prefix='sys::ngsweb::')
+        self.settings = IRSettings(self.username, prefix='ngsweb::')
 
     def __repr__(self):
         return f'WebUser({self.username})'
