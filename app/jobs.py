@@ -282,6 +282,7 @@ def jobdetails():
         'sys::runsheet::distribution': ('Distribution pipeline', 'boolean'),
         'sys::runsheet::omit_staging': ('Omit staging', 'boolean'),
         'sys::runsheet::lsf_queue': ('LSF Queue', 'lsf_queue'),
+        'sys::runsheet::requesting_user': ('Requesting user', 'irods_user'),
         'sys::run::lsf_jobid': ('LSF Job ID', 'text'),
         'sys::run::pid': ('Process PID', 'text')
     }
