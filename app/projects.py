@@ -10,7 +10,7 @@ import base64
 import json
 import requests
 from requests.auth import HTTPBasicAuth
-from flask import abort, flash, Blueprint, render_template, redirect, request, url_for
+from flask import abort, flash, Blueprint, render_template, redirect, request, url_for, current_app
 from flask_login import current_user, login_required
 from flask import jsonify
 from irods.exception import CAT_NO_ACCESS_PERMISSION, OVERWRITE_WITHOUT_FORCE_FLAG
@@ -58,9 +58,9 @@ def search(l, f, v):
 @login_required
 @cache.memoize(timeout=30, make_name=dep_userzone)
 def rest_call(request_type, endpoint, data={}):
-    url = 'http://{}/api/1.0/{}'.format(current_user.irods_server, endpoint)
-    #TODO: remove this testing line:
-    #url = 'http://{}/api/1.0/{}'.format('0.0.0.0:5000', endpoint)
+    if (hostname := current_app.config.get('API_HOST')) is None:
+        hostname = current_user.irods_server
+    url = 'http://{}/api/1.0/{}'.format(hostname, endpoint)
     auth = HTTPBasicAuth('alt\\{}'.format(current_user.username), current_user.ntlm_hash)
     return_data = {}
     if request_type in REQUESTS_METHODS:
@@ -572,3 +572,8 @@ def usermanager():
 
     return render_template('usermanager.html', object=objectname, objecttype=objecttype, usertype=usertype)
 
+@BP.route('processusage', methods=['GET'])
+@login_required
+def processusage():
+    process = request.args.get('process')
+    return render_template('processusage.html', process=process)
