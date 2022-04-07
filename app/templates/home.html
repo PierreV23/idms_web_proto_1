@@ -10,7 +10,7 @@
 
 <script>
 $(window).on('load', function() {
-  $.get('{{ url_for('projects.my_projects') }}', { }, function(data) {
+  $.get('{{ url_for('projects.my_projectview') }}', { }, function(data) {
     $('#myprojects').html(data)
   });
 });

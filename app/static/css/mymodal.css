@@ -415,3 +415,7 @@ ul {
 .c7 { filter: hue-rotate(180deg) }
 .c8 { filter: hue-rotate(210deg) }
 .c9 { filter: hue-rotate(240deg) }
+
+.nav-btns .nav-item {
+  margin: 10px;
+}

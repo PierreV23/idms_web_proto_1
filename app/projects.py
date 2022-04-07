@@ -9,6 +9,7 @@ Created on Tue Nov 19 09:05:26 2019
 import base64
 import json
 import requests
+import time
 from requests.auth import HTTPBasicAuth
 from flask import abort, Blueprint, render_template, redirect, request, url_for
 from flask_login import current_user, login_required
@@ -349,31 +350,46 @@ def get_process():
     processlist = get_processlist(data['project'])
     return jsonify(processlist)
 
+@cache.memoize(timeout=900, make_name=makename)
 @BP.route('_myprojects', methods=['GET'])
 @login_required
 def my_projects():
 
-    usr_groups = [ (iRODSUserGroup ( current_user.irods_session.user_groups, result) ) \
-        for result in current_user.irods_session.query(UserGroup).filter( User.name == current_user.username ) ]
+    usr_groups = [ result[UserGroup.name] for result in current_user.irods_session.query(UserGroup).filter( User.name == current_user.username ) ]
 
-    my_projects = []
+    projectlist = []
     for g in usr_groups:
-        try:
-            project = g.metadata.get_one('projectID')
-            my_projects.append(project.value)
-        except KeyError:
-            pass
+        project = iqry.qusermetaval(g, 'projectID')
+        if project:
+            projectlist.append(project)
 
-    projectlist = {}
+    return projectlist
+
+    projectdetails = {}
 
     pl, result = rest_call('GET', 'projects')
 
     if result == 200:
         projectlist = { project['name'] : project['default_collection'] for project in pl if project['name'] in my_projects }
 
-    columns = min(4, 1 + len(projectlist) // 20)
+    return projectlist
 
-    return render_template('_myprojects.html', projectlist=projectlist, columns=columns )
+@BP.route('_myprojectview', methods=['GET'])
+@login_required
+def my_projectview():
+
+    projectlist = my_projects()
+
+    projectdetails = {}
+
+    pl, result = rest_call('GET', 'projects')
+
+    if result == 200:
+        projectdetails = { project['name'] : project['default_collection'] for project in pl if project['name'] in projectlist }
+
+    columns = min(4, 1 + len(projectdetails) // 20)
+
+    return render_template('_myprojects.html', projectdetails=projectdetails, columns=columns )
 
 
 @BP.route('_pgaction', methods=['GET', 'POST'])

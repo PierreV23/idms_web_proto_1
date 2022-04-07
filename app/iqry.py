@@ -10,10 +10,14 @@ from . import flaskcache
 from . import stats
 
 
+def invalidate(collection):
+    flaskcache.cache.delete_memoized(qcollmeta, collection=collection)
+    flaskcache.cache.delete_memoized(qcollchildren, collection=collection)
+    flaskcache.cache.delete_memoized(qcolldataobjects, collection=collection)
+
 @login_required
 @flaskcache.cache.memoize(timeout=600)
 def qusermeta(user):
-    print('QUSER')
     q = current_user.irods_session.query(UserMeta.name,
                                          UserMeta.value, UserMeta.units).filter(
         Criterion('=', User.name, user))
@@ -46,6 +50,17 @@ def scollmetaval(coll, attr, value, unit=None):
     u = current_user.irods_session.collections.get(coll)
     u.metadata[attr] = iRODSMeta(attr, value, unit)
     flaskcache.cache.delete_memoized(qcollmeta)
+
+def delcollmeta(coll, attr, value=None, unit=None):
+    q = qcollmeta(coll)
+    u = current_user.irods_session.collections.get(coll)
+    for m in q:
+        if m[CollectionMeta.name] == attr:
+            if value is None or m[CollectionMeta.value] == value:
+                if unit is None or m[CollectionMeta.units] == unit:
+                    u.metadata.remove(m[CollectionMeta.name], m[CollectionMeta.value], m[CollectionMeta.units])
+    flaskcache.cache.delete_memoized(qcollmeta, coll)
+
 
 @login_required
 def qcollmetadict(collection):

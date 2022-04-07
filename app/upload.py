@@ -9,11 +9,11 @@ import os
 import shutil
 import sys
 import time
-from flask import Blueprint, render_template, redirect, request, url_for, session, current_app
+from flask import Blueprint, render_template, redirect, request, url_for, session, current_app, flash
 from flask import jsonify
 from flask_login import current_user, login_required
 import uuid
-from app import projects
+from app import projects, iqry
 from app.datafield import datafield
 from Bio import SeqIO
 import pymssql
@@ -28,9 +28,11 @@ from irods.meta import iRODSMeta
 
 from nonacris.web import NncWeb
 
-ATTR_USER_UPLOAD = 'user::data::upload'
-ATTR_USER_UPLOADNAME = 'user::data::name'
+ATTR_UPLOAD = 'user::upload'
+ATTR_UPLOADNAME = f'{ATTR_UPLOAD}::name'
 ATTR_DATASETID = 'sys::dataset_id'
+ATTR_UPLOADSETTINGS = 'user::upload::settings::'
+ATTR_UPLOADMETA = 'user::upload::meta::'
 
 class UploadType:
     Pending = 'pending'
@@ -551,18 +553,7 @@ def seq_list():
 @bp.route('show_uploads')
 @login_required
 def show_uploads():
-    # Find pending uploads
-    pending = []
-    query = current_user.irods_session.query(Collection).filter( \
-        Criterion('=', Collection.owner_name, current_user.username)).filter( \
-        Criterion('=', CollectionMeta.name, ATTR_USER_UPLOAD)).filter( \
-        Criterion('=', CollectionMeta.value, UploadType.Pending))
-    for c in query:
-        print(c[Collection.name])
-        pending.append(c[Collection.name])
-
-
-    return render_template('uploads.html', pending=pending)
+    return render_template('uploads.html')
 
 
 # TODO: use the irods_helper instead (role irods_cronjobs)
@@ -579,23 +570,23 @@ def pending_uploads():
     pending = []
     query = current_user.irods_session.query(Collection).filter( \
         Criterion('=', Collection.owner_name, current_user.username)).filter( \
-        Criterion('=', CollectionMeta.name, ATTR_USER_UPLOAD)).filter( \
+        Criterion('=', CollectionMeta.name, ATTR_UPLOAD)).filter( \
         Criterion('=', CollectionMeta.value, UploadType.Pending))
     for c in query:
-        collobj = current_user.irods_session.collections.get(c[Collection.name])
-        projectid = getmetaitem(collobj, 'user::projectid', '')
-        name = getmetaitem(collobj, ATTR_USER_UPLOADNAME, collobj.path)
-        name_url = url_for('upload.upload_details', path=collobj.path)
+        coll = c[Collection.name]
+        projectID = iqry.qcollmetaval(coll, f'{ATTR_UPLOADSETTINGS}projectID', default='')
+        name = iqry.qcollmetaval(coll, ATTR_UPLOADNAME, default=coll)
+        name_url = url_for('upload.upload_settings', coll=coll)
         namestr = f'<A HREF="{ name_url }">{name}</A>'
         pending.append(
             { 'name': namestr,
-              'collection':  datafield('collection', collobj.path, 'irods_collection').htmlstring,
-              'project': projectid
+              'collection':  datafield('collection', coll, 'irods_collection').htmlstring,
+              'projectID': datafield('project', projectID, 'projectid').htmlstring
             }
         )
-        response = {
-            'rows': pending
-        }
+    response = {
+        'rows': pending
+    }
     return json.dumps(response)
 
 def get_or_set_uid(coll_obj):
@@ -608,10 +599,108 @@ def get_or_set_uid(coll_obj):
         coll_obj.metadata[ATTR_DATASETID] = iRODSMeta(ATTR_DATASETID, uid)
     return uid
 
-@bp.route('_uploaddetails')
+@bp.route('_uploadsettings', methods=['GET', 'POST'])
 @login_required
-def upload_details():
-    return render_template('upload_details.html')
+def upload_settings():
+    FIELDS = {
+        'projectID':   'Project',
+        'collection':  'Collection name',
+        'description': 'Description' 
+    }
+    if request.method == 'GET':
+        coll = request.args.get('coll')
+        if coll is None:
+            return redirect(url_for('upload.show_uploads'))
+        name = os.path.basename(coll)
+        my_projects = projects.my_projects()
+        meta = iqry.qcollmetadict(coll)
+        data = { k: meta.get(f'{ATTR_UPLOADSETTINGS}{k}', '') for k in FIELDS }
+        return render_template('upload_settings.html', name=name, coll=coll, projects=my_projects, fields=FIELDS, data=data)
+    if request.method == 'POST':
+        data = request.form.to_dict()
+        coll = data.get('coll')
+        print(coll)
+        for k, v in data.items():
+            if k in FIELDS and v:
+                iqry.scollmetaval(coll, f'{ATTR_UPLOADSETTINGS}{k}', v)
+        if data.get('submitbutton', 'save') == 'next':
+            return redirect(url_for('upload.upload_meta', coll=coll))
+        else:
+            return redirect(url_for('upload.upload_settings', coll=coll))
+
+@bp.route('_uploadmeta', methods=['GET', 'POST'])
+@login_required
+def upload_meta():
+    print('META UPLOAD')
+    print(f'Method is {request.method}')
+    if request.method == 'GET':
+        collection = request.args.get('coll')
+        name = os.path.basename(collection)
+        if collection is None:
+            return redirect(url_for('upload.show_uploads'))
+        with open('schema.json') as f:
+            schema =  f.read()
+        metadata = iqry.qcollmetadict(collection)
+        data = { k[len(ATTR_UPLOADMETA):]: v for k, v in metadata.items() if k.startswith(ATTR_UPLOADMETA) }
+        return render_template('upload_meta.html', coll=collection, name=name, schema=schema, data=data)
+    if request.method == 'POST':
+        record = request.json
+        collection = record.get('coll')
+        metadata = iqry.qcollmetadict(collection)
+        for k, v in metadata.items():
+            if k.startswith(ATTR_UPLOADMETA):
+                iqry.delcollmeta(collection, k, v)
+        for k, v in record.get('data', {}).items():
+            iqry.scollmetaval(collection, f'{ATTR_UPLOADMETA}{k}', v)                
+        print('HANDLE POST REQUEST')
+        print(f'METHOD {request.method}')
+        print(f'JSON: {request.json}')
+        print(request.form.to_dict())
+        return jsonify({'status': 'OK' }), 200
+
+
+@bp.route('_uploaddata', methods=['GET', 'POST'])
+@login_required
+def upload_data():
+    if request.method == 'GET':
+        print('GET DATA')
+        coll = request.args.get('coll')
+        name = os.path.basename(coll)
+        return render_template('upload_data.html', name=name, coll=coll)
+    if request.method == 'POST':
+        print('POST DATA')
+        f = request.files['file']
+        data = request.form.to_dict()
+        coll = data.get('coll', '/')
+        fullPath = data.get('fullPath', f.filename)
+        if fullPath == 'undefined':
+            fullPath = f.filename
+        filename = os.path.join(coll, fullPath)
+        filepath = os.path.dirname(filename)
+        if not current_user.ifs.folderexists(filepath):
+            current_user.ifs.mkdir(filepath)
+        print(f, data, filename, filepath)
+        with current_user.ifs.open(filename, 'w') as d:
+            shutil.copyfileobj(f, d)
+        iqry.invalidate(coll)
+        return 'OK'
+
+@bp.route('_actions', methods=['GET'])
+def upload_actions():
+    action = request.args.get('action')
+    coll = request.args.get('coll')
+    print(action)
+    if action == 'finalize':
+        iqry.scollmetaval(coll, ATTR_UPLOAD, UploadType.Ready)
+        return response.redirect(url_for('upload.show_uploads'))
+    elif action == 'cancel':
+        current_user.ifs.rmdir(coll, recurse=True, force=True)
+        return redirect(url_for('upload.show_uploads'))
+    flash(f'Unknown request: {action}', 'error')
+    return redirect(url_for('upload.upload_settings', coll=coll))
+
+
+
 
 @bp.route('newupload')
 @login_required
@@ -622,15 +711,23 @@ def new_upload():
     while not unique:
         name = randomname.get_name()
         q = current_user.irods_session.query(CollectionMeta.value).filter(\
-            Criterion('=', CollectionMeta.name, ATTR_USER_UPLOADNAME)).filter(\
+            Criterion('=', CollectionMeta.name, ATTR_UPLOADNAME)).filter(\
             Criterion('=', CollectionMeta.value, name))
         unique = q.execute().length == 0
 
     # Now generate a collection for the upload
-    path = unique_coll(os.path.join('/', current_user.irods_zone, 'home', current_user.username), prefix=name)
-    collobj = current_user.irods_session.collections.get(path)  
+    coll = unique_coll(os.path.join('/', current_user.irods_zone, 'home', current_user.username), prefix=name)
+    collobj = current_user.irods_session.collections.get(coll)  
     get_or_set_uid(collobj)
-    collobj.metadata[ATTR_USER_UPLOADNAME] = iRODSMeta(ATTR_USER_UPLOADNAME, name)
-    collobj.metadata[ATTR_USER_UPLOAD] = iRODSMeta(ATTR_USER_UPLOAD, UploadType.Pending)
+    iqry.scollmetaval(coll, ATTR_UPLOADNAME, name)
+    iqry.scollmetaval(coll, ATTR_UPLOAD, UploadType.Pending)
 
-    return redirect(url_for('upload.upload_details', variable=path ))
+    return redirect(url_for('upload.upload_settings', coll=coll ))
+
+@bp.route('_posttest', methods=['POST'])
+def posttest():
+    print('POST test')
+    print(f'METHOD {request.method}')
+    print(f'JSON: {request.json}')
+    return 'OK', 200
+

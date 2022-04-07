@@ -241,6 +241,11 @@ def startprocess():
 @login_required
 @cache.cached(timeout=60, key_prefix=makekey)
 def collist():
+    return collist_nocache()
+
+@bp.route('_collist_nc')
+@login_required
+def collist_nocache():
     path = request.args.get('path','/', type=str)
     sortkey = request.args.get('sortkey', None, type=str)
     reverse_str = request.args.get('reverse', 'false', type=str)

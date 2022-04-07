@@ -8,11 +8,12 @@
 menuname='uploads'
 {% endblock %}
 
-{% block menuitems %}
-<li class="nav-item">
-    <a href="{{ url_for('upload.new_upload') }}" class="nav-link">
-      <i class="fas fa-plus nav-icon"></i>
-      <p>New Upload</p>
+{% block menubuttons %}
+<li class="nav-header">ACTIONS</li>
+<li class="nav-item btn btn-primary">
+    <a href="{{ url_for('upload.new_upload') }}" >
+      <!-- <i class="fas fa-plus nav-icon"></i> -->
+      New Upload
     </a>
   </li>
 {% endblock %}
@@ -20,7 +21,6 @@ menuname='uploads'
 {% block content %}
 <div class="card">
     <div class="card-header">
-        <h5>Pending upload collections</h5>
         <div class ="float-right">
             <div class="buttons-toolbar"></div>
         </div>
@@ -42,8 +42,7 @@ menuname='uploads'
                 <tr>
                     <th data-sortable="true" data-field="name">Name</th>
                     <th data-field="collection">Collection</th>
-                    <th data-field="project">Project</th>
-                    <th data-field="wortel">data</th>
+                    <th data-field="projectID">Project</th>
                 </tr>
             </thead>
         </table>

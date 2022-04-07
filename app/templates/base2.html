@@ -240,12 +240,12 @@
             </a>
           </li>
 
-          <!-- <li class="nav-item">
+          <li class="nav-item">
             <a href="{{ url_for('upload.show_uploads') }}" data-menuname="uploads" class="nav-link">
               <i class="fas fa-upload nav-icon"></i>
               <p>Dataset Uploads</p>
             </a>
-          </li> -->
+          </li>
 
           {% if 'PROJECTS' in current_user.features %}
           <li class="nav-item dropdown">
@@ -370,6 +370,14 @@
           data-accordion="false">
           {% block menuitems %}
           {% endblock %}
+        </ul>
+      </nav>
+      <div class="separator"></div>
+      <nav>
+        <ul class="nav nav-pills nav-btns nav-sidebar nav-child-indent flex-column float-down" data-widget="treeview" role="menu"
+        data-accordion="false">
+          {% block menubuttons %}
+          {% endblock %}          
         </ul>
       </nav>
       <!-- /.sidebar-menu -->

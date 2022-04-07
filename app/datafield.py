@@ -242,7 +242,7 @@ class data_collection_id(data_base):
     def ref_col(self):
         if self._searched_for_ref_col:
             return self._ref_col
-        query = iqry.qcollbystaticmeta('sys::dataset_id', self.value)
+        query = iqry.qcollbymeta('sys::dataset_id', self.value)
         for coll in query:
             self._ref_col = coll[Collection.name]
         self._searched_for_ref_col = True
@@ -291,6 +291,12 @@ class data_irods_object(data_base):
 
     def __lt__(self, other):
         return self.value < other.value
+
+class data_irods_user(data_base):
+
+    @staticmethod
+    def factory(**kwargs):
+        return data_irods_user(**kwargs)
 
 
 class data_projectid(data_base):

@@ -1,0 +1,81 @@
+{% extends 'upload_pages.html' %}
+
+{% block heading %}
+<H2>Upload settings for: <b>{{ coll }}</b></H2>
+{% endblock %}
+
+{%block menuname %}
+menuname='upload_data'
+{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.7.1/min/dropzone.min.css">
+<script>
+    function load_list(){
+        $.get('{{ url_for("collbrowser.collist_nocache", path=coll, download_btn="false", view_btn="false", delete_btn="true") }}', function (data) {
+            console.log('LOADED')
+            $('#collbrowser').html(data)
+        });        
+    }
+    $(document).ready(function () {
+        load_list();
+    })
+</script>
+
+<!-- <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@rjsf/core/dist/react-jsonschema-form.js"></script> -->
+
+<div class="card h-100">
+    <div class="card-header">
+        <h3>Upload methods:</h3>
+        <ul class="list-group">
+            <li class="list-group-item">Use the drop zone below</li>
+            <li class="list-group-item">Use the scientific workplace and the command <b>iput -r [filename] {{ coll }}</b></li>
+            <li class="list-group-item">Use the Campus workplace and drop your files in X:\{{ '\\'.join(coll.split('/')[2:]) }}</li>
+        </ul>
+
+    </div>
+    <div class="card-body Xh-100">
+        <form action="{{ url_for('upload.upload_data') }}" class="dropzone Xh-100" id="data-upload">
+            <input type="hidden" name="coll" value="{{ coll }}">
+            <div class="dropzone-previews"></div>
+            <div class="Xh-100" id="collbrowser"></div>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.7.1/min/dropzone.min.js"></script>
+<script>
+
+    $('input, select').on('change', function () {
+        $('.formsubmit').prop("disabled", false);
+    })
+
+    Dropzone.options.dataUpload = {
+        maxFilesize: 2000,
+        parallelUploads: 8,
+        createImageThumbnails: false,
+        previewsContainer: ".dropzone-previews",
+        timeout: 120000,
+        dictDefaultMessage: 'Drag files here or click to select',
+        init: function() {
+            this.on("success", function(file, response) {
+                this.removeFile(file);
+                load_list();
+            });
+            this.on("sending", function(file, xhr, formData) {
+                // Will send the filesize along with the file as POST data.
+                formData.append("fullPath", file.fullPath);
+            });
+        }
+    }
+
+
+
+</script>
+
+
+
+
+{% endblock %}
