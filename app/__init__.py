@@ -1,5 +1,7 @@
 import os
-from flask import Flask, redirect, render_template, request, url_for
+import requests
+from requests.auth import HTTPBasicAuth
+from flask import Flask, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, LoginManager, login_required, logout_user
 from flask_migrate import Migrate
 from app.models import WebUser
@@ -10,7 +12,8 @@ from . import auth, collbrowser, jobs, docviewer
 from . import projects, cluster, admin, reports, userinfo
 from . import ngsruns, upload, flaskcache
 from . import messages
-import irods.exception
+from .ngsruns import db, NGSRunsDBUnavailableException
+from .flaskcache import cache
 
 
 logging.config.dictConfig({
@@ -48,6 +51,8 @@ app.config.from_mapping(
 
 app.config.from_pyfile(os.path.join(app.instance_path, 'config.py'), silent=True)
 
+db.init_app(app)
+
 app.register_blueprint(auth.bp)
 app.register_blueprint(collbrowser.bp)
 app.register_blueprint(jobs.bp)
@@ -60,12 +65,8 @@ app.register_blueprint(ngsruns.bp)
 app.register_blueprint(upload.bp)
 app.register_blueprint(userinfo.bp)
 
-from .ngsruns import db
-db.init_app(app)
 
 flaskcache.init(app)
-
-migrate = Migrate(app, db)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -89,6 +90,44 @@ def msgconfirm():
 def contacts():
     return render_template('contacts.html')
 
+REQUESTS_METHODS = {
+    'GET':   requests.get,
+    'PUT':   requests.put,
+    'POST':  requests.post,
+    'DELETE':requests.delete
+}
+
+@app.route('/_brs/<path:rest_endpoint>', methods=['GET', 'PUT', 'POST', 'DELETE'])
+@login_required
+def restcall(rest_endpoint):
+    """Proxy endpoint for bio-rest service
+
+    Args:
+        rest_endpoint (str): Endpoint path
+
+    Returns:
+        tuple: data, result_code
+    """    
+    if request.method in ('PUT', 'POST'):
+        data = request.json
+    else:
+        data = None
+    url = 'http://{}/api/1.0/{}'.format(current_user.irods_server, rest_endpoint)
+    #TODO: remove this testing line:
+    #url = 'http://{}/api/1.0/{}'.format('0.0.0.0:5000', rest_endpoint)
+    auth = HTTPBasicAuth('alt\\{}'.format(current_user.username), current_user.ntlm_hash)
+    return_data = {}
+    if request.method in REQUESTS_METHODS:
+        response = REQUESTS_METHODS[request.method](url, auth=auth, json=data)
+    try:
+        return_data = response.json()
+    except:
+        return_data = {}
+    if request.method != 'GET':
+        cache.delete_memoized(restcall)
+    return jsonify(return_data), response.status_code    
+
+
 # @app.teardown_request
 # def teardown(x):
 #     try:
@@ -111,3 +150,8 @@ def unauthorized(e):
     app.logger.warning("Unauthorized access attempt: '{}' on '{}'".format(current_user.get_id()), request.path)
     # Re-raise, since we don't have a solution.
     raise Exception(e)
+
+@app.errorhandler(NGSRunsDBUnavailableException)
+def handle_bad_request(e):
+    flash('NGSRuns Database Unavailable', 'error')
+    return redirect(url_for('home'))

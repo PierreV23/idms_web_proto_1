@@ -11,6 +11,14 @@ body {
   height: 100%;
 }
 
+.bootstrap-table  {
+  height: 100%;
+}
+
+.fixed-table-container {
+  height: 90%;
+}
+
 .content-wrapper {
   overflow-y: hidden;
   /* border-style: solid; */
@@ -141,6 +149,28 @@ body {
    
 }
 
+.actiontable-grid {
+  display: grid;
+  column-gap: 10px;
+  row-gap: 10px;
+  align-items: stretch;
+  grid-template-columns: [left] auto [right];
+  grid-template-rows: 90% [middle] 10%;
+  grid-template-areas:
+    "table"
+    "footer"
+}
+
+
+.at-table {
+  grid-area: table;
+}
+
+.at-footer {
+  grid-area: footer;
+}
+
+
 .browser-sidebar {
   grid-area: sidebar;
   height: 100%;
@@ -212,6 +242,7 @@ ul {
   transform: rotate(90deg)
 }
 
+.check-margin10 { margin-left:10px; /* Set as you wish */ }
 
 .scroll {
   /* min-height: 71vh;
@@ -277,9 +308,9 @@ ul {
 }
 
 .h30 {
-  min-height: 30vh;
-  max-height: 30vh;
-  overflow-y: scroll;
+  min-height: 28vh;
+  max-height: 28vh;
+  overflow-y: sroll;
 }
 
 /* .coll-meta {
@@ -309,6 +340,20 @@ ul {
   padding: 0.5rem;
   margin:  0.5rem;
   margin-bottom: 0.5rem;
+}
+
+.error {
+  /* border-style: solid; */
+  border-radius: 0.25rem;
+  box-shadow: 0 0 1px rgba(0,0,0, 0.15), 0 1px 3px rgba(0,0,0, 0.25);
+  /* 15 rgba(0, 0, 0, 0.137), 0 1px 3px rgba(0, 0, 0, 0.205) */
+  /* width: 100%; */
+  padding: 0.5rem;
+  padding-left: 1rem;
+  margin:  0.5rem;
+  margin-bottom: 0.5rem;
+  color: white;
+  background-color: red;
 }
 
 .seqlist {
@@ -357,6 +402,13 @@ ul {
   max-height: 88vh;
   overflow-x: scroll;
   overflow-y: scroll;
+}
+
+.pending {
+  background-attachment: fixed;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-image: url(/static/img/loading.gif);
 }
 
 .wrap {

@@ -1,6 +1,6 @@
 <script>
 
-selected_process = null
+selected_processref = null
 mode = 'display'
 
 function waiting() {
@@ -11,7 +11,7 @@ function load_pggraph() {
   $.get('{{ url_for('projects.pg_graph') }}', {
     project: project,
     group: $('#groupselect option:selected').text(),
-    selected_process: selected_process,
+    selected_processref: selected_processref,
     mode: mode
   }, function(data) {
      $('#pg_graph').html(data)
@@ -25,7 +25,7 @@ function load_pgdetails() {
     $.get('{{ url_for('projects.pg_details') }}', {
     project: project,
     group: $('#groupselect option:selected').text(),
-    selected_process: selected_process,
+    selected_processref: selected_processref,
     mode: mode
   }, function(data) {
      $('#pg_details').html(data)
@@ -46,15 +46,15 @@ $(document).on('click', '.node', function(event){
     mode = 'display'
     if (oldmode == 'display') {
         if (object[0] == 'n') {
-            selected_process = object[2];
+            selected_processref = object[2];
             load_pgpage();
         }
     } else if (oldmode == 'select_input') {
             $.get('{{ url_for("projects.pgaction") }}', {
-                project: "{{ project }}",
+                project: project,
                 group: $('#groupselect option:selected').text(),
                 action: 'set_input',
-                process: selected_process,
+                process: selected_processref,
                 input: object[1]
             }, function(data) {
                 load_pgpage();
@@ -62,10 +62,10 @@ $(document).on('click', '.node', function(event){
     } else if (oldmode == 'add_dependency') {
         if (object[0] == 'n') {
             $.get('{{ url_for("projects.pgaction") }}', {
-                project: "{{ project }}",
+                project: project,
                 group: $('#groupselect option:selected').text(),
                 action: 'add_dependency',
-                process: selected_process,
+                process: selected_processref,
                 depend: object[1]
             }, function(data) {
                 load_pgpage()
@@ -77,7 +77,7 @@ $(document).on('click', '.node', function(event){
 })
 
 $(document).on('click', '.select-process', function() {
-  selected_process=$(this).data('process');
+  selected_processref=$(this).data('process');
   load_pgpage();
 });
 
@@ -104,7 +104,7 @@ $(window).on('load', function() {
         <label class="col-sm-4" for="groupselect">New process group</label>
         <INPUT TYPE="text" class="form-control col-sm-4" id="new_groupname" name="name">
       
-      <input type="hidden" name="project" value="{{ project }}">
+      <input type="hidden" name="project" id="projectname" value="">
       <input type="hidden" name="action" value="add_processgroup">
       <BUTTON class="btn btn-primary col-sm-2" type="SUBMIT" id="add_group_button">ADD</BUTTON>
         </div>
@@ -123,4 +123,9 @@ $(window).on('load', function() {
 $('#groupselect').on('change', function() {
     load_pgpage();
 })
+
+$('#add_group_button').on('click', function() {
+  $('#projectname').val(project)
+})
+
 </script>

@@ -19,9 +19,11 @@ from irods.session import iRODSSession
 from irods.models import User, UserGroup
 from irods.column import Criterion
 from irods.meta import iRODSMeta
+from irods.user import iRODSUserGroup
 from fs_irods import fs_irods
 from . import flaskcache
 from . import iqry
+from .ngsruns import db
 
 ATTR_DISPLAYNAME = 'sys::ad::displayName'
 
@@ -99,10 +101,27 @@ class WebUser(UserMixin):
             self.irods_server = irods_env.get('host')
             self.irods_zone = irods_env.get('zone')
             self.features = irods_env.get('features', [])
+            self.minilims_db = irods_env.get('minilims_db', 'sqlite://')
         self._fullname = username
-        self.settings = IRSettings(self.username, prefix='sys::ngsweb::')
+        self.settings = IRSettings(self.username, prefix='ngsweb::')
+
+    def __repr__(self):
+        return f'WebUser({self.username})'
+
+    @flaskcache.cache.memoize(timeout=3600, make_name=flaskcache.dep_userzone)
+    def projects(self):
+        usr_groups = [ (iRODSUserGroup ( current_user.irods_session.user_groups, result) ) \
+            for result in current_user.irods_session.query(UserGroup).filter( User.name == self.username ) ]
+
+        my_projects = []
+        for group in usr_groups:
+            try:
+                project = group.metadata.get_one('projectID')
+                my_projects.append(project.value)
+            except KeyError:
+                pass
+        return my_projects
         
-   
     @property
     def fullname(self):
         if self._fullname == self.username:

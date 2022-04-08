@@ -612,7 +612,7 @@ def upload_settings():
         if coll is None:
             return redirect(url_for('upload.show_uploads'))
         name = os.path.basename(coll)
-        my_projects = projects.my_projects()
+        my_projects = current_user.projects()
         meta = iqry.qcollmetadict(coll)
         data = { k: meta.get(f'{ATTR_UPLOADSETTINGS}{k}', '') for k in FIELDS }
         return render_template('upload_settings.html', name=name, coll=coll, projects=my_projects, fields=FIELDS, data=data)

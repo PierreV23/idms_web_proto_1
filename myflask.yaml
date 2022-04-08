@@ -16,8 +16,10 @@ dependencies:
   - openssl=1.1.1
   - pandas
   - pip
-  - python
+  - python>3.8
+  - python-dateutil
   - pyyaml
+  - redis-server
   - requests
   - flask-caching
   - flask-login

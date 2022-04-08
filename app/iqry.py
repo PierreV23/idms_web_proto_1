@@ -16,7 +16,7 @@ def invalidate(collection):
     flaskcache.cache.delete_memoized(qcolldataobjects, collection=collection)
 
 @login_required
-@flaskcache.cache.memoize(timeout=600)
+@flaskcache.cache.memoize(timeout=600, make_name=flaskcache.dep_zone)
 def qusermeta(user):
     q = current_user.irods_session.query(UserMeta.name,
                                          UserMeta.value, UserMeta.units).filter(
@@ -39,7 +39,7 @@ def susermetaval(user, attr, value, unit=None):
 
 
 @login_required
-@flaskcache.cache.memoize(timeout=60)
+@flaskcache.cache.memoize(timeout=60, make_name=flaskcache.dep_zone)
 def qcollmeta(collection):
     q = current_user.irods_session.query(CollectionMeta.name,
                                          CollectionMeta.value, CollectionMeta.units).filter(
@@ -49,7 +49,12 @@ def qcollmeta(collection):
 def scollmetaval(coll, attr, value, unit=None):
     u = current_user.irods_session.collections.get(coll)
     u.metadata[attr] = iRODSMeta(attr, value, unit)
-    flaskcache.cache.delete_memoized(qcollmeta)
+    flaskcache.cache.delete_memoized(qcollmeta, coll)
+
+def rmallcollmetaattr(coll, attr):
+    u = current_user.irods_session.collections.get(coll)
+    u.metadata._delete_all_values(attr)
+    flaskcache.cache.delete_memoized(qcollmeta, coll)
 
 def delcollmeta(coll, attr, value=None, unit=None):
     q = qcollmeta(coll)
@@ -69,7 +74,7 @@ def qcollmetadict(collection):
 
 
 @login_required
-@flaskcache.cache.memoize(timeout=300, make_name=flaskcache.makename)
+@flaskcache.cache.memoize(timeout=300, make_name=flaskcache.dep_zone)
 def qcollchildren(collection):
     query = current_user.irods_session.query(Collection).filter(
         Criterion('=', Collection.parent_name, collection))
@@ -77,7 +82,7 @@ def qcollchildren(collection):
 
 
 @login_required
-@flaskcache.cache.memoize(timeout=120)
+@flaskcache.cache.memoize(timeout=120, make_name=flaskcache.dep_zone)
 def qcolldataobjects(collection):
     query = current_user.irods_session.query(DataObject.name, DataObject.owner_name, DataObject.size).min(
         DataObject.create_time).filter(
@@ -86,7 +91,7 @@ def qcolldataobjects(collection):
 
 
 @login_required
-@flaskcache.cache.memoize(timeout=120)
+@flaskcache.cache.memoize(timeout=120, make_name=flaskcache.dep_zone)
 def qcollbymeta(attr, value):
     query = current_user.irods_session.query(Collection).filter(
         Criterion('=', CollectionMeta.name, attr)).filter(
@@ -95,7 +100,7 @@ def qcollbymeta(attr, value):
 
 
 @login_required
-@flaskcache.cache.memoize(timeout=86400, response_filter=lambda arg: bool(arg))
+@flaskcache.cache.memoize(timeout=86400, make_name=flaskcache.dep_zone, response_filter=lambda arg: bool(arg))
 def qcollbystaticmeta(attr, value):
     query = current_user.irods_session.query(Collection).filter(
         Criterion('=', CollectionMeta.name, attr)).filter(
@@ -115,7 +120,7 @@ def qcollmetaval(collection, attr, default=None):
     return m.get(attr, default)
 
 
-@flaskcache.cache.memoize(timeout=86400, response_filter=lambda arg: bool(arg))
+@flaskcache.cache.memoize(timeout=86400, make_name=flaskcache.dep_zone, response_filter=lambda arg: bool(arg))
 def qcollmetavalstatic(collection, attr, default=None):
     m = qcollmetadict(collection)
     return m.get(attr, default)

@@ -1,0 +1,74 @@
+<script src="{{ url_for('static', filename='css/bootstrap-table.js') }}"></script>
+
+<div class="usermanager">
+    <div class="buttons-toolbar"></div>
+
+    <table class="userTable" id="{{ usertype }}-userTable" 
+        data-click-to-select="true" 
+        data-toggle='table' 
+        data-striped="true" 
+        data-height="500"
+        data-show-columns-toggle-all="false" 
+        data-show-pagination-switch="true" 
+        data-show-toggle="false"
+        data-show-columns="true" 
+        data-buttons-toolbar=".buttons-toolbar"
+        data-sort-name="username"
+        data-url="{{ url_for('restcall', rest_endpoint=objecttype + '/' + object + '/' + usertype ) }}">
+        <thead>
+            <tr>
+                <th data-radio="true"></th>
+                <th data-sortable="true" data-field="username">Username</th>
+                <th data-sortable="true" data-field="displayName">Full Name</th>
+            </tr>
+        </thead>
+
+    </table>
+    <HR>
+    <input id="{{ usertype }}-username-input" type="text">
+    <button class="user-add btn-primary">Add user</button>
+    <HR>
+    <button class="user-delete btn-danger" disabled>Delete Selected</button>
+
+    <script>
+
+        $('.userTable').bootstrapTable({
+            onClickRow: function (row, $element, field) {
+                $('.user-delete').prop("disabled", false)
+            }
+        })
+
+        $('.user-add').on('click', function (obj) {
+            $('.usermanager').addClass('pending')
+            base_url = "{{ url_for('restcall', rest_endpoint=objecttype + '/' + object + '/' + usertype) }}"
+            $.ajax({
+                url: base_url,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    username: $('#{{ usertype }}-username-input').val()
+                }),
+                dataType: 'json',
+                error: function(data) {
+                    alert(data["responseJSON"]["message"])
+                },
+                complete: load_users
+            })
+        })
+
+        $('.user-delete').on('click', function (obj) {
+            $('.usermanager').addClass('pending')
+            base_url = "{{ url_for('restcall', rest_endpoint=objecttype + '/' + object + '/' + usertype) }}"
+            $('#{{ usertype }}-userTable').bootstrapTable('getSelections').forEach(function (element) {
+                $.ajax({
+                    url: base_url + '/' + element["username"],
+                    type: 'DELETE',
+                    error: function(data) {
+                        alert(data["responseJSON"]["message"])
+                    },                    
+                    complete: load_users
+                });
+            })
+        })
+
+    </script>

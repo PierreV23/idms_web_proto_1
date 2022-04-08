@@ -18,7 +18,7 @@ import os
 import sys
 import time
 from datetime import datetime, timezone
-from .flaskcache import cache, makekey, makename
+from .flaskcache import cache, dep_zone, key_zone, key_userzone
 from . import iqry
 
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
@@ -31,7 +31,7 @@ JOB_FIELDS = {
     'sys::run::start_time': ('Start time', 'timestamp'),
     'sys::run::finish_time': ('End time', 'timestamp'),
     'sys::runsheet::projectID': ('projectID', 'projectid'),
-    'sys::run::exit_code': ('Result', 'int'),
+    'user::run::exit_code': ('Result', 'int'),
     'sys::runsheet::input_collection': ('Input Collection', 'irods_collection')
 }
 
@@ -99,7 +99,7 @@ def processgroupprocs():
     
 
 @login_required
-@cache.memoize(timeout=30, make_name=makename)
+@cache.memoize(timeout=30, make_name=dep_zone)
 def joblist(state='', page=1):
     """Create a list of jobs in state state
     
@@ -157,7 +157,7 @@ def joblist(state='', page=1):
 
 @bp.route('/')
 @login_required
-@cache.cached(timeout=30, key_prefix=makekey)
+@cache.cached(timeout=30, key_prefix=key_userzone)
 def show_jobs():
     state = request.args.get('items', 'all', type=str)
     page = request.args.get('page', 1, type=int)
@@ -282,6 +282,7 @@ def jobdetails():
         'sys::runsheet::distribution': ('Distribution pipeline', 'boolean'),
         'sys::runsheet::omit_staging': ('Omit staging', 'boolean'),
         'sys::runsheet::lsf_queue': ('LSF Queue', 'lsf_queue'),
+        'sys::runsheet::requesting_user': ('Requesting user', 'irods_user'),
         'sys::run::lsf_jobid': ('LSF Job ID', 'text'),
         'sys::run::pid': ('Process PID', 'text')
     }
@@ -332,7 +333,7 @@ def _get_logfiles(location, subdir=''):
 
 @bp.route('/_joblog')
 @login_required
-@cache.cached(timeout=120, key_prefix=makekey)
+@cache.cached(timeout=120, key_prefix=key_userzone)
 def show_logfile():
     path = request.args.get('path', '', type=str)
     try:

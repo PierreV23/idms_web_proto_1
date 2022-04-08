@@ -152,7 +152,7 @@ function createContactRow( contact ) {
 <!-- PROJECT SETTINGS -->
 <div class="card h-100">
   <div class="card-header">
-    <ul class="nav nav-pills nav2">
+    <ul class="nav nav-pills nav2" id="projecttabs">
       <li class="nav-item mx-2">
         <button class="btn btn-outline-primary active" id="settings-tab" 
         data-toggle="tab" href="#settings" role="tab" 
@@ -174,9 +174,19 @@ function createContactRow( contact ) {
         aria-controls="collections" aria-selected="false">Collections</button>
       </li>
       <li class="nav-item mx-2">
-        <button class="btn btn-outline-primary" id="usergroup-tab" 
-        data-toggle="tab" href="#usergroup" role="tab" 
-        aria-controls="usergroup" aria-selected="false">Users & Groups</button>
+        <button class="btn btn-outline-primary usermanager" data-usertype="users" id="users-tab" 
+        data-toggle="tab" href="#users" role="tab" 
+        aria-controls="users" aria-selected="false">Users</button>
+      </li>
+      <li class="nav-item mx-2">
+        <button class="btn btn-outline-primary usermanager" data-usertype="managers" id="managers-tab" 
+        data-toggle="tab" href="#managers" role="tab" 
+        aria-controls="managers" aria-selected="false">Managers</button>
+      </li>
+      <li class="nav-item mx-2">
+        <button class="btn btn-outline-primary" id="groups-tab" 
+        data-toggle="tab" href="#groups" role="tab" 
+        aria-controls="groups" aria-selected="false">Groups</button>
       </li>
       <li class="nav-item mx-2">
         <button class="btn btn-outline-primary" id="processes-tab" 
@@ -189,6 +199,11 @@ function createContactRow( contact ) {
 
     <!-- Settings -->
     <div class="tab-pane active" id="settings" role="tabpanel" aria-labelledby="settings-tab">
+      {% if processing is sameas true %}
+      <div class="alert alert-warning" role="alert">
+        <center>Changes to project configuration are still being processed</center>
+      </div>
+      {% endif %}
       <form action="update_project" method="post">
         <input type="hidden" id="action" name="action" value="update_project">
         <input type="hidden" id="project" name="project" value="{{PD.name}}">
@@ -327,17 +342,28 @@ function createContactRow( contact ) {
                   {% endfor %}
                 </select>
               </div> 
-        
+
               <div class="form-check">
                 <input class="form-check-input" type="checkbox" 
-                    name="omit_staging" 
+                    name="do_bringonline" 
                     value="true" 
-                    {% if PD['processes'][process]['omit_staging'] == 1 %}checked{% endif %} 
-                    id="omit_staging_{{process}}">
-                <label class="form-check-label" for="omit_staging_{{process}}">
-                  Omit the staging phase. No data will be copied to compute resource!
+                    {% if PD['processes'][process]['omit_bringonline'] != 1 %}checked{% endif %} 
+                    id="omit_bringonline_{{process}}">
+                <label class="form-check-label" for="omit_bringonline_{{process}}">
+                  Ensure data is online before starting process
                 </label>
               </div> 
+
+              <div class="form-check check-margin10">
+                <input class="form-check-input" type="checkbox" 
+                    name="do_staging" 
+                    value="true" 
+                    {% if PD['processes'][process]['omit_staging'] != 1 %}checked{% endif %} 
+                    id="omit_staging_{{process}}">
+                <label class="form-check-label" for="omit_staging_{{process}}">
+                  Download data from iRODS to input directory
+                </label>
+              </div>    
         
               <div class="form-check">
                 <input class="form-check-input" type="checkbox" 
@@ -421,7 +447,7 @@ function createContactRow( contact ) {
       </table>
     </div>
 
-    <div class="tab-pane" id="usergroup" role="tabpanel" aria-labelledby="usergroup-tab">
+    <div class="tab-pane" id="groups" role="tabpanel" aria-labelledby="groups-tab">
       <H3>Project groups</H3>
       <TABLE class="table table-striped table-hover table-sm" >
         <thead>
@@ -441,6 +467,12 @@ function createContactRow( contact ) {
           {% endfor %}
         </tbody>
       </table>
+    </div>
+
+    <div class="tab-pane" id="managers" role="tabpanel" aria-labelledby="managers-tab">
+    </div>
+
+    <div class="tab-pane" id="users" role="tabpanel" aria-labelledby="users-tab">
     </div>
 
 <!-- PROJECT DELETE CONFIMATION DIALOG -->
@@ -467,6 +499,23 @@ function createContactRow( contact ) {
 </div>
 
 <script>
+
+  function load_users() {
+    usertype = $("ul#projecttabs li button.active").data('usertype')
+    $.get("{{ url_for('projects.usermanager') }}", {
+      object: '{{ PD.name }}',
+      objecttype: 'projects',
+      usertype: usertype
+    }, function(data) {
+      $('#' + usertype).html(data);
+    });
+  }
+
+  $('.usermanager').on('shown.bs.tab', function (event) {
+    load_users();
+  });
+
+
   $( ".toggle_next" ).each(function() {
     var check=$(this).prop('checked')
     var proc=$(this).data('process')
@@ -499,5 +548,20 @@ function createContactRow( contact ) {
     var contact_id = $( this ).attr("data-contact_id");
     var data = { "primary" : primary }
     updateContact( "{{PD.name}}", contact_id, data );
-  })
+  });
+
+
+  function omit_check() {
+    console.log("Check")
+    if ($('input[name="do_bringonline"]').is(":checked")) {
+      $('input[name="do_staging').prop('disabled', false)
+    } else {
+      $('input[name="do_staging').prop('disabled', true).prop('checked', false)
+    }
+  }
+
+  $('input[name="do_bringonline"]').on('click', omit_check );
+  $('document').ready( omit_check )
+
+
 </script>

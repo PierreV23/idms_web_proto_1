@@ -21,7 +21,7 @@ from irods.meta import iRODSMeta
 from urllib.parse import urlparse
 from . import projects
 from . import iqry
-from .flaskcache import cache, makekey, makename
+from .flaskcache import cache, key_zone, key_userzone, dep_zone
 import json
 
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
@@ -82,7 +82,6 @@ def _getmetatree(irods_coll, attr, base, default=None):
 
 @bp.route('_meta')
 @login_required
-@cache.cached(timeout=60, key_prefix=makekey)
 def coll_meta():
     path = request.args.get('path','/', type=str)
     object = request.args.get('object', '', type=str)
@@ -129,9 +128,7 @@ def setKeepOnlineUntil():
         return('DONE')
     keepOnlineUntil = now + relativedelta(days=days)
 
-    coll_obj = irods_session.collections.get(collection)
-    new_meta = iRODSMeta(ATTR_ARCHIVE_KEEP_ONLINE_TILL, str(int(datetime.timestamp(keepOnlineUntil))), 'timestamp' )
-    coll_obj.metadata[ATTR_ARCHIVE_KEEP_ONLINE_TILL] = new_meta
+    iqry.scollmetaval(collection, ATTR_ARCHIVE_KEEP_ONLINE_TILL, str(int(datetime.timestamp(keepOnlineUntil))), 'timestamp')
     return('DONE')
 
 
@@ -142,8 +139,7 @@ def setmeta():
     value = request.args.get('value')
     collection = request.args.get('collection')
     if attr and value and collection:
-        coll_obj = current_user.irods_session.collections.get(collection)
-        coll_obj.metadata[attr] = iRODSMeta(attr, value)
+        iqry.scollmetaval(collection, attr, value)
     return('DONE')
 
 
@@ -158,18 +154,15 @@ def setoverride():
         if overrideStr not in ['true', 'false']:
             print( f"unknown selection for _setKeepLocal: {overrideStr}" )
             return('DONE')
-        coll_obj = current_user.irods_session.collections.get(collection)
         if overrideStr == 'false':
-            coll_obj.metadata._delete_all_values(attr)
+            iqry.rmallcollmetaattr(collection, attr)
         else:
-            new_meta = iRODSMeta(attr, value)
-            coll_obj.metadata[attr] = new_meta
+            iqry.scollmetaval(collection, attr, value)
     return('DONE')    
 
 
 @bp.route('_actions')
 @login_required
-@cache.cached(timeout=60, key_prefix=makekey)
 def coll_actions():
     path = request.args.get('path','/', type=str)
     coll_name = path.split('/')[-1]
@@ -227,19 +220,19 @@ def startprocess():
     processid = request.args.get('processid')
     processgroupid = request.args.get('processgroupid')
     if processid:
-        c.metadata[ATTR_PROCESSID] = iRODSMeta(ATTR_PROCESSID, processid)
+        iqry.scollmetaval(collection, ATTR_PROCESSID, processid)
     elif processgroupid:
-        c.metadata._delete_all_values(ATTR_PROCESSID)
-        c.metadata[ATTR_PROCESSGROUPID] = iRODSMeta(ATTR_PROCESSGROUPID, processgroupid)
+        iqry.rmallcollmetaattr(collection, ATTR_PROCESSID)
+        iqry.scollmetaval(collection, ATTR_PROCESSGROUPID, processgroupid)
     else:
         return 'FAILED'
-    c.metadata[ATTR_PROCESSREQUEST] = iRODSMeta(ATTR_PROCESSREQUEST, current_user.username)
+    iqry.scollmetaval(collection, ATTR_PROCESSREQUEST, current_user.username)
 
     return 'DONE'
 
 @bp.route('_collist')
 @login_required
-@cache.cached(timeout=60, key_prefix=makekey)
+@cache.cached(timeout=60, key_prefix=key_zone)
 def collist():
     return collist_nocache()
 
@@ -354,7 +347,7 @@ class Dictlist(dict):
 
 @bp.route('/_graph')
 @login_required
-@cache.cached(timeout=60, key_prefix=makekey)
+@cache.cached(timeout=60, key_prefix=key_zone)
 def generate_graph():
     coll = request.args.get('path', '/', type=str)
     maxlevels = request.args.get('levels', DEFAULT_GRAPH_LEVELS, type=int)
@@ -408,7 +401,7 @@ def generate_graph():
             # FIND MY INPUT
         input_id =  collmeta.get('sys::pipeline::input_collection_id')
         if input_id:
-            q = iqry.qcollbystaticmeta(ATTR_DATASETID, input_id)
+            q = iqry.qcollbymeta(ATTR_DATASETID, input_id)
             for c in q:
                 input_coll = c[Collection.name]
                 if levels:
@@ -422,7 +415,7 @@ def generate_graph():
         # FIND  OUTPUTS
         dataset_id = collmeta.get(ATTR_DATASETID)
         if dataset_id:
-            q = iqry.qcollbystaticmeta('sys::pipeline::input_collection_id', dataset_id)
+            q = iqry.qcollbymeta('sys::pipeline::input_collection_id', dataset_id)
             for c in q:
                 output_coll = c[Collection.name]
                 if levels:
@@ -436,14 +429,14 @@ def generate_graph():
             extra_colls = set(collmeta.get_all('user::pipeline::input_collection', []))
             extra_coll_ids = collmeta.get_all('user::pipeline::input_collection_id', [])
             for extra_coll_id in extra_coll_ids:
-                q = iqry.qcollbystaticmeta(ATTR_DATASETID, extra_coll_id)
+                q = iqry.qcollbymeta(ATTR_DATASETID, extra_coll_id)
                 extra_colls |= { c[Collection.name] for c in q } 
             for extra_coll in extra_colls:
                 coll_node(extra_coll, levels=levels-1, post=coll, linestyle='dashed', maxlevels=maxlevels)
             # FIND collections that refer to this collection bij name or id
-            q = iqry.qcollbystaticmeta('user::pipeline::input_collection_id', dataset_id)
+            q = iqry.qcollbymeta('user::pipeline::input_collection_id', dataset_id)
             ref_colls = { c[Collection.name] for c in q }
-            q = iqry.qcollbystaticmeta('user::pipeline::input_collection', coll)
+            q = iqry.qcollbymeta('user::pipeline::input_collection', coll)
             ref_colls |= { c[Collection.name] for c in q } 
             for ref_coll in ref_colls:
                 coll_node(ref_coll, levels=levels-1, pre=coll, linestyle='dashed', maxlevels=maxlevels)
@@ -459,10 +452,10 @@ def generate_graph():
     return graph.pipe(format='svg').decode('utf-8')
 
 @login_required
-@cache.memoize(timeout=60, make_name=makename)
+@cache.memoize(timeout=60, make_name=dep_zone)
 def add_items(path, level, active):
     
-    @cache.memoize(timeout=300, make_name=makename)
+    @cache.memoize(timeout=300, make_name=dep_zone)
     def subitems(path):
         count = 0
         query = irods_session.query(Collection.id).filter(
@@ -506,7 +499,7 @@ def add_items(path, level, active):
 
 @bp.route('/_tree')
 @login_required
-@cache.cached(timeout=60, key_prefix=makekey)
+@cache.cached(timeout=60, key_prefix=key_zone)
 def colltree():
     active = request.args.get('active', '', type=str)
     current = request.args.get('root', '/', type=str)
