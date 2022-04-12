@@ -61,7 +61,6 @@ DEFAULT_UPLOAD = {
 
 bp = Blueprint('upload', __name__, url_prefix='/upload')
 
-@login_required
 def unique_coll(base_coll, prefix=None, use_date=False):
     """Create a collection with a unique collection name
 
@@ -104,7 +103,6 @@ def unique_coll(base_coll, prefix=None, use_date=False):
     # TODO : add some metadata?
     return collname
 
-@login_required
 def unique_projectcoll(project):
     """Generate a unique collection name for project
     and create the collection"""
@@ -132,7 +130,6 @@ def update_setting(key, value):
     session.modified = True
 
 @bp.route('_clearupload')
-@login_required
 def remove_files():
     if current_user.environment in session:
         if UPLOAD_KEY in session[current_user.environment]:
@@ -233,15 +230,7 @@ def read_data(directory):
 
     return headers, data
 
-# @login_required
-# @bp.route('_change_organisation', methods=['POST'])
-# def change_organisation():
-#     f = request.form.to_dict()
-#     if 'organisation' in f:
-#         update_setting('organisation', f['organisation'])
-#     return jsonify(upload_data()['organisation'])
 
-@login_required
 @bp.route('_uploadfile', methods=['POST'])
 def upload_file():
     f = request.files['file']
@@ -252,13 +241,11 @@ def upload_file():
     f.save(filePath)
     return '', 204
 
-@login_required
 @bp.route('_cancelupload', methods=['GET'])
 def cancel_upload():
     clear_upload()
     return render_template('home.html')
 
-@login_required
 @bp.route('_validate', methods=['POST'])
 def validate():
     data = request.form.to_dict()
@@ -347,7 +334,6 @@ def check_variables( defined_vars, missing_vars_def ):
             all_ok=False
     return (all_ok, response)
 
-@login_required
 @bp.route('_set_missing_variables', methods=['POST'])
 def set_missing_variables():
     settings = upload_data()
@@ -374,7 +360,6 @@ def set_missing_variables():
 
 
 
-@login_required
 @bp.route('_uploadbatch', methods=['GET'])
 def upload_batch():
     settings = upload_data()
@@ -401,7 +386,6 @@ def upload_batch():
     # TODO: Show some result
     return render_template('upload_result.html', upload_result=upload_result)
 
-@login_required
 @bp.route('filelist', methods=['GET'])
 def filelist():
     settings = upload_data()
@@ -415,7 +399,6 @@ def filelist():
                 settings['directory']))
     return render_template('upload_filelist.html', files=files)
 
-@login_required
 @bp.route('_missing_variables', methods=['GET'])
 def missing_variables():
     settings = upload_data()
@@ -437,7 +420,6 @@ def missing_variables():
     return content
 
 
-@login_required
 @bp.route('_validate_results', methods=['GET'])
 def validate_results():
     settings = upload_data()
@@ -565,23 +547,27 @@ def getmetaitem(irods_obj, attr, default=None):
     return value
 
 @bp.route('_pendinguploads')
-@login_required
 def pending_uploads():
+    state = request.args.get('state', UploadType.Pending)
     pending = []
     query = current_user.irods_session.query(Collection).filter( \
         Criterion('=', Collection.owner_name, current_user.username)).filter( \
         Criterion('=', CollectionMeta.name, ATTR_UPLOAD)).filter( \
-        Criterion('=', CollectionMeta.value, UploadType.Pending))
+        Criterion('=', CollectionMeta.value, state))
     for c in query:
         coll = c[Collection.name]
         projectID = iqry.qcollmetaval(coll, f'{ATTR_UPLOADSETTINGS}projectID', default='')
         name = iqry.qcollmetaval(coll, ATTR_UPLOADNAME, default=coll)
         name_url = url_for('upload.upload_settings', coll=coll)
-        namestr = f'<A HREF="{ name_url }">{name}</A>'
+        if state == UploadType.Pending:
+            namestr = f'<A HREF="{ name_url }">{name}</A>'
+        else:
+            namestr = name
+
         pending.append(
             { 'name': namestr,
-              'collection':  datafield('collection', coll, 'irods_collection').htmlstring,
-              'projectID': datafield('project', projectID, 'projectid').htmlstring
+            'collection':  datafield('collection', coll, 'irods_collection').htmlstring,
+            'projectID': datafield('project', projectID, 'projectid').htmlstring
             }
         )
     response = {
@@ -600,7 +586,6 @@ def get_or_set_uid(coll_obj):
     return uid
 
 @bp.route('_uploadsettings', methods=['GET', 'POST'])
-@login_required
 def upload_settings():
     FIELDS = {
         'projectID':   'Project',
@@ -629,7 +614,6 @@ def upload_settings():
             return redirect(url_for('upload.upload_settings', coll=coll))
 
 @bp.route('_uploadmeta', methods=['GET', 'POST'])
-@login_required
 def upload_meta():
     print('META UPLOAD')
     print(f'Method is {request.method}')
@@ -660,7 +644,6 @@ def upload_meta():
 
 
 @bp.route('_uploaddata', methods=['GET', 'POST'])
-@login_required
 def upload_data():
     if request.method == 'GET':
         print('GET DATA')
@@ -692,7 +675,7 @@ def upload_actions():
     print(action)
     if action == 'finalize':
         iqry.scollmetaval(coll, ATTR_UPLOAD, UploadType.Ready)
-        return response.redirect(url_for('upload.show_uploads'))
+        return redirect(url_for('upload.show_uploads'))
     elif action == 'cancel':
         current_user.ifs.rmdir(coll, recurse=True, force=True)
         return redirect(url_for('upload.show_uploads'))
@@ -703,7 +686,6 @@ def upload_actions():
 
 
 @bp.route('newupload')
-@login_required
 def new_upload():
     # Create an upload-collection
     # First generate a unique upload name
