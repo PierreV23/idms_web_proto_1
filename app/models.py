@@ -85,24 +85,33 @@ class WebUser(UserMixin):
                     return False
         return self._is_admin
 
-    def __init__(self, username='', password='', environment='', is_authenticated=False, is_admin=None):
-        self.username = username
-        self.password = obfuscate(password)
-        self.environment = environment
-        self._is_authenticated = is_authenticated
-        self._is_admin = is_admin
+    def __init__(self, password=None, obfuscated_password=None, **kwargs):
+        self.username = None
+        self.environment = None
+        self._is_authenticated = False
+        self._is_admin = False
         self.irods_server = None
         self.irods_zone = None
         self._irods_session = None
         self._ifs = None
         self.features = []
-        irods_env = current_app.config["IRODS_ENVS"].get(environment, None)
+        self._fullname = None
+
+        for k, v in kwargs.items():
+            if hasattr(self, k):
+                setattr(self, k, v)
+
+        if password:
+            self.password = obfuscate(password)
+        elif obfuscated_password:
+            self.password = obfuscated_password
+
+        irods_env = current_app.config["IRODS_ENVS"].get(self.environment, None)
         if irods_env:
             self.irods_server = irods_env.get('host')
             self.irods_zone = irods_env.get('zone')
             self.features = irods_env.get('features', [])
             self.minilims_db = irods_env.get('minilims_db', 'sqlite://')
-        self._fullname = username
         self.settings = IRSettings(self.username, prefix='ngsweb::')
 
     def __repr__(self):
@@ -124,11 +133,11 @@ class WebUser(UserMixin):
         
     @property
     def fullname(self):
-        if self._fullname == self.username:
+        if self._fullname is None or self._fullname == self.username:
             self._fullname = iqry.qusermetaval(self.username, ATTR_DISPLAYNAME, self.username)
         return self._fullname
 
-    @property    
+    @property
     def ntlm_hash(self):
         password = deobfuscate(self.password)
         hash = binascii.hexlify(hashlib.new('md4', password.encode('utf-16le')).digest()).decode('ascii')
@@ -141,23 +150,35 @@ class WebUser(UserMixin):
 
     def store(self):
         """Store user in Flask session."""
-        if 'user_store' not in session:
-            session['user_store'] = {}
-        info = [self.username, self.password, self.environment, self.is_authenticated, self.is_admin]
-        session['user_store'][self.username] = info
+        if 'user_data' not in session:
+            session['user_data'] = {}
+        info = {
+            'username': self.username,
+            'obfuscated_password': self.password,
+            'environment': self.environment,
+            '_is_authenticated': self.is_authenticated,
+            '_is_admin': self.is_admin,
+            '_fullname': self.fullname
+        }
+        session['user_data'][self.username] = info
 
     @classmethod
     def retrieve(cls, username):
         """Retrieve previously stored user from Flask session."""
+        if 'user_data' in session and username in session['user_data']:
+            try:
+                user = cls(**session['user_data'][username])
+            except:
+                return None
+            return user
         if 'user_store' in session and username in session['user_store']:
             try:
                 username, pass_obfuscated, env, is_auth, is_admin = session['user_store'][username]
             except:
                 return None
-            return cls(username, deobfuscate(pass_obfuscated), env, is_auth, is_admin)
+            return cls(username=username,obfuscated_password=pass_obfuscated, environment=env, _is_authenticated=is_auth, _is_admin=is_admin)
         return None
         
-
     def delete(self):
         """Delete user from Flask session."""
         if 'user_store' in session and self.username in session['user_store']:

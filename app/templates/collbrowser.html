@@ -65,9 +65,18 @@ menuname='collectionbrowser'
       levels: graph_levels
     }, function (data) {
       $('#graphimg').html(data);
-      let w = $("#graphimg").width().toString() + 'px';
+      size_graph();
+    })
+  }
+
+  function size_graph() {
+    let w = $("#graphimg").width().toString() + 'px';
       $('svg').width(w);
-      let top = $('.center-coll').offset().top + $('#graphdiv').scrollTop() - $('#graphdiv').offset().top - $('#graphdiv').height() / 2
+      centertop = 0
+      if ($('.center-coll').length !== 0) {
+        centertop = $('.center-coll').offset().top
+      }
+      let top = centertop + $('#graphdiv').scrollTop() - $('#graphdiv').offset().top - $('#graphdiv').height() / 2
       $('#graphdiv').scrollTop(top)
       if (top<0) {
         if ($('#graphimg').height()<$('#graphdiv').height()) {
@@ -76,7 +85,6 @@ menuname='collectionbrowser'
       } else {
         $('#graphdiv').scrollTop(top);
       }
-    });
   }
 
   function load_list(new_path) {
@@ -155,7 +163,6 @@ menuname='collectionbrowser'
       value: graph_levels
     })
     load_graph()
-    console.log('change', graph_levels);
   })
 
   $(window).on('load', function () {
@@ -344,7 +351,16 @@ menuname='collectionbrowser'
 
 <script>
 
-var ro = new ResizeObserver( load_graph );
+var graph_width = 0;
+
+var ro = new ResizeObserver( entries => {
+  w = $("#graphimg").width();
+  if (w != graph_width) {
+    graph_width = w;
+    size_graph();
+  }
+});
+
 ro.observe(document.querySelector("#graphimg"));
 
 </script>
