@@ -23,7 +23,7 @@ from irods.user import iRODSUserGroup
 from fs_irods import fs_irods
 from . import flaskcache
 from . import iqry
-from .ngsruns import db
+#from .ngsruns import db
 
 ATTR_DISPLAYNAME = 'sys::ad::displayName'
 
@@ -118,9 +118,14 @@ class WebUser(UserMixin):
         return f'WebUser({self.username})'
 
     @flaskcache.cache.memoize(timeout=3600, make_name=flaskcache.dep_userzone)
+    def groups(self):
+        return [ r[UserGroup.name] for r in current_user.irods_session.query(UserGroup).filter( User.name == self.username ) ]
+
+    @flaskcache.cache.memoize(timeout=3600, make_name=flaskcache.dep_userzone)
     def projects(self):
-        usr_groups = [ (iRODSUserGroup ( current_user.irods_session.user_groups, result) ) \
-            for result in current_user.irods_session.query(UserGroup).filter( User.name == self.username ) ]
+        usr_groups = [ current_user.irods_session.user_groups.get(r) for r in self.groups() ]
+        # usr_groups = [ (iRODSUserGroup ( current_user.irods_session.user_groups, result) ) \
+        #     for result in current_user.irods_session.query(UserGroup).filter( User.name == self.username ) ]
 
         my_projects = []
         for group in usr_groups:

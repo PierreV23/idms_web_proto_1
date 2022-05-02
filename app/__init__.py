@@ -50,6 +50,7 @@ app.config.from_mapping(
 )
 
 app.config.from_pyfile(os.path.join(app.instance_path, 'config.py'), silent=True)
+app.config.from_pyfile(os.path.join(app.instance_path, 'constants.py'), silent=True)
 
 db.init_app(app)
 
@@ -147,7 +148,7 @@ def unauthorized(e):
     authorization."""
     # N.B. we can't extract the object that was accessed (tried to) from 
     # the exception, so just log the request path instead.
-    app.logger.warning("Unauthorized access attempt: '{}' on '{}'".format(current_user.get_id()), request.path)
+    app.logger.warning("Unauthorized access attempt: '{}' on '{}'".format(current_user.get_id(), request.path))
     # Re-raise, since we don't have a solution.
     raise Exception(e)
 

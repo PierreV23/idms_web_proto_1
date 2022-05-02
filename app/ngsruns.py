@@ -13,6 +13,7 @@ import flask
 import json
 import requests
 from requests.auth import HTTPBasicAuth
+from app.projects import get_projectlist
 
 Base = declarative_base()
 
@@ -244,21 +245,17 @@ def edit_form():
     data.update({"description": run.description})
     data.update({"project": run.project})
     data.update({"owner": run.owner})
-    #data[name] = run.name
-    #data[description] = run.description
-    #data = { f.barcode: f for f in barcode_obj }
     return render_template('ngsrun.html', data=data, barcodes=barcodes, id=id)
 
 @bp.route('new', methods=['GET'])
 def run_form():
-#    projects = current_user.projects()
-    pl, result = rest_call('GET', 'projects')
-    projects=[]
-    if result == 200:
-        projects = [ p['name'] for p in pl ]
+    if current_app.config.get('MINILIMS_AUTHORS_GROUP') in current_user.groups():
+        projectlist = get_projectlist().keys()
+    else:
+        projectlist = current_user.projects()
     data = { barcode : None for barcode in barcodes }
     # user=current_user.username
-    return render_template('ngsrun.html', data=data, projects=projects, barcodes=barcodes, id=-1, default_project=current_user.settings.get('default_project', ''))
+    return render_template('ngsrun.html', data=data, projects=projectlist, barcodes=barcodes, id=-1, default_project=current_user.settings.get('default_project', ''))
 
 @bp.route('delete', methods=['GET'])
 @login_required
@@ -282,9 +279,9 @@ def run_update():
     new_run.owner = current_user.username
     new_run.description = f.get('description', '')
 
-    # if new_run.project not in current_user.projects():
-    #         flash(f'You are not authorized to create a sample sheet for project {new_run.project}', 'error')
-    #         return redirect(url_for('ngsruns.run_list'))  
+    if not(new_run.project in current_user.projects() or current_app.config.get('MINILIMS_AUTHORS_GROUP') in current_user.groups()):
+            flash(f'You are not authorized to create a sample sheet for project {new_run.project}', 'error')
+            return redirect(url_for('ngsruns.run_list'))  
 
     db.session().add(new_run)
     db.session().commit()
