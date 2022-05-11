@@ -89,7 +89,7 @@ class WebUser(UserMixin):
         self.username = None
         self.environment = None
         self._is_authenticated = False
-        self._is_admin = False
+        self._is_admin = None
         self.irods_server = None
         self.irods_zone = None
         self._irods_session = None
