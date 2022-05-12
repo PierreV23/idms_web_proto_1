@@ -205,11 +205,14 @@ class WebUser(UserMixin):
             }
 
             # Creating an iRODS does not imply a connection is set up.
+            # TODO: python-irodsclient should escape = tokens in password
+            # at least in version 1.1.3 it does not do that
+            # so, we do it here
             self._irods_session = iRODSSession(
                 host=self.irods_server,
                 port=1247,
                 user=self.username,
-                password=self.passwd,
+                password=self.passwd.replace('=', '\='),
                 zone=self.irods_zone,
                 authentication_scheme='pam',
                 **ssl_settings
