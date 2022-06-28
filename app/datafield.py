@@ -47,7 +47,8 @@ KNOWN_ATTRIBUTE_TEMPLATES = {
     'sys::run::.*_time': 'timestamp',
     'sys::lock::time::.*::valid_till': 'timestamp',
     'sys::lock::time::.*::runtime': 'timedelta',
-    'sys::lock::time::.*::timeout': 'timedelta'
+    'sys::lock::time::.*::timeout': 'timedelta',
+    'sys::consistency::.*::timestamp': 'timestamp'
 }
 
 MAXLEN = 45

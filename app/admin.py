@@ -5,6 +5,7 @@ Created on Wed Apr 15 10:46:50 2020
 
 @author: wierinve
 """
+import json
 import os
 import irods.exception
 from flask import Blueprint, render_template, redirect, jsonify, request, url_for
@@ -168,6 +169,58 @@ def query_issues():
                                                             objfile[DataObject.size],
                                                             objfile[DataObject.checksum])
     return data
+
+@bp.route('/_consistency')
+def data_consistency():
+    # Handy to have the resource hosts in the table:
+    query = current_user.irods_session.query(Resource)
+    resources = { r[Resource.name]: r[Resource.location] for r in query }
+    query = current_user.irods_session.query(Collection.name, CollectionMeta.name, CollectionMeta.value).filter(
+        Criterion('like', CollectionMeta.name, 'sys::consistency::%::errors'))
+    results = [ 
+        { 'collection': r[Collection.name],
+          'collink'   : datafield('collection', r[Collection.name], 'irods_collection').htmlstring,
+          'resource'  : r[CollectionMeta.name].split('::')[2],
+          'location'  : resources.get(r[CollectionMeta.name].split('::')[2], 'UNKNOWN'),
+          'issues'    : r[CollectionMeta.value]
+        } for r in query ]
+    return jsonify(results)
+
+@bp.route('/_condetails', methods=["GET"])
+def consistency_details():
+    collection = request.args.get('collection')
+    resource = request.args.get('resource')
+    attr = f'sys::consistency::{resource}'
+    criteria = [
+        Criterion('=', Collection.name, collection),
+        Criterion('like', Collection.name, f'{collection}/%')
+    ]
+
+    data = []
+    if collection:
+        for criterium in criteria:
+            q = current_user.irods_session.query(Collection.name, DataObject.name, DataObject.path, DataObjectMeta.value).filter(criterium).filter(
+                Criterion('=', DataObjectMeta.name, attr)).filter(
+                Criterion('=', DataObject.resource_name, resource)
+                )
+            for r in q:
+                data.append({
+                    'dataobject': os.path.relpath(os.path.join(r[Collection.name], r[DataObject.name]), start=collection),
+                    'path': r[DataObject.path],
+                    'error': r[DataObjectMeta.value]
+                })
+
+    columns = [
+        { "field": "dataobject", "title": "DataObject", "sortable": True },
+        { "field": "path", "title": "Path", "sortable": True },
+        { "field": "error", "title": "Error", "sortable": False }
+    ]
+    data = {
+        'columnsJSON': json.dumps(columns),
+        'dataJSON': json.dumps(data),
+        'id': collection.replace('/', '_')
+    }
+    return render_template('bootstraptable.html', data=data)
 
 @bp.route('/issues')
 @login_required
