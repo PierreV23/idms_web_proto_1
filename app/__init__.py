@@ -14,6 +14,7 @@ from . import ngsruns, upload, flaskcache
 from . import messages
 from .ngsruns import db, NGSRunsDBUnavailableException
 from .flaskcache import cache
+from .irodssessions import irods_manager
 
 
 logging.config.dictConfig({
@@ -53,6 +54,7 @@ app.config.from_pyfile(os.path.join(app.instance_path, 'config.py'), silent=True
 app.config.from_pyfile(os.path.join(app.instance_path, 'constants.py'), silent=True)
 
 db.init_app(app)
+irods_manager.init_app(app)
 
 app.register_blueprint(auth.bp)
 app.register_blueprint(collbrowser.bp)

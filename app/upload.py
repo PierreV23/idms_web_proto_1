@@ -25,6 +25,7 @@ from irods.models import Collection, CollectionMeta
 from irods.column import Criterion
 from irods.meta import iRODSMeta
 #from flask_session import Session
+from app.irodssessions import irods_manager
 
 from nonacris.web import NncWeb
 
@@ -94,7 +95,7 @@ def unique_coll(base_coll, prefix=None, use_date=False):
         collname = os.path.join(base_coll, f'{fullprefix}')
         fullprefix = f'{fullprefix}_'
     i = 1
-    while current_user.irods_session.collections.exists(collname):
+    while irods_manager.session().collections.exists(collname):
         collname = os.path.join(projectcoll, f'{fullprefix}{i:04}')
         i += 1
     current_app.logger.debug('upload/unique_coll(): mkdir "{}"'.format(collname))
@@ -387,7 +388,7 @@ def upload_batch():
         # Generate a collection name for storing upload
         # TODO: add project, for now use 'upload' project
         collname = unique_projectcoll('nonacris')
-        coll = current_user.irods_session.collections.get(collname)
+        coll = irods_manager.session().collections.get(collname)
         batch.setIrodsCollection(coll)
         try:
             batch.store()
@@ -553,7 +554,7 @@ def seq_list():
 def show_uploads():
     # Find pending uploads
     pending = []
-    query = current_user.irods_session.query(Collection).filter( \
+    query = irods_manager.session().query(Collection).filter( \
         Criterion('=', Collection.owner_name, current_user.username)).filter( \
         Criterion('=', CollectionMeta.name, ATTR_USER_UPLOAD)).filter( \
         Criterion('=', CollectionMeta.value, UploadType.Pending))
@@ -577,12 +578,12 @@ def getmetaitem(irods_obj, attr, default=None):
 @login_required
 def pending_uploads():
     pending = []
-    query = current_user.irods_session.query(Collection).filter( \
+    query = irods_manager.session().query(Collection).filter( \
         Criterion('=', Collection.owner_name, current_user.username)).filter( \
         Criterion('=', CollectionMeta.name, ATTR_USER_UPLOAD)).filter( \
         Criterion('=', CollectionMeta.value, UploadType.Pending))
     for c in query:
-        collobj = current_user.irods_session.collections.get(c[Collection.name])
+        collobj = irods_manager.session().collections.get(c[Collection.name])
         projectid = getmetaitem(collobj, 'user::projectid', '')
         name = getmetaitem(collobj, ATTR_USER_UPLOADNAME, collobj.path)
         name_url = url_for('upload.upload_details', path=collobj.path)
@@ -621,14 +622,14 @@ def new_upload():
     unique = False 
     while not unique:
         name = randomname.get_name()
-        q = current_user.irods_session.query(CollectionMeta.value).filter(\
+        q = irods_manager.session().query(CollectionMeta.value).filter(\
             Criterion('=', CollectionMeta.name, ATTR_USER_UPLOADNAME)).filter(\
             Criterion('=', CollectionMeta.value, name))
         unique = q.execute().length == 0
 
     # Now generate a collection for the upload
     path = unique_coll(os.path.join('/', current_user.irods_zone, 'home', current_user.username), prefix=name)
-    collobj = current_user.irods_session.collections.get(path)  
+    collobj = irods_manager.session().collections.get(path)  
     get_or_set_uid(collobj)
     collobj.metadata[ATTR_USER_UPLOADNAME] = iRODSMeta(ATTR_USER_UPLOADNAME, name)
     collobj.metadata[ATTR_USER_UPLOAD] = iRODSMeta(ATTR_USER_UPLOAD, UploadType.Pending)

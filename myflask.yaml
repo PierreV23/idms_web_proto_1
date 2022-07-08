@@ -4,6 +4,7 @@ channels:
   - defaults
   - anaconda
 dependencies:
+  - apscheduler
   - biopython
   - flask
   - freetds
