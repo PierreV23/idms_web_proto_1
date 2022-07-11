@@ -200,6 +200,8 @@ INFINITE_DATE = data_timestamp(name='none', value=1E11)
 class data_irods_collection(data_base):
 
     def displaystring(self, maxlen=999):
+        if not self.value:
+            return ""
         nameparts = self.value.split('/')
         shortname = nameparts[-1]
         prefix = '/{}'.format('/'.join(nameparts[1:-1]))
