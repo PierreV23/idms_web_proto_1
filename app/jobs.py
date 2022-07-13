@@ -114,15 +114,16 @@ def joblist(state='', page=1):
     """
 
     job_list = []
+    session = irods_manager.session(name='joblist')
     if state == '':
         # incoming runsheets could still be runsheet-files, this will change with the switch to the process-groups...
-        q1b = irods_manager.session().query(Collection, CollectionMeta).filter( 
+        q1b = session.query(Collection, CollectionMeta).filter( 
                 Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_STATE)).filter( 
                 Criterion('!=', CollectionMeta.value, 'archive')).filter(
                 Criterion('not like', Collection.name, f'/{current_user.irods_zone}/system/runsheet%'))
     else:  
         # or runsheets could be on collections
-        q1b = irods_manager.session().query(Collection).filter(
+        q1b = session.query(Collection).filter(
                 Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_STATE)).filter(
                 Criterion('=', CollectionMeta.value, f'{state}')).filter(
                 Criterion('not like', Collection.name, f'/{current_user.irods_zone}/system/runsheet%'))
@@ -297,16 +298,17 @@ def jobdetails():
 @login_required
 def job_logs():
     jobnaam = request.args.get('name', '', type=str)
+    session = irods_manager.session(name='job_logs')
 
     # the jobnaam is refering to metainfo on a collection
-    query = irods_manager.session().query(Collection.name, CollectionMeta).filter( 
+    query = session.query(Collection.name, CollectionMeta).filter( 
             Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_ID )).filter(
             Criterion('=', CollectionMeta.value, f'{jobnaam}'))
     # Find the job log file
     results = query.get_results()
     job = next(results)
     runsheet = job[Collection.name] 
-    q2 = irods_manager.session().query(CollectionMeta.name, CollectionMeta.value).filter( \
+    q2 = session.query(CollectionMeta.name, CollectionMeta.value).filter( \
             Criterion('=', Collection.name, runsheet ))
     metadata = {meta[CollectionMeta.name] : meta[CollectionMeta.value] for meta in q2}
     joblog = { f'Job log', f'{runsheet}/log/{jobnaam}.log' }

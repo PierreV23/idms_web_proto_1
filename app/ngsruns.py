@@ -6,7 +6,7 @@ from sqlalchemy.orm import relationship, remote, foreign, sessionmaker, scoped_s
 from sqlalchemy import ForeignKey, distinct, create_engine, Column, Integer, String, TIMESTAMP, func, desc, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import OperationalError
-from irods.models import Collection, CollectionMeta
+from irods.models import Collection, CollectionMeta, User
 from irods.column import Criterion
 from app.datafield import datafield
 import flask
@@ -199,12 +199,12 @@ def runs():
     data = [ vars(f) for f in qry ]
     for run in data:
         run['flowcell_display'] = run['flowcell']        
-        # colls = qcollbystaticmeta('minion::flow_cell_id', run['flowcell'])
-        q = irods_manager.session().query(Collection.name).filter( 
-                Criterion('=', CollectionMeta.value, run['flowcell'])).filter( \
-                Criterion('=', CollectionMeta.name, 'minion::flow_cell_id')).filter( \
-                Criterion('like', Collection.name, '/rivmZone/projects/ngslab/minion/%'))
-        colls = [ x for x in q ]
+        colls = qcollbystaticmeta('minion::flow_cell_id', run['flowcell'])
+        # q = irods_manager.session().query(Collection.name).filter( 
+        #         Criterion('=', CollectionMeta.value, run['flowcell'])).filter( \
+        #         Criterion('=', CollectionMeta.name, 'minion::flow_cell_id')).filter( \
+        #         Criterion('like', Collection.name, '/rivmZone/projects/ngslab/minion/%'))
+        # colls = [ x for x in q ]
         if colls:
             run['datacoll'] = datafield('collection', colls[0][Collection.name], 'irods_collection').htmlshort
         else:
@@ -215,15 +215,15 @@ def runs():
     return result
 
 @bp.route('list', methods=['GET'])
-@login_required
 def run_list():
     idrequest = request.args.get('idrequest', 0)
     data = [ vars(f) for f in db.session().query(NGSRun).all() ]
     # Create a list of flowcells and collections in irods
-    q = irods_manager.session().query(Collection.name, CollectionMeta.value).filter( \
-            Criterion('=', CollectionMeta.name, 'minion::flow_cell_id')).filter( \
-            Criterion('=', Collection.parent_name, f'/{current_user.irods_zone}/projects/ngslab/minion'))
-    flowcell_list = { x[CollectionMeta.value] : x[Collection.name] for x in q }
+    with irods_manager.session(name='run_list') as session:
+        q = session.query(Collection, CollectionMeta).filter( \
+                Criterion('=', CollectionMeta.name, 'minion::flow_cell_id')).filter( \
+                Criterion('=', Collection.parent_name, f'/{current_user.irods_zone}/projects/ngslab/minion'))
+        flowcell_list = { x[CollectionMeta.value] : x[Collection.name] for x in q }
     flowcell_unique = set()
     flowcell_duplicate = set()
     for run in data:

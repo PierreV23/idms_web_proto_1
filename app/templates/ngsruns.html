@@ -18,19 +18,21 @@ menuname='runlist'
       </div>
       <div class="card-body">
          <table id="runtable" class="table"
-            sdata-toggle="table"
+            xdata-toggle="table"
             data-striped="true" 
             data-pagination="true"
-            data-page-size="25"
+            xdata-page-size="12"
             data-filter-control="true"
             xdata-height="500"
             data-show-columns-toggle-all="false" 
             data-show-pagination-switch="true" 
             data-show-toggle="false"
             data-show-columns="true"
+            xdata-side-pagination="server"
             data-rows="20"
             data-search="true"
             data-unique-id="id"
+            xdata-url="{{ url_for('ngsruns.runs') }}"
             data-buttons-prefix="btn-sm btn"
             data-buttons-toolbar=".runtable-toolbar">
             <thead>
@@ -40,7 +42,7 @@ menuname='runlist'
                   <th data-field="flowcell_display" data-align="" data-sortable="true" data-filter-control="input" >Flowcell</th>
                   <th data-field="project" data-align="" data-sortable="true" data-filter-control="select">Project</th>
                   <th data-field="owner" data-align="" data-sortable="true" data-filter-control="select">User</th>
-                  <th data-field="datacoll" data-align="" data-sortable="true" data-filter-control="input">Collection</th>
+                  <th data-field="datacoll" data-align="" data-sortable="false" data-filter-control="input">Collection</th>
                </tr>
             </thead>
          </table>

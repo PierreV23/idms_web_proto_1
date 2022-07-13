@@ -24,9 +24,9 @@ def usersetting():
     return { 'result': 'OK'}, 200
 
 def userinfo(user):
-    userinfo = irods_manager.session().users.get(user)
-    input_meta = { x.name: x.value for x in userinfo.metadata.items()}
-    #print(input_meta)
+    with irods_manager.session() as session:
+        userinfo = session.users.get(user)
+        input_meta = { x.name: x.value for x in userinfo.metadata.items()}
     return(input_meta)
 
 

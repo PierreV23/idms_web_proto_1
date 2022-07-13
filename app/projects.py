@@ -206,12 +206,12 @@ def show_projectdetails():
 
     projectdetails['name'] = projectnaam
     # Retrieve groups associated with project
-    irods_session = irods_manager.session()
-    query = irods_session.query(User.name).filter(
-        Criterion('!=', User.type, "rodsuser")).filter(
-            Criterion('=', UserMeta.name, "projectID")).filter(
-                Criterion('=', UserMeta.value, projectnaam)).order_by(User.name)
-    groups = [u[User.name] for u in query]
+    with irods_manager.session(name='show_projectdetails') as session:
+        query = session.query(User.name).filter(
+            Criterion('!=', User.type, "rodsuser")).filter(
+                Criterion('=', UserMeta.name, "projectID")).filter(
+                    Criterion('=', UserMeta.value, projectnaam)).order_by(User.name)
+        groups = [u[User.name] for u in query]
     projectdetails['groups'] = groups
     # Retrieve general project settings
     for attr in ['description', 'default_collection', 'service_account', 'modify_in_place',

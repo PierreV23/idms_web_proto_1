@@ -15,7 +15,7 @@ import time
 from flask_login import UserMixin
 from flask import session, current_app
 from flask_login import current_user
-from irods.models import User, UserGroup
+from irods.models import User, UserGroup, UserMeta
 from irods.column import Criterion
 from irods.meta import iRODSMeta
 from irods.user import iRODSUserGroup
@@ -75,11 +75,12 @@ class WebUser(UserMixin):
             self._is_admin = False
             if self._is_authenticated:
                 try:
-                    groups = irods_manager.session().query(UserGroup).filter(
-                        Criterion('=', User.name, self.username)).filter(
-                            Criterion('=', UserGroup.name, 'rodsadmin'))
-                    for q in groups:
-                        self._is_admin = True
+                    with irods_manager.session() as session:
+                        groups = session.query(UserGroup).filter(
+                            Criterion('=', User.name, self.username)).filter(
+                                Criterion('=', UserGroup.name, 'rodsadmin'))
+                        for q in groups:
+                            self._is_admin = True
                 except:
                     self._is_admin = None
                     return False
@@ -118,19 +119,21 @@ class WebUser(UserMixin):
 
     @flaskcache.cache.memoize(timeout=3600, make_name=flaskcache.dep_userzone)
     def groups(self):
-        return [ r[UserGroup.name] for r in irods_manager.session().query(UserGroup).filter( User.name == self.username ) ]
+        with irods_manager.session(name='groups') as session:
+            q = session.query(UserGroup).filter( User.name == self.username )
+            result = [ r[UserGroup.name] for r in q ]
+        return result
 
     @flaskcache.cache.memoize(timeout=3600, make_name=flaskcache.dep_userzone)
     def projects(self):
-        usr_groups = [ irods_manager.session().user_groups.get(r) for r in self.groups() ]
+        with irods_manager.session(name='projects') as session:
+            q = session.query(UserGroup.name, UserMeta.value).filter(\
+                Criterion('=', UserMeta.name, 'projectID'))
+            grps = self.groups()
+            usr_groups = [ r for r in q if r[UserGroup.name] in grps ]
 
-        my_projects = []
-        for group in usr_groups:
-            try:
-                project = group.metadata.get_one('projectID')
-                my_projects.append(project.value)
-            except KeyError:
-                pass
+            my_projects = [ r[UserMeta.value] for r in usr_groups ]
+
         return my_projects
         
     @property
@@ -190,7 +193,7 @@ class WebUser(UserMixin):
     @property
     def ifs(self):
         if self._ifs is None:
-            self._ifs = fs_irods(session=self.irods_session)
+            self._ifs = fs_irods(session=irods_manager.session(name='ifs'))
         return self._ifs
 
 

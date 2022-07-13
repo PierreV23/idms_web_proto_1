@@ -9,5 +9,5 @@ fi
 export FLASK_APP=app
 export FLASK_ENV=development
 PORT=5${UID: -3}
-flask run --host=0.0.0.0 --port=$PORT
+flask run --host=0.0.0.0 --port=$PORT --with-threads
 source deactivate
