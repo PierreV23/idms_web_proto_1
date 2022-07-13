@@ -31,8 +31,8 @@ menuname='upload_data'
         <h3>Upload methods:</h3>
         <ul class="list-group">
             <li class="list-group-item">Use the drop zone below</li>
-            <li class="list-group-item">Use the scientific workplace and the command <b>iput -r [filename] {{ coll }}</b></li>
-            <li class="list-group-item">Use the Campus workplace and drop your files in X:\{{ '\\'.join(coll.split('/')[2:]) }}</li>
+            <li class="list-group-item">Use the scientific workplace and the command <b>iput [-v] [filename] {{ coll }}</b> or <b>irsync -r [-v] [dirname] {{ coll }}</b> </li>            
+            <!-- <li class="list-group-item">Use the Campus workplace and drop your files in X:\{{ '\\'.join(coll.split('/')[2:]) }}</li> -->
         </ul>
 
     </div>

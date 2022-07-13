@@ -9,7 +9,6 @@ Created on Tue Nov 19 09:05:26 2019
 import base64
 import json
 import requests
-import time
 from requests.auth import HTTPBasicAuth
 from flask import abort, flash, Blueprint, render_template, redirect, request, url_for, current_app
 from flask_login import current_user, login_required
