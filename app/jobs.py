@@ -114,7 +114,7 @@ def joblist(state='', page=1):
     """
 
     job_list = []
-    session = irods_manager.session(name='joblist')
+    session = irods_manager.session()
     if state == '':
         # incoming runsheets could still be runsheet-files, this will change with the switch to the process-groups...
         q1b = session.query(Collection, CollectionMeta).filter( 
@@ -298,7 +298,7 @@ def jobdetails():
 @login_required
 def job_logs():
     jobnaam = request.args.get('name', '', type=str)
-    session = irods_manager.session(name='job_logs')
+    session = irods_manager.session()
 
     # the jobnaam is refering to metainfo on a collection
     query = session.query(Collection.name, CollectionMeta).filter( 

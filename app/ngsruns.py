@@ -219,7 +219,7 @@ def run_list():
     idrequest = request.args.get('idrequest', 0)
     data = [ vars(f) for f in db.session().query(NGSRun).all() ]
     # Create a list of flowcells and collections in irods
-    with irods_manager.session(name='run_list') as session:
+    with irods_manager.session() as session:
         q = session.query(Collection, CollectionMeta).filter( \
                 Criterion('=', CollectionMeta.name, 'minion::flow_cell_id')).filter( \
                 Criterion('=', Collection.parent_name, f'/{current_user.irods_zone}/projects/ngslab/minion'))

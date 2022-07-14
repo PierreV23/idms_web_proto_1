@@ -119,14 +119,14 @@ class WebUser(UserMixin):
 
     @flaskcache.cache.memoize(timeout=3600, make_name=flaskcache.dep_userzone)
     def groups(self):
-        with irods_manager.session(name='groups') as session:
+        with irods_manager.session() as session:
             q = session.query(UserGroup).filter( User.name == self.username )
             result = [ r[UserGroup.name] for r in q ]
         return result
 
     @flaskcache.cache.memoize(timeout=3600, make_name=flaskcache.dep_userzone)
     def projects(self):
-        with irods_manager.session(name='projects') as session:
+        with irods_manager.session() as session:
             q = session.query(UserGroup.name, UserMeta.value).filter(\
                 Criterion('=', UserMeta.name, 'projectID'))
             grps = self.groups()
@@ -193,7 +193,7 @@ class WebUser(UserMixin):
     @property
     def ifs(self):
         if self._ifs is None:
-            self._ifs = fs_irods(session=irods_manager.session(name='ifs'))
+            self._ifs = fs_irods(session=irods_manager.session())
         return self._ifs
 
 

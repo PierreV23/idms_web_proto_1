@@ -11,7 +11,7 @@ from app.irodssessions import irods_manager
 
 @flaskcache.cache.memoize(timeout=600, make_name=flaskcache.dep_zone)
 def qusermeta(user):
-    with irods_manager.session(name='qusermeta') as session:
+    with irods_manager.session() as session:
         q = session.query(UserMeta.name, UserMeta.value, UserMeta.units).filter(
             Criterion('=', User.name, user))
         result = [r for r in q]
@@ -26,7 +26,7 @@ def qusermetaval(user, attr, default=None):
     return m.get(attr, default)
 
 def susermetaval(user, attr, value, unit=None):
-    with irods_manager.session(name='susermetaval') as session:
+    with irods_manager.session() as session:
         u = session.users.get(user)
         u.metadata[attr] = iRODSMeta(attr, value, unit)
     flaskcache.cache.delete_memoized(qusermeta)
@@ -34,20 +34,20 @@ def susermetaval(user, attr, value, unit=None):
 
 @flaskcache.cache.memoize(timeout=60, make_name=flaskcache.dep_zone)
 def qcollmeta(collection):
-    with irods_manager.session(name='qusermeta') as session:
+    with irods_manager.session() as session:
         q = session.query(CollectionMeta.name, CollectionMeta.value, CollectionMeta.units).filter(
             Criterion('=', Collection.name, collection))
         result = [r for r in q]
     return result
 
 def scollmetaval(coll, attr, value, unit=None):
-    with irods_manager.session(name='scollmeta') as session:
+    with irods_manager.session() as session:
         u = session.collections.get(coll)
         u.metadata[attr] = iRODSMeta(attr, value, unit)
     flaskcache.cache.delete_memoized(qcollmeta, coll)
 
 def rmallcollmetaattr(coll, attr):
-    with irods_manager.session(name='rmallcollmetaattr'):
+    with irods_manager.session():
         u = session.collections.get(coll)
         u.metadata._delete_all_values(attr)
     flaskcache.cache.delete_memoized(qcollmeta, coll)
@@ -59,7 +59,7 @@ def qcollmetadict(collection):
 
 @flaskcache.cache.memoize(timeout=300, make_name=flaskcache.dep_zone)
 def qcollchildren(collection):
-    with irods_manager.session(name='qcollchildren') as session:
+    with irods_manager.session() as session:
         q = session.query(Collection).filter(
             Criterion('=', Collection.parent_name, collection))
         result = [r for r in q]
@@ -68,7 +68,7 @@ def qcollchildren(collection):
 
 @flaskcache.cache.memoize(timeout=120, make_name=flaskcache.dep_zone)
 def qcolldataobjects(collection):
-    with irods_manager.session(name='qcolldataobjects') as session:
+    with irods_manager.session() as session:
         q = session.query(DataObject.name, DataObject.owner_name, DataObject.size).min(
             DataObject.create_time).filter(
             Criterion('=', Collection.name, collection))
@@ -78,7 +78,7 @@ def qcolldataobjects(collection):
 
 @flaskcache.cache.memoize(timeout=120, make_name=flaskcache.dep_zone)
 def qcollbymeta(attr, value):
-    with irods_manager.session(name='qcollbymeta') as session:
+    with irods_manager.session() as session:
         q = session.query(Collection).filter(
             Criterion('=', CollectionMeta.name, attr)).filter(
             Criterion('=', CollectionMeta.value, value))
@@ -88,7 +88,7 @@ def qcollbymeta(attr, value):
 
 @flaskcache.cache.memoize(timeout=86400, make_name=flaskcache.dep_zone, response_filter=lambda arg: bool(arg))
 def qcollbystaticmeta(attr, value):
-    with irods_manager.session(name='qcollbystaticmeta') as session:
+    with irods_manager.session() as session:
         q = session.query(Collection).filter(
             Criterion('=', CollectionMeta.name, attr)).filter(
             Criterion('=', CollectionMeta.value, value))

@@ -100,7 +100,7 @@ def coll_meta():
     object_avu = None
     if object:
         object_avu = []
-        with irods_manager.session(name='coll_meta') as session:
+        with irods_manager.session as session:
             query = session.query(DataObjectMeta.name, DataObjectMeta.value,
                                         DataObjectMeta.units).filter(
                                             Criterion('=', Collection.name, path)).filter(
@@ -242,7 +242,7 @@ def collist():
         'delete_btn': request.args.get('btn_del', 'false', type=str) == 'true'
     }
 
-    irods_session = irods_manager.session(name='collist')
+    irods_session = irods_manager.session()
 
     cols = []
     objs = []
@@ -452,7 +452,7 @@ def add_items(path, level, active):
     def subitems(path):
         return 1
         count = 0
-        with irods_manager.session(name='subitems') as session:
+        with irods_manager.session() as session:
             query = session.query(Collection.id).filter(
                 Criterion('=',Collection.parent_name, path)).count(Collection.id)
             for a in query:

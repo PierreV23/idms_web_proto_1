@@ -153,12 +153,12 @@ def query_issues():
     if not current_user.is_admin:
         return('<TR><TD COLSPAN=3>Access denied</TD></TR>')
     data = ''
-    with irods_manager.session(name='issues') as session:
-        query = SpecificQuery(session(name='issues'), alias='checksums_differ')
+    with irods_manager.session() as session:
+        query = SpecificQuery(session, alias='checksums_differ')
         for result in query:
             base, name = os.path.split(result[0])
             data = '{}<TR><TD COLSPAN=5><A HREF="{}?path={}">{}</A></TD></TR>'.format(data, url_for("collbrowser.collbrowser"), base, result[0])
-            q = session(name='issue_obj').query(DataObject.path,
+            q = session.query(DataObject.path,
                                 DataObject.resource_name,
                                 DataObject.size, 
                                 DataObject.checksum).filter(

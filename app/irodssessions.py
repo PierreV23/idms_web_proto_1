@@ -54,10 +54,9 @@ def create_session(envdata, user):
         **ssl_settings)
 
 class PoolObject():
-    def __init__(self, obj, name=''):
+    def __init__(self, obj):
         self.timestamp = time.time()
         self.obj = obj
-        self.name = name
 
     def update(self):
         self.timestamp = time.time()
@@ -153,16 +152,13 @@ class SessionPool():
 
         return len(self._idle) + len(self._active)
 
-    def get(self, user, name=''):
-        if name=='':
-            name=traceback.format_stack(limit=4)[0]
+    def get(self, user):
         with self._lock:
             if not self._idle:
                 poolentry = PoolObject(create_session(self.envdata, user))
             else:
                 poolentry = self._idle.pop()
             poolentry.update()
-            poolentry.name = name
             self._active.append(poolentry)
         return Session(self, poolentry.obj)
 
@@ -172,7 +168,6 @@ class SessionPool():
             if poolentry:
                 self._active.remove(poolentry)
                 poolentry.update()
-                poolentry.name = ''
                 self._idle.append(poolentry)
 
 class SessionPoolManager():
@@ -184,11 +179,11 @@ class SessionPoolManager():
         self._pools = {}
         self._lock = threading.Lock()
 
-    def session(self, user, name=''):
+    def session(self, user):
         with self._lock:
             if user.username not in self._pools:
                 self._pools[user.username] = SessionPool(self.envdata)
-        return self._pools[user.username].get(user, name=name)
+        return self._pools[user.username].get(user)
 
     def cleanup(self):
         """Cleanup unused session pools"""
@@ -210,7 +205,7 @@ class SessionManager():
         self._lock = threading.Lock()
         self.refresh_time = refresh_time
 
-    def session(self, user, name=''):
+    def session(self, user):
         with self._lock:
             if user.username not in self._sessions:
                 self._sessions[user.username] = PoolObject(create_session(self.envdata, user))
@@ -238,14 +233,14 @@ class MultiSessionManager():
             for envname, envdata in app.config.get('IRODS_ENVS', {}).items():
                 self._managers[envname] = SessionPoolManager(envdata, refresh_time=app.config.get('conn_refresh_time', 120))
  
-    def session(self, user=current_user, name=''):
+    def session(self, user=current_user):
         """ Return an irods session object
         for current_user
         """
         with self._lock:
             mgr = self._managers.get(user.environment)
             if mgr:
-                return mgr.session(user, name=name)
+                return mgr.session(user)
         return None
 
     def cleanup(self):

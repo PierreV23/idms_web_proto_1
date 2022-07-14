@@ -206,7 +206,7 @@ def show_projectdetails():
 
     projectdetails['name'] = projectnaam
     # Retrieve groups associated with project
-    with irods_manager.session(name='show_projectdetails') as session:
+    with irods_manager.session() as session:
         query = session.query(User.name).filter(
             Criterion('!=', User.type, "rodsuser")).filter(
                 Criterion('=', UserMeta.name, "projectID")).filter(
