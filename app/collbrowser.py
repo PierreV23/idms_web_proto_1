@@ -450,7 +450,6 @@ def add_items(path, level, active):
     
     @cache.memoize(timeout=300, make_name=dep_zone)
     def subitems(path):
-        return 1
         count = 0
         with irods_manager.session() as session:
             query = session.query(Collection.id).filter(
@@ -462,7 +461,7 @@ def add_items(path, level, active):
     result = ''
     parts = active.split('/')
     colls = [ c[Collection.name] for c in iqry.qcollchildren(path)]
-    for collpath in colls[:50]:
+    for collpath in colls:
         collname = collpath.split('/')[-1]
         if collname:
             c1=' path-active' if collpath == active else '';
