@@ -27,7 +27,7 @@ def create_session(envdata, user):
     ssl_settings = {
         'irods_client_server_negotiation': 'request_server_negotiation',
         'irods_client_server_policy': 'CS_NEG_REQUIRE',
-        'irods_ssl_ca_certificate_file': '/etc/irods/ssl/prod/irods.crt',
+        'irods_ssl_ca_certificate_file': envdata.get('certfile', 'dummy'),
         'irods_encryption_algorithm': 'AES-256-CBC',
         'irods_encryption_key_size': 32,
         'irods_encryption_num_hash_rounds': 16,
