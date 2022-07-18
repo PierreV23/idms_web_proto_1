@@ -25,11 +25,11 @@ menuname='collectionbrowser'
     ModalHeader.innerHTML = name
     var modalEmbed = document.getElementById("DocText")
     newEmbed = modalEmbed.cloneNode(true)
-    source = "{{ url_for('docviewer.serve_object') }}?path=" + path
+    source = "{{ url_for('docviewer.serve_object') }}?path=" + encodeURIComponent(path)
     newEmbed.setAttribute('src', source)
     modalEmbed.parentNode.replaceChild(newEmbed, modalEmbed)
   }
-
+  
   function avu_table() {
     if ($("#metatoggle").text() == 'Formatted') {
       d1 = 'table-cell';
