@@ -1,0 +1,97 @@
+<link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap-table.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap-table-filter-control.css') }}">
+<script src="{{ url_for('static', filename='css/bootstrap-table.js') }}"></script>
+<script src="{{ url_for('static', filename='css/bootstrap-table-filter-control.min.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous">
+</script>
+
+<table id="colltable" class="table" 
+    data-toggle="table" 
+    data-striped="true" 
+    data-pagination="true"
+    data-pagination-use-intermediate="true"
+    data-page-list="[10, 50, 100]"
+    data-page-size="10"
+    data-filter-control="true"
+    #data-height="500"
+    data-icons-prefix="fa"
+    data-row-style="rowStyle" 
+    data-show-button-icons="false"
+    data-search="false" 
+    data-unique-id="id" 
+    data-buttons-prefix="btn-sm btn"
+    data-url="{{ url_for('collbrowser.collcontents', path=path) }}"
+    data-side-pagination="server">
+    <thead>
+        <tr>
+            <th data-field="displayname" data-align="left" data-sortable="true" data-filter-control="input">Name</th>
+            {% if display_field %}
+            <th data-field="display_field" data-align="left" data-sortable="false">Description</th>
+            {% endif %}
+            <th data-field="size" data-align="left" data-sortable="true">Size</th>
+            <th data-field="create_time" data-align="" data-sortable="true">Create Date</th>
+            <th data-field="owner_name" data-align="" data-sortable="true">Owner</th>
+            {% if options.download_btn == True %}
+            <th data-field="dnld" data-formatter="rowButtons"></th>
+            {% endif %}
+            {% if options.view_btn == True %}
+            <th data-field='view' data-formatter="rowButtons"></th>
+            {% endif %}
+
+        </tr>
+    </thead>
+</table>
+
+<script>
+
+    var styles = {
+        "temporary": "table-warning",
+        "invalid": "table-danger",
+        "valid": "table-success",
+        "distributed": "table-secondary"
+    };
+
+    function rowStyle(row, index) {
+        style = styles[row['type']]
+        return {
+            classes: style
+        }
+    }
+
+    function rowButtons(value, row, index, field) {
+        console.log(value, row, index, field)
+        if (row["object"] == "dataobject") {
+            if (field == "dnld") {
+                dnld_url = "{{ url_for('docviewer.download_object') }}"
+                img = "{{ url_for('static', filename='img/download-button.png' ) }}"
+                path = encodeURIComponent(row['path'])
+                res = `<a href="${dnld_url}?path=${path}"><IMG src="${img}" class="mybutton"></A>`
+                return res;
+            }
+            if (field == 'view') {
+                img = "{{ url_for('static', filename='img/view-button.png' ) }}";
+                path = encodeURIComponent(row['path'])
+                displayname = encodeURIComponent(row['displayname'])
+                res = `<a data-toggle="modal" data-target="#myOutput" onClick="fillModal('${path}','${displayname}')">
+                    <IMG src="${img}" class="mybutton"></A>`
+                return res;
+            }
+        }
+        return '';
+    }
+
+    $('#colltable').bootstrapTable({
+        onClickRow: function (row, element, field) {
+            console.log(row, element, field)
+            if (row['object'] == 'dataobject') {
+                $('#colltable tr').removeClass('table-primary')
+                element.addClass('table-primary')
+                selected_object = row['name']
+                load_meta()
+            }
+        }
+    })
+
+
+</script>
