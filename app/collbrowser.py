@@ -100,7 +100,7 @@ def coll_meta():
     object_avu = None
     if object:
         object_avu = []
-        with irods_manager.session as session:
+        with irods_manager.session() as session:
             query = session.query(DataObjectMeta.name, DataObjectMeta.value,
                                         DataObjectMeta.units).filter(
                                             Criterion('=', Collection.name, path)).filter(
