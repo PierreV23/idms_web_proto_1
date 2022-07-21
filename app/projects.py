@@ -23,6 +23,7 @@ from graphviz import Digraph
 from . import iqry
 from .flaskcache import cache, dep_zone, dep_userzone, key_zone
 from dateutil import parser as dateparser
+from app.constants import COLL_KEY_MAP
 
 
 BP = Blueprint('projects', __name__, url_prefix='/projects')
@@ -239,13 +240,73 @@ def show_projectdetails():
     projectdetails['contacts'] = contacts
 
     # Retrieve collections associated with project
-    query = iqry.qcollbymeta('projectID', projectnaam)
     processing = iso2dt(pl.get('last_updated', EPOCH)) > iso2dt(pl.get('last_verified', EPOCH))
-    projectdetails['colls'] = [datafield('col', q[Collection.name], 'irods_collection') for q in query]
     # return render_template('projectdetails.html', PD=projectdetails,
     #                        conf=config, processnaam=processnaam)
     return render_template('projectdetails.html', PD=projectdetails, all_projects = all_projects, processing=processing,
                            processnaam=processnaam, processgroup=processgroup)
+
+@BP.route('_projectcolls')
+def projectcolls():
+    projectnaam = request.args.get('project', '', type=str)
+    offset = request.args.get('offset', 0, type=int)
+    limit = request.args.get('limit', 999, type=int)
+    filterstr = request.args.get('filter', '{}')
+
+    irods_session = current_user.irods_session
+
+    sortkey = request.args.get('sort', 'name')
+    sort_order = request.args.get('order', 'asc')
+
+    c_sortkey = COLL_KEY_MAP.get(sortkey, 'coll_name')
+
+# Create collection and data filters
+    filters = json.loads(filterstr)
+    qc_filters = [Criterion('=', CollectionMeta.name, 'projectID'), Criterion('=', CollectionMeta.value, projectnaam)]
+    if 'displayname' in filters:
+        qc_filters.append(Criterion('like', Collection.name, f'%{filters["displayname"]}%'))
+
+# Get item counts 
+    qc_count = irods_session.query(Collection.id)
+    for qc_filter in qc_filters:
+        qc_count = qc_count.filter(qc_filter)
+    coll_count = next(qc_count.count(Collection.id).get_results())[Collection.id]
+
+    results = { 'total': coll_count , 'rows': []}
+# Query for collection subcollections
+
+    q1 = irods_session.query(Collection)
+    for qc_filter in qc_filters:
+        q1 = q1.filter(qc_filter)
+    q1 = q1.order_by(c_sortkey, order=sort_order).offset(offset).limit(limit)
+    try:
+        colls = q1.execute()
+        for coll in colls:
+            objdict = { 
+                'displayname': datafield('irods_collection', coll[Collection.name], 'irods_collection').collentry,
+                'path': coll[Collection.name],
+                'object': 'collection',
+                'size': 'DIR',
+                'create_time': datafield('create_time', coll[Collection.create_time], 'timestamp').htmlstring,
+                'owner_name': coll[Collection.owner_name]
+            }
+            objdict['type'] = iqry.qcollmetaval(coll[Collection.name], 'sys::data::type', default='')
+            results['rows'].append(objdict)
+    except CAT_NO_ROWS_FOUND:
+        pass
+    return jsonify(results)
+
+
+@BP.route('_projectcolltable')
+def projectcolltable():
+    projectnaam = request.args.get('project', '', type=str)
+    options = {
+        'download_btn': False,
+        'view_btn': False,
+        'delete_btn': False
+    }
+    data_url = url_for('projects.projectcolls', project=projectnaam)
+    return render_template('colltable.html', data_url=data_url, display_field=None, options=options)
 
 
 @BP.route('/processdetails')

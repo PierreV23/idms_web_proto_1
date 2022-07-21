@@ -24,6 +24,7 @@ from . import projects
 from . import iqry
 from .flaskcache import cache, key_zone, key_userzone, dep_zone
 import json
+from app.constants import COLL_KEY_MAP, DATA_KEY_MAP
 
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
 
@@ -63,19 +64,6 @@ COLL_SHAPES = {
     'qc_report'  :('box3d', 'yellow'),
     'refsamp_report'  :('box3d', 'yellow')}
 
-COLL_KEY_MAP = {
-    'name': Collection.name,
-    'create_time': Collection.create_time,
-    'size': Collection.name, # Collections do not have a size property
-    'owner_name': Collection.owner_name
-}
-
-DATA_KEY_MAP = {
-    'name': DataObject.name,
-    'create_time': DataObject.create_time,
-    'size': DataObject.size,
-    'owner_name': DataObject.owner_name
-}
 
 PROCESS_SHAPE = 'cds'
 
@@ -257,7 +245,8 @@ def collist():
         'view_btn': request.args.get('btn_view', 'true', type=str) == 'true',
         'delete_btn': request.args.get('btn_del', 'false', type=str) == 'true'
     }
-    return render_template('colltable.html', path=path, display_field=display_field, options=options)
+    data_url = url_for('collbrowser.collcontents', path=path)
+    return render_template('colltable.html', data_url=data_url, display_field=display_field, options=options)
 
 @bp.route('_collcontents')
 @cache.cached(timeout=60, key_prefix=key_zone)
@@ -288,9 +277,9 @@ def collcontents():
     filters = json.loads(filterstr)
     qc_filters = [Criterion('=', Collection.parent_name, path)]
     qd_filters = [Criterion('=', Collection.name, path)]
-    if 'name' in filters:
-        qc_filters.append(Criterion('like', Collection.name, f'%{filters["name"]}%'))
-        qd_filters.append(Criterion('like', DataObject.name, f'%{filters["name"]}%'))
+    if 'displayname' in filters:
+        qc_filters.append(Criterion('like', Collection.name, f'%{filters["displayname"]}%'))
+        qd_filters.append(Criterion('like', DataObject.name, f'%{filters["displayname"]}%'))
 
 # Get item counts 
     qc_count = irods_session.query(Collection.id)

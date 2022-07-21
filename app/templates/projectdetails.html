@@ -13,14 +13,34 @@ function load_pg() {
   });
 }
 
+function load_colls() {
+  $.get('{{ url_for('projects.projectcolltable') }}', {
+    project: "{{ PD.name }}"
+  }, function(data) {
+     $('#collections').html(data);
+     console.log('load the collection list ...')
+  });
+}
+
 $('.nav2').on('shown.bs.tab', function(event){
   target = event.target.getAttribute('href')
   activetab = target
   if (target == "#processgroups") {
     load_pg();
   }
+  if (target == "#collections") {
+    load_colls();
+  }
   console.log(target)
 })
+
+$(document).on('click', '.path-change', function () {
+    collection = $(this).data('path');
+    if (typeof collection == 'undefined') {
+      collection = $(this).attr('id')
+    }
+    window.location.replace("{{ url_for('collbrowser.collbrowser') }}?path=" + encodeURIComponent(collection));
+  });
 
 function update_process(sourceElem, destElem) {
     $.post("{{ url_for('projects.get_process') }}",
@@ -429,22 +449,7 @@ function createContactRow( contact ) {
     <!-- Collections -->
 
     <div class="tab-pane h-100 scroll" id="collections" role="tabpanel" aria-labelledby="collections-tab">
-      <table class="table table-striped table-hover table-sm" >
-        <thead>
-          <TR>
-            <TH scope="col">Name</TH>
-          </TR>
-        </thead>
-        <tbody>
-          {% for coll in PD.colls | sort %}
-          <tr>
-            <td>
-              {{ coll.htmlstring|safe}}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+
     </div>
 
     <div class="tab-pane" id="groups" role="tabpanel" aria-labelledby="groups-tab">
