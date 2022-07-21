@@ -154,11 +154,24 @@ def dbsession():
     from sqlalchemy.ext.automap import automap_base
     from sqlalchemy.orm import Session
     from sqlalchemy import create_engine
-    Base = automap_base()
-    engine = create_engine('sqlite:///../bio-ansible/jobs.db', echo = False)
-    Base.prepare(engine, reflect=True)
-    Jobs = Base.classes.jobs
-    Processgroups = Base.classes.processgroups
+    #import models
+    #from models import engine
+    from sqlalchemy import MetaData, Table
+
+    engine = create_engine('postgresql://irods:testpassword@rivm-bioir-l01a.rivm.ssc-campus.nl/ICAT', echo=False)
+    #engine = create_engine('sqlite:///../bio-ansible_2/jobs.db', echo = False)
+    meta = MetaData()
+    meta.reflect(bind=engine, views=True, only=['mat_jobs_2', 'mat_processgroups'])
+
+    #Base = automap_base(metadata=meta)
+    #Base.prepare(engine, reflect=True)
+    #Jobs = Base.classes.mat_jobs_2
+    #Jobs = meta.tables['mat_jobs_2']
+    Jobs = Table("mat_jobs_2", meta, autoload_with=engine)
+    print( type( Jobs ) )
+    print( Jobs.columns )
+    print( [c.name for c in Jobs.columns] )
+    Processgroups = Table("mat_processgroups", meta, autoload_with=engine)
     session = Session(engine)
     return session, Jobs, Processgroups
 
@@ -196,9 +209,9 @@ def pgjobs():
     session, Jobs, Processgroups = dbsession()
     result = []
     if pgid:
-        pgj = session.query(Jobs).filter(Jobs.processgroupid==pgid)
+        pgj = session.query(Jobs).filter(Jobs.columns.processgroupid==pgid)
     else:
-        pgj = session.query(Jobs).order_by(Jobs.start_time.cast(Float).desc()).limit(1000)
+        pgj = session.query(Jobs).order_by(Jobs.columns.start_time.cast(Float).desc()).limit(1000)
     for j in pgj:
         rec = {}
         for f in JOB_FIELDS:
