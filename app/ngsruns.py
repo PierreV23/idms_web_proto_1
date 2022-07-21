@@ -179,6 +179,8 @@ def get_complete(field):
 
 @bp.route('_runs', methods=['GET'])
 def runs():
+    # Preparation for speedup: pagination for getting the list of runs,
+    # for when getting the whole list (run_list()) takes too long.
     #print(request.args)
     fields = ['id', 'name', 'flowcell', 'flowcell_display', 'project', 'owner', 'datacoll', 'description']
     offset = int(request.args.get('offset', 0))
