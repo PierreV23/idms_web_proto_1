@@ -19,6 +19,7 @@ import sys
 import time
 from datetime import datetime, timezone
 from .flaskcache import cache, dep_zone, key_zone, key_userzone
+from app.irodssessions import irods_manager
 from . import iqry
 
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
@@ -113,15 +114,16 @@ def joblist(state='', page=1):
     """
 
     job_list = []
+    session = irods_manager.session()
     if state == '':
         # incoming runsheets could still be runsheet-files, this will change with the switch to the process-groups...
-        q1b = current_user.irods_session.query(Collection, CollectionMeta).filter( 
+        q1b = session.query(Collection, CollectionMeta).filter( 
                 Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_STATE)).filter( 
                 Criterion('!=', CollectionMeta.value, 'archive')).filter(
                 Criterion('not like', Collection.name, f'/{current_user.irods_zone}/system/runsheet%'))
     else:  
         # or runsheets could be on collections
-        q1b = current_user.irods_session.query(Collection).filter(
+        q1b = session.query(Collection).filter(
                 Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_STATE)).filter(
                 Criterion('=', CollectionMeta.value, f'{state}')).filter(
                 Criterion('not like', Collection.name, f'/{current_user.irods_zone}/system/runsheet%'))
@@ -296,16 +298,17 @@ def jobdetails():
 @login_required
 def job_logs():
     jobnaam = request.args.get('name', '', type=str)
+    session = irods_manager.session()
 
     # the jobnaam is refering to metainfo on a collection
-    query = current_user.irods_session.query(Collection.name, CollectionMeta).filter( 
+    query = session.query(Collection.name, CollectionMeta).filter( 
             Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_ID )).filter(
             Criterion('=', CollectionMeta.value, f'{jobnaam}'))
     # Find the job log file
     results = query.get_results()
     job = next(results)
     runsheet = job[Collection.name] 
-    q2 = current_user.irods_session.query(CollectionMeta.name, CollectionMeta.value).filter( \
+    q2 = session.query(CollectionMeta.name, CollectionMeta.value).filter( \
             Criterion('=', Collection.name, runsheet ))
     metadata = {meta[CollectionMeta.name] : meta[CollectionMeta.value] for meta in q2}
     joblog = { f'Job log', f'{runsheet}/log/{jobnaam}.log' }

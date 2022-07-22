@@ -16,6 +16,7 @@ from irods.models import Collection, CollectionMeta, DataObject, DataObjectMeta
 from irods.column import Criterion
 from app.datafield import AVU2data, datafield
 from app.irods_helper import getmetaitem
+from app.irodssessions import irods_manager
 from graphviz import Digraph
 from irods.meta import iRODSMeta
 from urllib.parse import urlparse
@@ -86,7 +87,7 @@ def _getmetatree(irods_coll, attr, base, default=None):
 def coll_meta():
     path = request.args.get('path','/', type=str)
     object = request.args.get('object', '', type=str)
-    irods_session = current_user.irods_session
+
 # Query for collection metadata
     coll_avu = []
     query = iqry.qcollmeta(path)
@@ -100,22 +101,23 @@ def coll_meta():
     object_avu = None
     if object:
         object_avu = []
-        query = irods_session.query(DataObjectMeta.name, DataObjectMeta.value,
-                                    DataObjectMeta.units).filter(
-                                        Criterion('=', Collection.name, path)).filter(
-                                        Criterion('=', DataObject.name, object)
-                                    )
-        for object_metadata in query:
-            name = object_metadata[DataObjectMeta.name]
-            value = object_metadata[DataObjectMeta.value]
-            units = object_metadata[DataObjectMeta.units]
-            object_avu.append(AVU2data(name, value, units))
+        with irods_manager.session() as session:
+            query = session.query(DataObjectMeta.name, DataObjectMeta.value,
+                                        DataObjectMeta.units).filter(
+                                            Criterion('=', Collection.name, path)).filter(
+                                            Criterion('=', DataObject.name, object)
+                                        )
+            for object_metadata in query:
+                name = object_metadata[DataObjectMeta.name]
+                value = object_metadata[DataObjectMeta.value]
+                units = object_metadata[DataObjectMeta.units]
+                object_avu.append(AVU2data(name, value, units))
     return render_template('metadata.html', coll_avu=coll_avu, object_avu=object_avu)
 
 @bp.route('_setKeepOnlineUntil', methods=['GET'])
 @login_required
 def setKeepOnlineUntil():
-    irods_session = current_user.irods_session
+    irods_session = irods_manager.session()
 
     selectionStr = request.args.get('selection','None', type=str)
     collection = request.args.get('collection','None', type=str)
@@ -213,10 +215,6 @@ def coll_actions():
 @login_required
 def startprocess():
     collection = request.args.get('collection')
-    if current_user.ifs.folderexists(collection):
-        c = current_user.irods_session.collections.get(collection)
-    else:
-        return 'FAILED'
 
     processid = request.args.get('processid')
     processgroupid = request.args.get('processgroupid')
@@ -245,7 +243,7 @@ def collist():
         'delete_btn': request.args.get('btn_del', 'false', type=str) == 'true'
     }
 
-    irods_session = current_user.irods_session
+    irods_session = irods_manager.session()
 
     cols = []
     objs = []
@@ -454,18 +452,17 @@ def add_items(path, level, active):
     @cache.memoize(timeout=300, make_name=dep_zone)
     def subitems(path):
         count = 0
-        query = irods_session.query(Collection.id).filter(
-            Criterion('=',Collection.parent_name, path)).count(Collection.id)
-        for a in query:
-            count = a[Collection.id]
+        with irods_manager.session() as session:
+            query = session.query(Collection.id).filter(
+                Criterion('=',Collection.parent_name, path)).count(Collection.id)
+            for a in query:
+                count = a[Collection.id]
         return count
         
     result = ''
     parts = active.split('/')
-    irods_session = current_user.irods_session
-    query = iqry.qcollchildren(path)
-    for coll in query:
-        collpath = coll[Collection.name]
+    colls = [ c[Collection.name] for c in iqry.qcollchildren(path)]
+    for collpath in colls:
         collname = collpath.split('/')[-1]
         if collname:
             c1=' path-active' if collpath == active else '';
@@ -569,7 +566,7 @@ def search_result():
         SEARCH_OPTION = '='
 
     #print( f"useExactMatch: {useExactMatch}, useSearchMeta: {useSearchMeta}, useSearchObjectNames: {useSearchObjectNames}" )
-    irods_session = current_user.irods_session
+    irods_session = irods_manager.session()
     data = list()
 
     if useSearchDatasetNames:

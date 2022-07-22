@@ -23,6 +23,7 @@ from graphviz import Digraph
 from . import iqry
 from .flaskcache import cache, dep_zone, dep_userzone, key_zone
 from dateutil import parser as dateparser
+from app.irodssessions import irods_manager
 
 
 BP = Blueprint('projects', __name__, url_prefix='/projects')
@@ -205,12 +206,12 @@ def show_projectdetails():
 
     projectdetails['name'] = projectnaam
     # Retrieve groups associated with project
-    irods_session = current_user.irods_session
-    query = irods_session.query(User.name).filter(
-        Criterion('!=', User.type, "rodsuser")).filter(
-            Criterion('=', UserMeta.name, "projectID")).filter(
-                Criterion('=', UserMeta.value, projectnaam)).order_by(User.name)
-    groups = [u[User.name] for u in query]
+    with irods_manager.session() as session:
+        query = session.query(User.name).filter(
+            Criterion('!=', User.type, "rodsuser")).filter(
+                Criterion('=', UserMeta.name, "projectID")).filter(
+                    Criterion('=', UserMeta.value, projectnaam)).order_by(User.name)
+        groups = [u[User.name] for u in query]
     projectdetails['groups'] = groups
     # Retrieve general project settings
     for attr in ['description', 'default_collection', 'service_account', 'modify_in_place',
