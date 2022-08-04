@@ -219,8 +219,6 @@ def show_projectdetails():
                  'distribution', 'restartable', 'omit_staging', 'omit_bringonline']:
         projectdetails[attr] = pl.get(attr, '')
 
-#    projectdetails['conf'] = config[projectnaam]
-#    projectdetails['processes'] = [proc for proc in sorted(config[projectnaam]['processes'])]
     processes, result = rest_call('GET', '/projects/{}/processes'.format(projectnaam))
     projectdetails['processes'] = {}
     for proces in processes:
@@ -242,8 +240,6 @@ def show_projectdetails():
 
     # Retrieve collections associated with project
     processing = iso2dt(pl.get('last_updated', EPOCH)) > iso2dt(pl.get('last_verified', EPOCH))
-    # return render_template('projectdetails.html', PD=projectdetails,
-    #                        conf=config, processnaam=processnaam)
     return render_template('projectdetails.html', PD=projectdetails, all_projects = all_projects, processing=processing,
                            processnaam=processnaam, processgroup=processgroup)
 
@@ -307,8 +303,6 @@ def projectcolltable():
         'delete_btn': False
     }
     path=f"/{current_user.irods_zone}/projects/{projectnaam}"
-    #data_url = url_for('projects.projectcolls', project=projectnaam)
-    #return render_template('colltable.html', data_url=data_url, display_field=None, options=options)
     return render_template('colltable.html', path=path, display_field=None, options=options)
 
 

@@ -257,7 +257,6 @@ def collist():
         'view_btn': request.args.get('btn_view', 'true', type=str) == 'true',
         'delete_btn': request.args.get('btn_del', 'false', type=str) == 'true'
     }
-    #data_url = url_for('collbrowser.collcontents', path=path)
     return render_template('colltable.html', path=path, display_field=display_field, options=options)
 
 @bp.route('_collcontents')
