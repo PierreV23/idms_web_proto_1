@@ -25,6 +25,7 @@ from . import projects
 from . import iqry
 from .flaskcache import cache, key_zone, key_userzone, dep_zone
 import json
+from app.constants import COLL_KEY_MAP, DATA_KEY_MAP
 
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
 
@@ -66,14 +67,14 @@ COLL_SHAPES = {
     'refsamp_report'  :('box3d', 'yellow')}
 
 COLL_KEY_MAP = {
-    'name': Collection.name,
+    'displayname': Collection.name,
     'create_time': Collection.create_time,
     'size': Collection.name, # Collections do not have a size property
     'owner_name': Collection.owner_name
 }
 
 DATA_KEY_MAP = {
-    'name': DataObject.name,
+    'displayname': DataObject.name,
     'create_time': DataObject.create_time,
     'size': DataObject.size,
     'owner_name': DataObject.owner_name
@@ -276,17 +277,20 @@ def collcontents():
     display_settings = { m[CollectionMeta.name][8:] : m[CollectionMeta.value] for m in q1 if m[CollectionMeta.name].startswith('ngsweb::') }
 
     display_field = display_settings.get('display_field', '')
-    sortkey = request.args.get('sort', display_settings.get('sort_order', 'name'))
+    sortkey = request.args.get('sort', display_settings.get('sort_order', 'displayname'))
     sort_order = 'desc' if display_settings.get('sort_reverse', 'false') == 'true' else 'asc'
     sort_order = request.args.get('order', sort_order)
 
-    c_sortkey = COLL_KEY_MAP.get(sortkey, 'coll_name')
-    d_sortkey = DATA_KEY_MAP.get(sortkey, 'data_name')
-
+    c_sortkey = COLL_KEY_MAP.get(sortkey, 'displayname')
+    d_sortkey = DATA_KEY_MAP.get(sortkey, 'displayname')
+  
 # Create collection and data filters
     filters = json.loads(filterstr)
     qc_filters = [Criterion('=', Collection.parent_name, path)]
     qd_filters = [Criterion('=', Collection.name, path)]
+    print( sortkey )
+    print( filters )
+    print( c_sortkey )
     if 'displayname' in filters:
         qc_filters.append(Criterion('like', Collection.name, f'%{filters["displayname"]}%'))
         qd_filters.append(Criterion('like', DataObject.name, f'%{filters["displayname"]}%'))

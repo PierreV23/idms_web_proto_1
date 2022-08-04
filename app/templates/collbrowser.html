@@ -148,8 +148,8 @@ menuname='collectionbrowser'
   };
 
   $(document).on('click', '.path-change', function () {
-    history.pushState({ "coll": collection }, 'Browse ' + collection, '/collbrowser?path=' + collection);
     collection = $(this).data('path');
+    history.pushState({ "coll": collection }, 'Browse ' + collection, '/collbrowser?path=' + collection);
     if (typeof collection == 'undefined') {
       collection = $(this).attr('id')
     }
