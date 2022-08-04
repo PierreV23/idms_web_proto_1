@@ -10,9 +10,10 @@ import base64
 import os
 from datetime import datetime, timezone
 from dateutil.relativedelta import relativedelta
-from flask import Blueprint, render_template, redirect, request, url_for
+from flask import Blueprint, render_template, redirect, request, url_for, jsonify
 from flask_login import current_user, login_required
 from irods.models import Collection, CollectionMeta, DataObject, DataObjectMeta
+from irods.exception import CAT_NO_ROWS_FOUND
 from irods.column import Criterion
 from app.datafield import AVU2data, datafield
 from app.irods_helper import getmetaitem
@@ -61,6 +62,20 @@ COLL_SHAPES = {
     'unknown'    :('ellipse', 'gray'),
     'qc_report'  :('box3d', 'yellow'),
     'refsamp_report'  :('box3d', 'yellow')}
+
+COLL_KEY_MAP = {
+    'name': Collection.name,
+    'create_time': Collection.create_time,
+    'size': Collection.name, # Collections do not have a size property
+    'owner_name': Collection.owner_name
+}
+
+DATA_KEY_MAP = {
+    'name': DataObject.name,
+    'create_time': DataObject.create_time,
+    'size': DataObject.size,
+    'owner_name': DataObject.owner_name
+}
 
 PROCESS_SHAPE = 'cds'
 
@@ -235,14 +250,22 @@ def startprocess():
 @cache.cached(timeout=60, key_prefix=key_zone)
 def collist():
     path = request.args.get('path','/', type=str)
-    sortkey = request.args.get('sortkey', None, type=str)
-    reverse_str = request.args.get('reverse', 'false', type=str)
     new_path_str = request.args.get('new_path', 'true', type=str)
+    display_field = iqry.qcollmetaval(path, 'ngsweb::display_field')
     options = {
         'download_btn': request.args.get('btn_download', 'true', type=str) == 'true',
         'view_btn': request.args.get('btn_view', 'true', type=str) == 'true',
         'delete_btn': request.args.get('btn_del', 'false', type=str) == 'true'
     }
+    return render_template('colltable.html', path=path, display_field=display_field, options=options)
+
+@bp.route('_collcontents')
+@cache.cached(timeout=60, key_prefix=key_zone)
+def collcontents():
+    path = request.args.get('path','/', type=str)
+    offset = request.args.get('offset', 0, type=int)
+    limit = request.args.get('limit', 999, type=int)
+    filterstr = request.args.get('filter', '{}')
 
     irods_session = current_user.irods_session
 
@@ -253,62 +276,90 @@ def collist():
     q1 = iqry.qcollmeta(path)
     display_settings = { m[CollectionMeta.name][8:] : m[CollectionMeta.value] for m in q1 if m[CollectionMeta.name].startswith('ngsweb::') }
 
-    display_field = display_settings.get('display_field')
-    if new_path_str == 'true':
-        sortkey = display_settings.get('sort_order', 'name')
-        reverse = display_settings.get('sort_reverse', 'false') == 'true'
-    else:
-        reverse = reverse_str == 'true'
+    display_field = display_settings.get('display_field', '')
+    sortkey = request.args.get('sort', display_settings.get('sort_order', 'name'))
+    sort_order = 'desc' if display_settings.get('sort_reverse', 'false') == 'true' else 'asc'
+    sort_order = request.args.get('order', sort_order)
 
+    c_sortkey = COLL_KEY_MAP.get(sortkey, 'coll_name')
+    d_sortkey = DATA_KEY_MAP.get(sortkey, 'data_name')
+
+# Create collection and data filters
+    filters = json.loads(filterstr)
+    qc_filters = [Criterion('=', Collection.parent_name, path)]
+    qd_filters = [Criterion('=', Collection.name, path)]
+    if 'displayname' in filters:
+        qc_filters.append(Criterion('like', Collection.name, f'%{filters["displayname"]}%'))
+        qd_filters.append(Criterion('like', DataObject.name, f'%{filters["displayname"]}%'))
+
+# Get item counts 
+    qc_count = irods_session.query(Collection.id)
+    for qc_filter in qc_filters:
+        qc_count = qc_count.filter(qc_filter)
+    coll_count = next(qc_count.count(Collection.id).get_results())[Collection.id]
+
+    qd_count = irods_session.query(Collection.name)
+    for qd_filter in qd_filters:
+        qd_count = qd_count.filter(qd_filter)
+    try:
+        data_count = next(qd_count.count(DataObject.id).get_results())[DataObject.id]
+    except StopIteration:
+        data_count = 0
+
+# Determine offset and limits
+    min_coll = min(offset, coll_count)
+    max_coll = min(offset + limit, coll_count)
+    min_data = min(max(offset - coll_count, 0), data_count)
+    max_data = min(max(offset + limit - coll_count, 0), data_count)
+
+    results = { 'total': coll_count + data_count , 'rows': []}
 # Query for collection subcollections
-    query = iqry.qcollchildren(path)
-    for obj in query:
-        objdict = {'name': obj[Collection.name].split('/')[-1], 'path': obj[Collection.name]}
-        ctime = obj[Collection.create_time]
-        ctime = ctime.replace(tzinfo=timezone.utc).astimezone()
-        objdict['create_time'] = datafield('create_time', ctime.timestamp(), 'timestamp')
-        objdict['owner_name'] = obj[Collection.owner_name]
 
-        objdict['display_field'] = ''
-        if display_field:
-            df = iqry.qcollmetaval(obj[Collection.name], display_field)
-            if df:
-                objdict['display_field'] = df
+    if min_coll < max_coll:
+        q1 = irods_session.query(Collection)
+        for qc_filter in qc_filters:
+            q1 = q1.filter(qc_filter)
+        q1 = q1.order_by(c_sortkey, order=sort_order).offset(offset).limit(limit)
+        try:
+            colls = q1.execute()
+            for coll in colls:
+                objdict = { 
+                    'displayname': datafield('irods_collection', coll[Collection.name], 'irods_collection').collentry,
+                    'path': coll[Collection.name],
+                    'object': 'collection',
+                    'size': 'DIR',
+                    'create_time': datafield('create_time', coll[Collection.create_time], 'timestamp').htmlstring,
+                    'owner_name': coll[Collection.owner_name]
+                }
+                objdict['type'] = iqry.qcollmetaval(coll[Collection.name], 'sys::data::type', default='')
+                objdict['display_field'] = iqry.qcollmetaval(coll[Collection.name], display_field, default='')
+                results['rows'].append(objdict)
+        except CAT_NO_ROWS_FOUND:
+            pass
 
-        objdict['type'] = 'unknown'
-        dt = iqry.qcollmetaval(obj[Collection.name], 'sys::data::type')
-        if dt:
-            objdict['type'] = dt
-        cols.append(objdict)
+# Query irods for dataobjects
+    if min_data < max_data:
+        qd = irods_session.query(DataObject.name, DataObject.create_time, DataObject.size, DataObject.owner_name)
+        for qd_filter in qd_filters:
+            qd = qd.filter(qd_filter)
+        qd = qd.min(DataObject.create_time)
+        qd = qd.order_by(d_sortkey, order=sort_order).offset(min_data).limit(max_data - min_data)      
+        try:
+            dataobjects = qd.execute()
+            for do in dataobjects:
+                objdict = { 
+                    'displayname': do[DataObject.name],
+                    'object': 'dataobject',
+                    'path': os.path.join(path, do[DataObject.name]),
+                    'size': do[DataObject.size],
+                    'create_time': datafield('create_time', do[DataObject.create_time], 'timestamp').htmlstring,
+                    'owner_name': do[DataObject.owner_name]
+                }
+                results['rows'].append(objdict)
+        except CAT_NO_ROWS_FOUND:
+            pass
+    return jsonify(results)
 
-
-# Query for dataobjects in collection
-    query = iqry.qcolldataobjects(path)
-    for obj in query:
-        objdict = {'name': obj[DataObject.name], 'path': '/'.join(
-            (path, obj[DataObject.name]))}
-        objdict['size'] = obj[DataObject.size]
-        ctime = obj[DataObject.create_time]
-        ctime = ctime.replace(tzinfo=timezone.utc).astimezone()
-        objdict['create_time'] = datafield('create_time', ctime.timestamp(), 'timestamp')
-        objdict['owner_name'] = obj[DataObject.owner_name]
-        objs.append(objdict)
-    
-    show_display_field = False
-    for i in cols:
-        if i['display_field']:
-            show_display_field = True
-
-    if cols:
-        if sortkey in cols[0]:
-            cols.sort(key=lambda x: x[sortkey], reverse=reverse)
-    if objs:
-        if sortkey in objs[0]:
-            objs.sort(key=lambda x: x[sortkey], reverse=reverse)
-
-    return render_template('coll_contents.html', cols=cols, objs=objs, 
-                           show=show_display_field, sortkey=sortkey, reverse=reverse,
-                           options=options)
 
 def shortname(name,l):
     s = name
