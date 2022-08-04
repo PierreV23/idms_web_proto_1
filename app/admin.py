@@ -16,6 +16,7 @@ from irods.column import Criterion
 from irods.query import SpecificQuery
 from app.irods_helper import getmetaitem
 from app.datafield import datafield
+from app.irodssessions import irods_manager
 
 ATTR_ARCHIVE_STATUS = "sys::archive::status"
 ATTR_ARCHIVE_STATUSMSG = "sys::archive::statusmsg"
@@ -152,38 +153,40 @@ def query_issues():
     if not current_user.is_admin:
         return('<TR><TD COLSPAN=3>Access denied</TD></TR>')
     data = ''
-    query = SpecificQuery(current_user.irods_session, alias='checksums_differ')
-    for result in query:
-        base, name = os.path.split(result[0])
-        data = '{}<TR><TD COLSPAN=5><A HREF="{}?path={}">{}</A></TD></TR>'.format(data, url_for("collbrowser.collbrowser"), base, result[0])
-        q = current_user.irods_session.query(DataObject.path,
-                                             DataObject.resource_name,
-                                             DataObject.size, 
-                                             DataObject.checksum).filter(
-            Criterion('=', Collection.name, base)).filter(
-            Criterion('=', DataObject.name, name))
-        for objfile in q:
-            data = '{}<TR><td></td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></TR>'.format(data, 
-                                                            objfile[DataObject.path],
-                                                            objfile[DataObject.resource_name],
-                                                            objfile[DataObject.size],
-                                                            objfile[DataObject.checksum])
+    with irods_manager.session() as session:
+        query = SpecificQuery(session, alias='checksums_differ')
+        for result in query:
+            base, name = os.path.split(result[0])
+            data = '{}<TR><TD COLSPAN=5><A HREF="{}?path={}">{}</A></TD></TR>'.format(data, url_for("collbrowser.collbrowser"), base, result[0])
+            q = session.query(DataObject.path,
+                                DataObject.resource_name,
+                                DataObject.size, 
+                                DataObject.checksum).filter(
+                Criterion('=', Collection.name, base)).filter(
+                Criterion('=', DataObject.name, name))
+            for objfile in q:
+                data = '{}<TR><td></td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></TR>'.format(data, 
+                                                                objfile[DataObject.path],
+                                                                objfile[DataObject.resource_name],
+                                                                objfile[DataObject.size],
+                                                                objfile[DataObject.checksum])
     return data
 
 @bp.route('/_consistency')
 def data_consistency():
     # Handy to have the resource hosts in the table:
-    query = current_user.irods_session.query(Resource)
-    resources = { r[Resource.name]: r[Resource.location] for r in query }
-    query = current_user.irods_session.query(Collection.name, CollectionMeta.name, CollectionMeta.value).filter(
-        Criterion('like', CollectionMeta.name, 'sys::consistency::%::errors'))
-    results = [ 
-        { 'collection': r[Collection.name],
-          'collink'   : datafield('collection', r[Collection.name], 'irods_collection').htmlstring,
-          'resource'  : r[CollectionMeta.name].split('::')[2],
-          'location'  : resources.get(r[CollectionMeta.name].split('::')[2], 'UNKNOWN'),
-          'issues'    : r[CollectionMeta.value]
-        } for r in query ]
+    with irods_manager.session() as session:
+        query = session.query(Resource)
+        resources = { r[Resource.name]: r[Resource.location] for r in query }
+        query = session.query(Collection.name, CollectionMeta.name, CollectionMeta.value).filter(
+            Criterion('like', CollectionMeta.name, 'sys::consistency::%::errors'))
+        results = [ 
+            { 'collection': r[Collection.name],
+            'collink'   : datafield('collection', r[Collection.name], 'irods_collection').htmlstring,
+            'resource'  : r[CollectionMeta.name].split('::')[2],
+            'location'  : resources.get(r[CollectionMeta.name].split('::')[2], 'UNKNOWN'),
+            'issues'    : r[CollectionMeta.value]
+            } for r in query ]
     return jsonify(results)
 
 @bp.route('/_condetails', methods=["GET"])
@@ -199,16 +202,17 @@ def consistency_details():
     data = []
     if collection:
         for criterium in criteria:
-            q = current_user.irods_session.query(Collection.name, DataObject.name, DataObject.path, DataObjectMeta.value).filter(criterium).filter(
-                Criterion('=', DataObjectMeta.name, attr)).filter(
-                Criterion('=', DataObject.resource_name, resource)
-                )
-            for r in q:
-                data.append({
-                    'dataobject': os.path.relpath(os.path.join(r[Collection.name], r[DataObject.name]), start=collection),
-                    'path': r[DataObject.path],
-                    'error': r[DataObjectMeta.value]
-                })
+            with irods_manager.session() as session:
+                q = session.query(Collection.name, DataObject.name, DataObject.path, DataObjectMeta.value).filter(criterium).filter(
+                    Criterion('=', DataObjectMeta.name, attr)).filter(
+                    Criterion('=', DataObject.resource_name, resource)
+                    )
+                for r in q:
+                    data.append({
+                        'dataobject': os.path.relpath(os.path.join(r[Collection.name], r[DataObject.name]), start=collection),
+                        'path': r[DataObject.path],
+                        'error': r[DataObjectMeta.value]
+                    })
 
     columns = [
         { "field": "dataobject", "title": "DataObject", "sortable": True },
@@ -232,8 +236,9 @@ def archive_action():
     requestdata = request.form.to_dict()
     action = requestdata.get('action')
     collection = requestdata.get('collection')
+    session = irods_manager.session()
     try:
-        collobj = current_user.irods_session.collections.get(collection)
+        collobj = session.collections.get(collection)
     except irods.exception.CollectionDoesNotExist:
         return jsonify({'message': 'Collection does not exist'})
     if action == 'remove_archive':
@@ -245,7 +250,7 @@ def archive_action():
         for attr in (ATTR_ARCHIVE_TARFILE, ATTR_ARCHIVE_MANIFESTFILE):
             filename = getmetaitem(collobj, attr)
             if filename and current_user.ifs.fileexists(filename):
-                current_user.irods_session.data_objects.unlink(filename)
+                session.data_objects.unlink(filename)
                 collobj.metadata.remove(iRODSMeta(attr, filename))
     if action in ('clear_status', 'remove_archive') :
         for attr in (ATTR_ARCHIVE_STATUS, ATTR_ARCHIVE_STATUSMSG, ATTR_ARCHIVE_LASTCHECK):
@@ -258,24 +263,25 @@ def archive_action():
 @login_required
 def archive_issues():
     # Get issue collections
-    query = current_user.irods_session.query(Collection.name, CollectionMeta.value).filter(
-        Criterion('=', CollectionMeta.name, ATTR_ARCHIVE_STATUS)).filter(
-        Criterion('!=', CollectionMeta.value, 'OK'))
-    items = []
-    for result in query:
-        statusmsg = ""
-        coll = current_user.irods_session.collections.get(result[Collection.name])
-        statusmsg = getmetaitem(coll, ATTR_ARCHIVE_STATUSMSG, default="")
-        allow_remove = False
-        state = getmetaitem(coll, ATTR_ARCHIVE_STATE)
-        if state and state.count('1')>1:
-            allow_remove = True
-        items.append({ 
-            'collection': datafield('Collection', result[Collection.name], 'irods_collection'),
-            'status': result[CollectionMeta.value],
-            'statusmsg': statusmsg,
-            'allow_remove': allow_remove
-        })
+    with irods_manager.session() as session:
+        query = session.query(Collection.name, CollectionMeta.value).filter(
+            Criterion('=', CollectionMeta.name, ATTR_ARCHIVE_STATUS)).filter(
+            Criterion('!=', CollectionMeta.value, 'OK'))
+        items = []
+        for result in query:
+            statusmsg = ""
+            coll = session.collections.get(result[Collection.name])
+            statusmsg = getmetaitem(coll, ATTR_ARCHIVE_STATUSMSG, default="")
+            allow_remove = False
+            state = getmetaitem(coll, ATTR_ARCHIVE_STATE)
+            if state and state.count('1')>1:
+                allow_remove = True
+            items.append({ 
+                'collection': datafield('Collection', result[Collection.name], 'irods_collection'),
+                'status': result[CollectionMeta.value],
+                'statusmsg': statusmsg,
+                'allow_remove': allow_remove
+            })
     return render_template('archive_issues.html', items=items)
 
 
@@ -285,22 +291,23 @@ def admin():
     if not current_user.is_admin:
         return render_template('denied.html')
     queues = {}
+    session = irods_manager.session()
     for q in ['incoming', 'depends', 'prepare', 'stage', 'queued', 'startup', 'active', 'finishing', 'postprocessing', 'waiting']:
         enabled = True
         path = f'/{current_user.irods_zone}/system/runsheet'
-        metaquery = current_user.irods_session.query(CollectionMeta.value).filter(
+        metaquery = session.query(CollectionMeta.value).filter(
             Criterion('=', Collection.name, path)).filter(
             Criterion('=', CollectionMeta.name, f'sys::enable::{q}'))
         for meta in metaquery:
             enabled = meta[CollectionMeta.value] == 'true'
         if q == 'incoming':
-            items = current_user.irods_session.query(DataObject.id).filter(\
+            items = session.query(DataObject.id).filter(\
                 Criterion('=', Collection.name, '/rivmZone/system/runsheet/processing')).filter(\
                 Criterion('=', DataObjectMeta.name, 'sys::runsheet::state')).filter(\
                 Criterion('=', DataObjectMeta.value, q)).count(DataObject.id)
             count  = items.execute()[0][DataObject.id]
         else:
-            items = current_user.irods_session.query(Collection.id).filter(\
+            items = session.query(Collection.id).filter(\
                 Criterion('=', CollectionMeta.name, 'sys::runsheet::state')).filter(\
                 Criterion('=', CollectionMeta.value, q)).count(Collection.id)
             count  = items.execute()[0][Collection.id]
@@ -311,10 +318,11 @@ def admin():
 @bp.route('/resources')
 def resources():
     resources =  {}
-    q = current_user.irods_session.query(Resource.name)
+    session = irods_manager.session()
+    q = session.query(Resource.name)
     for r in q:
         resources[r[Resource.name]] = {}
-        resource = current_user.irods_session.resources.get(r[Resource.name])
+        resource = session.resources.get(r[Resource.name])
         metadata = resource.metadata.items()
         metanames = [ m.name for m in metadata ]
         for property in RESOURCE_PROPS:
@@ -336,7 +344,7 @@ def resources():
 @login_required
 @bp.route('/_update_resources', methods=['POST'])
 def update_resources():
-
+    session = irods_manager.session()
     data = request.form.to_dict()
     # Create a dict of the form data
     new_settings = {}
@@ -347,7 +355,7 @@ def update_resources():
             new_settings[resource] = {}
         new_settings[resource][attr] = value
     for resource in new_settings:
-        res_obj = current_user.irods_session.resources.get(resource)
+        res_obj = session.resources.get(resource)
         for property in RESOURCE_PROPS:
             meta_name = RESOURCE_PROPS[property]['meta']
             if property in new_settings[resource]:
@@ -382,9 +390,8 @@ def modify():
         value = 'true' if action == 'enable' else 'false'
         new_meta = iRODSMeta(f'sys::enable::{queue}', value)
         coll = os.path.join('/', current_user.irods_zone, 'system/runsheet')
-#        try:
-        collobj = current_user.irods_session.collections.get(coll)
-        collobj.metadata[new_meta.name] = new_meta
-#        except:
-#            print('ERROR')
+        with irods_manager.session() as session:
+            collobj = session.collections.get(coll)
+            collobj.metadata[new_meta.name] = new_meta
+
     return redirect(url_for('admin.admin'))

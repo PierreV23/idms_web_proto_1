@@ -14,6 +14,7 @@ from irods.models import Collection, CollectionMeta, Resource
 from irods.column import Criterion
 from app.projects import get_projectlist
 from app.datafield import datafield
+from app.irodssessions import irods_manager
 
 RESOURCES_OMIT = ('demoResc', 'bundleResc')
 
@@ -21,7 +22,7 @@ bp = Blueprint('reports', __name__, url_prefix='/reports')
 
 @login_required
 def collection_size(coll, resource, timeout=86400):
-    irods_session = current_user.irods_session
+    irods_session = irods_manager.session()
     size_attr = 'sys::collection_size::{}'.format(resource)
     query = irods_session.query(CollectionMeta.value).filter(
         Criterion('=', Collection.name, coll)).filter(
@@ -34,7 +35,7 @@ def collection_size(coll, resource, timeout=86400):
 @login_required
 def projectdata_in_resource(project, resource):
     # Find all collections with a specific projectid
-    irods_session = current_user.irods_session
+    irods_session = irods_manager.session()
     query = irods_session.query(Collection.name).filter(
             Criterion('=', CollectionMeta.name, 'projectID')).filter(
             Criterion('=', CollectionMeta.value, project))
@@ -74,7 +75,7 @@ def get_space_usage():
     projectinfo = get_projectlist()
           
     #query resources
-    irods_session = current_user.irods_session
+    irods_session = irods_manager.session()
     query = irods_session.query(Resource.name)
     resources = [ r[Resource.name] for r in query if not r[Resource.name] in RESOURCES_OMIT ]
     # query projects

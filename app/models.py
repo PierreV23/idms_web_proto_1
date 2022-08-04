@@ -15,8 +15,7 @@ import time
 from flask_login import UserMixin
 from flask import session, current_app
 from flask_login import current_user
-from irods.session import iRODSSession
-from irods.models import User, UserGroup
+from irods.models import User, UserGroup, UserMeta
 from irods.column import Criterion
 from irods.meta import iRODSMeta
 from irods.user import iRODSUserGroup
@@ -24,6 +23,7 @@ from fs_irods import fs_irods
 from . import flaskcache
 from . import iqry
 #from .ngsruns import db
+from app.irodssessions import irods_manager
 
 ATTR_DISPLAYNAME = 'sys::ad::displayName'
 
@@ -75,11 +75,12 @@ class WebUser(UserMixin):
             self._is_admin = False
             if self._is_authenticated:
                 try:
-                    groups = self._irods_session.query(UserGroup).filter(
-                        Criterion('=', User.name, self.username)).filter(
-                            Criterion('=', UserGroup.name, 'rodsadmin'))
-                    for q in groups:
-                        self._is_admin = True
+                    with irods_manager.session() as session:
+                        groups = session.query(UserGroup).filter(
+                            Criterion('=', User.name, self.username)).filter(
+                                Criterion('=', UserGroup.name, 'rodsadmin'))
+                        for q in groups:
+                            self._is_admin = True
                 except:
                     self._is_admin = None
                     return False
@@ -92,7 +93,6 @@ class WebUser(UserMixin):
         self._is_admin = None
         self.irods_server = None
         self.irods_zone = None
-        self._irods_session = None
         self._ifs = None
         self.features = []
         self._fullname = None
@@ -119,21 +119,21 @@ class WebUser(UserMixin):
 
     @flaskcache.cache.memoize(timeout=3600, make_name=flaskcache.dep_userzone)
     def groups(self):
-        return [ r[UserGroup.name] for r in current_user.irods_session.query(UserGroup).filter( User.name == self.username ) ]
+        with irods_manager.session() as session:
+            q = session.query(UserGroup).filter( User.name == self.username )
+            result = [ r[UserGroup.name] for r in q ]
+        return result
 
     @flaskcache.cache.memoize(timeout=3600, make_name=flaskcache.dep_userzone)
     def projects(self):
-        usr_groups = [ current_user.irods_session.user_groups.get(r) for r in self.groups() ]
-        # usr_groups = [ (iRODSUserGroup ( current_user.irods_session.user_groups, result) ) \
-        #     for result in current_user.irods_session.query(UserGroup).filter( User.name == self.username ) ]
+        with irods_manager.session() as session:
+            q = session.query(UserGroup.name, UserMeta.value).filter(\
+                Criterion('=', UserMeta.name, 'projectID'))
+            grps = self.groups()
+            usr_groups = [ r for r in q if r[UserGroup.name] in grps ]
 
-        my_projects = []
-        for group in usr_groups:
-            try:
-                project = group.metadata.get_one('projectID')
-                my_projects.append(project.value)
-            except KeyError:
-                pass
+            my_projects = [ r[UserMeta.value] for r in usr_groups ]
+
         return my_projects
         
     @property
@@ -189,56 +189,23 @@ class WebUser(UserMixin):
         if 'user_store' in session and self.username in session['user_store']:
             del session['user_store'][self.username]
 
-    @property
-    def irods_session(self):
-        if self._irods_session is None:
-            context = ssl._create_unverified_context(
-                purpose=ssl.Purpose.SERVER_AUTH,
-                cafile=None,
-                capath=None,
-                cadata=None
-            )
-
-            ssl_settings = {
-                'irods_ssl_ca_certificate_file': '/etc/irods/ssl/acc/irods.crt',
-                'ssl_context': context
-            }
-
-            # Creating an iRODS does not imply a connection is set up.
-            # TODO: python-irodsclient should escape = tokens in password
-            # at least in version 1.1.3 it does not do that
-            # so, we do it here
-            self._irods_session = iRODSSession(
-                host=self.irods_server,
-                port=1247,
-                user=self.username,
-                password=self.passwd.replace('=', '\='),
-                zone=self.irods_zone,
-                authentication_scheme='pam',
-                **ssl_settings
-            )
-        return self._irods_session
 
     @property
     def ifs(self):
         if self._ifs is None:
-            self._ifs = fs_irods(session=self.irods_session)
+            self._ifs = fs_irods(session=irods_manager.session())
         return self._ifs
 
 
-
-    def cleanup(self):
-        if self._irods_session:
-            _irods_session.cleanup()
-
     def validate_irods_session(self):
         try:
-            self.irods_session.collections.get(f'/{self.irods_zone}')
+            irods_manager.session(user=self)
             self._is_authenticated = True
             return True
         except:
             print('Authentication failed.')
         return False
+
 
     def get_id(self):
         return self.username

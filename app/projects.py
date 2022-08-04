@@ -24,6 +24,7 @@ from . import iqry
 from .flaskcache import cache, dep_zone, dep_userzone, key_zone
 from dateutil import parser as dateparser
 from app.constants import COLL_KEY_MAP
+from app.irodssessions import irods_manager
 
 
 BP = Blueprint('projects', __name__, url_prefix='/projects')
@@ -206,12 +207,12 @@ def show_projectdetails():
 
     projectdetails['name'] = projectnaam
     # Retrieve groups associated with project
-    irods_session = current_user.irods_session
-    query = irods_session.query(User.name).filter(
-        Criterion('!=', User.type, "rodsuser")).filter(
-            Criterion('=', UserMeta.name, "projectID")).filter(
-                Criterion('=', UserMeta.value, projectnaam)).order_by(User.name)
-    groups = [u[User.name] for u in query]
+    with irods_manager.session() as session:
+        query = session.query(User.name).filter(
+            Criterion('!=', User.type, "rodsuser")).filter(
+                Criterion('=', UserMeta.name, "projectID")).filter(
+                    Criterion('=', UserMeta.value, projectnaam)).order_by(User.name)
+        groups = [u[User.name] for u in query]
     projectdetails['groups'] = groups
     # Retrieve general project settings
     for attr in ['description', 'default_collection', 'service_account', 'modify_in_place',
@@ -305,8 +306,10 @@ def projectcolltable():
         'view_btn': False,
         'delete_btn': False
     }
-    data_url = url_for('projects.projectcolls', project=projectnaam)
-    return render_template('colltable.html', data_url=data_url, display_field=None, options=options)
+    path=f"/{current_user.irods_zone}/projects/{projectnaam}"
+    #data_url = url_for('projects.projectcolls', project=projectnaam)
+    #return render_template('colltable.html', data_url=data_url, display_field=None, options=options)
+    return render_template('colltable.html', path=path, display_field=None, options=options)
 
 
 @BP.route('/processdetails')

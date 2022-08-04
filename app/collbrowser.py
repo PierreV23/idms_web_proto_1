@@ -17,6 +17,7 @@ from irods.exception import CAT_NO_ROWS_FOUND
 from irods.column import Criterion
 from app.datafield import AVU2data, datafield
 from app.irods_helper import getmetaitem
+from app.irodssessions import irods_manager
 from graphviz import Digraph
 from irods.meta import iRODSMeta
 from urllib.parse import urlparse
@@ -38,11 +39,12 @@ ATTR_PROCESSID = 'processID'
 ATTR_PROCESSGROUPID = 'processgroupID'
 #TODO: use constants.py (role irods_cronjobs)
 ATTR_ARCHIVE_PREFIX = 'sys::archive::'
+ATTR_ARCHIVE_USR_PREFIX = 'user::archive::'
 ATTR_ARCHIVE_ENABLE = f'{ATTR_ARCHIVE_PREFIX}enable'
 ATTR_ARCHIVE_DEFAULT_STATE = f'{ATTR_ARCHIVE_PREFIX}default_state'
 ATTR_ARCHIVE_DESIREDSTATE = f'{ATTR_ARCHIVE_PREFIX}desired_state'
 ATTR_ARCHIVE_KEEP_ONLINE = f'{ATTR_ARCHIVE_PREFIX}keep_online'
-ATTR_ARCHIVE_KEEP_ONLINE_TILL = f'{ATTR_ARCHIVE_PREFIX}keep_online_till'
+ATTR_ARCHIVE_KEEP_ONLINE_TILL = f'{ATTR_ARCHIVE_USR_PREFIX}keep_online_till'
 ATTR_ARCHIVE_LOCAL = f'{ATTR_ARCHIVE_PREFIX}local'
 ATTR_PROCESSREQUEST = 'processrequest'
 ATTR_ARCHIVE_STAGE = f'{ATTR_ARCHIVE_PREFIX}stage'
@@ -64,6 +66,19 @@ COLL_SHAPES = {
     'qc_report'  :('box3d', 'yellow'),
     'refsamp_report'  :('box3d', 'yellow')}
 
+COLL_KEY_MAP = {
+    'displayname': Collection.name,
+    'create_time': Collection.create_time,
+    'size': Collection.name, # Collections do not have a size property
+    'owner_name': Collection.owner_name
+}
+
+DATA_KEY_MAP = {
+    'displayname': DataObject.name,
+    'create_time': DataObject.create_time,
+    'size': DataObject.size,
+    'owner_name': DataObject.owner_name
+}
 
 PROCESS_SHAPE = 'cds'
 
@@ -88,7 +103,7 @@ def _getmetatree(irods_coll, attr, base, default=None):
 def coll_meta():
     path = request.args.get('path','/', type=str)
     object = request.args.get('object', '', type=str)
-    irods_session = current_user.irods_session
+
 # Query for collection metadata
     coll_avu = []
     query = iqry.qcollmeta(path)
@@ -102,22 +117,23 @@ def coll_meta():
     object_avu = None
     if object:
         object_avu = []
-        query = irods_session.query(DataObjectMeta.name, DataObjectMeta.value,
-                                    DataObjectMeta.units).filter(
-                                        Criterion('=', Collection.name, path)).filter(
-                                        Criterion('=', DataObject.name, object)
-                                    )
-        for object_metadata in query:
-            name = object_metadata[DataObjectMeta.name]
-            value = object_metadata[DataObjectMeta.value]
-            units = object_metadata[DataObjectMeta.units]
-            object_avu.append(AVU2data(name, value, units))
+        with irods_manager.session() as session:
+            query = session.query(DataObjectMeta.name, DataObjectMeta.value,
+                                        DataObjectMeta.units).filter(
+                                            Criterion('=', Collection.name, path)).filter(
+                                            Criterion('=', DataObject.name, object)
+                                        )
+            for object_metadata in query:
+                name = object_metadata[DataObjectMeta.name]
+                value = object_metadata[DataObjectMeta.value]
+                units = object_metadata[DataObjectMeta.units]
+                object_avu.append(AVU2data(name, value, units))
     return render_template('metadata.html', coll_avu=coll_avu, object_avu=object_avu)
 
 @bp.route('_setKeepOnlineUntil', methods=['GET'])
 @login_required
 def setKeepOnlineUntil():
-    irods_session = current_user.irods_session
+    irods_session = irods_manager.session()
 
     selectionStr = request.args.get('selection','None', type=str)
     collection = request.args.get('collection','None', type=str)
@@ -215,10 +231,6 @@ def coll_actions():
 @login_required
 def startprocess():
     collection = request.args.get('collection')
-    if current_user.ifs.folderexists(collection):
-        c = current_user.irods_session.collections.get(collection)
-    else:
-        return 'FAILED'
 
     processid = request.args.get('processid')
     processgroupid = request.args.get('processgroupid')
@@ -245,8 +257,8 @@ def collist():
         'view_btn': request.args.get('btn_view', 'true', type=str) == 'true',
         'delete_btn': request.args.get('btn_del', 'false', type=str) == 'true'
     }
-    data_url = url_for('collbrowser.collcontents', path=path)
-    return render_template('colltable.html', data_url=data_url, display_field=display_field, options=options)
+    #data_url = url_for('collbrowser.collcontents', path=path)
+    return render_template('colltable.html', path=path, display_field=display_field, options=options)
 
 @bp.route('_collcontents')
 @cache.cached(timeout=60, key_prefix=key_zone)
@@ -256,7 +268,7 @@ def collcontents():
     limit = request.args.get('limit', 999, type=int)
     filterstr = request.args.get('filter', '{}')
 
-    irods_session = current_user.irods_session
+    irods_session = irods_manager.session()
 
     cols = []
     objs = []
@@ -266,17 +278,20 @@ def collcontents():
     display_settings = { m[CollectionMeta.name][8:] : m[CollectionMeta.value] for m in q1 if m[CollectionMeta.name].startswith('ngsweb::') }
 
     display_field = display_settings.get('display_field', '')
-    sortkey = request.args.get('sort', display_settings.get('sort_order', 'name'))
+    sortkey = request.args.get('sort', display_settings.get('sort_order', 'displayname'))
     sort_order = 'desc' if display_settings.get('sort_reverse', 'false') == 'true' else 'asc'
     sort_order = request.args.get('order', sort_order)
 
-    c_sortkey = COLL_KEY_MAP.get(sortkey, 'coll_name')
-    d_sortkey = DATA_KEY_MAP.get(sortkey, 'data_name')
-
+    c_sortkey = COLL_KEY_MAP.get(sortkey, 'displayname')
+    d_sortkey = DATA_KEY_MAP.get(sortkey, 'displayname')
+  
 # Create collection and data filters
     filters = json.loads(filterstr)
     qc_filters = [Criterion('=', Collection.parent_name, path)]
     qd_filters = [Criterion('=', Collection.name, path)]
+    print( sortkey )
+    print( filters )
+    print( c_sortkey )
     if 'displayname' in filters:
         qc_filters.append(Criterion('like', Collection.name, f'%{filters["displayname"]}%'))
         qd_filters.append(Criterion('like', DataObject.name, f'%{filters["displayname"]}%'))
@@ -493,18 +508,17 @@ def add_items(path, level, active):
     @cache.memoize(timeout=300, make_name=dep_zone)
     def subitems(path):
         count = 0
-        query = irods_session.query(Collection.id).filter(
-            Criterion('=',Collection.parent_name, path)).count(Collection.id)
-        for a in query:
-            count = a[Collection.id]
+        with irods_manager.session() as session:
+            query = session.query(Collection.id).filter(
+                Criterion('=',Collection.parent_name, path)).count(Collection.id)
+            for a in query:
+                count = a[Collection.id]
         return count
         
     result = ''
     parts = active.split('/')
-    irods_session = current_user.irods_session
-    query = iqry.qcollchildren(path)
-    for coll in query:
-        collpath = coll[Collection.name]
+    colls = [ c[Collection.name] for c in iqry.qcollchildren(path)]
+    for collpath in colls:
         collname = collpath.split('/')[-1]
         if collname:
             c1=' path-active' if collpath == active else '';
@@ -608,7 +622,7 @@ def search_result():
         SEARCH_OPTION = '='
 
     #print( f"useExactMatch: {useExactMatch}, useSearchMeta: {useSearchMeta}, useSearchObjectNames: {useSearchObjectNames}" )
-    irods_session = current_user.irods_session
+    irods_session = irods_manager.session()
     data = list()
 
     if useSearchDatasetNames:

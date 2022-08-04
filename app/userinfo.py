@@ -10,6 +10,7 @@ from flask import Blueprint, render_template, redirect, request, url_for
 from flask_login import login_user, current_user, login_required
 import sys
 import subprocess
+from app.irodssessions import irods_manager
 
 bp = Blueprint('userinfo', __name__, url_prefix='/userinfo')
 
@@ -23,16 +24,16 @@ def usersetting():
     return { 'result': 'OK'}, 200
 
 def userinfo(user):
-    userinfo = current_user.irods_session.users.get(user)
-    input_meta = { x.name: x.value for x in userinfo.metadata.items()}
-    #print(input_meta)
+    with irods_manager.session() as session:
+        userinfo = session.users.get(user)
+        input_meta = { x.name: x.value for x in userinfo.metadata.items()}
     return(input_meta)
 
 
 def groupinfo(group):
     ginfo={}
     try:
-        gobj = current_user.irods_session.user_groups.get(group)
+        gobj = irods_manager.session().user_groups.get(group)
     except:
         ginfo["None"] = {'sys::ad::mail': None, 'sys::ad::department': None}
         return(ginfo)
