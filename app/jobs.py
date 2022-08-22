@@ -116,21 +116,21 @@ def joblist(state='', page=1):
     job_list = []
     session = irods_manager.session()
     if state == '':
-        # incoming runsheets could still be runsheet-files, this will change with the switch to the process-groups...
-        q1b = session.query(Collection, CollectionMeta).filter( 
-                Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_STATE)).filter( 
-                Criterion('!=', CollectionMeta.value, 'archive')).filter(
-                Criterion('not like', Collection.name, f'/{current_user.irods_zone}/system/runsheet%'))
+        q1b = session.query(Collection).filter( 
+                Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_STATE))
     else:  
-        # or runsheets could be on collections
         q1b = session.query(Collection).filter(
                 Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_STATE)).filter(
-                Criterion('=', CollectionMeta.value, f'{state}')).filter(
-                Criterion('not like', Collection.name, f'/{current_user.irods_zone}/system/runsheet%'))
+                Criterion('=', CollectionMeta.value, f'{state}'))
 
     # Create a list of all collection and runsheet based jobs
-    result_list = [ (j, j[Collection.create_time]) for j in q1b ]
-
+    q1b = q1b.order_by(Collection.create_time, order='desc')
+    result_list = []
+    for j in q1b:
+        result_list.append((j, j[Collection.create_time]))
+        if len(result_list) > 5000:
+            break
+    #result_list = [ (j, j[Collection.create_time]) for j in q1b ]
 
     # Get the paged subset of the sorted job list
     result_list_s = sorted( result_list, key = lambda j : j[1], reverse = True)[PAGE_SIZE*(page-1):PAGE_SIZE*page]
