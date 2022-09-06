@@ -27,9 +27,9 @@ def login():
         if not user.validate_irods_session():
             flash('Login to the web interface failed', 'login')
             return redirect(url_for("auth.login"))
-        user.store()
         login_user(user, duration=timedelta(hours=24))
-
+        user.store()
+        
         # (re-)initialize ngsruns db connection, it's environment dependent.
         #db.init_app(current_app, user)
 

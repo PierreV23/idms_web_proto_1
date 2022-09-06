@@ -19,6 +19,7 @@
                 "--no-debugger",
                 "--no-reload",
                 "--port", "${input:flask-port-number}",
+                "--with-threads"
             ],
             "jinja": true,
             "python": "/mnt/scratch_dir/${env:USER}/conda/envs/myflask/bin/python"

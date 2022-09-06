@@ -3,16 +3,19 @@ from flask_login import current_user, login_required
 from flask_marshmallow import Marshmallow
 from marshmallow import Schema, fields, validate
 from sqlalchemy.orm import relationship, remote, foreign, sessionmaker, scoped_session
-from sqlalchemy import ForeignKey, distinct, create_engine, Column, Integer, String, TIMESTAMP, func
+from sqlalchemy import ForeignKey, distinct, create_engine, Column, Integer, String, TIMESTAMP, func, desc, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import OperationalError
-from irods.models import Collection, CollectionMeta
+from irods.models import Collection, CollectionMeta, User
 from irods.column import Criterion
 from app.datafield import datafield
 import flask
 import json
 import requests
 from requests.auth import HTTPBasicAuth
+from app.projects import get_projectlist
+from app.iqry import qcollbystaticmeta
+from app.irodssessions import irods_manager
 
 Base = declarative_base()
 
@@ -174,16 +177,55 @@ def get_complete(field):
     data1 = db.session().query(FIELDS[field]).filter(FIELDS[field].like('%{}%'.format(req))).distinct().all()
     return jsonify(data1)
 
+@bp.route('_runs', methods=['GET'])
+def runs():
+    # Preparation for speedup: pagination for getting the list of runs,
+    # for when getting the whole list (run_list()) takes too long.
+    #print(request.args)
+    fields = ['id', 'name', 'flowcell', 'flowcell_display', 'project', 'owner', 'datacoll', 'description']
+    offset = int(request.args.get('offset', 0))
+    limit = int(request.args.get('limit', 12))
+
+    filterstr = request.args.get('filter', '{}')
+    filters = json.loads(filterstr)
+
+    sortfield = request.args.get('sort', 'id')
+    sortorder = request.args.get('order', 'desc' if sortfield == 'id' else 'asc' )
+
+    result = {}
+    qry = db.session().query(NGSRun)
+    for filter in filters:
+        qry = qry.filter_by(**filters)
+    qry = qry.order_by(text(f'{sortfield} {sortorder}'))
+    qry = qry.limit(limit).offset(offset)
+    data = [ vars(f) for f in qry ]
+    for run in data:
+        run['flowcell_display'] = run['flowcell']        
+        colls = qcollbystaticmeta('minion::flow_cell_id', run['flowcell'])
+        # q = irods_manager.session().query(Collection.name).filter( 
+        #         Criterion('=', CollectionMeta.value, run['flowcell'])).filter( \
+        #         Criterion('=', CollectionMeta.name, 'minion::flow_cell_id')).filter( \
+        #         Criterion('like', Collection.name, '/rivmZone/projects/ngslab/minion/%'))
+        # colls = [ x for x in q ]
+        if colls:
+            run['datacoll'] = datafield('collection', colls[0][Collection.name], 'irods_collection').htmlshort
+        else:
+            run['datacoll'] = ''
+    rows = [ { f: str(d[f]) for f in fields} for d in data ]
+    result['total'] = db.session().query(NGSRun).count()
+    result['rows'] = rows
+    return result
+
 @bp.route('list', methods=['GET'])
-@login_required
 def run_list():
     idrequest = request.args.get('idrequest', 0)
     data = [ vars(f) for f in db.session().query(NGSRun).all() ]
     # Create a list of flowcells and collections in irods
-    q = current_user.irods_session.query(Collection.name, CollectionMeta.value).filter( \
-            Criterion('=', CollectionMeta.name, 'minion::flow_cell_id')).filter( \
-            Criterion('=', Collection.parent_name, f'/{current_user.irods_zone}/projects/ngslab/minion'))
-    flowcell_list = { x[CollectionMeta.value] : x[Collection.name] for x in q }
+    with irods_manager.session() as session:
+        q = session.query(Collection, CollectionMeta).filter( \
+                Criterion('=', CollectionMeta.name, 'minion::flow_cell_id')).filter( \
+                Criterion('=', Collection.parent_name, f'/{current_user.irods_zone}/projects/ngslab/minion'))
+        flowcell_list = { x[CollectionMeta.value] : x[Collection.name] for x in q }
     flowcell_unique = set()
     flowcell_duplicate = set()
     for run in data:
@@ -244,21 +286,17 @@ def edit_form():
     data.update({"description": run.description})
     data.update({"project": run.project})
     data.update({"owner": run.owner})
-    #data[name] = run.name
-    #data[description] = run.description
-    #data = { f.barcode: f for f in barcode_obj }
     return render_template('ngsrun.html', data=data, barcodes=barcodes, id=id)
 
 @bp.route('new', methods=['GET'])
 def run_form():
-#    projects = current_user.projects()
-    pl, result = rest_call('GET', 'projects')
-    projects=[]
-    if result == 200:
-        projects = [ p['name'] for p in pl ]
+    if current_app.config.get('MINILIMS_AUTHORS_GROUP') in current_user.groups():
+        projectlist = get_projectlist().keys()
+    else:
+        projectlist = current_user.projects()
     data = { barcode : None for barcode in barcodes }
     # user=current_user.username
-    return render_template('ngsrun.html', data=data, projects=projects, barcodes=barcodes, id=-1, default_project=current_user.settings.get('default_project', ''))
+    return render_template('ngsrun.html', data=data, projects=projectlist, barcodes=barcodes, id=-1, default_project=current_user.settings.get('default_project', ''))
 
 @bp.route('delete', methods=['GET'])
 @login_required
@@ -282,9 +320,9 @@ def run_update():
     new_run.owner = current_user.username
     new_run.description = f.get('description', '')
 
-    # if new_run.project not in current_user.projects():
-    #         flash(f'You are not authorized to create a sample sheet for project {new_run.project}', 'error')
-    #         return redirect(url_for('ngsruns.run_list'))  
+    if not(new_run.project in current_user.projects() or current_app.config.get('MINILIMS_AUTHORS_GROUP') in current_user.groups()):
+            flash(f'You are not authorized to create a sample sheet for project {new_run.project}', 'error')
+            return redirect(url_for('ngsruns.run_list'))  
 
     db.session().add(new_run)
     db.session().commit()
