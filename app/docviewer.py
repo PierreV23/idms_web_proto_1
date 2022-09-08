@@ -9,6 +9,7 @@ import os
 import csv
 from flask import Blueprint, render_template, request, url_for, send_file
 from flask_login import current_user, login_required
+import urllib.parse
 
 
 BP = Blueprint('docviewer', __name__, url_prefix='/docviewer')
@@ -24,7 +25,7 @@ def csvconvert(fobj):
 @BP.route('/serve_image')
 @login_required
 def serve_image():
-    path = request.args.get('path', '/', type=str)
+    path = urllib.parse.unquote(request.args.get('path', '/', type=str))
     ifs = current_user.ifs
     obj = ifs.getfile(path)
     imagefile = obj.open('r')
@@ -35,7 +36,7 @@ def serve_image():
 @BP.route('/download_object')
 @login_required
 def download_object():
-    path = request.args.get('path', '/', type=str)
+    path = urllib.parse.unquote(request.args.get('path', '/', type=str))
     objectfile = current_user.ifs.getfile(path).open('r')
     return send_file(objectfile, attachment_filename=os.path.split(path)[1],
                      as_attachment=True)
@@ -43,7 +44,7 @@ def download_object():
 @BP.route('/serve_object')
 @login_required
 def serve_object():
-    path = request.args.get('path', '/', type=str)
+    path = urllib.parse.unquote(request.args.get('path', '/', type=str))
     filename, file_extension = os.path.splitext(path.lower())
     ifs = current_user.ifs
     obj = ifs.getfile(path)
