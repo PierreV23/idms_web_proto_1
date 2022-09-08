@@ -53,7 +53,6 @@ ATTR_ARCHIVE_LASTRUN = f'{ATTR_ARCHIVE_PREFIX}lastrun'
 ATTR_ARCHIVE_MINSTABLE = f'{ATTR_ARCHIVE_PREFIX}min_stable'
 ATTR_ARCHIVE_ONLINEPERCENTAGE = f'{ATTR_ARCHIVE_PREFIX}online_percentage'
 ATTR_ARCHIVE_MINCOPIES = f'{ATTR_ARCHIVE_PREFIX}min_copies'
-USER_PIPELINE_AUTOSTART = 'user::pipeline::autostart'
 
 
 COLL_SHAPES = {
@@ -207,7 +206,6 @@ def coll_actions():
     processes = projects.get_processlist(projectid)
     processgroups = projects.get_processgrouplist(projectid)
     processrequest = iqry.qcollmetaval(path, ATTR_PROCESSREQUEST, "false")
-    start_next_process = iqry.qcollmetaval(path, USER_PIPELINE_AUTOSTART, "true")
 
     archival_state = {
         "enabled": iqry.qcollmetaval(path, ATTR_ARCHIVE_ENABLE, "false"),
@@ -224,7 +222,7 @@ def coll_actions():
         name=coll_name, archival_state=archival_state,
         processes=processes, processid=processid, processrequest=processrequest,
         processgroups=processgroups, processgroupid=processgroupid,
-        admin=current_user.is_admin, start_next_process=start_next_process)
+        admin=current_user.is_admin)
 
 
 @bp.route('_startprocess')

@@ -265,9 +265,14 @@ ul {
   margin: 1pt;
 }
 
+.top5 {
+  margin-top: 5px;
+}
+
 .button12 {
   min-width: 12em;
   max-width: 12em;
+  margin-top: 5px;
 }
 
 .alignleft {
