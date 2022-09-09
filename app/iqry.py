@@ -2,7 +2,7 @@ import random
 import sys
 import time
 from flask_login import current_user, login_required
-from irods.models import Collection, CollectionMeta, DataObject, DataObjectMeta, User, UserMeta
+from irods.models import Collection, CollectionMeta, DataObject, DataObjectMeta, User, UserMeta, Resource, ResourceMeta
 from irods.meta import iRODSMeta
 from irods.column import Criterion
 
@@ -31,6 +31,17 @@ def susermetaval(user, attr, value, unit=None):
         u.metadata[attr] = iRODSMeta(attr, value, unit)
     flaskcache.cache.delete_memoized(qusermeta)
 
+@flaskcache.cache.memoize(timeout=300, make_name=flaskcache.dep_zone)
+def qresmeta(resource):
+    with irods_manager.session() as session:
+        q = session.query(ResourceMeta.name, ResourceMeta.value, ResourceMeta.units).filter(
+            Criterion('=', Resource.name, resource))
+        result = [r for r in q]
+    return result    
+
+def qresmetadict(resource):
+    q = qresmeta(resource)
+    return {r[ResourceMeta.name]: r[ResourceMeta.value] for r in q}
 
 @flaskcache.cache.memoize(timeout=60, make_name=flaskcache.dep_zone)
 def qcollmeta(collection):

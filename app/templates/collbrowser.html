@@ -117,7 +117,7 @@ menuname='collectionbrowser'
   function load_actions() {
     //path_elem = collection.split('/')
     //current_col_name = path_elem[-1]
-
+    $('#collapse-actions').html(waiting)
     $.get('{{ url_for('collbrowser.coll_actions') }}', {
       path: collection
     }, function (data) {
