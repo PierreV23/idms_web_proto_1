@@ -8,6 +8,7 @@ Created on Mon Nov 18 10:54:56 2019
 
 import base64
 import os
+import time
 from datetime import datetime, timezone
 from dateutil.relativedelta import relativedelta
 from flask import Blueprint, render_template, redirect, request, url_for, jsonify
@@ -23,9 +24,10 @@ from irods.meta import iRODSMeta
 from urllib.parse import urlparse
 from . import projects
 from . import iqry
+from . import irods_objects
 from .flaskcache import cache, key_zone, key_userzone, dep_zone
 import json
-from app.constants import COLL_KEY_MAP, DATA_KEY_MAP
+from app.constants import COLL_KEY_MAP, DATA_KEY_MAP, ATTR_RESOURCE_ONLINE
 
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
 
@@ -186,20 +188,37 @@ def coll_actions():
     path = request.args.get('path','/', type=str)
     coll_name = path.split('/')[-1]
 
+    tiers = irods_objects.Tierlist('default')
+
     is_dataset = iqry.qcollmetavalstatic(path, ATTR_DATASETID, "") != ""
     keep_local = getmetatree(path, ATTR_ARCHIVE_LOCAL, False)
-    online_percentage = int(iqry.qcollmetaval(path, ATTR_ARCHIVE_ONLINEPERCENTAGE, 0 ))
-    archive_state = iqry.qcollmetaval(path, ATTR_ARCHIVE_STATE, "000")
+    state = irods_objects.iState(tiers, iqry.qcollmetaval(path, ATTR_ARCHIVE_STATE, "000"))
+    desired_state = irods_objects.iState(tiers, iqry.qcollmetaval(path, ATTR_ARCHIVE_DESIREDSTATE, "000"))
     min_copies = getmetatree(path, ATTR_ARCHIVE_MINCOPIES, 2)
     keep_online = getmetatree(path, ATTR_ARCHIVE_KEEP_ONLINE, "false")
-    is_archived = False
+    keep_online_time = float(iqry.qcollmetaval(path, ATTR_ARCHIVE_KEEP_ONLINE_TILL, default=0))
+    if keep_online_time < time.time():
+        keep_online_time = 0
+    keep_online_till = datafield('keep_online', keep_online_time, 'timestamp')
+
     # TODO: This should use the sys::resource::online property of a resource to determine
     # if a collection is online
-    if archive_state[-1] == '1':
-        is_archived = True 
-    is_offline = False
-    if archive_state[:2] == '00' and archive_state[-1] == '0':
-        is_offline = True
+    is_offline = not state.tag_present(ATTR_RESOURCE_ONLINE)
+      
+    # define status:
+    # OFFLINE
+    # RETRIEVE_REQUEST
+    # RETRIEVE_IN_PROGRESS
+    # ONLINE
+    #
+    if not is_offline:
+        status = 'ONLINE'
+    elif state != desired_state and desired_state.tag_present(ATTR_RESOURCE_ONLINE):
+        status = 'RETRIEVE_IN_PROGRESS'
+    elif keep_online_time:
+        status = 'RETRIEVE_REQUESTED'
+    else:
+        status = 'OFFLINE'
 
     projectid = iqry.qcollmetavalstatic(path, ATTR_PROJECTID, "")
     processid = iqry.qcollmetaval(path, ATTR_PROCESSID, "")
@@ -212,12 +231,12 @@ def coll_actions():
     archival_state = {
         "enabled": iqry.qcollmetaval(path, ATTR_ARCHIVE_ENABLE, "false"),
         "is_dataset": is_dataset,
-        "is_archived": is_archived,
         "is_offline": is_offline,
         "keep_local": keep_local,
-        "online_percentage": online_percentage,
+        "status": status,
         "min_copies": min_copies,
-        "keep_online": keep_online
+        "keep_online": keep_online,
+        "keep_online_till": keep_online_till
     }
 
     return render_template('actions.html', collection=path, 

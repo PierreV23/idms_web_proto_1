@@ -15,6 +15,7 @@
           selection: selected
         }, function(data) {
            load_meta();
+           load_actions();
         });
     }
 
@@ -192,12 +193,18 @@ $('.nav-pills').on('shown.bs.tab', function(event){
           </a>
         </div>
         <div class="tab-pane" id="archive" role="tabpanel" aria-labelledby="archive-tab">
-            {% if archival_state.is_offline is sameas false %} 
-              This dataset is currently online.  
+            <h4>
+            {% if archival_state.status == 'OFFLINE' %} 
+              <span class="badge badge-danger">OFFLINE</span>
+            {% elif archival_state.status == 'RETRIEVE_REQUESTED' %}
+              <span class="badge badge-info">RETRIEVE PENDING</span>
+            {% elif archival_state.status == 'RETRIEVE_IN_PROGRESS' %}
+              <span class="badge badge-warning">RETRIEVING</span>
+            {% elif archival_state.status == 'ONLINE' %}
+              <span class="badge badge-success">ONLINE</span>
             {% else %}
-              This dataset is currently offline (on tape)
-        
-              <br>
+              <span class="badge badge-dark">STATUS UNKNOWN</span>
+            {% endif %}</h4>
               <hr>
               <form>
                 <div class="form-group">
@@ -229,23 +236,9 @@ $('.nav-pills').on('shown.bs.tab', function(event){
                   </div>
                 </div>
               </form>
-            {% endif %}
-
             <hr>
-
-            {% if archival_state.is_offline and archival_state.online_percentage > 0 and archival_state.online_percentage < 100 %} 
-            <form>
-                <div class="form-group row">
-                    <div class="input-group col-sm-12">
-                      Currently retrieving data from tape archive:
-                    </div>
-                </div>
-                <div class="form-group row">
-                    <div class="progress input-group col-sm-12">
-                      <div class="progress-bar" role="progressbar" style="width: 100%;" aria-valuenow="{{archival_state.online_percentage}}" aria-valuemin="0" aria-valuemax="100">{{archival_state.online_percentage}}%</div>
-                    </div>
-                </div>
-            </form>
+            {% if archival_state.keep_online_till.value > 0 %}
+            Dataset will be {% if archival_state.is_offline %}brought{% else %}kept{% endif %} online until {{ archival_state.keep_online_till }}
             {% endif %}
 
         </div>
