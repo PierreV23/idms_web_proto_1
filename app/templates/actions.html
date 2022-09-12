@@ -42,19 +42,6 @@
     }
 
 
-    function startNext() {
-      var startnext = $( "#disableContinuation").is(':checked')
-      value = startnext ? "true" : "false"
-      $.get('{{ url_for('collbrowser.setmeta') }}', {
-        collection: '{{ collection }}',
-        attr: 'user::pipeline::autostart',
-        value: value
-      }, function(data) {
-        load_meta();
-        load_actions();
-      });
-    }
-
     function overrideDatasetLocal() {
         var selected = $( "#keepLocalSwitch" ).is(':checked')
         var override = $( "#overrideLocalSwitch" ).is(':checked')
@@ -329,35 +316,29 @@ $('.nav-pills').on('shown.bs.tab', function(event){
         <div class="tab-pane" id="pipeline" role="tabpanel" aria-labelledby="pipeline-tab">
           {% if processrequest != "false" %}
             {% if processid %}
-              <h3>Starting up process : {{ processid }}</h3>
+              <h3>Starting up process:<p>{{ processid }}</h3>
             {% elif processgroupid %}
-              <h3>Starting up processgroup : {{ processgroupid }}</h3>
+              <h3>Starting up processgroup:<p>{{ processgroupid }}</h3>
             {% endif %}
           {% else %}
-                <select class="custom-select" style="width:150px;" id="processSelect">
-                  {% for p in processes | sort %}
-                  <option {% if p == processid %}selected{% endif %}>{{ p }}</option>
-                  {% endfor %}
-                </select>
-
-                <button class="btn btn-outline-secondary button12" onClick="startProcess()">Start process</button>
-
-                <div class="custom-control custom-switch vertical-down">
-                  <input type="checkbox" class="custom-control-input" onChange="startNext()"
-                        value="true" id="disableContinuation" {% if start_next_process == "true" %}checked{% endif %}>
-                        <label class="custom-control-label" for="disableContinuation">Start next pipeline process automatically</label>               
-                </div>
-{% if processgroups %}
-                <hr>
-
-                <select class="custom-select" style="width:150px;" id="processgroupSelect">
+          <div><b>Processgroup</b></div>
+                <select class="custom-select" style="width:100%;" id="processgroupSelect">
                   {% for p in processgroups | sort %}
                   <option {% if p == processgroupid %}selected{% endif %}>{{ p }}</option>
                   {% endfor %}
                 </select>
 
-                <button class="btn btn-outline-secondary button12" onClick="startProcessGroup()">Start processgroup</button>
-{% endif %}         
+                <div><button class="btn btn-outline-secondary button12" {% if not processgroups %}disabled{% endif %} onClick="startProcessGroup()">Start processgroup</button>
+                </div>
+           
+           <div class="top5"><b>Single process</b></div>
+                <select class="custom-select" style="width:100%;" id="processSelect">
+                  {% for p in processes | sort %}
+                  <option {% if p == processid %}selected{% endif %}>{{ p }}</option>
+                  {% endfor %}
+                </select>
+                <div><button class="btn btn-outline-secondary btn-small button12" {% if not processes %}disabled{% endif %} onClick="startProcess()">Start process</button></div>
+
           {% endif %}
 
         </div>

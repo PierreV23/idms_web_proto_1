@@ -343,31 +343,7 @@ def update_projectsettings():
     process = requestdata.get('process')
     action = requestdata.get('action')
 
-    if action == 'update_process':
-        data = {}
-        for attr in ['description', 'repo', 'tag', 'lsf_queue']:
-            if attr in requestdata:
-                data[attr] = requestdata[attr]
-        add_checkbox(data, requestdata, 'do_staging', negate = True, key='omit_staging')
-        add_checkbox(data, requestdata, 'do_bringonline', negate = True, key='omit_bringonline')
-        add_checkbox(data, requestdata, 'modify_in_place')
-        add_checkbox(data, requestdata, 'restartable')
-        add_checkbox(data, requestdata, 'distribution')
-        if requestdata.get('next_process') == 'true':
-            for attr in ['next_projectID', 'next_processID']:
-                if attr in requestdata:
-                    data[attr] = requestdata[attr]
-        else:
-            data['next_projectid'] = 0
-            data['next_processid'] = 0
-        rest_call('PUT', 'projects/{}/processes/{}'.format(project, process), data=data)
-        location=f'project={project}&process={process}'
-    elif action == 'add_process':
-        if process:
-            data = {'name': process}
-            response, result = rest_call('POST', 'projects/{}/processes'.format(project), data=data)
-        location=f'project={project}&process={process}'
-    elif action == 'add_process2':
+    if action == 'add_process2':
         if process:
             data = {'name': process}
             response, result = rest_call('POST', 'processes', data=data)
@@ -378,9 +354,6 @@ def update_projectsettings():
             data = {'name' : name }
             response, result = rest_call('POST', f'projects/{project}/processgroups', data=data)
         location=f'project={project}&pp=processgroups&processgroup={name}'
-    elif action == 'delete_process':
-        response, result = rest_call('DELETE', 'projects/{}/processes/{}'.format(project, process))
-        location=f'project={project}'
     elif action == 'update_project':
         data = {}
         for attr in ['description', 'default_collection', 'service_account']:
