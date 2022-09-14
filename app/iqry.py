@@ -9,6 +9,12 @@ from irods.column import Criterion
 from . import flaskcache
 from app.irodssessions import irods_manager
 
+
+def invalidate(collection):
+    flaskcache.cache.delete_memoized(qcollmeta, collection=collection)
+    flaskcache.cache.delete_memoized(qcollchildren, collection=collection)
+    flaskcache.cache.delete_memoized(qcolldataobjects, collection=collection)
+
 @flaskcache.cache.memoize(timeout=600, make_name=flaskcache.dep_zone)
 def qusermeta(user):
     with irods_manager.session() as session:
@@ -62,6 +68,17 @@ def rmallcollmetaattr(coll, attr):
         u = session.collections.get(coll)
         u.metadata._delete_all_values(attr)
     flaskcache.cache.delete_memoized(qcollmeta, coll)
+
+def delcollmeta(coll, attr, value=None, unit=None):
+    q = qcollmeta(coll)
+    u = current_user.irods_session.collections.get(coll)
+    for m in q:
+        if m[CollectionMeta.name] == attr:
+            if value is None or m[CollectionMeta.value] == value:
+                if unit is None or m[CollectionMeta.units] == unit:
+                    u.metadata.remove(m[CollectionMeta.name], m[CollectionMeta.value], m[CollectionMeta.units])
+    flaskcache.cache.delete_memoized(qcollmeta, coll)
+
 
 def qcollmetadict(collection):
     q = qcollmeta(collection)

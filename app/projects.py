@@ -400,21 +400,22 @@ def get_process():
     processlist = get_processlist(data['project'])
     return jsonify(processlist)
 
-@BP.route('_myprojects', methods=['GET'])
+@BP.route('_myprojectview', methods=['GET'])
 @login_required
-def my_projects():
-    my_projects = current_user.projects()
+def my_projectview():
 
-    projectlist = {}
+    projectlist = current_user.projects()
+
+    projectdetails = {}
 
     pl, result = rest_call('GET', 'projects')
 
     if result == 200:
-        projectlist = { project['name'] : project['default_collection'] for project in pl if project['name'] in my_projects }
+        projectdetails = { project['name'] : project['default_collection'] for project in pl if project['name'] in projectlist }
 
-    columns = min(4, 1 + len(projectlist) // 20)
+    columns = min(4, 1 + len(projectdetails) // 20)
 
-    return render_template('_myprojects.html', projectlist=projectlist, columns=columns )
+    return render_template('_myprojects.html', projectdetails=projectdetails, columns=columns )
 
 
 @BP.route('_pgaction', methods=['GET', 'POST'])

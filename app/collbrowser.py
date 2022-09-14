@@ -266,6 +266,11 @@ def startprocess():
 @login_required
 @cache.cached(timeout=60, key_prefix=key_zone)
 def collist():
+    return collist_nocache()
+
+@bp.route('_collist_nc')
+@login_required
+def collist_nocache():
     path = request.args.get('path','/', type=str)
     new_path_str = request.args.get('new_path', 'true', type=str)
     display_field = iqry.qcollmetaval(path, 'ngsweb::display_field')

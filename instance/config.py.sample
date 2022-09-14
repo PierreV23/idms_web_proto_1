@@ -9,8 +9,8 @@ SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 try:
     import redis
-    redis_test = Redis.redis()
-    redis.set('test', 'value')
+    redis_test = redis.Redis()
+    redis_test.set('test', 'value')
     CACHE_TYPE = "RedisCache"
     print('Use REDIS cache')
 except:

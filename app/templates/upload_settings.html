@@ -1,0 +1,54 @@
+{% extends 'upload_pages.html' %}
+
+{% block heading %}
+<H2>Upload settings for: <b>{{ name }}</b></H2>
+{% endblock %}
+
+{%block menuname %}
+menuname='upload_settings'
+{% endblock %}
+
+{% block content %}
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('upload.upload_settings') }}">
+            <input type="hidden" name="coll" value="{{ coll }}">
+            <div class="form-group">
+                <label for="project-select">Select project</label>
+                <select class="form-control" id="project-select" name="projectID">
+                    <option disabled selected value> -- select a project -- </option>
+                {% for project in projects | sort %}
+                    <option{% if project == data.get('projectID') %} selected{% endif %}>{{ project }}</option>
+                {% endfor %}
+                </select>
+            </div>
+            {% for k in fields %}
+            {% if k != 'projectID' %}
+            <div class="form-group">
+                <label id="{{ k }}-label" for="{{ k }}">{{ fields[k] }}</label>
+                <input type="text" class="form-control" id="{{ k }}" name="{{ k }}" aria-describedby="{{ k }}-label" value="{{ data.get(k) }}">
+            </div>
+            {% endif %}
+            {% endfor %}
+            <div class="form-group float-right">
+                <button type="subbmit" class="formsubmit btn btn-primary" name="submitbutton" value="save" disabled>Save</button>
+                <button type="subbmit" class="formsubmit btn btn-primary" name="submitbutton" value="next" disabled>Save & Continue</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+
+$('input, select').on('change', function() {
+    console.log('ENABLE')
+    $('.formsubmit').prop("disabled", false);
+})
+
+</script>
+
+
+
+
+{% endblock %}
