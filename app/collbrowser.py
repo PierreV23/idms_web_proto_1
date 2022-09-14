@@ -25,7 +25,7 @@ from . import projects
 from . import iqry
 from .flaskcache import cache, key_zone, key_userzone, dep_zone
 import json
-from app.constants import COLL_KEY_MAP, DATA_KEY_MAP
+from . import constants
 
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
 
@@ -55,16 +55,6 @@ ATTR_ARCHIVE_ONLINEPERCENTAGE = f'{ATTR_ARCHIVE_PREFIX}online_percentage'
 ATTR_ARCHIVE_MINCOPIES = f'{ATTR_ARCHIVE_PREFIX}min_copies'
 USER_PIPELINE_AUTOSTART = 'user::pipeline::autostart'
 
-
-COLL_SHAPES = {
-    'valid':      ('box3d', 'springgreen1'),
-    'invalid':    ('box3d', 'tomato'),
-    'imported':   ('cylinder', 'skyblue1'),
-    'temporary':  ('note',  'gold2'),
-    'distributed':('box3d','springgreen1:gray'),
-    'unknown'    :('ellipse', 'gray'),
-    'qc_report'  :('box3d', 'yellow'),
-    'refsamp_report'  :('box3d', 'yellow')}
 
 COLL_KEY_MAP = {
     'displayname': Collection.name,
@@ -372,7 +362,8 @@ def shortname(name,l):
 
 
 def coll_shape(coll_type):
-    return COLL_SHAPES.get(coll_type, ('cylinder', 'white'))
+    layout = constants.LAYOUT.get(coll_type, constants.DEFAULT_SHAPE)
+    return layout[constants.SHAPE1], layout[constants.COLOR1]
 
 class Dictlist(dict):
     """ Custom dict class that allos storing multiple values under one key
@@ -412,7 +403,9 @@ def generate_graph():
             collmeta[m] = q[m]
 
         # create the collection graph node
-        coll_type = collmeta.get('sys::data::type', 'unknown')
+        coll_type = collmeta.get('sys::runsheet::state', 'unknown')
+        print(coll_type)
+        coll_type = collmeta.get('sys::data::type', coll_type)
         coll_type = collmeta.get('user::data::type', coll_type)
         shape, shape_color = coll_shape(coll_type)
         penwidth = '3' if coll == center else '1'

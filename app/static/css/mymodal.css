@@ -467,3 +467,52 @@ ul {
 .c7 { filter: hue-rotate(180deg) }
 .c8 { filter: hue-rotate(210deg) }
 .c9 { filter: hue-rotate(240deg) }
+
+.table-depends, .table-depends>td, .table-depends>th {
+  background-color: #e0ebeb; 
+}
+
+.table-prepare, .table-prepare>td, .table-prepare>th {
+  background-color: #B0E0E6; 
+}
+
+.table-stage, .table-stage>td, .table-stage>th {
+  background-color: #B0C4DE; 
+}
+
+.table-queued, .table-queued>td, .table-queued>th {
+  background-color: #bdbdbd; 
+}
+
+.table-startup, .table-startup>td, .table-startup>th {
+  background-color: #bee5eb; 
+}
+
+.table-jobactive, .table-jobactive>td, .table-jobactive>th {
+  background-color: #99caff; 
+}
+
+.table-finishing, .table-finishing>td, .table-finishing>th {
+  background-color: #33cccc; 
+}
+
+.table-postprocessing, .table-postprocessing>td, .table-postprocessing>th {
+  background-color: #99ffcc; 
+}
+
+
+.table-done, .table-done>td, .table-done>th {
+  background-color: #c3e6cb;
+}
+
+.table-notrun, .table-notrun>td, .table-notrun>th {
+  background-color: #ebd9c6;
+}
+
+.table-white, .table-white>td, .table-white>th {
+  background-color: #FFFFFF; 
+}
+
+.table-error, .table-error>td, .table-error>th {
+  background-color: #f5c6cb; 
+}
