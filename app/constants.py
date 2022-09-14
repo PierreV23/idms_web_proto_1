@@ -160,6 +160,13 @@ LAYOUT = {
         COLOR2: '#f5c6cb',
         TABLECLASS : 'table-error'  
     },
+    'unknown': {
+        SHAPE1: 'box',
+        SHAPE2: 'cds',
+        COLOR1: '#ffffff',
+        COLOR2: '#ffffff',
+        TABLECLASS : 'table-white'  
+    },
     'OK': {
         SHAPE1: 'cds',
         SHAPE2: 'cds',
@@ -195,19 +202,4 @@ LAYOUT = {
         COLOR2: '#FFFF00',
         TABLECLASS: 'table-white'        
     }  
-}
-
-COLL_SHAPES = {
-    'unknown':    ('cds', 'white'),
-    'error':   ('cds', 'orange'),
-    'done':  ('cds',  'darkolivegreen1'),
-    'notrun' : ('cds', 'gray91')}
-
-COLL_SHAPES = {
-    'valid':      ('box3d', 'springgreen1'),
-    'invalid':    ('box3d', 'tomato'),
-    'imported':   ('cylinder', 'skyblue1'),
-    'temporary':  ('note',  'gold2'),
-    'distributed':('box3d','springgreen1:gray'),
-    'unknown'    :('ellipse', 'gray'),
 }
