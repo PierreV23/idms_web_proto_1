@@ -219,7 +219,7 @@ def processgraph():
         graph.node(coll, label=iqry.qcollmetavalstatic(coll, 'sys::runsheet::description'), style='filled', penwidth=penwidth, 
             shape=shape, fillcolor=shape_color, URL=url_for('jobs.jobdetails', name=iqry.qcollmetaval(coll, ATTR_RUNSHEET_ID)))
     for coll in colls:
-        ir = iqry.qcollmetaval(coll, 'sys::runsheet::input_collection_ref')
+        ir = iqry.qcollmetaval(coll, 'sys::pipeline::input_collection_id')
         input_colls = [ c for c in colls if iqry.qcollmetavalstatic(c, 'sys::dataset_id') == ir ]
         if input_colls: 
             for input_coll in input_colls:
