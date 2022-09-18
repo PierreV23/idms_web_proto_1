@@ -21,20 +21,9 @@ from datetime import datetime, timezone
 from .flaskcache import cache, dep_zone, key_zone, key_userzone
 from app.irodssessions import irods_manager
 from . import iqry
+from . import constants
 
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
-
-PAGE_SIZE = 25
-
-JOB_FIELDS = {
-    'sys::runsheet::description': ('Description', 'text'),
-    'sys::runsheet::processgroupid': ('GroupInstance', 'processgroupid'),
-    'sys::run::start_time': ('Start time', 'timestamp'),
-    'sys::run::finish_time': ('End time', 'timestamp'),
-    'sys::runsheet::projectID': ('projectID', 'projectid'),
-    'user::run::exit_code': ('Result', 'int'),
-    'sys::runsheet::input_collection': ('Input Collection', 'irods_collection')
-}
 
 ATTR_RUNSHEET_PREFIX = 'sys::runsheet::'
 ATTR_RUNSHEET_STATE = '{}state'.format(ATTR_RUNSHEET_PREFIX)
@@ -54,7 +43,7 @@ def pagebuttons(page_size, count, current_page, max_buttons, template):
     pagebuttons = []
     pages = count // page_size + 1
     for buttonnr in range(0, pages):
-        button = { 'text': '{} - {}'.format(buttonnr*PAGE_SIZE+1, min((buttonnr+1)*PAGE_SIZE, count)),
+        button = { 'text': '{} - {}'.format(buttonnr*constants.JOB_PAGE_SIZE+1, min((buttonnr+1)*constants.JOB_PAGE_SIZE, count)),
                    'button': True, 'ref': template.format(buttonnr+1), 'class': 'btn-success'}
         if buttonnr == current_page-1:
             button['class'] = 'btn-outline-success'
@@ -93,8 +82,12 @@ def processgroupprocs():
     q = iqry.qcollbymeta('sys::runsheet::processgroupid', pgid)
     result = []
     for r in q:
-        metadata = iqry.qcollmetadict(r[Collection.name]) 
-        job = { PGFIELDS[field][0]: datafield(PGFIELDS[field][0], metadata.get(field,''), PGFIELDS[field][1]).htmlstring for field in PGFIELDS }
+        metadata = iqry.qcollmetadict(r[Collection.name])
+        job = {}
+        for field in PGFIELDS:
+            if metadata.get(field):
+                job[PGFIELDS[field][0]] = datafield(PGFIELDS[field][0], metadata.get(field,''), PGFIELDS[field][1]).htmlstring
+#        job = { PGFIELDS[field][0]: datafield(PGFIELDS[field][0], metadata.get(field,''), PGFIELDS[field][1]).htmlstring for field in PGFIELDS }
         result.append(job)
     return { 'rows': result }
     
@@ -104,7 +97,7 @@ def processgroupprocs():
 def joblist(state='', page=1):
     """Create a list of jobs in state state
     
-    Returns max PAGE_SIZE jobs
+    Returns max JOB_PAGE_SIZE jobs
     args:
         state: state filter for job runsheets
         page: page number. each page has MAX_PAGE jobs
@@ -133,7 +126,7 @@ def joblist(state='', page=1):
     #result_list = [ (j, j[Collection.create_time]) for j in q1b ]
 
     # Get the paged subset of the sorted job list
-    result_list_s = sorted( result_list, key = lambda j : j[1], reverse = True)[PAGE_SIZE*(page-1):PAGE_SIZE*page]
+    result_list_s = sorted( result_list, key = lambda j : j[1], reverse = True)[constants.JOB_PAGE_SIZE*(page-1):constants.JOB_PAGE_SIZE*page]
 
     # Get the job details for both types of jobs
     for res in result_list_s:
@@ -148,9 +141,9 @@ def joblist(state='', page=1):
             job_record['create_time'] = timestamp_to_local(metadata.get(ATTR_RUNSHEET_CREATETIME, 0)).timestamp()
             job_record['Created'] =datafield('create_time', job_record['create_time'], 'timestamp')
             job_record['State'] =datafield('state', state, 'job_state')
-            for field in JOB_FIELDS:
+            for field in constants.JOB_FIELDS:
                 if field in metadata:
-                    job_record[JOB_FIELDS[field][0]] = datafield(field, metadata[field], JOB_FIELDS[field][1])
+                    job_record[constants.JOB_FIELDS[field][0]] = datafield(field, metadata[field], constants.JOB_FIELDS[field][1])
             job_list.append( job_record )      
 
     coll_jobs = len(result_list)
@@ -170,26 +163,11 @@ def show_jobs():
     # for a in ['waiting', 'incoming', 'queued', 'active', 'postprocessing', 'done', 'stage', 'error']:
     #     if x in ['all', a]:
     #         l = l + joblist(a)
-    columns = ['Name', 'State'] + [JOB_FIELDS[a][0] for a in JOB_FIELDS]
-    buttons = pagebuttons(PAGE_SIZE, total, page, 10, 'href={}?page={{}}&items={}'.format(url_for('jobs.show_jobs'), state))
-    return render_template('jobs2.html', joblist=l, items=state, columns=columns, buttons=buttons)
+    columns = ['Name', 'State'] + [constants.JOB_FIELDS[a][0] for a in constants.JOB_FIELDS]
+    buttons = pagebuttons(constants.JOB_PAGE_SIZE, total, page, 10, 'href={}?page={{}}&items={}'.format(url_for('jobs.show_jobs'), state))
+    return render_template('jobs2.html', joblist=l, items=state, columns=columns, buttons=buttons, LAYOUT=constants.LAYOUT)
 
 NAME_LENGTH = 15
-
-COLL_SHAPES = {
-    'source':      ('box3d', 'white'),
-    'unknown':    ('cds', 'white'),
-    'FAILED': ('cds', 'firebrick1'),
-    'OK':  ('cds',  'darkolivegreen1'),
-    'error':   ('cds', 'orange'),
-    'done':  ('cds',  'darkolivegreen1'),
-    'depends':('cds','snow3'),
-    'prepare':('cds', 'darkgoldenrod'),
-    'stage':('cds', 'gold'),
-    'queued'    :('cds', 'aquamarine'),
-    'startup' :('cds', 'aquamarine:cyan'),
-    'active'  :('cds', 'cyan'),
-    'postprocessing'  :('cds', 'cyan3')}
 
 def shortname(name,l):
     s = name
@@ -198,7 +176,8 @@ def shortname(name,l):
     return s
 
 def coll_shape(coll_type):
-    return COLL_SHAPES.get(coll_type, ('cylinder', 'white'))
+    layout = constants.LAYOUT.get(coll_type, constants.DEFAULT_SHAPE)
+    return layout[constants.SHAPE2], layout[constants.COLOR1]    
 
 @bp.route('/processgraph')
 @login_required

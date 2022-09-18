@@ -60,22 +60,8 @@ $(document).ready(function(){
 </thead>
 <tbody>
 {% for entry in joblist %}
-    {% if entry.State.value in ("incoming", "stage", "depends") %}
-      <TR class="table-light">
-    {% elif entry.State.value == "prepare" %}
-      <TR class="table-info">
-    {% elif entry.State.value == "queued" %}
-      <TR class="table-active">
-    {% elif entry.State.value == "startup" %}
-        <TR class="table-info">
-    {% elif entry.State.value == "active" %}
-      <TR class="table-primary">
-    {% elif entry.State.value == "postprocessing" %}
-      <TR class="table-info">
-    {% elif entry.State.value == "finishing" %}
-      <TR class="table-dark">
-    {% elif entry.State.value == "waiting" %}
-      <TR class="table-warning">
+    {% if entry.State.value in LAYOUT %}
+      <TR class="{{ LAYOUT[entry.State.value].tableclass }}">
     {% else %}
       {% if "Result" in entry and entry["Result"].value == 0 %}
         <TR class="table-success">
