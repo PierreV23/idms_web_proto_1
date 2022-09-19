@@ -524,5 +524,9 @@ ul {
 }
 
 .table-error, .table-error>td, .table-error>th {
-  background-color: #f5c6cb; 
+  background-color: #ffd6cc; 
+}
+
+.table-invalid, .table-invalid>td, .table-invalid>th {
+  background-color: #ffebe6; 
 }
