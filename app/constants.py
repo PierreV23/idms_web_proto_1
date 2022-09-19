@@ -156,16 +156,16 @@ LAYOUT = {
     'error': {
         SHAPE1: 'box3d',
         SHAPE2: 'cds',
-        COLOR1: '#f5c6cb',
-        COLOR2: '#f5c6cb',
+        COLOR1: '#ff9980',
+        COLOR2: '#ff9980',
         TABLECLASS : 'table-error'  
     },
     'invalid': {
         SHAPE1: 'box3d',
         SHAPE2: 'cds',
-        COLOR1: '#f5c6cb',
-        COLOR2: '#f5c6cb',
-        TABLECLASS : 'table-error'  
+        COLOR1: '#ffebe6',
+        COLOR2: '#ffebe6',
+        TABLECLASS : 'table-invalid'  
     },
     'unknown': {
         SHAPE1: 'box',

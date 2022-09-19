@@ -60,15 +60,15 @@ $(document).ready(function(){
 </thead>
 <tbody>
 {% for entry in joblist %}
+  {% if "Result" in entry and entry["Result"].value != 0 %}
+    <TR class="table-danger">
+  {% else %}
     {% if entry.State.value in LAYOUT %}
       <TR class="{{ LAYOUT[entry.State.value].tableclass }}">
     {% else %}
-      {% if "Result" in entry and entry["Result"].value == 0 %}
-        <TR class="table-success">
-      {% else %}
-        <TR class="table-danger">
-      {% endif %}
+      <TR class="table-white">
     {% endif %}
+  {% endif %}
     {% for column in columns %}    
         <TD>
         {% if column in entry %}
@@ -76,15 +76,6 @@ $(document).ready(function(){
         {% endif %}</TD>
         
     {% endfor %}
-<!--    
-    <td>
-{% if entry.State != 'done' %}
-        <button class="btn btn-secondary btn-sm" type="button" id="resubmitButton" aria-haspopup="true" aria-expanded="false">End</button>
-{% else %}
-        <button class="btn btn-secondary btn-sm" type="button" id="resubmitButton" aria-haspopup="true" aria-expanded="false">Resubmit</button>
-{% endif %}        
-    </td>
--->    
     </TR>
 {% endfor %}
 </tbody>
