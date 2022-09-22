@@ -421,9 +421,9 @@ def generate_graph():
             return True
         history.append(coll)
         collmeta = Dictlist()
-        q = iqry.qcollmetadict(coll)
+        q = iqry.qcollmeta(coll)
         for m in q:
-            collmeta[m] = q[m]
+            collmeta[m[CollectionMeta.name]] = m[CollectionMeta.value]
 
         # create the collection graph node
         coll_type = collmeta.get('sys::runsheet::state', 'unknown')
@@ -493,6 +493,7 @@ def generate_graph():
         if levels:            
             extra_colls = set(collmeta.get_all('user::pipeline::input_collection', []))
             extra_coll_ids = collmeta.get_all('user::pipeline::input_collection_id', [])
+            print(extra_coll_ids)
             for extra_coll_id in extra_coll_ids:
                 q = iqry.qcollbymeta(ATTR_DATASETID, extra_coll_id)
                 extra_colls |= { c[Collection.name] for c in q } 
