@@ -493,7 +493,6 @@ def generate_graph():
         if levels:            
             extra_colls = set(collmeta.get_all('user::pipeline::input_collection', []))
             extra_coll_ids = collmeta.get_all('user::pipeline::input_collection_id', [])
-            print(extra_coll_ids)
             for extra_coll_id in extra_coll_ids:
                 q = iqry.qcollbymeta(ATTR_DATASETID, extra_coll_id)
                 extra_colls |= { c[Collection.name] for c in q } 
