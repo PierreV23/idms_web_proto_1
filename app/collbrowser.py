@@ -421,9 +421,9 @@ def generate_graph():
             return True
         history.append(coll)
         collmeta = Dictlist()
-        q = iqry.qcollmetadict(coll)
+        q = iqry.qcollmeta(coll)
         for m in q:
-            collmeta[m] = q[m]
+            collmeta[m[CollectionMeta.name]] = m[CollectionMeta.value]
 
         # create the collection graph node
         coll_type = collmeta.get('sys::runsheet::state', 'unknown')
