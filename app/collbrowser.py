@@ -94,7 +94,9 @@ def _getmetatree(irods_coll, attr, base, default=None):
 @login_required
 def coll_meta():
     path = request.args.get('path','/', type=str)
-    object = request.args.get('object', '', type=str)
+    selected_object = request.args.get('object', '', type=str)
+
+    print(path, selected_object)
 
 # Query for collection metadata
     coll_avu = []
@@ -107,13 +109,13 @@ def coll_meta():
 
 # Query for object metadata
     object_avu = None
-    if object:
+    if selected_object:
         object_avu = []
         with irods_manager.session() as session:
             query = session.query(DataObjectMeta.name, DataObjectMeta.value,
                                         DataObjectMeta.units).filter(
                                             Criterion('=', Collection.name, path)).filter(
-                                            Criterion('=', DataObject.name, object)
+                                            Criterion('=', DataObject.name, selected_object)
                                         )
             for object_metadata in query:
                 name = object_metadata[DataObjectMeta.name]
