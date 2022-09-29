@@ -64,7 +64,7 @@ def scollmetaval(coll, attr, value, unit=None):
     flaskcache.cache.delete_memoized(qcollmeta, coll)
 
 def rmallcollmetaattr(coll, attr):
-    with irods_manager.session():
+    with irods_manager.session() as session:
         u = session.collections.get(coll)
         u.metadata._delete_all_values(attr)
     flaskcache.cache.delete_memoized(qcollmeta, coll)
