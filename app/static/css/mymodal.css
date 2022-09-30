@@ -451,6 +451,12 @@ ul {
   border-bottom: 1px solid #4f5962;
 }
 
+.sidebar-bottom {
+  position: absolute;
+  bottom: 0px;
+  height: calc(8rem + 1px);
+}
+
 .nav-header {
   font-family: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }
