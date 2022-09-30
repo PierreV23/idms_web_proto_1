@@ -121,7 +121,8 @@
     </div>
 
     <!-- Sidebar -->
-    <div class="sidebar">
+
+    <div class="sidebar" style="height:calc(100% - (11.5rem + 2px))"><!--height adjusted for sidebar-bottom-->
       <!-- Sidebar user panel (optional) -->
       <div class="user-panel mt-3 pb-3 mb-3 d-flex">
         <!-- <div class="image">
@@ -306,7 +307,6 @@
           {% endblock %}
         </ul>
       </nav>
-      <div class="separator"></div>
       <nav>
         <ul class="nav nav-pills nav-btns nav-sidebar nav-child-indent flex-column float-down" data-widget="treeview" role="menu"
         data-accordion="false">
@@ -314,12 +314,17 @@
           {% endblock %}          
         </ul>
       </nav>
+      <!-- /.sidebar-menu -->
+    </div>
 
-      <nav class="mt-2">
+    <div class="sidebar-bottom">
+      <!-- .sidebar-bottom -->
+      <div class="separator"></div>
+      <nav>
         <ul class="nav nav-pills nav-sidebar nav-child-indent flex-column" data-widget="treeview" role="menu"
           data-accordion="false">
           <!-- Add icons to the links using the .nav-icon class
-               with font-awesome or any other icon font library -->
+              with font-awesome or any other icon font library -->
 
             <li class="nav-item">
             <a class="nav-link" href="/" role="button">
@@ -341,9 +346,9 @@
           </li>
         </ul>
       </nav>
-
-      <!-- /.sidebar-menu -->
+      <!-- /.sidebar-bottom -->
     </div>
+
     <!-- /.sidebar -->
   </aside>
 
