@@ -17,34 +17,14 @@ from .ngsruns import db, NGSRunsDBUnavailableException
 from .flaskcache import cache
 from .irodssessions import irods_manager
 
-
-logging.config.dictConfig({
+# This is the default log config. It can (and should) be overruled by
+# setting LOGCONFIG in config.py
+DEFAULT_LOGCONFIG = {
     'version': 1,
-    'formatters': {
-        'default': {
-            'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s'
-        },
-        'syslog': {
-            'format': 'NGSWEB: %(levelname)s in %(module)s: %(message)s'
-        }
-    },
-    'handlers': {
-        'wsgi': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'default'
-        },
-        'syslog': {
-            'class': 'logging.handlers.SysLogHandler',
-            'address': '/dev/log',
-            'facility': 'local6',
-            'formatter': 'syslog'
-        }
-    },
-    'root': {
-        'level': 'DEBUG',
-        'handlers': ['wsgi', 'syslog']
-    },
-})
+    'formatters': {'default': {'format': '[%(asctime)s] %(levelname)s - %(module)s: %(message)s'}},
+    'handlers': {'default': {'class': 'logging.StreamHandler', 'formatter': 'default'}},
+    'root': {'level': 'DEBUG', 'handlers': ['default']}
+}
 
 app = Flask(__name__)
 
@@ -65,6 +45,8 @@ app.config.from_mapping(
 
 app.config.from_pyfile(os.path.join(app.instance_path, 'config.py'), silent=True)
 app.config.from_pyfile(os.path.join(app.instance_path, 'constants.py'), silent=True)
+
+logging.config.dictConfig(app.config.get('LOGCONFIG', DEFAULT_LOGCONFIG))
 
 db.init_app(app)
 irods_manager.init_app(app)
