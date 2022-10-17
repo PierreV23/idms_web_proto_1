@@ -23,6 +23,34 @@ CACHE_DEFAULT_TIMEOUT = 300
 CACHE_THRESHOLD = 10000
 CACHE_KEY_PREFIX = "ngsweb"
 
+LOGCONFIG = {
+    'version': 1,
+    'formatters': {
+        'default': {
+            'format': '[%(asctime)s] %(module)s: %(levelname)s : %(message)s'
+        },
+        'syslog': {
+            'format': 'ngsweb: %(levelname)s in %(module)s: %(message)s'
+        }
+    },
+    'handlers': {
+        'wsgi': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'default'
+        },
+        'syslog': {
+            'class': 'logging.handlers.SysLogHandler',
+            'address': '/dev/log',
+            'facility': 'local6',
+            'formatter': 'syslog'
+        }
+    },
+    'root': {
+        'level': 'DEBUG',
+        'handlers': ['wsgi']
+    },
+}
+
 LABSURV_DB_CRED = {
     'Acceptatie': { 
         'host': r'rivm-sqldb-w04p.rivm.ssc-campus.nl\rivm01_acc',
