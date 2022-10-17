@@ -4,6 +4,9 @@ import sys
 import threading
 import time
 import traceback
+import logging
+
+from requests import session
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import request, current_app
 from flask_login import current_user
@@ -61,6 +64,9 @@ class PoolObject():
     def update(self):
         self.timestamp = time.time()
 
+    def __str__(self):
+        return f"{self.timestamp=} {self.obj=}"
+
 class Session():
     def __init__(self, pool, irods_session):
         self._pool = pool
@@ -111,6 +117,9 @@ class SessionPool():
             max_idle_time = idle_timeout/idle_sessions
             so idle sessions will be removed sooner when there are more
         """
+        logging.debug(f"queue lengths: idle {len(self._idle)}, active {len(self._active)}")
+        # current_app.debug(f"idle queue {list(map(str, self._idle))}")
+        # current_app.debug(f"active queue {list(map(str, self._active))}")
         def remove_sessions(queue, removelist):
             for sess in removelist:
                 queue.remove(sess)
@@ -131,24 +140,18 @@ class SessionPool():
                         break
                     if index <= self.targetsize:
                         break
-                remove_sessions(self._idle, removelist)
-            
-                removelist = []
-                for s in queue:
-                    if i<=0:
-                        break
-                    if time.time() - s.timestamp > timeout:
-                        removelist.append(s)
-                        i -= 1
-                for s in removelist:
-                    queue.remove(s)
-                    s.obj.cleanup()
+                if removelist:
+                    logging.debug(f"removing {list(map(str, removelist))} from idle queue")
+                    remove_sessions(self._idle, removelist)
+
             # Remove long-running active sessions
             removelist = []
             for sess in self._active:
-                if time.time() - sess.timestamp > active_timeout:
+                if time.time() - sess.timestamp > self.active_timeout:
                     removelist.append(sess)
-            remove_sessions(self._active, removelist)
+            if removelist:
+                logging.debug(f"removing {list(map(str, removelist))} from active queue")
+                remove_sessions(self._active, removelist)
 
         return len(self._idle) + len(self._active)
 
@@ -170,6 +173,14 @@ class SessionPool():
                 poolentry.update()
                 self._idle.append(poolentry)
 
+    def __del__(self):
+        with self._lock:
+            for sess in self._idle + self._active:
+                sess.obj.cleanup()
+            self._idle = []
+            self._active = []
+
+
 class SessionPoolManager():
     """Manage a set of SessionPools,
     one for each logged in user
@@ -190,32 +201,15 @@ class SessionPoolManager():
         with self._lock:
             userlist = self._pools.keys()
             for user in userlist:
+                logging.debug(f"Cleaning sessions for user: {user}")
                 counter = self._pools[user].cleanup()
                 if counter == 0:
+                    logging.debug(f"Session pool for {user=} is now empty, removing {str(self._pools[user])}")
                     del self._pools[user]
 
-class SessionManager():
-    """This sessionmanager yields a 
-    single irodssession per user. Since there seem to be issues
-    with multithreading and large queries, the use of SessionPoolManager is preferred
-    """
-    def __init__(self, envdata, refresh_time=120):
-        self.envdata = envdata
-        self._sessions = {}
-        self._lock = threading.Lock()
-        self.refresh_time = refresh_time
-
-    def session(self, user):
+    def remove(self, user):
         with self._lock:
-            if user.username not in self._sessions:
-                self._sessions[user.username] = PoolObject(create_session(self.envdata, user))
-            session = self._sessions.get(user.username)
-            session.update()
-        return session.obj
-
-    def cleanup(self):
-        for user, session in self._sessions.items():
-            pass
+            del self._pools[user.username]
 
 class MultiSessionManager():
     """Manage the SessionManagers for 
@@ -248,5 +242,10 @@ class MultiSessionManager():
         with self._lock:
             for env, mgr in self._managers.items():
                 mgr.cleanup()
+
+    def remove(self, user):
+        """Removes the session for user"""
+        with self._lock:
+            self._managers[user.environment].remove(user)
 
 irods_manager = MultiSessionManager()

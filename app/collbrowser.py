@@ -7,6 +7,7 @@ Created on Mon Nov 18 10:54:56 2019
 """
 
 import base64
+import logging
 import os
 import time
 from datetime import datetime, timezone
@@ -96,8 +97,6 @@ def coll_meta():
     path = request.args.get('path','/', type=str)
     selected_object = request.args.get('object', '', type=str)
 
-    print(path, selected_object)
-
 # Query for collection metadata
     coll_avu = []
     query = iqry.qcollmeta(path)
@@ -137,7 +136,7 @@ def setKeepOnlineUntil():
     try:
         days = int(selectionStr)
     except ValueError:
-        print( f"unknown selection for _setKeepOnlineUntil: {selectionStr}")
+        logging.warning( f"unknown selection for _setKeepOnlineUntil: {selectionStr}")
         return('DONE')
     keepOnlineUntil = now + relativedelta(days=days)
 
@@ -165,7 +164,7 @@ def setoverride():
     collection = request.args.get('collection')
     if attr and value and collection:
         if overrideStr not in ['true', 'false']:
-            print( f"unknown selection for _setKeepLocal: {overrideStr}" )
+            logging.warning( f"unknown selection for _setKeepLocal: {overrideStr}" )
             return('DONE')
         if overrideStr == 'false':
             iqry.rmallcollmetaattr(collection, attr)
@@ -303,9 +302,6 @@ def collcontents():
     filters = json.loads(filterstr)
     qc_filters = [Criterion('=', Collection.parent_name, path)]
     qd_filters = [Criterion('=', Collection.name, path)]
-    print( sortkey )
-    print( filters )
-    print( c_sortkey )
     if 'displayname' in filters:
         qc_filters.append(Criterion('like', Collection.name, f'%{filters["displayname"]}%'))
         qd_filters.append(Criterion('like', DataObject.name, f'%{filters["displayname"]}%'))
@@ -429,7 +425,6 @@ def generate_graph():
 
         # create the collection graph node
         coll_type = collmeta.get('sys::runsheet::state', 'unknown')
-        print(coll_type)
         coll_type = collmeta.get('sys::data::type', coll_type)
         coll_type = collmeta.get('user::data::type', coll_type)
         shape, shape_color = coll_shape(coll_type)
@@ -638,7 +633,6 @@ def search_result():
         SEARCH_PATTERN = '{}'
         SEARCH_OPTION = '='
 
-    #print( f"useExactMatch: {useExactMatch}, useSearchMeta: {useSearchMeta}, useSearchObjectNames: {useSearchObjectNames}" )
     irods_session = irods_manager.session()
     data = list()
 

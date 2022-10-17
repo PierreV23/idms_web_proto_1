@@ -12,6 +12,8 @@ import hashlib
 import json
 import ssl
 import time
+import logging
+
 from flask_login import UserMixin
 from flask import session, current_app
 from flask_login import current_user
@@ -26,6 +28,7 @@ from . import iqry
 from app.irodssessions import irods_manager
 
 ATTR_DISPLAYNAME = 'sys::ad::displayName'
+
 
 def obfuscate(data):
     return base64.b64encode(data.encode('utf-8'))
@@ -199,11 +202,13 @@ class WebUser(UserMixin):
 
     def validate_irods_session(self):
         try:
-            irods_manager.session(user=self)
+            session = irods_manager.session(user=self)
+            session.collections.get("/")
             self._is_authenticated = True
             return True
         except:
-            print('Authentication failed.')
+            logging.info(f"Authentication (session validation) failed for user {self.username} on {self.environment}")
+            irods_manager.remove(self)
         return False
 
 
