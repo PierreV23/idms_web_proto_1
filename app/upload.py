@@ -8,6 +8,7 @@ import io
 import os
 import shutil
 import sys
+import logging
 import time
 from flask import Blueprint, render_template, redirect, request, url_for, session, current_app, flash
 from flask import jsonify
@@ -100,7 +101,7 @@ def unique_coll(base_coll, prefix=None, use_date=False):
         while session.collections.exists(collname):
             collname = os.path.join(projectcoll, f'{fullprefix}{i:04}')
             i += 1
-    current_app.logger.debug('upload/unique_coll(): mkdir "{}"'.format(collname))
+    logging.debug('upload/unique_coll(): mkdir "{}"'.format(collname))
     current_user.ifs.mkdir(collname)
     # TODO : add some metadata?
     return collname
@@ -397,7 +398,7 @@ def filelist():
             files = os.listdir(settings['directory'])
         except FileNotFoundError:
             # A likely thing to happen. Log and continue.
-            current_app.logger.info('upload/filelist: dir not found: {}'.format(
+            logging.info('upload/filelist: dir not found: {}'.format(
                 settings['directory']))
     return render_template('upload_filelist.html', files=files)
 
@@ -529,7 +530,7 @@ def seq_list():
             headers, ids =  read_data(directory)
         except FileNotFoundError:
             # A likely thing to happen. Log and continue.
-            current_app.logger.info('upload/_seq_list: dir not found: {}'.format(directory))
+            logging.info('upload/_seq_list: dir not found: {}'.format(directory))
         
     return render_template('seq_list.html', headers=headers, ids=ids)
 
@@ -607,7 +608,6 @@ def upload_settings():
     if request.method == 'POST':
         data = request.form.to_dict()
         coll = data.get('coll')
-        print(coll)
         for k, v in data.items():
             if k in FIELDS and v:
                 iqry.scollmetaval(coll, f'{ATTR_UPLOADSETTINGS}{k}', v)
@@ -618,8 +618,6 @@ def upload_settings():
 
 @bp.route('_uploadmeta', methods=['GET', 'POST'])
 def upload_meta():
-    print('META UPLOAD')
-    print(f'Method is {request.method}')
     if request.method == 'GET':
         collection = request.args.get('coll')
         name = os.path.basename(collection)
@@ -639,22 +637,16 @@ def upload_meta():
                 iqry.delcollmeta(collection, k, v)
         for k, v in record.get('data', {}).items():
             iqry.scollmetaval(collection, f'{ATTR_UPLOADMETA}{k}', v)                
-        print('HANDLE POST REQUEST')
-        print(f'METHOD {request.method}')
-        print(f'JSON: {request.json}')
-        print(request.form.to_dict())
         return jsonify({'status': 'OK' }), 200
 
 
 @bp.route('_uploaddata', methods=['GET', 'POST'])
 def upload_data():
     if request.method == 'GET':
-        print('GET DATA')
         coll = request.args.get('coll')
         name = os.path.basename(coll)
         return render_template('upload_data.html', name=name, coll=coll)
     if request.method == 'POST':
-        print('POST DATA')
         f = request.files['file']
         data = request.form.to_dict()
         coll = data.get('coll', '/')
@@ -665,7 +657,6 @@ def upload_data():
         filepath = os.path.dirname(filename)
         if not current_user.ifs.folderexists(filepath):
             current_user.ifs.mkdir(filepath)
-        print(f, data, filename, filepath)
         with current_user.ifs.open(filename, 'w') as d:
             shutil.copyfileobj(f, d)
         iqry.invalidate(coll)
@@ -675,7 +666,6 @@ def upload_data():
 def upload_actions():
     action = request.args.get('action')
     coll = request.args.get('coll')
-    print(action)
     if action == 'finalize':
         iqry.scollmetaval(coll, ATTR_UPLOAD, UploadType.Ready)
         return redirect(url_for('upload.show_uploads'))
@@ -713,8 +703,5 @@ def new_upload():
 
 @bp.route('_posttest', methods=['POST'])
 def posttest():
-    print('POST test')
-    print(f'METHOD {request.method}')
-    print(f'JSON: {request.json}')
     return 'OK', 200
 

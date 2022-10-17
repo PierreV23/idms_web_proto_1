@@ -23,10 +23,11 @@ def login():
         user = WebUser(username=requestdata['username'],
                     password=requestdata['password'],
                     environment=requestdata['environment'])
-
         if not user.validate_irods_session():
+            logging.info(f"User {user} failed to log in to {requestdata['environment']}")
             flash('Login to the web interface failed', 'login')
             return redirect(url_for("auth.login"))
+        logging.info(f"User {user} logged in to {requestdata['environment']}")
         login_user(user, duration=timedelta(hours=24))
         user.store()
         
@@ -45,6 +46,8 @@ def login():
 @bp.route('/logout')
 @login_required
 def logout():
+    logging.info(f"User {current_user.username} logged out of {current_user.environment} environment")
     current_user.delete()
+    # TODO Remie: remove iRODS sessions as well?
     logout_user()
     return redirect(url_for('auth.login'))

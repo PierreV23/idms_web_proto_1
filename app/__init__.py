@@ -1,3 +1,4 @@
+from logging import FileHandler
 import os
 import requests
 from requests.auth import HTTPBasicAuth
@@ -19,18 +20,30 @@ from .irodssessions import irods_manager
 
 logging.config.dictConfig({
     'version': 1,
+    'formatters': {
+        'default': {
+            'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s'
+        },
+        'syslog': {
+            'format': 'NGSWEB: %(levelname)s in %(module)s: %(message)s'
+        }
+    },
     'handlers': {
         'wsgi': {
             'class': 'logging.StreamHandler',
+            'formatter': 'default'
         },
         'syslog': {
-            'class': 'logging.handlers.SysLogHandler'
+            'class': 'logging.handlers.SysLogHandler',
+            'address': '/dev/log',
+            'facility': 'local6',
+            'formatter': 'syslog'
         }
     },
     'root': {
         'level': 'DEBUG',
         'handlers': ['wsgi', 'syslog']
-    }
+    },
 })
 
 app = Flask(__name__)
@@ -74,6 +87,8 @@ flaskcache.init(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "auth.login"
+
+logging.info('NGSWEB initialized')
 
 @login_manager.user_loader
 def load_user(userid):
@@ -141,6 +156,7 @@ def restcall(rest_endpoint):
 @app.errorhandler(irods.exception.PAM_AUTH_PASSWORD_FAILED)
 def invalid_session(e):
     """Session may be stale. Destroy it and redirect to login page."""
+    app.logger.info(f"Invalid session: user {current_user.username} on {current_user.environment} environment")
     return auth.logout()
 
 # irods.exception.CAT_NO_ACCESS_PERMISSION

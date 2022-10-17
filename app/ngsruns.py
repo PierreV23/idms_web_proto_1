@@ -163,7 +163,6 @@ def rest_call(request_type, endpoint, data={}):
     auth = HTTPBasicAuth('alt\\{}'.format(current_user.username), current_user.ntlm_hash)
     return_data = {}
     if request_type in REQUESTS_METHODS:
-        print(f'REST: {request_type} {url} {data}')
         response = REQUESTS_METHODS[request_type](url, auth=auth, json=data)
     try:
         return_data = response.json()
@@ -181,7 +180,6 @@ def get_complete(field):
 def runs():
     # Preparation for speedup: pagination for getting the list of runs,
     # for when getting the whole list (run_list()) takes too long.
-    #print(request.args)
     fields = ['id', 'name', 'flowcell', 'flowcell_display', 'project', 'owner', 'datacoll', 'description']
     offset = int(request.args.get('offset', 0))
     limit = int(request.args.get('limit', 12))

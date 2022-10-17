@@ -45,7 +45,6 @@ def groupinfo(group):
         else:
             ginfo[n.name] = userinfo(n.name)
             ginfo[n.name].update({"serviceaccount": False})
-    #print(f"found users: {ginfo}")
     return(ginfo)
  
 @bp.route('/groupdetails')
