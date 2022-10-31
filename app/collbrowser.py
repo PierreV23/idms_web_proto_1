@@ -534,7 +534,7 @@ def add_items(path, level, active):
         collname = collpath.split('/')[-1]
         if collname:
             c1=' path-active' if collpath == active else '';
-            link='<span class="tree-label path-change{}" data-path={}>{}</span>'.format(c1, collpath, collname)
+            link='<span class="tree-label path-change{}" data-path="{}">{}</span>'.format(c1, collpath, collname)
             subtree=''
             dummy=0
             collid=''.join(collpath.split('/'))
