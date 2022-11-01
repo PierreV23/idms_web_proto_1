@@ -31,7 +31,7 @@ JOB_FIELDS = {
     'sys::run::start_time': ('Start time', 'timestamp'),
     'sys::run::finish_time': ('End time', 'timestamp'),
     'sys::runsheet::projectID': ('projectID', 'projectid'),
-    'user::run::exit_code': ('Result', 'int'),
+    'sys::run::exit_code': ('Result', 'int'),
     'sys::runsheet::input_collection': ('Input Collection', 'irods_collection')
 }
 
