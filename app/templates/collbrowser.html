@@ -14,11 +14,23 @@ menuname='collectionbrowser'
 
   var collection = "{{ path }}";
   var graph_levels = "{{ graph_levels }}";
+  var graph_simplify = "{{ graph_simplify }}"
   var sortkey = "";
   var reverse = "";
   var activetab = "Files";
   var selected_object = "";
   var waiting = '<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>'
+
+  var myDefaultWhiteList = $.fn.tooltip.Constructor.Default.whiteList
+  $(function() {
+    $.fn.popover.Constructor.Default.whiteList.table = [];
+    $.fn.popover.Constructor.Default.whiteList.tr = [];
+    $.fn.popover.Constructor.Default.whiteList.td = [];
+    $.fn.popover.Constructor.Default.whiteList.div = [];
+    $.fn.popover.Constructor.Default.whiteList.tbody = [];
+    $.fn.popover.Constructor.Default.whiteList.thead = [];  
+  })
+  myDefaultWhiteList.span = ['data-path']
 
   function fillModal(path, name) {
     var ModalHeader = document.getElementById("DocTitle")
@@ -62,7 +74,8 @@ menuname='collectionbrowser'
     $('#graphimg').html(waiting);
     $.get('{{ url_for('collbrowser.generate_graph') }}', {
       path: collection,
-      levels: graph_levels
+      levels: graph_levels,
+      graph_simplify: graph_simplify
     }, function (data) {
       $('#graphimg').html(data);
       size_graph();
@@ -129,6 +142,7 @@ menuname='collectionbrowser'
   }
 
   function set_path() {
+    $('.collist').popover('dispose')
     load_list(true);
     load_graph();
     load_meta();
@@ -156,6 +170,16 @@ menuname='collectionbrowser'
     set_path();
   });
 
+  $(document).on('change', '#graph_simplify', function () {
+    graph_simplify = (+ $(this).is(':checked')).toString()
+    console.log(graph_simplify)
+    $.post('{{ url_for("userinfo.usersetting") }}', {
+      attr: 'graph_simplify',
+      value: graph_simplify
+    })
+    load_graph()
+  })
+
   $(document).on('change', '#graphlevels', function () {
     graph_levels = $(this).val();
     $.post('{{ url_for("userinfo.usersetting") }}', {
@@ -175,6 +199,30 @@ menuname='collectionbrowser'
     sortkey = $(this).data('key');
     reverse = $(this).data('dir');
     load_list(false);
+  });
+
+  $(document).on('click', function (e,f,g) {
+    $('.collist').popover('hide');
+  });
+
+  $(document).on('click', '.collist', function (e) {
+    myid = e.currentTarget.id
+    query = myid.substring(0,2)
+    coll = myid.substring(3)
+    $myel = $(this)
+    $.get('{{ url_for('collbrowser.multi_list') }}', {
+      collection: coll,
+      q: query}, function(data){
+        $myel.popover('dispose');
+        $myel.popover({
+                trigger: 'focus',
+                placement: 'bottom',
+                html: true,
+                title: 'Collections',
+                content: data
+        })
+        $myel.popover('show');
+      })
   });
 
 
@@ -204,6 +252,8 @@ menuname='collectionbrowser'
       <div class="card-title">Data graph</div>
       <form class="form-inline float-right">
         <div class="form-group">
+          <label for="graph_simplify">Simplify</label>
+          <INPUT class="hspace" type="checkbox" id="graph_simplify" {% if graph_simplify == "1" %}checked{% endif %}>
           <label for="graphlevels">Graph Levels</label>
           <INPUT type="number" class="form-control" min="0" max="10" name="graphlevels" id="graphlevels"
             value="{{ graph_levels }}">

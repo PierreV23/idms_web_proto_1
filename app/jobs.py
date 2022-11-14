@@ -6,7 +6,7 @@ Created on Mon Nov 18 13:49:12 2019
 @author: wierinve
 """
 
-from flask import Blueprint, render_template, request, url_for
+from flask import Blueprint, render_template, request, url_for, redirect, flash
 from flask_login import current_user, login_required
 from fs_irods import folder_irods
 from irods.exception import DataObjectDoesNotExist
@@ -225,37 +225,35 @@ def jobdetails():
     #this could be either the object-name of the yaml file or meta information attached to the collection
     jobnaam = request.args.get('name', '', type=str)
     
-    D = {}
+    details = {}
     metadata = {}
     joblog = ''
 
     # the jobnaam is refering to metainfo on a collection
     q = iqry.qcollbystaticmeta(ATTR_RUNSHEET_ID, jobnaam)
     if len(q) != 1:
-        return 'FAILED'
+        flash(f'Cannot find unique job collection for {jobnaam}', 'error')
+        return redirect(url_for('jobs.show_jobs'))
     runsheet = q[0][Collection.name]
     metadata = iqry.qcollmetadict(runsheet)
-    D['Runsheet collection'] = datafield('runsheet',  runsheet, 'irods_collection')
-    D['Create time'] = datafield('create_time', float(metadata[ATTR_RUNSHEET_CREATETIME]), 'timestamp')
-    # This is probably not the correct place for the job log anymore...
- 
+    details['Runsheet collection'] = datafield('runsheet',  runsheet, 'irods_collection')
+    details['Create time'] = datafield('create_time', float(metadata[ATTR_RUNSHEET_CREATETIME]), 'timestamp')
 
     FIELDS = {
         'sys::run::start_time': ('Start time', 'timestamp'),
         'sys::run::finish_time': ('End time', 'timestamp'),
-        'sys::runsheet::description': ('Description', 'text'),
         'sys::runsheet::projectID': ('Project ID', 'projectid'),
         'sys::runsheet::processID': ('Process ID', 'processid'),
+        'sys::runsheet::description': ('Description', 'text'),
         'sys::runsheet::processgroupid': ('Processgroup Instance', 'processgroupid'),
-        'sys::runsheet::next_projectID': ('Next Project ID', 'projectid'),
-        'sys::runsheet::next_processID': ('Next Process ID', 'processid'),
         'sys::run::exit_code': ('Result', 'int'),
-        'sys::runsheet::input_collection': ('Input Collection', 'irods_collection'),
+#        'sys::runsheet::input_collection': ('Input Collection', 'irods_collection'),
         'sys::run::output_collection': ('Output Collection', 'irods_collection'),
         'sys::run::input_dir': ('Input directory', 'directory'),
         'sys::run::output_dir': ('Output directory', 'directory'),
         'sys::run::owner': ('Job owner', 'irods_user'),
         'sys::runsheet::service_account': ('Sevice account', 'irods_user'),
+        'sys::runsheet::requesting_user': ('Requesting user', 'irods_user'),
         'sys::run::pipeline_dir': ('Pipeline run directory', 'directory'),
         'sys::run::run_dir': ('Pipeline run directory', 'directory'),
         'sys::runsheet::repo': ('Git repository', 'url'),
@@ -263,15 +261,23 @@ def jobdetails():
         'sys::runsheet::distribution': ('Distribution pipeline', 'boolean'),
         'sys::runsheet::omit_staging': ('Omit staging', 'boolean'),
         'sys::runsheet::lsf_queue': ('LSF Queue', 'lsf_queue'),
-        'sys::runsheet::requesting_user': ('Requesting user', 'irods_user'),
         'sys::run::lsf_jobid': ('LSF Job ID', 'text'),
-        'sys::run::pid': ('Process PID', 'text')
+        'sys::run::pid': ('Process PID', 'text'),
+    }
+    MULTI_FIELDS = {
+        'sys::runsheet::input_collection': ('Input Collection', 'irods_collection'),
+        'sys::runsheet::dataobject': ('Dataobject', 'irods_object')
     }
     for field in FIELDS:
         if field in metadata:
-            D[FIELDS[field][0]] = datafield(field, metadata[field], FIELDS[field][1])
+            details[FIELDS[field][0]] = datafield(field, metadata[field], FIELDS[field][1])
+    multi = {}
+    for field, attrs in MULTI_FIELDS.items():
+        values = iqry.qcollmetavals(runsheet, field)
+        datavalues = [ datafield(field, value[CollectionMeta.value], attrs[1]).htmlstring for value in values ]
+        multi[attrs[0]] = datavalues
     pgid = metadata.get('sys::runsheet::processgroupid', '')
-    return render_template('jobdetails.html', details=D, runsheet=runsheet, pgid=pgid, jobnaam=datafield('jobnaam', jobnaam, 'runsheet'))
+    return render_template('jobdetails.html', details=details, multi=multi, runsheet=runsheet, pgid=pgid, jobnaam=datafield('jobnaam', jobnaam, 'runsheet'))
 
 @bp.route('joblogs')
 @login_required

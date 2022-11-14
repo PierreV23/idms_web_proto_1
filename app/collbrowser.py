@@ -12,7 +12,7 @@ import os
 import time
 from datetime import datetime, timezone
 from dateutil.relativedelta import relativedelta
-from flask import Blueprint, render_template, redirect, request, url_for, jsonify
+from flask import Blueprint, render_template, redirect, request, url_for, jsonify, current_app
 from flask_login import current_user, login_required
 from irods.models import Collection, CollectionMeta, DataObject, DataObjectMeta
 from irods.exception import CAT_NO_ROWS_FOUND
@@ -406,44 +406,191 @@ class Dictlist(dict):
             return self[key]
         return default
 
+@bp.route('_related')
+def multi_list():
+    # Create a small HTML page with a list of related collections
+    # 
+    PARAMSETS = {
+        'U':[
+            ('user::pipeline::input_collection', True),
+            ('user::pipeline::input_collection_id', False)
+        ],
+        'S':[
+            ('sys::pipeline::input_collection_id', False)
+        ]
+    }
+    # param has format
+    # q = IU|IS|OU|OS
+    # collection = collection
+    query_type = request.args.get('q', 'OS')
+    coll = request.args.get('collection')
+    forward = query_type[0] == 'O'
+    params = PARAMSETS.get(query_type[1], ())
+    resultnames = []
+    for attr, byname in params:
+        resultnames += related(coll, attr, forward=forward, byname=byname)
+    results = [ (iqry.qcollmetaval(r, ATTR_PROJECTID, default=''), datafield('coll', r, 'irods_collection')) for r in resultnames ]
+    return render_template('small_collist.html', results = results)
+
+def related(coll, attr, forward=True, byname=True):
+    # Find collections related to <coll> 
+    # In case forward=True
+    #   Search for collections that have metadata attribute <attr> with the name or dataset_id of coll in the value
+    # In case forward=False
+    #   Search for collections that have a name or datasetid equal to the value of <attr> on <coll>
+    
+    # Find metadata of <coll>
+    collmeta = Dictlist()
+    q = iqry.qcollmeta(coll)
+    for m in q:
+        collmeta[m[CollectionMeta.name]] = m[CollectionMeta.value]
+    
+    if forward:
+        search_value = coll if byname else collmeta.get(ATTR_DATASETID)
+        q = iqry.qcollbymeta(attr, search_value)
+        result = { c[Collection.name] for c in q }
+    else:
+        if byname:
+            result = set(collmeta.get_all(attr, []))
+        else:
+            result = set()
+            values =  collmeta.get_all(attr, [])
+            for value in values:
+                q = iqry.qcollbymeta(ATTR_DATASETID, value)
+                result.update([ c[Collection.name] for c in q ])
+    return result
+
+
 @bp.route('/_graph')
 @login_required
 @cache.cached(timeout=60, key_prefix=key_zone)
 def generate_graph():
     coll = request.args.get('path', '/', type=str)
     maxlevels = request.args.get('levels', DEFAULT_GRAPH_LEVELS, type=int)
-    graph = Digraph('datagraph')
+    graph_simplify = request.args.get('graph_simplify', 0, type=int)
 
-    def coll_node(coll, pre=None, post=None, center=None, levels=0, history=[], linestyle='solid', maxlevels=DEFAULT_GRAPH_LEVELS):
-        if coll in history:
-            return True
-        history.append(coll)
+    multinodes = []
+    nodes = set()
+    processes = set()
+    edges = set()
+    dashed_edges = set()
+    multi_edges = set()
+
+    def destnode(node):
+        # Determine if destination node is a collection node, 
+        # or the associated process node
+        if node in processes:
+            return f'G-{node}'
+        else:
+            return node
+
+    def traverse(coll, levels=DEFAULT_GRAPH_LEVELS):
+        if coll in nodes:
+            return
+
+        nodes.add(coll)
+
+        MAX_INPUTS = current_app.config.get('GRAPH_MAX_INPUTS', 3)
+        MAX_OUTPUTS = current_app.config.get('GRAPH_MAX_OUTPUTS', 11)
+
+        def handle_neighbours(node, neighbours, edgelist, levels, inputs=True, relation_type='S'):
+            multi = False
+            if graph_simplify:
+                max_nodes = MAX_INPUTS if inputs else MAX_OUTPUTS
+                max_nodes -= (maxlevels - levels) * 1
+                prefix = 'I' if inputs else 'O'
+                if len(neighbours) > max_nodes and len(neighbours) > 1:
+                    multi = True
+                    label = f'{prefix}{relation_type}-{node}'
+                    multinodes.append((label, node, neighbours))
+                    if inputs:
+                        multi_edges.add((label, node))
+                    else:
+                        multi_edges.add((node, label))
+            for neighbour in neighbours:
+                if inputs:
+                    vect = (neighbour, node)
+                else:
+                    vect = (node, neighbour)
+                if not multi:
+                    if levels:
+                        traverse(neighbour, levels=levels-1)
+                        edgelist.add(vect)
+                    else:
+                        dashed_edges.add(vect)
+                elif neighbour in nodes:
+                    edgelist.add(vect)            
+
+        # FIND INPUTS
+        input_colls = related(coll, 'sys::pipeline::input_collection_id', forward=False, byname=False)
+        handle_neighbours(coll, input_colls, edges, levels, inputs=True)
+
+        # FIND  OUTPUTS
+        output_colls = related(coll, 'sys::pipeline::input_collection_id', forward=True, byname=False)
+        handle_neighbours(coll, output_colls, edges, levels, inputs=False)
+
+        # FIND EXTRA INPUTS
+        extra_colls = set(related(coll, 'user::pipeline::input_collection', forward=False, byname=True))
+        extra_colls |= set(related(coll, 'user::pipeline::input_collection_id', forward=False, byname=False))
+        handle_neighbours(coll, extra_colls, dashed_edges, levels, inputs=True, relation_type='U')
+
+        # FIND EXTRA OUTPUTS
+        ref_colls = set(related(coll, 'user::pipeline::input_collection', forward=True, byname=True))
+        ref_colls |= set(related(coll, 'user::pipeline::input_collection_id', forward=True, byname=False))
+        handle_neighbours(coll, ref_colls, dashed_edges, levels, inputs=False, relation_type='U')
+
+    traverse(coll, levels=maxlevels)
+
+    # Remove multinodes when all items in multinode are in the graph
+    # and combine equal multinodes
+    for n, (multinode, related_node, neighbours) in reversed(list(enumerate(multinodes))):
+        input_node = multinode[0] == 'I'
+        if set(neighbours).issubset(nodes):
+            # Remove the multinode and the edge
+            if input_node:
+                vect = (multinode, related_node)
+            else:
+                vect = (related_node, multinode)
+            for neighbour in neighbours:
+                if input_node:
+                    edges.add((neighbour, related_node))
+                else:
+                    edges.add((related_node, neighbour))
+            # Remove the multinode and the edge
+            multi_edges.remove(vect)
+            del multinodes[n]
+        else:
+            # Combine equal multinodes:
+            for other_multinode, other_related_node, other_neighbours in multinodes[:n]:
+                if other_neighbours == neighbours:
+                    # Move the edges:
+                    if input_node:
+                        vect = (multinode, related_node)
+                        new_vect = (other_multinode, related_node)
+                    else:
+                        vect = (related_node, multinode)
+                        new_vect = (related_node, other_multinode)
+                    multi_edges.remove(vect)
+                    multi_edges.add(new_vect)
+                    del multinodes[n]
+                    break
+
+
+    #######################################
+    # Draw the graph
+
+    graph = Digraph('datagraph')
+    graph.graph_attr['rankdir'] = 'LR'
+    graph.graph_attr['fontsize'] = '15'
+
+    # Start with all the nodes
+    for node in nodes:
         collmeta = Dictlist()
-        q = iqry.qcollmeta(coll)
+        q = iqry.qcollmeta(node)
         for m in q:
             collmeta[m[CollectionMeta.name]] = m[CollectionMeta.value]
 
         # create the collection graph node
-        coll_type = collmeta.get('sys::runsheet::state', 'unknown')
-        coll_type = collmeta.get('sys::data::type', coll_type)
-        coll_type = collmeta.get('user::data::type', coll_type)
-        shape, shape_color = coll_shape(coll_type)
-        penwidth = '3' if coll == center else '1'
-    
-        projectid = collmeta.get('projectID', '') + '\n'
-        if coll == center:
-            penwidth = '3'
-            clss = { 'class' : 'path-change center-coll'}
-        else:
-            penwidth = '1'
-            clss = { 'class' : 'path-change' }
-
-        graph.node(coll, projectid + shortname(coll,NAME_LENGTH), shape=shape, fillcolor=shape_color, style='filled', penwidth=penwidth,
-                   fontsize='8', setting='extra', **clss, id=coll)
-        if post:
-            graph.edge(coll, post, style=linestyle)
-        # Create the GIT node if present
-        left_edge = coll
         git = collmeta.get('sys::pipeline::gitrepo')
         githash = collmeta.get('sys::pipeline::githash')
         if git:
@@ -452,64 +599,48 @@ def generate_graph():
             repo_url = repo_url._replace(netloc=repo_url.hostname)
             link = repo_url._replace(path='{}/tree/{}'.format(repo_url.path.replace('.git', ''), githash))
             processid = f"{collmeta.get('sys::runsheet::processID', '')}\n{git.split('/')[-1]}"
-            git_node = 'G-' + coll
+            git_node = f'G-{node}'
             graph.node(git_node, processid, shape=PROCESS_SHAPE, URL=link.geturl(), fontsize='8')
-            graph.edge(git_node, coll)
-            left_edge = git_node
+            graph.edge(git_node, node)
+            processes.add(node)
+        coll_type = collmeta.get('sys::runsheet::state', 'unknown')
+        coll_type = collmeta.get('sys::data::type', coll_type)
+        coll_type = collmeta.get('user::data::type', coll_type)
+        shape, shape_color = coll_shape(coll_type)
+    
+        projectid = collmeta.get('projectID', '') + '\n'
+        if node == coll:
+            penwidth = '3'
+            clss = { 'class' : 'path-change center-coll'}
+        else:
+            penwidth = '1'
+            clss = { 'class' : 'path-change' }
 
-        if pre:
-            graph.edge(pre, left_edge, style=linestyle)
+        graph.node(node, projectid + shortname(node,NAME_LENGTH), shape=shape, fillcolor=shape_color, style='filled', penwidth=penwidth,
+                fontsize='8', setting='extra', **clss, id=node)
 
-            # FIND MY INPUT
-        input_id =  collmeta.get('sys::pipeline::input_collection_id')
-        if input_id:
-            q = iqry.qcollbymeta(ATTR_DATASETID, input_id)
-            for c in q:
-                input_coll = c[Collection.name]
-                if levels:
-                    coll_node(input_coll, center=center, post=left_edge, levels=levels-1, maxlevels=maxlevels)
-                elif not input_coll in history:
-                    placeholder = '{}-b'.format(input_coll)
-                    graph.node(placeholder, '', shape='none', width='0', height='0')
-                    graph.edge(placeholder, left_edge, style='dotted', arrowhead='none')
+    # multi-nodes
+    for multinode, related_node, neighbours in multinodes:
+        clss = { 'class' : 'collist' }
+        graph.node(multinode, '.. multiple ..', shape="rarrow", style='filled', setting='extra', **clss, id=multinode)
 
+    # draw the solid lines
+    for s, d in edges:
+        graph.edge(s, destnode(d))
 
-        # FIND  OUTPUTS
-        dataset_id = collmeta.get(ATTR_DATASETID)
-        if dataset_id:
-            q = iqry.qcollbymeta('sys::pipeline::input_collection_id', dataset_id)
-            for c in q:
-                output_coll = c[Collection.name]
-                if levels:
-                    coll_node(output_coll, pre=coll, center=center, levels=levels-1, maxlevels=maxlevels)
-                elif not output_coll in history:
-                    placeholder = '{}-b'.format(output_coll)
-                    graph.node(placeholder, '', shape='none', width='0', height='0')
-                    graph.edge(coll, placeholder, style='dotted', arrowhead='none')
-        
-        if levels:            
-            extra_colls = set(collmeta.get_all('user::pipeline::input_collection', []))
-            extra_coll_ids = collmeta.get_all('user::pipeline::input_collection_id', [])
-            for extra_coll_id in extra_coll_ids:
-                q = iqry.qcollbymeta(ATTR_DATASETID, extra_coll_id)
-                extra_colls |= { c[Collection.name] for c in q } 
-            for extra_coll in extra_colls:
-                coll_node(extra_coll, levels=levels-1, post=coll, linestyle='dashed', maxlevels=maxlevels)
-            # FIND collections that refer to this collection bij name or id
-            q = iqry.qcollbymeta('user::pipeline::input_collection_id', dataset_id)
-            ref_colls = { c[Collection.name] for c in q }
-            q = iqry.qcollbymeta('user::pipeline::input_collection', coll)
-            ref_colls |= { c[Collection.name] for c in q } 
-            for ref_coll in ref_colls:
-                coll_node(ref_coll, levels=levels-1, pre=coll, linestyle='dashed', maxlevels=maxlevels)
+    # draw the dashed lines
+    dash_counter = 1
+    for vt in dashed_edges - edges:
+        vect = list(vt)
+        for i, v in enumerate(vect):
+            if not v in nodes:
+                vect[i] = f'NODE{dash_counter}'
+                dash_counter += 1
+                graph.node(vect[i], '', shape='none', width='0', height='0')
+        graph.edge(vect[0], destnode(vect[1]), style='dashed')
 
-
-
-
-    graph.graph_attr['rankdir'] = 'LR'
-    graph.graph_attr['fontsize'] = '15'
-
-    coll_node(coll, center=coll, levels=maxlevels, maxlevels=maxlevels)
+    for s, d in multi_edges:
+        graph.edge(s, destnode(d), style='dotted')
 
     return graph.pipe(format='svg').decode('utf-8')
 
@@ -585,8 +716,9 @@ def Xclickable_path(path):
 def collbrowser():
     path = request.args.get('path', f'/{current_user.irods_zone}/projects', type=str)
     graph_levels = current_user.settings.setdefault('graph_levels', DEFAULT_GRAPH_LEVELS)
+    graph_simplify = current_user.settings.setdefault('graph_simplify', 1)
 
-    return render_template('collbrowser.html',  path=path, graph_levels=graph_levels)
+    return render_template('collbrowser.html',  path=path, graph_levels=graph_levels, graph_simplify=graph_simplify)
 
 
 @bp.route('upload_file', methods=['GET', 'POST'])

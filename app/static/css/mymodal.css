@@ -598,3 +598,12 @@ ul {
 .table-invalid>th {
   background-color: #ffebe6;
 }
+
+.popover {
+  max-width: 350px !important;
+}
+
+.hspace {
+  margin-left: 5px;
+  margin-right: 5px;
+}

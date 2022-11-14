@@ -53,7 +53,6 @@
     }
 
     function rowButtons(value, row, index, field) {
-        console.log(value, row, index, field)
         if (row["object"] == "dataobject") {
             if (field == "dnld") {
                 dnld_url = "{{ url_for('docviewer.download_object') }}"
@@ -76,7 +75,6 @@
 
     $('#colltable').bootstrapTable({
         onClickRow: function (row, element, field) {
-            console.log(row, element, field)
             if (row['object'] == 'dataobject') {
                 $('#colltable tr').removeClass('table-primary')
                 element.addClass('table-primary')
