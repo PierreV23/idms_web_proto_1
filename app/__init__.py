@@ -86,9 +86,11 @@ def msgconfirm():
     messages.confirm()
     return dict(result='OK')
 
-@app.route('/contacts')
-def contacts():
-    return render_template('contacts.html')
+@app.route('/about')
+def about():
+    with irods_manager.session() as session:
+        version = '.'.join(map(str, session.server_version))
+    return render_template('about.html', version=version)
 
 REQUESTS_METHODS = {
     'GET':   requests.get,
