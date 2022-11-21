@@ -157,7 +157,6 @@ def dbsession():
     from sqlalchemy import MetaData, Table
 
     engine = create_engine('postgresql://irods:testpassword@rivm-bioir-l01a.rivm.ssc-campus.nl/ICAT', echo=False)
-    engine = create_engine('postgresql://irods:06bb4f85232075744a46f2432016c607@rivm-bioir-l01p.rivm.ssc-campus.nl/ICAT', echo=False)
     meta = MetaData()
     meta.reflect(bind=engine, views=True, only=['rivm_mat_jobtable', 'rivm_v_processgroups'])
 
