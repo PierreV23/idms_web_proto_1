@@ -14,20 +14,49 @@ menuname='pglist'
 
 {% block content %}
 <div class="scroll h-100">
-<div class="inline float-right pgtable-toolbar"></div>
+<script>
+$(document).ready(function(){
+  $('[data-toggle="tooltip"]').tooltip();   
+});
+
+</script>
+
 <table id="pgtable"
-    data-buttons-toolbar=".pgtable-toolbar"
-    data-classes='table table-bordered table-hover table-striped'
-    data-filter-control="true"
-    data-detail-view='true'
-    data-id-field='pgid'
-    data-pagination='true'
-    data-row-style="rowStyle"
-    data-show-columns="true"
-    data-custom-sort="sorter"
-    data-sort-name="pgstart"
-    data-sort-order="desc"></table>
-</div>
+  data-buttons-prefix="btn"
+  data-classes='table table-bordered table-hover table-striped'
+  data-filter-control="true"
+  data-detail-view='true'
+  data-id-field='pgid'
+  data-page-list=[15,25,50,100]
+  data-page-size=15
+  data-pagination='true'
+  data-row-style="rowStyle"
+  data-search="false"
+  data-url='{{ url_for("jobs.pglist") }}'
+  data-side-pagination='server'
+  data-show-columns="true"
+  data-show-filter-control-switch="true"
+  data-custom-sort="sorter"
+  data-sort-name="start_time"
+  data-sort-order="desc"
+  data-toggle="table">
+  <thead>
+    <tr>
+        {% for c in columns %}
+        <th data-field="{{columns[c]['field']}}"
+            data-align="left" 
+            data-sortable="{{columns[c]['sortable']}}" 
+            data-visible="{{columns[c]['visible']}}"
+            data-filter-control="{{columns[c]['filtercontrol']}}"
+            {% if columns[c]['filtercontrol'] == "select" %}
+                data-filter-data='url:{{ url_for("jobs.filterdata", field=columns[c]["field"], table="rivm_v_processgroups") }}'
+            {% endif %}>
+            {{columns[c]['title']}}
+        </th>
+        {% endfor %}
+   </tr>
+</thead>
+</table>
 
 <script>
 
@@ -60,7 +89,7 @@ $('table#pgtable').on('column-search.bs.table', function(e, column, value) {
                 data: data['rows'],
                 rowStyle: 'rowStyle',
                 sortName: 'start_time',
-                sortOrder: 'desc',
+                sortOrder: 'asc',
                 customSort: 'sorter'
             });
             data['columns'].forEach(function(x, i) {

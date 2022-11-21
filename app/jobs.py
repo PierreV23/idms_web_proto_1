@@ -6,14 +6,14 @@ Created on Mon Nov 18 13:49:12 2019
 @author: wierinve
 """
 
-from flask import Blueprint, render_template, request, url_for
+from flask import Blueprint, render_template, request, url_for, jsonify
 from flask_login import current_user, login_required
 from fs_irods import folder_irods
 from irods.exception import DataObjectDoesNotExist
 from irods.models import Collection, DataObject, DataObjectMeta, CollectionMeta
 from irods.column import Criterion
 from app.datafield import datafield, AVU2data, INFINITE_DATE
-from app.settings import JOB_FIELDS, PG_FIELDS
+from app.settings import JOB_FIELDS, PG_FIELDS, PG_JOB_FIELDS
 from graphviz import Digraph
 import json
 import os
@@ -23,7 +23,7 @@ from datetime import datetime, timezone
 from .flaskcache import cache, makekey, makename
 from . import iqry
 
-from sqlalchemy import create_engine, Float
+from sqlalchemy import create_engine, Float, text
 from sqlalchemy.orm import sessionmaker
 
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
@@ -72,198 +72,254 @@ def pagebuttons(page_size, count, current_page, max_buttons, template):
         after = []
     return before + after
 
-@bp.route('/api/pgprocs')
-@login_required
-def processgroupprocs():
-    PGFIELDS = {
-        'sys::runsheet::id': ('runsheet', 'runsheet'),
-        'sys::runsheet::description' : ('description', 'text'),
-        'sys::runsheet::state': ('state', 'text'),
-        'sys::run::result': ('result', 'text'),
-        'sys::run::start_time': ('start', 'timestamp'),
-        'sys::run::finish_time': ('end', 'timestamp'),
-    }
-    pgid = request.args.get('pgid')
-    q = iqry.qcollbymeta('sys::runsheet::processgroupid', pgid)
-    result = []
-    for r in q:
-        metadata = iqry.qcollmetadict(r[Collection.name]) 
-        job = { PGFIELDS[field][0]: datafield(PGFIELDS[field][0], metadata.get(field,''), PGFIELDS[field][1]).htmlstring for field in PGFIELDS }
-        result.append(job)
-    return { 'rows': result }
+# @bp.route('/api/pgprocs')
+# @login_required
+# def processgroupprocs():
+#     PGFIELDS = {
+#         'sys::runsheet::id': ('runsheet', 'runsheet'),
+#         'sys::runsheet::description' : ('description', 'text'),
+#         'sys::runsheet::state': ('state', 'text'),
+#         'user::run::exit_code': ('result', 'text'),
+#         'sys::run::start_time': ('start', 'timestamp'),
+#         'sys::run::finish_time': ('end', 'timestamp'),
+#     }
+#     pgid = request.args.get('pgid')
+#     q = iqry.qcollbymeta('sys::runsheet::processgroupid', pgid)
+#     result = []
+#     for r in q:
+#         metadata = iqry.qcollmetadict(r[Collection.name]) 
+#         job = { PGFIELDS[field][0]: datafield(PGFIELDS[field][0], metadata.get(field,''), PGFIELDS[field][1]).htmlstring for field in PGFIELDS }
+#         result.append(job)
+#     return { 'rows': result }
     
 
-@login_required
-@cache.memoize(timeout=30, make_name=makename)
-def joblist(state='', page=1):
-    """Create a list of jobs in state state
+# @login_required
+# @cache.memoize(timeout=30, make_name=makename)
+# def joblist(state='', page=1):
+#     """Create a list of jobs in state state
     
-    Returns max PAGE_SIZE jobs
-    args:
-        state: state filter for job runsheets
-        page: page number. each page has MAX_PAGE jobs
+#     Returns max PAGE_SIZE jobs
+#     args:
+#         state: state filter for job runsheets
+#         page: page number. each page has MAX_PAGE jobs
         
-    returns:
-        joblist, total_job_count
-    """
+#     returns:
+#         joblist, total_job_count
+#     """
 
-    job_list = []
-    if state == '':
-        # incoming runsheets could still be runsheet-files, this will change with the switch to the process-groups...
-        q1b = current_user.irods_session.query(Collection, CollectionMeta).filter( 
-                Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_STATE)).filter( 
-                Criterion('!=', CollectionMeta.value, 'archive')).filter(
-                Criterion('not like', Collection.name, f'/{current_user.irods_zone}/system/runsheet%'))
-    else:  
-        # or runsheets could be on collections
-        q1b = current_user.irods_session.query(Collection).filter(
-                Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_STATE)).filter(
-                Criterion('=', CollectionMeta.value, f'{state}')).filter(
-                Criterion('not like', Collection.name, f'/{current_user.irods_zone}/system/runsheet%'))
+#     job_list = []
+#     if state == '':
+#         # incoming runsheets could still be runsheet-files, this will change with the switch to the process-groups...
+#         q1b = current_user.irods_session.query(Collection, CollectionMeta).filter( 
+#                 Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_STATE)).filter( 
+#                 Criterion('!=', CollectionMeta.value, 'archive')).filter(
+#                 Criterion('not like', Collection.name, f'/{current_user.irods_zone}/system/runsheet%'))
+#     else:  
+#         # or runsheets could be on collections
+#         q1b = current_user.irods_session.query(Collection).filter(
+#                 Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_STATE)).filter(
+#                 Criterion('=', CollectionMeta.value, f'{state}')).filter(
+#                 Criterion('not like', Collection.name, f'/{current_user.irods_zone}/system/runsheet%'))
 
-    # Create a list of all collection and runsheet based jobs
-    result_list = [ (j, j[Collection.create_time]) for j in q1b ]
+#     # Create a list of all collection and runsheet based jobs
+#     result_list = [ (j, j[Collection.create_time]) for j in q1b ]
 
 
-    # Get the paged subset of the sorted job list
-    result_list_s = sorted( result_list, key = lambda j : j[1], reverse = True)[PAGE_SIZE*(page-1):PAGE_SIZE*page]
+#     # Get the paged subset of the sorted job list
+#     result_list_s = sorted( result_list, key = lambda j : j[1], reverse = True)[PAGE_SIZE*(page-1):PAGE_SIZE*page]
 
-    # Get the job details for both types of jobs
-    for res in result_list_s:
-            job_record = {}
-            runsheet_collection = res[0][Collection.name] 
-            #create runsheet object by reading collection meta-data
-            metadata = iqry.qcollmetadict(runsheet_collection)
-            state = metadata.get(ATTR_RUNSHEET_STATE, 'unknown')
-            name = metadata.get(ATTR_RUNSHEET_ID, 'unknown')
-    #        job_record['COLLECTION'] =  Collection.name
-            job_record['Name'] = datafield('runsheet', name, 'runsheet')
-            job_record['create_time'] = timestamp_to_local(metadata.get(ATTR_RUNSHEET_CREATETIME, 0)).timestamp()
-            job_record['Created'] =datafield('create_time', job_record['create_time'], 'timestamp')
-            job_record['State'] =datafield('state', state, 'job_state')
-            for field in JOB_FIELDS:
-                if field in metadata:
-                    job_record[JOB_FIELDS[field][0]] = datafield(field, metadata[field], JOB_FIELDS[field][1])
-            job_list.append( job_record )      
+#     # Get the job details for both types of jobs
+#     for res in result_list_s:
+#             job_record = {}
+#             runsheet_collection = res[0][Collection.name] 
+#             #create runsheet object by reading collection meta-data
+#             metadata = iqry.qcollmetadict(runsheet_collection)
+#             state = metadata.get(ATTR_RUNSHEET_STATE, 'unknown')
+#             name = metadata.get(ATTR_RUNSHEET_ID, 'unknown')
+#     #        job_record['COLLECTION'] =  Collection.name
+#             job_record['Name'] = datafield('runsheet', name, 'runsheet')
+#             job_record['create_time'] = timestamp_to_local(metadata.get(ATTR_RUNSHEET_CREATETIME, 0)).timestamp()
+#             job_record['Created'] =datafield('create_time', job_record['create_time'], 'timestamp')
+#             job_record['State'] =datafield('state', state, 'job_state')
+#             for field in JOB_FIELDS:
+#                 if field in metadata:
+#                     job_record[JOB_FIELDS[field][0]] = datafield(field, metadata[field], JOB_FIELDS[field][1])
+#             job_list.append( job_record )      
 
-    coll_jobs = len(result_list)
+#     coll_jobs = len(result_list)
 
-    return job_list, coll_jobs
+#     return job_list, coll_jobs
 
 def dbsession():
     from sqlalchemy.ext.automap import automap_base
     from sqlalchemy.orm import Session
     from sqlalchemy import create_engine
-    #import models
-    #from models import engine
     from sqlalchemy import MetaData, Table
 
     engine = create_engine('postgresql://irods:testpassword@rivm-bioir-l01a.rivm.ssc-campus.nl/ICAT', echo=False)
-    #engine = create_engine('sqlite:///../bio-ansible_2/jobs.db', echo = False)
+    engine = create_engine('postgresql://irods:06bb4f85232075744a46f2432016c607@rivm-bioir-l01p.rivm.ssc-campus.nl/ICAT', echo=False)
     meta = MetaData()
-    meta.reflect(bind=engine, views=True, only=['mat_jobs_2', 'mat_processgroups'])
+    meta.reflect(bind=engine, views=True, only=['rivm_mat_jobtable', 'rivm_v_processgroups'])
 
-    #Base = automap_base(metadata=meta)
-    #Base.prepare(engine, reflect=True)
-    #Jobs = Base.classes.mat_jobs_2
-    #Jobs = meta.tables['mat_jobs_2']
-    Jobs = Table("mat_jobs_2", meta, autoload_with=engine)
-    print( type( Jobs ) )
-    print( Jobs.columns )
-    print( [c.name for c in Jobs.columns] )
-    Processgroups = Table("mat_processgroups", meta, autoload_with=engine)
+    # retrieve tables
+    Jobs = Table("rivm_mat_jobtable", meta, autoload_with=engine)
+    Processgroups = Table("rivm_v_processgroups", meta, autoload_with=engine)
+
     session = Session(engine)
+   
     return session, Jobs, Processgroups
+
+@bp.route('_jobs')
+@login_required
+def jobs():
+# populate jobtable
+    offset = request.args.get('offset', 0, type=int)
+    limit = request.args.get('limit', 999, type=int)
+    filters = json.loads(request.args.get('filter', '{}'))
+    order = request.args.get('order', 'desc')
+    orderby = request.args.get('sort', 'start_time')
+            
+    session, Jobs, Processgroups = dbsession()   
+
+    count_jobs = session.query(Jobs).count()
+    jbs = session.query(Jobs).order_by(text(f"{orderby} {order}"))
+    
+    # Apply filters ('select' and 'input')
+    for key, value in filters.items():
+        for f in JOB_FIELDS:
+            if JOB_FIELDS[f]['field'] == key:
+                if JOB_FIELDS[f].get('filtercontrol') == 'select':
+                    jbs = jbs.filter(text(f"{key}='{value}'"))
+                elif JOB_FIELDS[f].get('filtercontrol') == 'input':
+                    jbs = jbs.filter(text(f"{key} like('%{value}%')"))
+
+    # recount, offset, limit data
+    count_jobs = jbs.count()
+    jbs = jbs.offset(offset).limit(limit)
+
+    # format data
+    result = []
+    for j in jbs:
+        rec = {}
+        for f in JOB_FIELDS:
+            dbkey = JOB_FIELDS[f]['field']
+            val = getattr(j, dbkey)
+            if val:
+                v = datafield(dbkey, val, JOB_FIELDS[f]['format'])
+                rec |= { dbkey: v.htmlshort, f'_{dbkey}': v.value }
+        result.append(rec)
+    
+    engine = None
+    return { 'rows': result, 'filters': filters, 'total': count_jobs }
+
+
+@bp.route('_filterdata')
+@cache.cached(timeout=3600, key_prefix=makekey)
+def filterdata():
+# Determine prepopulated filter values for 'select' filters
+    field = request.args.get('field', type=str)
+    table = request.args.get('table', type=str)
+    session, Jobs, Processgroups = dbsession() 
+
+    sql = f"SELECT DISTINCT {field} FROM {table} WHERE {field} IS NOT NULL"
+    fd = {v[0]:v[0] for v in session.execute(sql)}
+    return jsonify(fd)
+
 
 @bp.route('_pglist')
 @login_required
 def pglist():
-    session, Jobs, Processgroups = dbsession()
+#POPULATE processgrouplist
+    offset = request.args.get('offset', 0, type=int)
+    limit = request.args.get('limit', 999, type=int)
+    filters = json.loads(request.args.get('filter', '{}'))
+    order = request.args.get('order', 'desc')
+    orderby = request.args.get('sort', 'start_time')
+            
+    session, Jobs, Processgroups = dbsession()   
+
+    count_jobs = session.query(Processgroups).count()
+    pgs = session.query(Processgroups).order_by(text(f"{orderby} {order}"))
+    
+    # Apply filters (select and input)
+    for key, value in filters.items():
+        for f in PG_FIELDS:
+            if PG_FIELDS[f]['field'] == key:
+                if PG_FIELDS[f].get('filtercontrol') == 'select':
+                    pgs = pgs.filter(text(f"{key}='{value}'"))
+                elif PG_FIELDS[f].get('filtercontrol') == 'input':
+                    pgs = pgs.filter(text(f"{key} like('%{value}%')"))
+
+    # recount, offset, limit data
+    count_jobs = pgs.count()
+    pgs = pgs.offset(offset).limit(limit)
+
+    # format displayed data
     result = []
-    pg = session.query(Processgroups).all()
-    for p in pg:
+    for j in pgs:
         rec = {}
         for f in PG_FIELDS:
-            dbkey = PG_FIELDS[f][2]
-            val = getattr(p, dbkey)
-            v = datafield(dbkey, val, PG_FIELDS[f][1])
-            rec |= { dbkey: v.htmlshort, f'_{dbkey}': v.value }
+            dbkey = PG_FIELDS[f]['field']
+            val = getattr(j, dbkey)
+            if val:
+                v = datafield(dbkey, val, PG_FIELDS[f]['format'])
+                rec |= { dbkey: v.htmlshort, f'_{dbkey}': v.value }
         result.append(rec)
-    session = None
-    columns = []
-    for f in PG_FIELDS:
-        column = {'field': PG_FIELDS[f][2], 'title': PG_FIELDS[f][0], 'sortable': 'true', 'visible': PG_FIELDS[f][3], 'filterControl': PG_FIELDS[f][4]}
-        if column['filterControl'] == 'select':
-            filterdata = json.dumps({ v[f'_{column["field"]}']: v[f'_{column["field"]}'] for v in result })
-            print(filterdata)
-            column['filterData'] = f"json:{filterdata}"
-        columns.append(column)        
-    return { 'columns': columns, 'rows': result }
+    
+    engine = None
+    return { 'rows': result, 'filters': filters, 'total': count_jobs }
 
+ 
 @bp.route('_pgjobs')
 @login_required
 def pgjobs():
+# display jobs under a processgroupid
     pgid = request.args.get('pgid', None, type=str)
-    use_filters = request.args.get('filters', 'false', type=str)
-    print(f'Loading jobs for {pgid}')
     session, Jobs, Processgroups = dbsession()
     result = []
-    if pgid:
-        pgj = session.query(Jobs).filter(Jobs.columns.processgroupid==pgid)
-    else:
-        pgj = session.query(Jobs).order_by(Jobs.columns.start_time.cast(Float).desc()).limit(1000)
+    pgj = session.query(Jobs)
+    pgj = pgj.filter(Jobs.columns.processgroupid==pgid)
+
     for j in pgj:
         rec = {}
-        for f in JOB_FIELDS:
-            dbkey = JOB_FIELDS[f][2]
+        for f in PG_JOB_FIELDS:
+            dbkey = PG_JOB_FIELDS[f]['field']
             val = getattr(j, dbkey)
             if val:
-                v = datafield(dbkey, val, JOB_FIELDS[f][1])
+                v = datafield(dbkey, val, PG_JOB_FIELDS[f]['format'])
                 rec |= { dbkey: v.htmlshort, f'_{dbkey}': v.value }
         result.append(rec)
+        
     columns = []
-    filters = {}
-    print(f'Generating columns for {pgid}')
-    for f in JOB_FIELDS:
-        column = {'field': JOB_FIELDS[f][2], 'title': JOB_FIELDS[f][0], 'sortable': 'true', 'visible': JOB_FIELDS[f][3], 'filterControl': JOB_FIELDS[f][4]}
-        if use_filters == "true":
-            if column['filterControl'] == 'select':
-                f1 = {}
-                for v in result:
-                    key = v.get(f'_{column["field"]}')
+    for f in PG_JOB_FIELDS:
+        if PG_JOB_FIELDS[f].get('filtercontrol') == 'select':
+            f1 = {}
+            for v in result:
+                key = v.get(f'_{PG_JOB_FIELDS[f]["field"]}')
+                if key:
                     f1[key] = key
-                filterdata = json.dumps(f1)
-                column['filterData'] = f"json:{filterdata}"
-                column['filterDefault'] = current_user.settings.get(f'jobs::filter::{column["field"]}')
-        columns.append(column)
-    engine = None
-    print('READY')
-    return { 'columns': columns, 'rows': result, 'filters': filters }
+            filterdata = json.dumps(f1)
+            PG_JOB_FIELDS[f]['filterdata'] = f"json:{filterdata}"
+        columns.append(PG_JOB_FIELDS[f])
+        
+    return { 'columns': columns, 'rows': result }
+    
 
 @bp.route('/pg')
 @login_required
 def show_pg():
     default_project = current_user.settings.get('default_project', '')
-    return render_template('pglist.html', default_project=default_project)
+    return render_template('pglist.html', default_project=default_project, columns = PG_FIELDS)
+
 
 @bp.route('/')
 @login_required
-@cache.cached(timeout=30, key_prefix=makekey)
+#@cache.cached(timeout=30, key_prefix=makekey)
 def show_jobs():
-    # state = request.args.get('items', 'all', type=str)
-    # page = request.args.get('page', 1, type=int)
-    # if state == 'all':
-    #     l, total = joblist(page=page)
-    # else:
-    #     l, total = joblist(state, page=page)
-    # # for a in ['waiting', 'incoming', 'queued', 'active', 'postprocessing', 'done', 'stage', 'error']:
-    # #     if x in ['all', a]:
-    # #         l = l + joblist(a)
-    # columns = ['Name', 'State'] + [JOB_FIELDS[a][0] for a in JOB_FIELDS]
-    # buttons = pagebuttons(PAGE_SIZE, total, page, 10, 'href={}?page={{}}&items={}'.format(url_for('jobs.show_jobs'), state))
-    return render_template('jobs.html', default_project=current_user.settings.get('default_project', ''))
-    return render_template('jobs2.html', joblist=l, items=state, columns=columns, buttons=buttons)
+    default_project=current_user.settings.get('default_project', '')
+    return render_template('jobs.html', default_project = default_project, columns = JOB_FIELDS)
 
+    
 NAME_LENGTH = 15
 
 COLL_SHAPES = {

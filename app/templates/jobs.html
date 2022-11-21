@@ -1,23 +1,24 @@
 {% extends 'jobsmenu.html' %}
 
 {% block meta %}
-<meta http-equiv="refresh" content="30">  
+<!-- <meta http-equiv="refresh" content="30">   -->
 {% endblock %}
 
 {% block heading %}
-<h3>Job queue overview</h3>
+<h3>Job queue overview </h3>
 {% endblock %}
 
 {%block menuname %}
-menuname='joblist'
+menuname='jobs'
 {% endblock %}
 
 {% block content %}
-
+<div class="scroll h-100">
 <script>
 $(document).ready(function(){
   $('[data-toggle="tooltip"]').tooltip();   
 });
+
 </script>
 
 <table id="jobtable"
@@ -29,36 +30,43 @@ $(document).ready(function(){
   data-page-size=15
   data-pagination='true'
   data-row-style="rowStyle"
-  data-search="true"
+  data-search="false"
+  data-url='{{ url_for("jobs.jobs") }}'
+  data-side-pagination='server'
   data-show-columns="true"
   data-show-filter-control-switch="true"
   data-custom-sort="sorter"
-  data-sort-name="pgstart"
-  data-sort-order="desc">
+  data-sort-name="start_time"
+  data-sort-order="desc"
+  data-toggle="table">
+  <thead>
+    <tr>
+        {% for c in columns %}
+        <th data-field="{{columns[c]['field']}}"
+            data-align="left" 
+            data-sortable="{{columns[c]['sortable']}}" 
+            data-visible="{{columns[c]['visible']}}"
+            data-filter-control="{{columns[c]['filtercontrol']}}"
+            {% if columns[c]['filtercontrol'] == "select" %}
+                data-filter-data='url:{{ url_for("jobs.filterdata", field=columns[c]["field"], table="rivm_mat_jobtable") }}'
+            {% endif %}>
+            {{columns[c]['title']}}
+        </th>
+        {% endfor %}
+   </tr>
+</thead>
 </table>
 
 <script>
-$(function() {
-  $.get('{{ url_for("jobs.pgjobs", filters="true") }}', function(data) {
-    $('table#jobtable').bootstrapTable({
-      columns: data['columns'],
-      data: data['rows']
-      })
-      // for (const [key, value] of Object.entries(data['filters'])) {
-      //   console.log('Find .bootstrap-table-filter-control-' + key + ' and set ' + value)
-      //   $('.bootstrap-tablex-filter-control-' + key).val(value)
-      // }
-      // $('table#jobtable').bootstrapTable('triggerSearch');
-    })
-  });
 
   $('table#jobtable').on('column-search.bs.table', function(e, column, value) {
       $.post('{{ url_for("userinfo.usersetting") }}', {
           attr: 'jobs::filter::' + column,
           value: value
       })
-  });
-
+  })
+  ;
+  
   function rowStyle(row, index) {
       var styles = {
           'done': 'table-success',
