@@ -1,7 +1,18 @@
 {% extends 'base2.html' %}
 
 {% block heading %}
-<H3><b>Collection:</b> <span id="path_title"></span></H3>
+<H3><b>Collection:</b> <span id="path_title"></span>
+  <div class="btn-group float-right">
+    <button id="path_copy" type="button" data-toggle="tooltip" data-placement="bottom" class="btn btn-sm btn-outline-secondary" title="copy WebDav path to clipboard">
+      <i class="fa fa-clipboard"></i>
+      <!--span class="visually-hidden">Button</span-->
+    </button>
+    <button id="path_open" type="button" data-toggle="tooltip" data-placement="bottom" class="btn btn-sm btn-outline-secondary" title="open collection in new tab">
+      <i class="fa fa-folder"></i>
+      <!--span class="visually-hidden">Button</span-->
+    </button>
+  </div>
+</H3>
 {% endblock %}
 
 {%block menuname %}
@@ -68,6 +79,69 @@ menuname='collectionbrowser'
         path + '">' + path_elem[i] + '</span>'
     }
     $("#path_title").html(title)
+    $('#path_copy').on('click', copy_to_clipboard);
+    $('#path_open').on('click', open_in_browser);
+  }
+
+  function get_webdav_path( irods_path, protocolPrefix, add_ssl, seperator ) {
+    var path_elem = irods_path.split('/')
+    path_elem.shift()
+    path_elem.shift()
+    var path_without_zone = path_elem.join(seperator)
+    var path = protocolPrefix + "rivm-bioir-l03p.rivm.ssc-campus.nl"
+    if( add_ssl ) path += "@SSL" 
+    path += seperator + path_without_zone;
+    console.log(path)
+    return path
+  }
+
+  // solution for copy to clipboard for unsecure pages: 
+  // https://stackoverflow.com/questions/71873824/copy-text-to-clipboard-cannot-read-properties-of-undefined-reading-writetext
+  function unsecuredCopyToClipboard(text) { 
+    const textArea = document.createElement("textarea"); 
+    textArea.value=text; 
+    document.body.appendChild(textArea); 
+    textArea.focus();
+    textArea.select(); 
+    textArea.setSelectionRange(0, 99999);
+    try{
+      document.execCommand('copy')
+    }
+    catch(err){
+      console.error('Unable to copy to clipboard',err)
+    }
+    document.body.removeChild(textArea)
+  };
+
+/**
+ * Copies the text passed as param to the system clipboard
+ * Check if using HTTPS and navigator.clipboard is available
+ * Then uses standard clipboard API, otherwise uses fallback
+*/
+  function copy_to_clipboard() {
+    var seperator = "/";
+    var addSSL = false;
+    var protocolPrefix = "davs://"
+    //console.log("OperatingSystem:" + navigator.appVersion)
+    if (navigator.appVersion.indexOf("Win") != -1 ) {
+      seperator = "\\";
+      var protocolPrefix = "\\\\"
+      addSSL = true;
+    }
+    var path = get_webdav_path( collection, protocolPrefix, addSSL, seperator )
+    if (window.isSecureContext && navigator.clipboard) {
+      navigator.clipboard.writeText( path )
+    } else {
+      console.log("unsecure connection, try workaround for clipboard access")
+      unsecuredCopyToClipboard(path);
+    }
+  }
+
+  function open_in_browser() {
+    var path = get_webdav_path( collection, "https://", false, "/" )
+    //window.open( "davs:"+path, '_blank');  would open xdg on linux or win scp
+    window.open( path, '_blank');
+    //window.open( "webdavs:"+path, '_blank');
   }
 
   function load_graph() {
