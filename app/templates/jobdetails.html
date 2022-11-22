@@ -29,7 +29,7 @@ menuname='jobdetails'
 </script>
 
 
-{% if pgid != '' %}
+{% if processgroupid != '' %}
 <div class="jobdetail-grid h-100">
   {% endif %}
   <div class="card h100 grid-jobmeta h-100">
@@ -54,7 +54,7 @@ menuname='jobdetails'
       </TABLE>
     </div>
   </div>
-  {% if pgid != '' %}
+  {% if processgroupid != '' %}
   <div class="card grid-pggraph h-100">
     <div class="card-header">
       <div class="card-title">Processgroup execution plan</div>
@@ -67,7 +67,7 @@ menuname='jobdetails'
       <div class="card-title">Processgroup jobs</div>
     </div>
   <table id='pgprocessTable' data-classes='table table-bordered table-hover table-striped' data-toggle='table'
-    data-url='{{ url_for("jobs.processgroupprocs", pgid=pgid) }}' data-striped="true" data-pagination="false"
+    data-url='{{ url_for("jobs.processgroupprocs", processgroupid=processgroupid) }}' data-striped="true" data-pagination="false"
     data-show-columns-toggle-all="false" data-show-pagination-switch="false" data-show-toggle="false"
     data-show-columns="false" data-search="false" data-sort-name="start">
     <thead>

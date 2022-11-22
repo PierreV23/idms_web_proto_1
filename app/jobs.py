@@ -83,8 +83,8 @@ def processgroupprocs():
         'sys::run::start_time': ('start', 'timestamp'),
         'sys::run::finish_time': ('end', 'timestamp'),
     }
-    pgid = request.args.get('pgid')
-    q = iqry.qcollbymeta('sys::runsheet::processgroupid', pgid)
+    processgroupid = request.args.get('processgroupid')
+    q = iqry.qcollbymeta('sys::runsheet::processgroupid', processgroupid)
     result = []
     for r in q:
         metadata = iqry.qcollmetadict(r[Collection.name]) 
@@ -181,6 +181,7 @@ def jobs():
     session, Jobs, Processgroups = dbsession()   
 
     count_jobs = session.query(Jobs).count()
+    # default second order by start_time desc
     jbs = session.query(Jobs).order_by(text(f"{orderby} {order}, start_time desc"))
     
     # Apply filters ('select' and 'input')
@@ -234,24 +235,25 @@ def pglist():
     filters = json.loads(request.args.get('filter', '{}'))
     order = request.args.get('order', 'desc')
     orderby = request.args.get('sort', 'start_time')
-    pgid = request.args.get('pgid', None, type=str)
+    processgroupid = request.args.get('processgroupid', None, type=str)
             
     session, Jobs, Processgroups = dbsession()   
 
     count_jobs = session.query(Processgroups).count()
 
-    # drilldown on processgroupid
-    if pgid:
-        pgs = pgs.filter(text(f"processgroupid='{pgid}'"))#(Processgroups.columns.processgroupid==pgid)
-
+    # order by; default second order by start_time desc
     pgs = session.query(Processgroups).order_by(text(f"{orderby} {order}, start_time desc"))
+
+    # drilldown on processgroupid
+    if processgroupid:
+        pgs = pgs.filter(Processgroups.columns.processgroupid==processgroupid)
 
     for key, value in filters.items():
         for f in PG_FIELDS:
-                if PG_FIELDS[f].get('filtercontrol') == 'select':
-                    pgs = pgs.filter(text(f"{key}='{value}'"))
-                elif PG_FIELDS[f].get('filtercontrol') == 'input':
-                    pgs = pgs.filter(text(f"{key} like('%{value}%')"))
+            if PG_FIELDS[f].get('filtercontrol') == 'select':
+                pgs = pgs.filter(text(f"{key}='{value}'"))
+            elif PG_FIELDS[f].get('filtercontrol') == 'input':
+                pgs = pgs.filter(text(f"{key} like('%{value}%')"))
 
     # recount, offset, limit data
     count_jobs = pgs.count()
@@ -277,11 +279,11 @@ def pglist():
 @login_required
 def pgjobs():
 # display jobs under a processgroupid
-    pgid = request.args.get('pgid', None, type=str)
+    processgroupid = request.args.get('processgroupid', None, type=str)
     session, Jobs, Processgroups = dbsession()
     result = []
     pgj = session.query(Jobs)
-    pgj = pgj.filter(Jobs.columns.processgroupid==pgid)
+    pgj = pgj.filter(Jobs.columns.processgroupid==processgroupid)
 
     for j in pgj:
         rec = {}
@@ -311,8 +313,10 @@ def pgjobs():
 @bp.route('/pg')
 @login_required
 def show_pg():
+    processgroupid = request.args.get('processgroupid', None, type=str)
     default_project = current_user.settings.get('default_project', '')
-    return render_template('pglist.html', default_project=default_project, columns = PG_FIELDS)
+    return render_template('pglist.html', default_project=default_project
+                            , processgroupid=processgroupid, columns = PG_FIELDS)
 
 
 @bp.route('/')
@@ -357,8 +361,8 @@ def processgraph():
     graph = Digraph('datagraph')
 
     # We need the processgroupID
-    pgid = iqry.qcollmetavalstatic(runsheet_coll, 'sys::runsheet::processgroupid')
-    q = iqry.qcollbymeta('sys::runsheet::processgroupid', pgid)
+    processgroupid = iqry.qcollmetavalstatic(runsheet_coll, 'sys::runsheet::processgroupid')
+    q = iqry.qcollbymeta('sys::runsheet::processgroupid', processgroupid)
     colls = [ r[Collection.name] for r in q ]
     for coll in colls:
         state = iqry.qcollmetaval(coll, 'sys::runsheet::state', default='unknown')
@@ -442,8 +446,8 @@ def jobdetails():
     for field in FIELDS:
         if field in metadata:
             D[FIELDS[field][0]] = datafield(field, metadata[field], FIELDS[field][1])
-    pgid = metadata.get('sys::runsheet::processgroupid', '')
-    return render_template('jobdetails.html', details=D, runsheet=runsheet, pgid=pgid, jobnaam=datafield('jobnaam', jobnaam, 'runsheet'))
+    processgroupid = metadata.get('sys::runsheet::processgroupid', '')
+    return render_template('jobdetails.html', details=D, runsheet=runsheet, processgroupid=processgroupid, jobnaam=datafield('jobnaam', jobnaam, 'runsheet'))
 
 @bp.route('joblogs')
 @login_required

@@ -12,7 +12,7 @@ JOB_FIELDS = {
 }
 
 PG_FIELDS = {
-    'pgid': {'title': 'Group ID', 'format': 'processgroupid', 'field': 'pgid', 'sortable': 'true', 'visible': 'true'},
+    'processgroupid': {'title': 'Group ID', 'format': 'processgroupid', 'field': 'processgroupid', 'sortable': 'true', 'visible': 'true'},
     'state': {'title': 'Group state', 'format': 'text', 'field': 'state', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
     'states': {'title': 'Process states', 'format': 'text', 'field': 'states', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'input'},
     'process_count': {'title': '#', 'format': 'int', 'field': 'count', 'sortable': 'true', 'visible': 'true'},

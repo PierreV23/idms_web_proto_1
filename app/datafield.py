@@ -309,11 +309,9 @@ class data_processgroupid(data_base):
 
     @property
     def htmlstring(self):
-        return self.value
+        s = '<a href={0}?processgroupid={1} data-toggle="tooltip" title="{1}">{2}</a>'.format(url_for('jobs.show_pg'), self.value, self.value[:8])
+        return s
 
-    @property
-    def htmlshort(self):
-        return f'<div data-toggle="tooltip" title={self.value}>{self.value[:8]}</div'
     @staticmethod
     def factory(**kwargs):
         return data_processgroupid(**kwargs)
