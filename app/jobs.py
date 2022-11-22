@@ -72,25 +72,25 @@ def pagebuttons(page_size, count, current_page, max_buttons, template):
         after = []
     return before + after
 
-# @bp.route('/api/pgprocs')
-# @login_required
-# def processgroupprocs():
-#     PGFIELDS = {
-#         'sys::runsheet::id': ('runsheet', 'runsheet'),
-#         'sys::runsheet::description' : ('description', 'text'),
-#         'sys::runsheet::state': ('state', 'text'),
-#         'user::run::exit_code': ('result', 'text'),
-#         'sys::run::start_time': ('start', 'timestamp'),
-#         'sys::run::finish_time': ('end', 'timestamp'),
-#     }
-#     pgid = request.args.get('pgid')
-#     q = iqry.qcollbymeta('sys::runsheet::processgroupid', pgid)
-#     result = []
-#     for r in q:
-#         metadata = iqry.qcollmetadict(r[Collection.name]) 
-#         job = { PGFIELDS[field][0]: datafield(PGFIELDS[field][0], metadata.get(field,''), PGFIELDS[field][1]).htmlstring for field in PGFIELDS }
-#         result.append(job)
-#     return { 'rows': result }
+@bp.route('/api/pgprocs')
+@login_required
+def processgroupprocs():
+    PGFIELDS = {
+        'sys::runsheet::id': ('runsheet', 'runsheet'),
+        'sys::runsheet::description' : ('description', 'text'),
+        'sys::runsheet::state': ('state', 'text'),
+        'user::run::exit_code': ('result', 'text'),
+        'sys::run::start_time': ('start', 'timestamp'),
+        'sys::run::finish_time': ('end', 'timestamp'),
+    }
+    pgid = request.args.get('pgid')
+    q = iqry.qcollbymeta('sys::runsheet::processgroupid', pgid)
+    result = []
+    for r in q:
+        metadata = iqry.qcollmetadict(r[Collection.name]) 
+        job = { PGFIELDS[field][0]: datafield(PGFIELDS[field][0], metadata.get(field,''), PGFIELDS[field][1]).htmlstring for field in PGFIELDS }
+        result.append(job)
+    return { 'rows': result }
     
 
 # @login_required
@@ -181,7 +181,7 @@ def jobs():
     session, Jobs, Processgroups = dbsession()   
 
     count_jobs = session.query(Jobs).count()
-    jbs = session.query(Jobs).order_by(text(f"{orderby} {order}"))
+    jbs = session.query(Jobs).order_by(text(f"{orderby} {order}, start_time desc"))
     
     # Apply filters ('select' and 'input')
     for key, value in filters.items():
@@ -234,16 +234,20 @@ def pglist():
     filters = json.loads(request.args.get('filter', '{}'))
     order = request.args.get('order', 'desc')
     orderby = request.args.get('sort', 'start_time')
+    pgid = request.args.get('pgid', None, type=str)
             
     session, Jobs, Processgroups = dbsession()   
 
     count_jobs = session.query(Processgroups).count()
-    pgs = session.query(Processgroups).order_by(text(f"{orderby} {order}"))
-    
-    # Apply filters (select and input)
+
+    # drilldown on processgroupid
+    if pgid:
+        pgs = pgs.filter(text(f"processgroupid='{pgid}'"))#(Processgroups.columns.processgroupid==pgid)
+
+    pgs = session.query(Processgroups).order_by(text(f"{orderby} {order}, start_time desc"))
+
     for key, value in filters.items():
         for f in PG_FIELDS:
-            if PG_FIELDS[f]['field'] == key:
                 if PG_FIELDS[f].get('filtercontrol') == 'select':
                     pgs = pgs.filter(text(f"{key}='{value}'"))
                 elif PG_FIELDS[f].get('filtercontrol') == 'input':
