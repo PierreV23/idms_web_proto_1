@@ -183,7 +183,7 @@
           {% endif %}
 
           {% if 'PROJECTS' in current_user.features %}
-          <li class="nav-item dropdown">
+          <li class="nav-item">
             <a class="nav-link" href="{{ url_for('projects.show_projects') }}" data-menuname="projects" role="button">
               <i class="fas fa-project-diagram nav-icon">
               </i>
@@ -191,7 +191,7 @@
             </a>
           </li>
 
-          <li class="nav-item dropdown">
+          <li class="nav-item">
             <a class="nav-link" href="{{ url_for('projects.show_projects', page='processes') }}" data-menuname="processes" role="button">
               <i class="fas fa-cogs nav-icon">
               </i>
@@ -289,10 +289,18 @@
           </li>
 
           {% endif %}
+          
           <li class="nav-item">
             <a href="{{ url_for('collbrowser.search') }}" data-menuname="search" class="nav-link">
+              <i class="fas fa-microscope nav-icon"></i>
+              <p>Search (New)</p>
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a href="{{ url_for('collbrowser.search_old') }}" data-menuname="search_old" class="nav-link">
               <i class="fas fa-search nav-icon"></i>
-              <p>Search</p>
+              <p>Search (Old)</p>
             </a>
           </li>
 

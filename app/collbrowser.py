@@ -16,7 +16,7 @@ from flask import Blueprint, render_template, redirect, request, url_for, jsonif
 from flask_login import current_user, login_required
 from irods.models import Collection, CollectionMeta, DataObject, DataObjectMeta
 from irods.exception import CAT_NO_ROWS_FOUND
-from irods.column import Criterion
+from irods.column import Criterion, Like
 from app.datafield import AVU2data, datafield
 from app.irods_helper import getmetaitem
 from app.irodssessions import irods_manager
@@ -748,10 +748,293 @@ def delete_file():
 def search():
     return render_template('search.html')
 
+OBJECT_TYPES = {
+    "collection": (Collection, ),
+    "dataset": (Collection, ),
+    "dataobject": (DataObject, Collection),
+}
+DEFAULT_OBJECT_TYPE = "dataset"
 
-@bp.route('_search', methods=['GET'])
+def get_projectlist_as_filter():
+    project_dict = projects.get_projectlist()
+    return {project: props["name"] for project, props in project_dict.items()}
+
+# TODO: Perhaps make one for each OBJECT_TYPE, so that we don't have to build the columns json each time.
+
+# Each column of the search table must be defined here
+#  - css_name: name as used in the css of the table, should not contain colons (:).
+#  - irods_object: an iRODS model or column. Used in the search Criterion.
+#  - meta_name: the name of the metadata field if irods_object=CollectionMeta.name.
+#  - default_on: a subset of OBJECT_TYPES. 
+#       Indicates whether the columns shown by default when loading the table.
+#  - used_for: a subset of OBJECT_TYPES. 
+#       Indicates whether the can be made visible in the table for each OBJECT_TYPE.
+#  - filter_control: the data-filter-control field of the bootstrap tables for this column. 
+#  - filter_data: dict format which is parsed to json in the code.
+#       the data-filter-data field of the bootstrap tables for this column. 
+#  - sortable: the data-sortable field of the bootstrap tables for this column.
+#  - switchable: the data-switchable field of the bootstrap tables for this column.
+COLUMNS = {
+    "projectID": {
+        "css_name": "projectID",
+        "irods_object": CollectionMeta.name,
+        "meta_name": "projectID",
+        "default_on": OBJECT_TYPES,
+        "used_for": OBJECT_TYPES,
+        "filter_control": "select",
+        "filter_data": get_projectlist_as_filter,
+        "sortable": False,
+        "switchable": False,
+    },
+    "collection": {
+        "irods_object": Collection.name,
+        "default_on": OBJECT_TYPES,
+        "used_for": OBJECT_TYPES,
+        "filter_control": "input",
+        "sortable": True,
+        "switchable": False,
+    },
+    "object": {
+        "irods_object": DataObject.name,
+        "default_on": {"dataobject", },
+        "used_for": {"dataobject", },
+        "filter_control": "input",
+        "sortable": True,
+        "switchable": False,
+    },
+    "sys::data::type": {
+        "css_name": "sys--data--type",
+        "irods_object": CollectionMeta.name,
+        "meta_name": "sys::data::type",
+        "default_on": {"collection", "dataset"},
+        "used_for": OBJECT_TYPES,
+        "filter_control": "select",
+        "filter_data": {"valid": "valid" , "temporary": "temporary", "imported": "imported", "invalid": "invalid", "distributed": "distributed"},
+        "sortable": False,
+    },
+    "sys::runsheet::repo": {
+        "css_name": "sys--runsheet--repo",
+        "irods_object": CollectionMeta.name,
+        "meta_name": "sys::runsheet::repo",
+        "default_on": set(),
+        "used_for": OBJECT_TYPES,
+        "filter_control": "input",
+        "sortable": False,
+    },
+    "sys::runsheet::description": {
+        "css_name": "sys--runsheet--description",
+        "irods_object": CollectionMeta.name,
+        "meta_name": "sys::runsheet::description",
+        "default_on": set(),
+        "used_for": OBJECT_TYPES,
+        "filter_control": "input",
+        "sortable": False,
+    },
+    "sys::runsheet::processID": {
+        "css_name": "sys--runsheet--processID",
+        "irods_object": CollectionMeta.name,
+        "meta_name": "sys::runsheet::processID",
+        "default_on": set(),
+        "used_for": OBJECT_TYPES,
+        "filter_control": "input",
+        "sortable": False,
+    },
+    "sys::dataset_id": {
+        "css_name": "sys--dataset_id",
+        "irods_object": CollectionMeta.name,
+        "meta_name": "sys::dataset_id",
+        "default_on": set(),
+        "used_for": OBJECT_TYPES,
+        "filter_control": "input",
+        "sortable": False,
+    }
+}
+
+# The names of the columns are used in the css when filtering, which doesn't handle colons very well
+CSS_NAME_TO_COLUMN = {
+    props.get("css_name", column): column
+    for column, props in COLUMNS.items()
+}
+
+def search_result_query(object_type, filter_dict, search_dict):
+    irods_session = irods_manager.session()
+    query = irods_session.query(*OBJECT_TYPES.get(object_type, (Collection, )))
+
+    # initial search
+    SEARCH_PATTERN = '%{}%'
+    SEARCH_OPTION = 'like'
+    if search_dict["useExactMatch"] == 'True':
+        SEARCH_PATTERN = '{}'
+        SEARCH_OPTION = '='
+
+    SEARCH_IN_OPTIONS = {
+        "collection_metadata": CollectionMeta.value,
+        "collection_name": Collection.name,
+        "object_name": DataObject.name,
+    }
+    SEARCH_IN_DEFAULT = Collection.name
+
+    if search_dict["searchtext"]:
+        search_in_type = search_dict.get("searchIn")
+        if search_in_type == "collection_metadata":
+            # To reliably search for metadata values in all metadata fields, iRODS still needs the field to be 'specified'.
+            query = query.filter(Criterion(
+                "like",
+                CollectionMeta.name,
+                "%")
+            )
+        query = query.filter(Criterion(
+            SEARCH_OPTION,
+            SEARCH_IN_OPTIONS.get(search_in_type, SEARCH_IN_DEFAULT),
+            SEARCH_PATTERN.format(search_dict["searchtext"])
+        ))
+
+    # filter by columns.
+
+    # Searching for datasets by checking if the collection has a sys::dataset_id metadata field.
+    if object_type == "dataset" and "sys::dataset_id" not in filter_dict:
+        filter_dict["sys::dataset_id"] = ""
+
+    for name, value in filter_dict.items():
+        if "meta_name" in COLUMNS[name]:
+            query = query.filter(CollectionMeta.name == COLUMNS[name]["meta_name"]).filter(Criterion( "like", CollectionMeta.value, '%{}%'.format(value)))
+            continue
+        query = query.filter(Criterion( "like", COLUMNS[name]["irods_object"], '%{}%'.format(value)))
+    return query
+
+def search_result_count(object_type, filter_dict, search_dict, searchId):
+    @cache.memoize(timeout=120, make_name=dep_zone)
+    def _search_result_count(object_type, filter_dict, search_dict):
+        logging.debug(f"Search {searchId}: Calculating count")
+        query = search_result_query(object_type, filter_dict, search_dict)
+        count = len(list(query)) 
+        logging.debug(f"Search {searchId}: Calculating count DONE; found {count} objects")
+        return count
+    return _search_result_count(object_type, filter_dict, search_dict)
+
+@bp.route('_search/<object_type>/', methods=['GET'])
 @login_required
-def search_result():
+def search_result(object_type):
+    limit = request.args.get('limit', -1, type=int)
+    offset = request.args.get('offset', 0, type=int)
+    sort = request.args.get('sort', "", type=str)
+    order = request.args.get('order', "", type=str)
+    filter = request.args.get('filter', "{}", type=str)
+    searchId = request.args.get('searchId', "", type=str)
+
+    search_dict = {
+        "searchIn": request.args.get('searchIn', "", type=str),
+        "useExactMatch": request.args.get('useExactMatch', "", type=str),
+        "searchtext": request.args.get('searchtext', "", type=str),
+    }
+
+    if object_type not in OBJECT_TYPES:
+        logging.error(f"Search {searchId}: non-existent object type {object_type}, using {DEFAULT_OBJECT_TYPE} instead")
+        object_type = DEFAULT_OBJECT_TYPE
+
+    filter_dict = json.loads(filter)
+    # Change the column names as used in the css to the column names as used in iRODS
+    # Necessary because CSS doesn't handle the colons in the column names very well 
+    filter_dict = {
+        CSS_NAME_TO_COLUMN[key]: value
+        for key, value in filter_dict.items()
+    }
+
+    logging.info(f"Search {searchId}: object_type='{object_type}', search={search_dict} and filters={filter_dict}.")
+    query = search_result_query(object_type, filter_dict, search_dict)
+    count = search_result_count(object_type, filter_dict, search_dict, searchId)
+
+    # Execute paginated query and parse for use in bootstrap tables
+    query = query.limit(limit).offset(offset)
+    # TODO sort (and limit/offset) by metadata by getting the complete query results and sorting manually
+    if sort:
+        query = query.order_by(COLUMNS[sort]["irods_object"], order=order)
+
+    logging.debug(f"Search {searchId}: Retrieving column values")
+    rows = []
+    for obj in query.execute():
+        row = dict()
+        obj_meta = iqry.qcollmetadict(obj[Collection.name])
+        for col, props in COLUMNS.items():
+            if "meta_name" in props:
+                # Use the iRODS name instead of the CSS name of the column
+                row[props.get("css_name", col)] = obj_meta.get(props["meta_name"])
+                continue
+            if col == "collection":
+                row[col] = datafield('collection', obj[Collection.name], 'irods_collection').htmlstring
+                continue
+            row[col] = obj.get(props["irods_object"])
+        rows.append(row) 
+    logging.debug(f"Search {searchId}: Retrieving column values DONE")
+
+    data = {
+        "total": count,
+        "rows": rows,
+    }
+    return json.dumps(data)
+
+@bp.route('_search_table', methods=['GET'])
+@login_required
+def search_result_table():
+    searchtext = (request.args.get('txt', '', type=str).strip())
+    objectType = (request.args.get('objectType', 'dataset', type=str).strip())
+    searchIn = (request.args.get('searchIn', '', type=str).strip())
+    useExactMatch = (request.args.get('exactMatch', 'false', type=str).strip() == 'true')
+    tableId = (request.args.get('tableId', '', type=str).strip())
+
+    # Convert COLUMNS to format used by bootstrap tables
+    columns = []
+    for col, props in COLUMNS.items():
+        if objectType not in props["used_for"]:
+            continue
+
+        column_data = { 
+            "field": props.get("css_name", col),
+            "title": col,
+            "sortable": props["sortable"],
+            "filterControl": props["filter_control"],
+        }
+        if objectType not in props["default_on"]:
+            column_data["visible"] = False
+
+        if props["filter_control"] == "select":
+            filterData = props['filter_data']
+            # Option to use a function here, so we can dynamically fill the filter options:
+            if callable(filterData):
+                filterData = filterData()
+            column_data["filterData"] = f"json:{json.dumps(filterData)}"
+        column_data["switchable"] = props.get("switchable", True)
+
+        columns.append(column_data)
+
+    # Collect data used for initial search
+    search_dict = {
+        "searchIn": searchIn,
+        "useExactMatch": useExactMatch,
+        "searchtext": searchtext,
+    }
+
+    # Render the bootstrap table. Information about the initial search (i.e. object type & search_dict)
+    # is included in the rendered template in the bootstrap-tables data-url field and in the queryParams function
+    content = { 
+        'searchResults': render_template(
+            'searchresults.html', 
+            columns=json.dumps(columns), 
+            objectType=objectType,
+            searchDict=search_dict,
+            tableId=tableId,
+        ),
+        "tableId": tableId,
+    }
+    return content
+
+@bp.route('search_old')
+def search_old():
+    return render_template('search_old.html')
+
+@bp.route('_search_old', methods=['GET'])
+@login_required
+def search_result_old():
     searchtext = (request.args.get('txt', '', type=str).strip())
     searchid = request.args.get('searchId', 0)
     useExactMatch = (request.args.get('exactMatch', 'false', type=str).strip() == 'true')
