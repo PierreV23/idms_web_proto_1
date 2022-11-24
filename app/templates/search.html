@@ -16,30 +16,44 @@ var search_id = Date.now()
 
 <div class="card">
     <div class="card-body">
-        <div class="form-group row">
-            <div class="col-sm-10">
-                <INPUT TYPE="text" id="search-text" minlength=1 data-trigger="manual" data-placement="top" data-content="minimum length of 5 characters OR exact match" required>
-                <button id="btnSearch" type="button" class="btn btn-primary">Search</button>
+        <form class="form-inline search-form p-1">
+            <div class="input-group">
+                <label for="object_type_field" class="col-form-label">
+                    <i class="fas fa-info-circle pr-1" data-toggle="tooltip" title="What would you like to search for? Collections are like folders, objects are like files, and data sets are collections with metadata about processes."></i>
+                    Search for: 
+                </label>
+                <select id="object_type_field" class="custom-select">
+                    <option value="dataset" selected>Data set</option>
+                    <option value="collection">Collection</option>
+                    <option value="dataobject">Data object</option>
+                </select>
             </div>
-        </div>
+            <div class="input-group">
+                <label for="search_in_selector" class="col-form-label">
+                    <i class="fas fa-info-circle pr-1" data-toggle="tooltip" title="What property would you like to search for? Note that collection/object names are full paths, which includes the project name as well."></i>
+                    by: 
+                </label>
+                <select id="search_in_selector" class="custom-select">
+                    <option value="collection_name" selected>Collection Name</option>
+                    <option value="object_name">Object Name</option>
+                    <option value="collection_metadata">Collection Metadata</option>
+                </select>
+            </div>
             <div class="form-group">
-                <div id="exactMatchSwitch" class="custom-control custom-switch">
+                <div class="custom-control custom-switch form-check-inline">
                     <input class="custom-control-input" type="checkbox" id="exactMatch">
-                    <label class="custom-control-label" for="exactMatch">Only exact matches</label>
-                </div>
-                <div class="custom-control custom-switch">
-                    <input class="custom-control-input" type="checkbox" id="searchMeta">
-                    <label class="custom-control-label" for="searchMeta">Search in metadata</label>
-                </div>
-                <div class="custom-control custom-switch">
-                    <input class="custom-control-input" type="checkbox" id="searchDatasetNames" checked>
-                    <label class="custom-control-label" for="searchDatasetNames">Search in name of collection/dataset</label>
-                </div>
-                <div class="custom-control custom-switch">
-                    <input class="custom-control-input" type="checkbox" id="searchObjectNames">
-                    <label class="custom-control-label" for="searchObjectNames">Search in name of dataobject</label>
+                    <label class="custom-control-label col-form-label" for="exactMatch">Only exact matches</label>
                 </div>
             </div>
+        </form>
+        <form class="form-inline search-form p-1" onsubmit="return submit_search(event)">
+            <div class="input-group">
+                <input TYPE="text" id="search-text" data-trigger="manual" data-placement="top" data-content="minimum length of 4 characters for data objects and collections"  class="form-control" placeholder="search text">
+            </div>
+            <div class="form-group">
+                <button id="btnSearch" type="submit" class="btn btn-primary">Search</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -64,32 +78,28 @@ var search_id = Date.now()
 
 <script>
 
-//$("#exactMatchSwitch").on("click", function( {
-//    $( "#search-text" )
-//})
-
-$("#btnSearch").on("click", function() {
-    search_id = Date.now()
+function submit_search(e) {
+    e.preventDefault();
+    tableId = Date.now()
     searchString = $( '#search-text' ).val()
+    objectType = $("#object_type_field").val()
     exactMatch = $("#exactMatch").is(':checked')
     searchObjectNames = $("#searchObjectNames").is(':checked')
 
-    if (searchString.length >= 5 || (exactMatch && searchString.length >= 1 )) {
+    if (searchString.length >= 5 || objectType == "dataset" || (exactMatch && searchString.length >= 1 )) {
         $( '#result-table' ).empty()
         $( '#loading-indicator' ).show()
-        $( '#search-text' ).popover( 'hide' ) 
+        $( '#search-text' ).popover( 'hide' )
         searchOptions = {
-            'txt': searchString,
+            'tableId': tableId,
+            'txt': $( '#search-text' ).val(),
+            'objectType': objectType,
+            'searchIn': $("#search_in_selector").val(),
             'exactMatch': $("#exactMatch").is(':checked'),
-            'searchMeta': $("#searchMeta").is(':checked'),
-            'searchDatasetNames': $("#searchDatasetNames").is(':checked'),
-            'searchObjectNames': $("#searchObjectNames").is(':checked'),
-            'searchId': search_id
         }
-        $.get('{{ url_for("collbrowser.search_result") }}', searchOptions, function(content) {
-            //console.log(content.searchResults)
+        $.get('{{ url_for("collbrowser.search_result_table") }}', searchOptions, function(content) {
             // only show result from the last search request
-            if (content.searchId == search_id) {
+            if (content.tableId == tableId) {
                 $( '#result-table' ).html(content.searchResults);
             }
         })
@@ -98,9 +108,10 @@ $("#btnSearch").on("click", function() {
         })
     }
     else {
-        $('#search-text').popover( 'show' ) 
+        $('#search-text').popover( 'show' )
     }
-});
+    return false;
+}
 
 
 </script>
