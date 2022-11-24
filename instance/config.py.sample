@@ -75,6 +75,8 @@ IRODS_ENVS = {
         'host': 'rivm-bioir-l01p.rivm.ssc-campus.nl',
         'zone': 'rivmZone',
         'default': True,
+        'ngsruns_db': 'postgresql://<user>:<pass>@<host>/ICAT',
+        'jobs_db': 'postgresql://<user>:<pass>@<host>/ICAT',
         'features': [
             'JOBS',
             'MINILIMS',
@@ -85,6 +87,8 @@ IRODS_ENVS = {
         'host': 'rivm-bioir-l01a.rivm.ssc-campus.nl',
         'zone': 'rivmZone_acc_01',
         'default': False,
+        'ngsruns_db': 'postgresql://<user>:<pass>@<host>/ICAT',
+        'jobs_db': 'postgresql://<user>:<pass>@<host>/ICAT',
         'features': [
             'JOBS',
             'MINILIMS',
@@ -96,6 +100,8 @@ IRODS_ENVS = {
         'host': 'rivm-bioir-l01t.rivm.ssc-campus.nl',
         'zone': 'rivmZone_test_01',
         'default': False,
+        'ngsruns_db': 'postgresql://<user>:<pass>@<host>/ICAT',
+        'jobs_db': 'postgresql://<user>:<pass>@<host>/ICAT',
         'features': [
             'JOBS',
             'MINILIMS',

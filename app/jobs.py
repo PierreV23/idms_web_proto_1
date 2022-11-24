@@ -15,6 +15,7 @@ from irods.column import Criterion
 from app.datafield import datafield, AVU2data, INFINITE_DATE
 from app.settings import JOB_FIELDS, PG_FIELDS, PG_JOB_FIELDS
 from graphviz import Digraph
+import flask
 import json
 import os
 import sys
@@ -25,8 +26,11 @@ from app.irodssessions import irods_manager
 from . import iqry
 from . import constants
 
-from sqlalchemy import create_engine, Float, text
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine, Float, text, MetaData, Table
+from sqlalchemy.orm import relationship, remote, foreign, sessionmaker, scoped_session
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.exc import OperationalError
+
 
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
 
@@ -36,6 +40,75 @@ ATTR_RUNSHEET_ID = '{}id'.format(ATTR_RUNSHEET_PREFIX)
 ATTR_RUNSHEET_CREATETIME = '{}create_time'.format(ATTR_RUNSHEET_PREFIX)
 
 MAX_READ_LOG_BYTES = 10000000
+
+class JobsDBUnavailableException(Exception):
+    pass
+
+class JobsDBAlchemy:
+    '''Handle db sessions for NGSRuns minilims database.'''
+
+    def __init__(self):
+        # Define a SQLAlchemy base class to wrap.
+        self._sessions = {}
+        self.default_env = None
+
+
+    def init_app(self, app):
+        for env_name, env in app.config.get('IRODS_ENVS', {}).items():
+            if self.default_env is None and env.get('default', False):
+                # Env in config with 'default' attr is assumed as default (e.g. 'Productie').
+                self.default_env = env_name
+            db_connect = env.get('jobs_db', 'sqlite://')
+            connect_args = {}
+            if db_connect.startswith('postgres'):
+                connect_args = {'connect_timeout': 2}
+            try:
+                engine = create_engine(db_connect, connect_args=connect_args)
+                engine.connect()
+            except OperationalError:
+                app.logger.error(f'Cannot create JOBS DB engine for {env_name}')
+                # Unable to create connection to db. Continue to create
+                # db engines for other envs.
+                continue
+            _sessionmaker = sessionmaker(autocommit=False, autoflush=False,
+                                         bind=engine)
+            self._sessions[env_name] = scoped_session(_sessionmaker, 
+                scopefunc=flask._app_ctx_stack.__ident_func__)
+        app.teardown_request(self.remove_session)
+
+    def envs(self):
+        return list(self._sessions)
+
+
+    def session(self, environment=None):
+        """Return session. If no specific environment is requested, use the one 
+        defined in the user object, eventually fall back to `default_env`."""
+        env = environment
+        if environment is None:
+            if hasattr(current_user, 'environment'):
+                env = current_user.environment
+            else:
+                env = self.default_env
+        
+        try:
+            return self._sessions[env]
+        except KeyError:
+            raise JobsDBUnavailableException(f'env={env}')
+
+
+    def remove_session(self, _exc=None):
+        if hasattr(current_user, 'environment') and \
+            current_user.environment in self._sessions:
+            self._sessions[current_user.environment].remove()
+
+
+
+db = JobsDBAlchemy()
+
+@bp.before_request
+def before_request_func():
+    # This ensures the flash error message will show up if the job table is not available
+    db.session()
 
 def utc_to_local(utc_dt):
     return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=None)
@@ -98,20 +171,15 @@ def processgroupprocs():
     
 
 def dbsession():
-    from sqlalchemy.ext.automap import automap_base
-    from sqlalchemy.orm import Session
-    from sqlalchemy import create_engine
-    from sqlalchemy import MetaData, Table
 
-    engine = create_engine('postgresql://irods:testpassword@rivm-bioir-l01a.rivm.ssc-campus.nl/ICAT', echo=False)
+    session = db.session()
+    engine = session.bind.engine
     meta = MetaData()
     meta.reflect(bind=engine, views=True, only=['rivm_mat_jobtable', 'rivm_v_processgroups'])
 
     # retrieve tables
     Jobs = Table("rivm_mat_jobtable", meta, autoload_with=engine)
     Processgroups = Table("rivm_v_processgroups", meta, autoload_with=engine)
-
-    session = Session(engine)
    
     return session, Jobs, Processgroups
 
