@@ -13,14 +13,34 @@ function load_pg() {
   });
 }
 
+function load_colls() {
+  $.get('{{ url_for('projects.projectcolltable') }}', {
+    project: "{{ PD.name }}"
+  }, function(data) {
+     $('#collections').html(data);
+     console.log('load the collection list ...')
+  });
+}
+
 $('.nav2').on('shown.bs.tab', function(event){
   target = event.target.getAttribute('href')
   activetab = target
   if (target == "#processgroups") {
     load_pg();
   }
+  if (target == "#collections") {
+    load_colls();
+  }
   console.log(target)
 })
+
+$(document).on('click', '.path-change', function () {
+    collection = $(this).data('path');
+    if (typeof collection == 'undefined') {
+      collection = $(this).attr('id')
+    }
+    window.location.replace("{{ url_for('collbrowser.collbrowser') }}?path=" + encodeURIComponent(collection));
+  });
 
 function update_process(sourceElem, destElem) {
     $.post("{{ url_for('projects.get_process') }}",
@@ -152,7 +172,7 @@ function createContactRow( contact ) {
 <!-- PROJECT SETTINGS -->
 <div class="card h-100">
   <div class="card-header">
-    <ul class="nav nav-pills nav2">
+    <ul class="nav nav-pills nav2" id="projecttabs">
       <li class="nav-item mx-2">
         <button class="btn btn-outline-primary active" id="settings-tab" 
         data-toggle="tab" href="#settings" role="tab" 
@@ -174,14 +194,19 @@ function createContactRow( contact ) {
         aria-controls="collections" aria-selected="false">Collections</button>
       </li>
       <li class="nav-item mx-2">
-        <button class="btn btn-outline-primary" id="usergroup-tab" 
-        data-toggle="tab" href="#usergroup" role="tab" 
-        aria-controls="usergroup" aria-selected="false">Users & Groups</button>
+        <button class="btn btn-outline-primary usermanager" data-usertype="users" id="users-tab" 
+        data-toggle="tab" href="#users" role="tab" 
+        aria-controls="users" aria-selected="false">Users</button>
       </li>
       <li class="nav-item mx-2">
-        <button class="btn btn-outline-primary" id="processes-tab" 
-        data-toggle="tab" href="#processes" role="tab" 
-        aria-controls="processes" aria-selected="false">Project processes (legacy)</button>
+        <button class="btn btn-outline-primary usermanager" data-usertype="managers" id="managers-tab" 
+        data-toggle="tab" href="#managers" role="tab" 
+        aria-controls="managers" aria-selected="false">Managers</button>
+      </li>
+      <li class="nav-item mx-2">
+        <button class="btn btn-outline-primary" id="groups-tab" 
+        data-toggle="tab" href="#groups" role="tab" 
+        aria-controls="groups" aria-selected="false">Groups</button>
       </li>
     </ul>
   </div>
@@ -189,6 +214,11 @@ function createContactRow( contact ) {
 
     <!-- Settings -->
     <div class="tab-pane active" id="settings" role="tabpanel" aria-labelledby="settings-tab">
+      {% if processing is sameas true %}
+      <div class="alert alert-warning" role="alert">
+        <center>Changes to project configuration are still being processed</center>
+      </div>
+      {% endif %}
       <form action="update_project" method="post">
         <input type="hidden" id="action" name="action" value="update_project">
         <input type="hidden" id="project" name="project" value="{{PD.name}}">
@@ -253,175 +283,13 @@ function createContactRow( contact ) {
 
     </div>
 
-    <!-- Processes -->
-
-    <div class="tab-pane scroll h-100" id="processes" role="tabpanel" aria-labelledby="processes-tab">
-      <div class="card">
-        {% for process in PD.processes | sort %}
-        <a class="btn btn-outline-secondary text-left" data-toggle="collapse" href="#collapse{{process}}" role="button" aria-expanded="false" aria-controls="collapse{{process}}">
-            {{process}}
-        </a>
-        <div class="collapse {% if processnaam == process %}show{% endif %}" id="collapse{{process}}">
-          <div class="card card-body" >
-            <form action="update_project" method="post">
-              <input type="hidden" id="action_update_process" name="action" value="update_process">
-              <input type="hidden" id="project" name="project" value="{{PD.name}}">
-              <input type="hidden" id="process" name="process" value="{{process}}">
-              <div class="form-group">
-                <label for="description_{{process}}">Description</label>
-                <input type="text" class="form-control" name="description" id="description_{{process}}" placeholder="Description" value="{{ PD['processes'][process]['description'] }}">
-              </div>
-        
-        
-              <div class="form-group">
-                <label for="gitrepo_{{process}}">GIT Repository</label>
-                <input type="text" class="form-control" name="repo" id="repo_{{process}}" placeholder="GIT Repo" value="{{ PD['processes'][process]['repo'] }}">
-              </div>
-              <div class="form-group">
-                <label for="gittag_{{process}}">GIT Tag</label>
-                <input type="text" class="form-control" name="tag" id="gittag_{{process}}" placeholder="GIT Tag" value="{{ PD['processes'][process]['tag'] }}">
-              </div>
-            
-              <div class="form-group">
-                <label for="queue_{{process}}">LSF Queue</label>
-                <input type="text" class="form-control" name="lsf_queue" id="queue_{{process}}" placeholder="LSF Queue" value="{{ PD['processes'][process]['lsf_queue'] }}">
-              </div>  
-        
-              <div class="form-check">
-                <input class="form-check-input toggle_next" type="checkbox" 
-                    name="next_process"
-                    data-process="{{process}}" 
-                    value="true" 
-                    {% if PD['processes'][process]['next_processid'] != 0 %}checked{% endif %} 
-                    id="next_process_{{process}}">
-                <label class="form-check-label" for="nextproc_{{process}}">
-                  Enable next proces
-                </label>
-              </div>
-        
-              <script>
-                $( ".toggle_next" ).change(function() {
-                  var check=$(this).prop('checked')
-                  var proc=$(this).data('process')
-                  $("[id^=nextpro][data-process=" + proc + "]").prop('disabled', function(){
-                      return !check
-                  })
-                });
-              </script>
-        
-              <div class="form-group">
-                <label for="nextproject_{{process}}">Next ProjectID</label>
-                <select class="custom-select" name="next_projectID" data-process="{{process}}" id="nextproject_{{process}}" onchange="update_process('#nextproject_{{process}}', '#nextprocess_{{process}}')">
-            {% for project in all_projects|sort %}
-            <option{% if project == PD['processes'][process]['next_projectID'] %} selected {% endif %}>{{project}}</option>
-            {% endfor %}
-                </select>
-              </div> 
-        
-              <div class="form-group">
-                <label for="nextprocess_{{process}}">Next ProcessID</label>
-                <select class="custom-select" name="next_processID" data-process="{{process}}" id="nextprocess_{{process}}">
-                  {% for nextprocess in PD['processes'][process]['next_processes']|sort %}
-                  
-                  <option {% if nextprocess == PD['processes'][process]['next_processID'] %} selected {% endif %}>{{nextprocess}}</option>
-                  {% endfor %}
-                </select>
-              </div> 
-        
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" 
-                    name="omit_staging" 
-                    value="true" 
-                    {% if PD['processes'][process]['omit_staging'] == 1 %}checked{% endif %} 
-                    id="omit_staging_{{process}}">
-                <label class="form-check-label" for="omit_staging_{{process}}">
-                  Omit the staging phase. No data will be copied to compute resource!
-                </label>
-              </div> 
-        
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" 
-                    name="modify_in_place" 
-                    value="true" 
-                    {% if PD['processes'][process]['modify_in_place'] == 1 %}checked{% endif %} 
-                    id="modify_in_place_{{process}}">
-                <label class="form-check-label" for="modify_in_place_{{process}}">
-                  Modifies input collection, no output
-                </label>
-              </div>  
-        
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" 
-                    name="restartable" 
-                    value="true" 
-                    {% if PD['processes'][process]['restartable'] == 1 %}checked{% endif %} 
-                    id="restartable_{{process}}">
-                <label class="form-check-label" for="restartable_{{process}}">
-                  Restarts on error
-                </label>
-              </div>  
-        
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" 
-                    name="distribution" 
-                    value="true" 
-                    {% if PD['processes'][process]['distribution'] == 1 %}checked{% endif %} 
-                    id="distribution_{{process}}">
-                <label class="form-check-label" for="distribution_{{process}}">
-                  Distribution pipeline
-                </label>
-              </div>  
-        
-        
-              <div class="form-group">  
-              <button type="submit" class="btn btn-primary">Submit</button>
-              </div>
-            </form>
-            <form action="update_project" method="post">
-              <input type="hidden" id="action_delete_process" name="action" value="delete_process">
-              <input type="hidden" id="project" name="project" value="{{PD.name}}">
-              <input type="hidden" id="process" name="process" value="{{process}}">
-              <button type="submit" class="btn btn-secondary">Delete</button>
-            </form>
-        
-          </div> <!-- card-body-->
-        </div> <!-- collapse -->
-        {% endfor %}
-        
-        <form class="form-inline" action="update_project" method="post">
-          <input type="hidden" id="action_add_process" name="action" value="add_process">
-          <input type="hidden" id="process" name="project" value="{{PD.name}}">
-          <div class="form-group mx-sm-3 mb-2">
-        <!--    <label for="inputPassword2" class="sr-only">Dummy</label> -->
-            <input type="text" class="form-control" name="process" id="inputProcess" placeholder="Process">
-          </div>
-          <button type="submit" class="btn btn-primary mb-2">Add new process</button>
-        </form>
-      </div>   <!-- card -->
-    </div>
-
     <!-- Collections -->
 
     <div class="tab-pane h-100 scroll" id="collections" role="tabpanel" aria-labelledby="collections-tab">
-      <table class="table table-striped table-hover table-sm" >
-        <thead>
-          <TR>
-            <TH scope="col">Name</TH>
-          </TR>
-        </thead>
-        <tbody>
-          {% for coll in PD.colls | sort %}
-          <tr>
-            <td>
-              {{ coll.htmlstring|safe}}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+
     </div>
 
-    <div class="tab-pane" id="usergroup" role="tabpanel" aria-labelledby="usergroup-tab">
+    <div class="tab-pane" id="groups" role="tabpanel" aria-labelledby="groups-tab">
       <H3>Project groups</H3>
       <TABLE class="table table-striped table-hover table-sm" >
         <thead>
@@ -441,6 +309,12 @@ function createContactRow( contact ) {
           {% endfor %}
         </tbody>
       </table>
+    </div>
+
+    <div class="tab-pane" id="managers" role="tabpanel" aria-labelledby="managers-tab">
+    </div>
+
+    <div class="tab-pane" id="users" role="tabpanel" aria-labelledby="users-tab">
     </div>
 
 <!-- PROJECT DELETE CONFIMATION DIALOG -->
@@ -467,6 +341,23 @@ function createContactRow( contact ) {
 </div>
 
 <script>
+
+  function load_users() {
+    usertype = $("ul#projecttabs li button.active").data('usertype')
+    $.get("{{ url_for('projects.usermanager') }}", {
+      object: '{{ PD.name }}',
+      objecttype: 'projects',
+      usertype: usertype
+    }, function(data) {
+      $('#' + usertype).html(data);
+    });
+  }
+
+  $('.usermanager').on('shown.bs.tab', function (event) {
+    load_users();
+  });
+
+
   $( ".toggle_next" ).each(function() {
     var check=$(this).prop('checked')
     var proc=$(this).data('process')
@@ -499,5 +390,20 @@ function createContactRow( contact ) {
     var contact_id = $( this ).attr("data-contact_id");
     var data = { "primary" : primary }
     updateContact( "{{PD.name}}", contact_id, data );
-  })
+  });
+
+
+  function omit_check() {
+    console.log("Check")
+    if ($('input[name="do_bringonline"]').is(":checked")) {
+      $('input[name="do_staging').prop('disabled', false)
+    } else {
+      $('input[name="do_staging').prop('disabled', true).prop('checked', false)
+    }
+  }
+
+  $('input[name="do_bringonline"]').on('click', omit_check );
+  $('document').ready( omit_check )
+
+
 </script>

@@ -1,0 +1,10 @@
+<div>
+    <table>
+        {% for result in results %}
+        <tr>
+            <td>{{ result[0] }}</td>
+            <td>{{ result[1].collentry | safe }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>

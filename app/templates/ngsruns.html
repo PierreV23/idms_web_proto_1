@@ -18,19 +18,21 @@ menuname='runlist'
       </div>
       <div class="card-body">
          <table id="runtable" class="table"
-            sdata-toggle="table"
+            xdata-toggle="table"
             data-striped="true" 
             data-pagination="true"
-            data-page-size="25"
+            xdata-page-size="12"
             data-filter-control="true"
             xdata-height="500"
             data-show-columns-toggle-all="false" 
             data-show-pagination-switch="true" 
             data-show-toggle="false"
             data-show-columns="true"
+            xdata-side-pagination="server"
             data-rows="20"
             data-search="true"
             data-unique-id="id"
+            xdata-url="{{ url_for('ngsruns.runs') }}"
             data-buttons-prefix="btn-sm btn"
             data-buttons-toolbar=".runtable-toolbar">
             <thead>
@@ -40,7 +42,7 @@ menuname='runlist'
                   <th data-field="flowcell_display" data-align="" data-sortable="true" data-filter-control="input" >Flowcell</th>
                   <th data-field="project" data-align="" data-sortable="true" data-filter-control="select">Project</th>
                   <th data-field="owner" data-align="" data-sortable="true" data-filter-control="select">User</th>
-                  <th data-field="datacoll" data-align="" data-sortable="true" data-filter-control="input">Collection</th>
+                  <th data-field="datacoll" data-align="" data-sortable="false" data-filter-control="input">Collection</th>
                </tr>
             </thead>
          </table>
@@ -48,15 +50,15 @@ menuname='runlist'
       </div>
    </div>
 
-   <div class="scroll card border-primary col-md-8 d-nonxe" id="barcodes">
+   <div class="card border-primary col-md-8 d-nonxe h-100" id="barcodes">
       <div class="card-header d-none" id="barcode-title">
          <h2 class="alignleft">
             Barcodes in run <b class="runname"></b> on project 
             <span class="projectname"></span> (<span class="flowcellname"></span><span class="rundescription"></span>)
          </h2>
-         <button type="button" class="btn btn-danger alignright" data-toggle="modal" data-target="#confirm-delete">Delete</button>
+         <button type="button" class="btn btn-danger alignright" id="delete1" data-toggle="modal" data-target="#confirm-delete">Delete</button>
        </div>
-       <div class="card-body" id="barcodepane">
+       <div class="scroll card-body" id="barcodepane">
 
        </div>
    </div>
@@ -100,6 +102,11 @@ $('document').ready(function(){
    $('#runtable').on('click-row.bs.table', function(e, row) {
       selected_id = row.id
       $('#barcode-title').removeClass('d-none')
+      if ({{ projects | safe }}.includes(row.project)) {
+         $('#delete1').prop('disabled', false);
+      } else {
+         $('#delete1').prop('disabled', true);
+      }
       $('.runname').html(row.name);
       $('.projectname').html(row.project);
       $('.flowcellname').html(row.flowcell);
@@ -112,7 +119,7 @@ $('document').ready(function(){
          idrequest: row.id
          }, function (data) {
                $('#barcodepane').html(data);
-               $('tr[data-uniqueid='+selected_id+']').addClass('bg-primary').siblings().removeClass('bg-primary')
+               $('tr[data-uniqueid='+selected_id+']').addClass('bg-secondary').siblings().removeClass('bg-secondary')
                resize_tables();
             }
          );

@@ -1,7 +1,18 @@
 {% extends 'base2.html' %}
 
 {% block heading %}
-<H3><b>Collection:</b> <span id="path_title"></span></H3>
+<H3><b>Collection:</b> <span id="path_title"></span>
+  <div class="btn-group float-right">
+    <button id="path_copy" type="button" data-toggle="tooltip" data-placement="bottom" class="btn btn-sm btn-outline-secondary" title="copy WebDav path to clipboard">
+      <i class="fa fa-clipboard"></i>
+      <!--span class="visually-hidden">Button</span-->
+    </button>
+    <button id="path_open" type="button" data-toggle="tooltip" data-placement="bottom" class="btn btn-sm btn-outline-secondary" title="open collection in new tab">
+      <i class="fa fa-folder"></i>
+      <!--span class="visually-hidden">Button</span-->
+    </button>
+  </div>
+</H3>
 {% endblock %}
 
 {%block menuname %}
@@ -14,22 +25,34 @@ menuname='collectionbrowser'
 
   var collection = "{{ path }}";
   var graph_levels = "{{ graph_levels }}";
+  var graph_simplify = "{{ graph_simplify }}"
   var sortkey = "";
   var reverse = "";
   var activetab = "Files";
   var selected_object = "";
   var waiting = '<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>'
 
+  var myDefaultWhiteList = $.fn.tooltip.Constructor.Default.whiteList
+  $(function() {
+    $.fn.popover.Constructor.Default.whiteList.table = [];
+    $.fn.popover.Constructor.Default.whiteList.tr = [];
+    $.fn.popover.Constructor.Default.whiteList.td = [];
+    $.fn.popover.Constructor.Default.whiteList.div = [];
+    $.fn.popover.Constructor.Default.whiteList.tbody = [];
+    $.fn.popover.Constructor.Default.whiteList.thead = [];  
+  })
+  myDefaultWhiteList.span = ['data-path']
+
   function fillModal(path, name) {
     var ModalHeader = document.getElementById("DocTitle")
     ModalHeader.innerHTML = name
     var modalEmbed = document.getElementById("DocText")
     newEmbed = modalEmbed.cloneNode(true)
-    source = "{{ url_for('docviewer.serve_object') }}?path=" + path
+    source = "{{ url_for('docviewer.serve_object') }}?path=" + encodeURIComponent(path)
     newEmbed.setAttribute('src', source)
     modalEmbed.parentNode.replaceChild(newEmbed, modalEmbed)
   }
-
+  
   function avu_table() {
     if ($("#metatoggle").text() == 'Formatted') {
       d1 = 'table-cell';
@@ -56,18 +79,91 @@ menuname='collectionbrowser'
         path + '">' + path_elem[i] + '</span>'
     }
     $("#path_title").html(title)
+    $('#path_copy').on('click', copy_to_clipboard);
+    $('#path_open').on('click', open_in_browser);
+  }
+
+  function get_webdav_path( irods_path, protocolPrefix, add_ssl, seperator ) {
+    var path_elem = irods_path.split('/')
+    path_elem.shift()
+    path_elem.shift()
+    var path_without_zone = path_elem.join(seperator)
+    var path = protocolPrefix + "rivm-bioir-l03p.rivm.ssc-campus.nl"
+    if( add_ssl ) path += "@SSL" 
+    path += seperator + path_without_zone;
+    console.log(path)
+    return path
+  }
+
+  // solution for copy to clipboard for unsecure pages: 
+  // https://stackoverflow.com/questions/71873824/copy-text-to-clipboard-cannot-read-properties-of-undefined-reading-writetext
+  function unsecuredCopyToClipboard(text) { 
+    const textArea = document.createElement("textarea"); 
+    textArea.value=text; 
+    document.body.appendChild(textArea); 
+    textArea.focus();
+    textArea.select(); 
+    textArea.setSelectionRange(0, 99999);
+    try{
+      document.execCommand('copy')
+    }
+    catch(err){
+      console.error('Unable to copy to clipboard',err)
+    }
+    document.body.removeChild(textArea)
+  };
+
+/**
+ * Copies the text passed as param to the system clipboard
+ * Check if using HTTPS and navigator.clipboard is available
+ * Then uses standard clipboard API, otherwise uses fallback
+*/
+  function copy_to_clipboard() {
+    var seperator = "/";
+    var addSSL = false;
+    var protocolPrefix = "davs://"
+    //console.log("OperatingSystem:" + navigator.appVersion)
+    if (navigator.appVersion.indexOf("Win") != -1 ) {
+      seperator = "\\";
+      var protocolPrefix = "\\\\"
+      addSSL = true;
+    }
+    var path = get_webdav_path( collection, protocolPrefix, addSSL, seperator )
+    if (window.isSecureContext && navigator.clipboard) {
+      navigator.clipboard.writeText( path )
+    } else {
+      console.log("unsecure connection, try workaround for clipboard access")
+      unsecuredCopyToClipboard(path);
+    }
+  }
+
+  function open_in_browser() {
+    var path = get_webdav_path( collection, "https://", false, "/" )
+    //window.open( "davs:"+path, '_blank');  would open xdg on linux or win scp
+    window.open( path, '_blank');
+    //window.open( "webdavs:"+path, '_blank');
   }
 
   function load_graph() {
     $('#graphimg').html(waiting);
     $.get('{{ url_for('collbrowser.generate_graph') }}', {
       path: collection,
-      levels: graph_levels
+      levels: graph_levels,
+      graph_simplify: graph_simplify
     }, function (data) {
       $('#graphimg').html(data);
-      let w = $("#graphimg").width().toString() + 'px';
+      size_graph();
+    })
+  }
+
+  function size_graph() {
+    let w = $("#graphimg").width().toString() + 'px';
       $('svg').width(w);
-      let top = $('.center-coll').offset().top + $('#graphdiv').scrollTop() - $('#graphdiv').offset().top - $('#graphdiv').height() / 2
+      centertop = 0
+      if ($('.center-coll').length !== 0) {
+        centertop = $('.center-coll').offset().top
+      }
+      let top = centertop + $('#graphdiv').scrollTop() - $('#graphdiv').offset().top - $('#graphdiv').height() / 2
       $('#graphdiv').scrollTop(top)
       if (top<0) {
         if ($('#graphimg').height()<$('#graphdiv').height()) {
@@ -76,7 +172,6 @@ menuname='collectionbrowser'
       } else {
         $('#graphdiv').scrollTop(top);
       }
-    });
   }
 
   function load_list(new_path) {
@@ -109,7 +204,7 @@ menuname='collectionbrowser'
   function load_actions() {
     //path_elem = collection.split('/')
     //current_col_name = path_elem[-1]
-
+    $('#collapse-actions').html(waiting)
     $.get('{{ url_for('collbrowser.coll_actions') }}', {
       path: collection
     }, function (data) {
@@ -121,6 +216,7 @@ menuname='collectionbrowser'
   }
 
   function set_path() {
+    $('.collist').popover('dispose')
     load_list(true);
     load_graph();
     load_meta();
@@ -140,13 +236,23 @@ menuname='collectionbrowser'
   };
 
   $(document).on('click', '.path-change', function () {
+    collection = (this.nodeName == "g" ? this.id : $(this).data('path'));
     history.pushState({ "coll": collection }, 'Browse ' + collection, '/collbrowser?path=' + collection);
-    collection = $(this).data('path');
     if (typeof collection == 'undefined') {
       collection = $(this).attr('id')
     }
     set_path();
   });
+
+  $(document).on('change', '#graph_simplify', function () {
+    graph_simplify = (+ $(this).is(':checked')).toString()
+    console.log(graph_simplify)
+    $.post('{{ url_for("userinfo.usersetting") }}', {
+      attr: 'graph_simplify',
+      value: graph_simplify
+    })
+    load_graph()
+  })
 
   $(document).on('change', '#graphlevels', function () {
     graph_levels = $(this).val();
@@ -155,7 +261,6 @@ menuname='collectionbrowser'
       value: graph_levels
     })
     load_graph()
-    console.log('change', graph_levels);
   })
 
   $(window).on('load', function () {
@@ -168,6 +273,30 @@ menuname='collectionbrowser'
     sortkey = $(this).data('key');
     reverse = $(this).data('dir');
     load_list(false);
+  });
+
+  $(document).on('click', function (e,f,g) {
+    $('.collist').popover('hide');
+  });
+
+  $(document).on('click', '.collist', function (e) {
+    myid = e.currentTarget.id
+    query = myid.substring(0,2)
+    coll = myid.substring(3)
+    $myel = $(this)
+    $.get('{{ url_for('collbrowser.multi_list') }}', {
+      collection: coll,
+      q: query}, function(data){
+        $myel.popover('dispose');
+        $myel.popover({
+                trigger: 'focus',
+                placement: 'bottom',
+                html: true,
+                title: 'Collections',
+                content: data
+        })
+        $myel.popover('show');
+      })
   });
 
 
@@ -197,6 +326,8 @@ menuname='collectionbrowser'
       <div class="card-title">Data graph</div>
       <form class="form-inline float-right">
         <div class="form-group">
+          <label for="graph_simplify">Simplify</label>
+          <INPUT class="hspace" type="checkbox" id="graph_simplify" {% if graph_simplify == "1" %}checked{% endif %}>
           <label for="graphlevels">Graph Levels</label>
           <INPUT type="number" class="form-control" min="0" max="10" name="graphlevels" id="graphlevels"
             value="{{ graph_levels }}">
@@ -213,15 +344,10 @@ menuname='collectionbrowser'
     </div>
   </div>
 
-  <div class="card browser-contents">
-    <div class="card-header myheader">
-      Collection contents
-    </div>
-    <div class="card-body scroll" id="collapse-contents">
+  <div class="card browser-contents h-100" id="collapse-contents">
       <div class="overlay">
         <i class="fas fa-2x fa-sync-alt fa-spin"></i>
       </div>
-    </div>
   </div>
 
   <div id="collapse-actions" class="card browser-actions h-100">
@@ -342,5 +468,20 @@ menuname='collectionbrowser'
 
 </div> <!-- content -->
 
+<script>
+
+var graph_width = 0;
+
+var ro = new ResizeObserver( entries => {
+  w = $("#graphimg").width();
+  if (w != graph_width) {
+    graph_width = w;
+    size_graph();
+  }
+});
+
+ro.observe(document.querySelector("#graphimg"));
+
+</script>
 
 {% endblock %}

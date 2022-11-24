@@ -12,51 +12,97 @@ menuname='dataissues'
 
 <script>
 
-$SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+  $SCRIPT_ROOT = {{ request.script_root | tojson | safe }};
 
-let loaded_cards = new Set()
+  let loaded_cards = new Set()
 
-$(function() {
-    $('.checksum-toggle').bind('click', function(e) {
-        cardid = $(this).data('label')
-        if (!loaded_cards.has(cardid)) {
-          $.get('{{ url_for('admin.query_issues') }}', 
-            function(data) {
-              $('#checksumtable').html(data);
-            })
-          loaded_cards.add(cardid)
-        }
-      }
-    )
-});
 
 </script>
 
+<link href="https://unpkg.com/bootstrap-table@1.20.2/dist/bootstrap-table.min.css" rel="stylesheet">
 
-<div class="card border-primary mb-3 h-100">
-<div class="card-header">
-<a class="btn btn-outline-secondary text-left checksum-toggle" data-toggle="collapse" data-label="checksum" href="#collapse-checksum" role="button" aria-expanded="false" aria-controls="collapse-checksum">
-Checksum issues
-</a>
+<script src="https://unpkg.com/bootstrap-table@1.20.2/dist/bootstrap-table.min.js"></script>
+
+<div class="card h-100">
+  <div class="card-header">
+    <ul class="nav nav-pills" id="myTab" role="tablist">
+      <li class="nav-item">
+        <a class="nav-link" id="checksum-tab" data-toggle="pill" href="#checksum-issues" role="tab"
+          aria-controls="checksum-issues" aria-selected="true">Checksum issues</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="consistency-tab" data-toggle="pill" href="#consistency-issues" role="tab"
+          aria-controls="consistency-issues" aria-selected="false">Consistency issues</a>
+      </li>
+
+    </ul>
+  </div>
+  <div class="card-body tab-content h-100 scroll" id="myTabContent">
+    <div class="tab-pane fade" id="checksum-issues" role="tabpanel" aria-labelledby="home-tab">
+      <TABLE class="table table-striped table-hover table-sm table-smallfont">
+        <thead class="thead-dark">
+          <TH scope="col">Object</TH>
+          <TH scope="col">File</TH>
+          <TH scope="col">Resource</TH>
+          <TH scope="col">Size</TH>
+          <TH scope="col">Checksum</TH>
+          </TR>
+        </thead>
+        <tbody id=checksumtable>
+          <TR>
+            <TD COLSPAN=3>Please wait ...</td>
+          </tr>
+        </tbody>
+      </TABLE>
+    </div>
+    <div class="tab-pane fade" id="consistency-issues" role="tabpanel" aria-labelledby="consistency-tab">
+      <table id="consistency-table" data-detail-view="true" data-detail-formatter="formatDetails"
+        data-show-refresh="true" data-toggle="table">
+        <thead>
+          <tr>
+            <th data-field="collink">Collection name</th>
+            <th data-field="resource">Resource</th>
+            <th data-field="location">Location</th>
+            <th data-field="issues">Issue count</th>
+          </tr>
+        </thead>
+      </table>
+    </div>
+  </div>
+
 </div>
 
-<div class="card-body h-100 autoscroll">
-<div class="collapse" id="collapse-checksum">
-<TABLE class="table table-striped table-hover table-sm table-smallfont">
-<thead class="thead-dark">
-<TH scope="col">Object</TH>
-<TH scope="col">File</TH>
-<TH scope="col">Resource</TH>
-<TH scope="col">Size</TH>
-<TH scope="col">Checksum</TH>
-</TR>
-</thead>
-<tbody id=checksumtable>
-<TR><TD COLSPAN=3>Please wait ...</td></tr>
-</tbody>
- </TABLE>
- </div>
-</div>
-</div>
+<script>
+  var $table = $('#consistency-table')
+
+  $('a[data-toggle="pill"]').on('shown.bs.tab', function (e) {
+    if (e.target.id == "consistency-tab") {
+      $table.bootstrapTable('refresh', { url: "{{ url_for('admin.data_consistency') }}" })
+    } else if ( e.target.id == "checksum-tab" ) {
+      cardid = $(this).data('label')
+      if (!loaded_cards.has(cardid)) {
+        $.get('{{ url_for('admin.query_issues') }}',
+          function (data) {
+            $('#checksumtable').html(data);
+          })
+        loaded_cards.add(cardid)
+      }
+    }
+  })
+
+  function formatDetails(index, row) {
+    return $.ajax({
+      type: "GET",
+      url: "{{ url_for('admin.consistency_details') }}",
+      data: {
+        collection: row.collection,
+        resource: row.resource
+      },
+      async: false
+    }).responseText;
+  }
+
+  $('#checksum-tab').tab('show')
+</script>
 
 {% endblock %}

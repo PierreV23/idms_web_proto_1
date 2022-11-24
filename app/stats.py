@@ -1,3 +1,4 @@
+import threading
 import time
 from functools import wraps
 
@@ -53,6 +54,15 @@ def stats(func):
         starttime = time.time()
         result = func(*args, **kwargs)
         statstore.add(func.__name__, time.time() - starttime)
+        return result
+    inner = wraps(func)(inner)
+    return inner
+
+def thi(func):
+    def inner(*args, **kwargs):
+        print(f'ENTER {func.__name__} from {threading.get_ident()}')
+        result = func(*args, **kwargs)
+        print(f'EXIT  {func.__name__} from {threading.get_ident()}')
         return result
     inner = wraps(func)(inner)
     return inner

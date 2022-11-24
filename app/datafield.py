@@ -7,8 +7,9 @@ Created on Fri Jan 10 15:22:06 2020
 """
 
 import math
+import os
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from flask import url_for
 from flask_login import current_user, login_required
 from irods.models import Collection, CollectionMeta
@@ -47,7 +48,8 @@ KNOWN_ATTRIBUTE_TEMPLATES = {
     'sys::run::.*_time': 'timestamp',
     'sys::lock::time::.*::valid_till': 'timestamp',
     'sys::lock::time::.*::runtime': 'timedelta',
-    'sys::lock::time::.*::timeout': 'timedelta'
+    'sys::lock::time::.*::timeout': 'timedelta',
+    'sys::consistency::.*::timestamp': 'timestamp'
 }
 
 MAXLEN = 45
@@ -166,12 +168,19 @@ class data_timedelta(data_base):
 
 class data_timestamp(data_base):
     def __init__(self, name, value, datatype=None):
-        try:
+        if type(value) in (int, float):
             myvalue = float(value)
-            self._formatted_date = datetime.fromtimestamp(myvalue).strftime("%d-%m-%Y %H:%M:%S")
-        except:
-            myvalue = value
-            self._formatted_date = value
+        elif type(value) == str:
+            try:
+                myvalue = float(value)
+            except ValueError:
+                raise ValueError(f'String {value} cannot be converted to timestamp')
+        elif isinstance(value, datetime):
+            # Assuming this is an irods timestamp, it will be local time without tz info
+            myvalue = datetime.timestamp(value.replace(tzinfo=timezone.utc))
+        else:
+            raise ValueError(f'Data type {type(value)} cannot be converted to timestamp')      
+        self._formatted_date = datetime.fromtimestamp(myvalue).strftime("%d-%m-%Y %H:%M:%S")
         super().__init__(name, myvalue, datatype)
 
     def __str__(self):
@@ -215,6 +224,10 @@ class data_irods_collection(data_base):
             return '{}/{}'.format(prefix, shortname)
 
     @property
+    def basename(self):
+        return os.path.basename(self.value)
+
+    @property
     def htmlstring(self):
         displaystring = self.displaystring()
         return '<a href="{0}?path={1}">{2}</A>'.format(
@@ -224,6 +237,10 @@ class data_irods_collection(data_base):
     def htmlshort(self):
         displaystring = self.displaystring(maxlen=MAXLEN)
         return '<div class="container"><a href="{0}?path={1}" data-toggle="tooltip" title="{1}">{2}</A></div>'.format(format(url_for('collbrowser.collbrowser')), self.value, displaystring)
+
+    @property
+    def collentry(self):
+        return f'<span class="path-change" data-path="{self.value}">{self.basename}</span>'
 
     @staticmethod
     def factory(**kwargs):
@@ -244,7 +261,7 @@ class data_collection_id(data_base):
     def ref_col(self):
         if self._searched_for_ref_col:
             return self._ref_col
-        query = iqry.qcollbystaticmeta('sys::dataset_id', self.value)
+        query = iqry.qcollbymeta('sys::dataset_id', self.value)
         for coll in query:
             self._ref_col = coll[Collection.name]
         self._searched_for_ref_col = True
@@ -294,6 +311,12 @@ class data_irods_object(data_base):
     def __lt__(self, other):
         return self.value < other.value
 
+class data_irods_user(data_base):
+
+    @staticmethod
+    def factory(**kwargs):
+        return data_irods_user(**kwargs)
+
 
 class data_projectid(data_base):
 
@@ -305,13 +328,28 @@ class data_projectid(data_base):
     def factory(**kwargs):
         return data_projectid(**kwargs)
 
+class data_process(data_base):
+
+    @property
+    def htmlstring(self):
+        return '<a href="{0}">{1}</a>'.format(url_for('projects.show_projects', page='processes', process=self.value), self.value)
+
+    @staticmethod
+    def factory(**kwargs):
+        return data_process(**kwargs)
+
+
 class data_processgroupid(data_base):
 
     @property
     def htmlstring(self):
-        s = '<a href={0}?processgroupid={1} data-toggle="tooltip" title="{1}">{2}</a>'.format(url_for('jobs.show_pg'), self.value, self.value[:8])
+        s = '<a href={0}?processgroupid={1}>{1}</a>'.format(url_for('jobs.show_pg'), self.value)
         return s
 
+    @property
+    def htmlshort(self):
+        return '<a href={0}?processgroupid={1} data-toggle="tooltip" title="{1}">{2}</a>'.format(url_for('jobs.show_pg'), self.value, self.value[:8])
+        
     @staticmethod
     def factory(**kwargs):
         return data_processgroupid(**kwargs)

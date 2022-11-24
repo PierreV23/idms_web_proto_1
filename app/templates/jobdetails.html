@@ -26,6 +26,12 @@ menuname='jobdetails'
     })
   });
 
+  function detailFilter(index, row) {
+    console.log(row._data)
+    return row._data.multi > 1
+  }
+
+
 </script>
 
 
@@ -37,17 +43,28 @@ menuname='jobdetails'
       <div class="card-title">Job Parameters</div>
     </div>
     <div class="card-body h100 autoscroll">
-      <TABLE class="table table-striped table-hover table-sm">
-        <thead class="thead-dark">
-          <TR bgcolor=cyan height=50>
+      <TABLE id="jobdetails" 
+        data-toggle="table" 
+        data-striped="true"
+        data-detail-view="true"
+        data-detail-filter="detailFilter">
+        <thead>
+          <TR>
             <TH scope="col">Attribute</TH>
             <TH scope="col">Value</TH>
           </TR>
         </thead>
         <tbody>
           {% for entry in details %}
-          <TD>{{ entry }}</TD>
-          <TD>{{ details[entry].htmlstring | safe }}</TD>
+          <TR>
+            <TD>{{ entry }}</TD>
+            <TD>{{ details[entry].htmlstring | safe }}</TD>
+          </TR>
+          {% endfor %}
+          {% for entry in multi %}
+          <TR DATA-MULTI={{ multi[entry] | length }}>
+            <TD>{{ entry }}</TD>
+            <TD>{% if multi[entry] | length == 1 %}{{ multi[entry][0].htmlstring | safe }}{% endif %}</TD>
           </TR>
           {% endfor %}
         </tbody>
@@ -85,5 +102,25 @@ menuname='jobdetails'
 </div>
 </div>
 {% endif %}
+
+<script>
+  multi = {{ multi | safe }}
+
+  function subTable($table, name) {
+    console.log(name)
+    data = []
+    multi[name].forEach((x,i) => data.push({'field': x}))
+    console.log(data)
+    $table.bootstrapTable({
+      columns: [{ field: 'field', title: name }],
+      data: data,
+      showHeader: false
+    })
+  }
+
+  $('table#jobdetails').on('expand-row.bs.table', function (e, index, row, $detail){
+    subTable($detail.html('<table></table>').find('table'), row[0])
+  });
+</script>
 
 {% endblock %}

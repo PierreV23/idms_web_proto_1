@@ -57,9 +57,9 @@
             </td>
             <td>
                {% if options.download_btn == True %}
-                  <a href="{{ url_for('docviewer.download_object') }}?path={{entry.path}}">
-                     <IMG src="{{ url_for('static', filename='img/download-button.png' ) }}" class="mybutton">
-                  </a>
+               <a href="{{ url_for('docviewer.download_object', path=entry.path) }}">
+                  <IMG src="{{ url_for('static', filename='img/download-button.png' ) }}" class="mybutton">
+               </a>
                {% endif %}
             </td>
             <td>

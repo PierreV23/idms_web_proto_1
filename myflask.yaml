@@ -4,20 +4,24 @@ channels:
   - defaults
   - anaconda
 dependencies:
+  - apscheduler
   - biopython
   - flask
   - freetds
   - git
   - graphviz
   - jsonschema
+  - marshmallow==3.17.0
   - marshmallow-sqlalchemy
   - numpy
   - openpyxl=3.0.6
   - openssl=1.1.1
   - pandas
   - pip
-  - python
+  - python>3.8
+  - python-dateutil
   - pyyaml
+  - redis-server
   - requests
   - flask-caching
   - flask-login
@@ -27,6 +31,7 @@ dependencies:
   - flask-script
   - sqlite
   - psycopg2
+  - werkzeug==2.0.3
   - pip:
     - pymssql==2.1.5
     - randomname

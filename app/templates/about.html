@@ -1,0 +1,35 @@
+{% extends 'base2.html' %}
+  
+{% block heading %}
+<H3>About</H3>
+{% endblock %}
+
+{% block content %}
+
+<div class="card">
+    <div class="card-header">
+        Contacts
+    </div>
+    <div class="card-body">
+        <P>Authors:</P>
+        <ul>
+            <li>Erwin van Wieringen (erwin.van.wieringen@rivm.nl)</LI>
+            <li>Jan-Erek Thiede (jan.erek.thiede@rivm.nl)</li>
+            <li>Mark Kroon (mark.kroon@rivm.nl)</li>
+            <li>Robert Verhagen (robert.verhagen@rivm.nl)</li>
+            <li>Eva Deutekom (eva.deutekom@rivm.nl)</li>
+            <li>Remie Janssen (remie.janssen@rivm.nl)</li>
+            <li>Stefan Lobner (stefan.lobner@rivm.nl)</li>
+        </ul>
+    </div>
+</div>
+<div class="card">
+    <div class="card-header">
+        iRODS environment
+    </div>
+    <div class="card-body">
+        iRODS Server version : {{ version }}
+    </div>
+</div>
+
+{% endblock %}

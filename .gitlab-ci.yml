@@ -1,6 +1,18 @@
 stages:
   - deploy
 
+deploy_minilims:
+  stage: deploy
+  script:
+  - /opt/miniconda3/bin/conda env update -n base -f ${CI_PROJECT_DIR}/myflask.yaml
+  - cp -r ${CI_PROJECT_DIR}/* /opt/ngsweb
+  - sudo /bin/systemctl restart ngsweb.service
+  only:
+    - minilims_creators
+  tags:
+    - test2
+    
+
 deploy_test:
   stage: deploy
   script:

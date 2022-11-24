@@ -1,0 +1,90 @@
+{% extends 'upload_pages.html' %}
+
+{% block heading %}
+<H2>Upload metadata for: <b>{{ name }}</b></H2>
+{% endblock %}
+
+{%block menuname %}
+menuname='upload_meta'
+{% endblock %}
+
+{% block content %}
+
+<script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@rjsf/core/dist/react-jsonschema-form.js"></script>
+
+<div id="app"></div>
+<div id="res"></div>
+<script>
+  var formaction = 'default';
+</script>
+
+
+<div class="card h-100">
+  <div class="card-header">
+    <H2>TODO: select a schema for this project</H2>
+  </div>
+  <div class="card-body auto-scroll">
+    <div id="reactform"></div>
+    <button class="btn btn-primary formsubmit" type="submit" name="save" form="metaForm">Save</button>
+    <button class="btn btn-primary formsubmit" type="submit" name="continue" form="metaForm">Save & Continue</button>
+  </div>
+</div>
+
+
+<script>
+
+  const Form = JSONSchemaForm.default;
+  const schema = {{ schema | safe }};
+  const formdata = {{ data | safe }};
+
+  const log = (type) => console.log.bind(console, type);
+  let metaForm;
+
+  $('.formsubmit').on('click', function () {
+    formaction = $(this).attr('name');
+  })
+
+  function formSubmit(e, d) {
+    data = {
+      data: e.formData,
+      coll: "{{ coll }}",
+      action: formaction
+    }
+    $.ajax({
+      type: "POST",
+      url: '{{ url_for("upload.upload_meta") }}',
+      data: JSON.stringify(data),
+      contentType: "application/json; charset=utf-8",
+      dataType: "json",
+      success: function () {
+        if (formaction == 'save') {
+          location.reload();
+        } else {
+          window.location.replace('{{ url_for("upload.upload_data", coll=coll) }}')
+        }
+      }
+    });
+  }
+
+  ReactDOM.render(
+    React.createElement(Form, {
+      id: "metaForm",
+      schema: schema,
+      formData: formdata,
+      onChange: function () {
+        $('.formsubmit').removeAttr('disabled');
+      },
+      onSubmit: formSubmit,
+      ref: form => metaForm = form,
+      onError: log("errors")
+    },
+      React.createElement("div", null)),
+    document.getElementById("reactform"));
+
+
+</script>
+
+
+{% endblock %}

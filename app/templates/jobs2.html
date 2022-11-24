@@ -34,6 +34,7 @@ $(document).ready(function(){
         <a class="dropdown-item" href="/jobs?items=active">Active</a>
         <a class="dropdown-item" href="/jobs?items=postprocessing">Post-processing</a>
         <a class="dropdown-item" href="/jobs?items=done">Done</a>
+        <a class="dropdown-item" href="/jobs?items=notrun">Notrun</a>
         <a class="dropdown-item" href="/jobs?items=waiting">Waiting</a>
         <a class="dropdown-item" href="/jobs?items=error">Error</a>
         <a class="dropdown-item" href="/jobs?items=all">All</a>
@@ -59,27 +60,15 @@ $(document).ready(function(){
 </thead>
 <tbody>
 {% for entry in joblist %}
-    {% if entry.State.value in ("incoming", "stage", "depends") %}
-      <TR class="table-light">
-    {% elif entry.State.value == "prepare" %}
-      <TR class="table-info">
-    {% elif entry.State.value == "queued" %}
-      <TR class="table-active">
-    {% elif entry.State.value == "startup" %}
-        <TR class="table-info">
-    {% elif entry.State.value == "active" %}
-      <TR class="table-primary">
-    {% elif entry.State.value == "postprocessing" %}
-      <TR class="table-info">
-    {% elif entry.State.value == "waiting" %}
-      <TR class="table-warning">
+  {% if "Result" in entry and entry["Result"].value != 0 %}
+    <TR class="table-danger">
+  {% else %}
+    {% if entry.State.value in LAYOUT %}
+      <TR class="{{ LAYOUT[entry.State.value].tableclass }}">
     {% else %}
-      {% if "Result" in entry and entry["Result"].value == 0 %}
-        <TR class="table-success">
-      {% else %}
-        <TR class="table-danger">
-      {% endif %}
+      <TR class="table-white">
     {% endif %}
+  {% endif %}
     {% for column in columns %}    
         <TD>
         {% if column in entry %}
@@ -87,15 +76,6 @@ $(document).ready(function(){
         {% endif %}</TD>
         
     {% endfor %}
-<!--    
-    <td>
-{% if entry.State != 'done' %}
-        <button class="btn btn-secondary btn-sm" type="button" id="resubmitButton" aria-haspopup="true" aria-expanded="false">End</button>
-{% else %}
-        <button class="btn btn-secondary btn-sm" type="button" id="resubmitButton" aria-haspopup="true" aria-expanded="false">Resubmit</button>
-{% endif %}        
-    </td>
--->    
     </TR>
 {% endfor %}
 </tbody>

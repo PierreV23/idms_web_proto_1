@@ -1,5 +1,8 @@
+from logging import FileHandler
 import os
-from flask import Flask, redirect, render_template, request, url_for
+import requests
+from requests.auth import HTTPBasicAuth
+from flask import Flask, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, LoginManager, login_required, logout_user
 from flask_migrate import Migrate
 from app.models import WebUser
@@ -10,24 +13,18 @@ from . import auth, collbrowser, jobs, docviewer
 from . import projects, cluster, admin, reports, userinfo
 from . import ngsruns, upload, flaskcache
 from . import messages
-import irods.exception
+from .ngsruns import db, NGSRunsDBUnavailableException
+from .flaskcache import cache
+from .irodssessions import irods_manager
 
-
-logging.config.dictConfig({
+# This is the default log config. It can (and should) be overruled by
+# setting LOGCONFIG in config.py
+DEFAULT_LOGCONFIG = {
     'version': 1,
-    'handlers': {
-        'wsgi': {
-            'class': 'logging.StreamHandler',
-        },
-        'syslog': {
-            'class': 'logging.handlers.SysLogHandler'
-        }
-    },
-    'root': {
-        'level': 'DEBUG',
-        'handlers': ['wsgi', 'syslog']
-    }
-})
+    'formatters': {'default': {'format': '[%(asctime)s] %(levelname)s - %(module)s: %(message)s'}},
+    'handlers': {'default': {'class': 'logging.StreamHandler', 'formatter': 'default'}},
+    'root': {'level': 'DEBUG', 'handlers': ['default']}
+}
 
 app = Flask(__name__)
 
@@ -47,6 +44,12 @@ app.config.from_mapping(
 )
 
 app.config.from_pyfile(os.path.join(app.instance_path, 'config.py'), silent=True)
+app.config.from_pyfile(os.path.join(app.instance_path, 'constants.py'), silent=True)
+
+logging.config.dictConfig(app.config.get('LOGCONFIG', DEFAULT_LOGCONFIG))
+
+db.init_app(app)
+irods_manager.init_app(app)
 
 app.register_blueprint(auth.bp)
 app.register_blueprint(collbrowser.bp)
@@ -60,16 +63,14 @@ app.register_blueprint(ngsruns.bp)
 app.register_blueprint(upload.bp)
 app.register_blueprint(userinfo.bp)
 
-from .ngsruns import db
-db.init_app(app)
 
 flaskcache.init(app)
-
-migrate = Migrate(app, db)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "auth.login"
+
+logging.info('NGSWEB initialized')
 
 @login_manager.user_loader
 def load_user(userid):
@@ -85,9 +86,49 @@ def msgconfirm():
     messages.confirm()
     return dict(result='OK')
 
-@app.route('/contacts')
-def contacts():
-    return render_template('contacts.html')
+@app.route('/about')
+def about():
+    with irods_manager.session() as session:
+        version = '.'.join(map(str, session.server_version))
+    return render_template('about.html', version=version)
+
+REQUESTS_METHODS = {
+    'GET':   requests.get,
+    'PUT':   requests.put,
+    'POST':  requests.post,
+    'DELETE':requests.delete
+}
+
+@app.route('/_brs/<path:rest_endpoint>', methods=['GET', 'PUT', 'POST', 'DELETE'])
+@login_required
+def restcall(rest_endpoint):
+    """Proxy endpoint for bio-rest service
+
+    Args:
+        rest_endpoint (str): Endpoint path
+
+    Returns:
+        tuple: data, result_code
+    """    
+    if request.method in ('PUT', 'POST'):
+        data = request.json
+    else:
+        data = None
+    url = 'http://{}/api/1.0/{}'.format(current_user.irods_server, rest_endpoint)
+    #TODO: remove this testing line:
+    #url = 'http://{}/api/1.0/{}'.format('0.0.0.0:5000', rest_endpoint)
+    auth = HTTPBasicAuth('alt\\{}'.format(current_user.username), current_user.ntlm_hash)
+    return_data = {}
+    if request.method in REQUESTS_METHODS:
+        response = REQUESTS_METHODS[request.method](url, auth=auth, json=data)
+    try:
+        return_data = response.json()
+    except:
+        return_data = {}
+    if request.method != 'GET':
+        cache.delete_memoized(restcall)
+    return jsonify(return_data), response.status_code    
+
 
 # @app.teardown_request
 # def teardown(x):
@@ -99,6 +140,7 @@ def contacts():
 @app.errorhandler(irods.exception.PAM_AUTH_PASSWORD_FAILED)
 def invalid_session(e):
     """Session may be stale. Destroy it and redirect to login page."""
+    app.logger.info(f"Invalid session: user {current_user.username} on {current_user.environment} environment")
     return auth.logout()
 
 # irods.exception.CAT_NO_ACCESS_PERMISSION
@@ -108,6 +150,11 @@ def unauthorized(e):
     authorization."""
     # N.B. we can't extract the object that was accessed (tried to) from 
     # the exception, so just log the request path instead.
-    app.logger.warning("Unauthorized access attempt: '{}' on '{}'".format(current_user.get_id()), request.path)
+    app.logger.warning("Unauthorized access attempt: '{}' on '{}'".format(current_user.get_id(), request.path))
     # Re-raise, since we don't have a solution.
     raise Exception(e)
+
+@app.errorhandler(NGSRunsDBUnavailableException)
+def handle_bad_request(e):
+    flash('NGSRuns Database Unavailable', 'error')
+    return redirect(url_for('home'))

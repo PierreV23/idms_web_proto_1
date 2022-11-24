@@ -9,15 +9,20 @@ def init(app):
     global cache
     cache.init_app(app)
 
-def makename(funcname):
+def dep_zone(funcname):
+    return f'{current_user.irods_zone}{funcname}'
+
+def dep_userzone(funcname):
     return f'{current_user.username}{current_user.irods_zone}{funcname}'
 
-def makekey():
+def key_zone():
+    return f'{current_user.irods_zone}{request.full_path}'
+
+def key_userzone():
     return f'{current_user.username}{current_user.irods_zone}{request.full_path}'
 
-
 def cache_report(prefix=''):
-    print('############### CACCHE #######################')
+    print('############### CACHE #######################')
     k_prefix = cache.cache.key_prefix
     keys = cache.cache._write_client.keys(k_prefix + '*')
     keys = [k.decode('utf8') for k in keys]

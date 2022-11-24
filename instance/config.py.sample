@@ -9,8 +9,8 @@ SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 try:
     import redis
-    redis_test = Redis.redis()
-    redis.set('test', 'value')
+    redis_test = redis.Redis()
+    redis_test.set('test', 'value')
     CACHE_TYPE = "RedisCache"
     print('Use REDIS cache')
 except:
@@ -22,6 +22,37 @@ ENV = 'test'
 CACHE_DEFAULT_TIMEOUT = 300
 CACHE_THRESHOLD = 10000
 CACHE_KEY_PREFIX = "ngsweb"
+
+GRAPH_MAX_INPUTS = 3
+GRAPH_MAX_OUTPUTS = 11
+
+LOGCONFIG = {
+    'version': 1,
+    'formatters': {
+        'default': {
+            'format': '[%(asctime)s] %(module)s: %(levelname)s : %(message)s'
+        },
+        'syslog': {
+            'format': 'ngsweb: %(levelname)s in %(module)s: %(message)s'
+        }
+    },
+    'handlers': {
+        'wsgi': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'default'
+        },
+        'syslog': {
+            'class': 'logging.handlers.SysLogHandler',
+            'address': '/dev/log',
+            'facility': 'local6',
+            'formatter': 'syslog'
+        }
+    },
+    'root': {
+        'level': 'DEBUG',
+        'handlers': ['wsgi']
+    },
+}
 
 LABSURV_DB_CRED = {
     'Acceptatie': { 

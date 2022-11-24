@@ -6,7 +6,7 @@ Created on Mon Nov 18 13:49:12 2019
 @author: wierinve
 """
 
-from flask import Blueprint, render_template, request, url_for, jsonify
+from flask import Blueprint, render_template, request, url_for, jsonify, redirect, flash
 from flask_login import current_user, login_required
 from fs_irods import folder_irods
 from irods.exception import DataObjectDoesNotExist
@@ -20,15 +20,15 @@ import os
 import sys
 import time
 from datetime import datetime, timezone
-from .flaskcache import cache, makekey, makename
+from .flaskcache import cache, dep_zone, key_zone, key_userzone
+from app.irodssessions import irods_manager
 from . import iqry
+from . import constants
 
 from sqlalchemy import create_engine, Float, text
 from sqlalchemy.orm import sessionmaker
 
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
-
-PAGE_SIZE = 25
 
 ATTR_RUNSHEET_PREFIX = 'sys::runsheet::'
 ATTR_RUNSHEET_STATE = '{}state'.format(ATTR_RUNSHEET_PREFIX)
@@ -48,7 +48,7 @@ def pagebuttons(page_size, count, current_page, max_buttons, template):
     pagebuttons = []
     pages = count // page_size + 1
     for buttonnr in range(0, pages):
-        button = { 'text': '{} - {}'.format(buttonnr*PAGE_SIZE+1, min((buttonnr+1)*PAGE_SIZE, count)),
+        button = { 'text': '{} - {}'.format(buttonnr*constants.JOB_PAGE_SIZE+1, min((buttonnr+1)*constants.JOB_PAGE_SIZE, count)),
                    'button': True, 'ref': template.format(buttonnr+1), 'class': 'btn-success'}
         if buttonnr == current_page-1:
             button['class'] = 'btn-outline-success'
@@ -87,68 +87,15 @@ def processgroupprocs():
     q = iqry.qcollbymeta('sys::runsheet::processgroupid', processgroupid)
     result = []
     for r in q:
-        metadata = iqry.qcollmetadict(r[Collection.name]) 
-        job = { PGFIELDS[field][0]: datafield(PGFIELDS[field][0], metadata.get(field,''), PGFIELDS[field][1]).htmlstring for field in PGFIELDS }
+        metadata = iqry.qcollmetadict(r[Collection.name])
+        job = {}
+        for field in PGFIELDS:
+            if metadata.get(field):
+                job[PGFIELDS[field][0]] = datafield(PGFIELDS[field][0], metadata.get(field,''), PGFIELDS[field][1]).htmlstring
+#        job = { PGFIELDS[field][0]: datafield(PGFIELDS[field][0], metadata.get(field,''), PGFIELDS[field][1]).htmlstring for field in PGFIELDS }
         result.append(job)
     return { 'rows': result }
     
-
-# @login_required
-# @cache.memoize(timeout=30, make_name=makename)
-# def joblist(state='', page=1):
-#     """Create a list of jobs in state state
-    
-#     Returns max PAGE_SIZE jobs
-#     args:
-#         state: state filter for job runsheets
-#         page: page number. each page has MAX_PAGE jobs
-        
-#     returns:
-#         joblist, total_job_count
-#     """
-
-#     job_list = []
-#     if state == '':
-#         # incoming runsheets could still be runsheet-files, this will change with the switch to the process-groups...
-#         q1b = current_user.irods_session.query(Collection, CollectionMeta).filter( 
-#                 Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_STATE)).filter( 
-#                 Criterion('!=', CollectionMeta.value, 'archive')).filter(
-#                 Criterion('not like', Collection.name, f'/{current_user.irods_zone}/system/runsheet%'))
-#     else:  
-#         # or runsheets could be on collections
-#         q1b = current_user.irods_session.query(Collection).filter(
-#                 Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_STATE)).filter(
-#                 Criterion('=', CollectionMeta.value, f'{state}')).filter(
-#                 Criterion('not like', Collection.name, f'/{current_user.irods_zone}/system/runsheet%'))
-
-#     # Create a list of all collection and runsheet based jobs
-#     result_list = [ (j, j[Collection.create_time]) for j in q1b ]
-
-
-#     # Get the paged subset of the sorted job list
-#     result_list_s = sorted( result_list, key = lambda j : j[1], reverse = True)[PAGE_SIZE*(page-1):PAGE_SIZE*page]
-
-#     # Get the job details for both types of jobs
-#     for res in result_list_s:
-#             job_record = {}
-#             runsheet_collection = res[0][Collection.name] 
-#             #create runsheet object by reading collection meta-data
-#             metadata = iqry.qcollmetadict(runsheet_collection)
-#             state = metadata.get(ATTR_RUNSHEET_STATE, 'unknown')
-#             name = metadata.get(ATTR_RUNSHEET_ID, 'unknown')
-#     #        job_record['COLLECTION'] =  Collection.name
-#             job_record['Name'] = datafield('runsheet', name, 'runsheet')
-#             job_record['create_time'] = timestamp_to_local(metadata.get(ATTR_RUNSHEET_CREATETIME, 0)).timestamp()
-#             job_record['Created'] =datafield('create_time', job_record['create_time'], 'timestamp')
-#             job_record['State'] =datafield('state', state, 'job_state')
-#             for field in JOB_FIELDS:
-#                 if field in metadata:
-#                     job_record[JOB_FIELDS[field][0]] = datafield(field, metadata[field], JOB_FIELDS[field][1])
-#             job_list.append( job_record )      
-
-#     coll_jobs = len(result_list)
-
-#     return job_list, coll_jobs
 
 def dbsession():
     from sqlalchemy.ext.automap import automap_base
@@ -214,7 +161,7 @@ def jobs():
 
 
 @bp.route('_filterdata')
-@cache.cached(timeout=3600, key_prefix=makekey)
+@cache.cached(timeout=3600, key_prefix=key_zone)
 def filterdata():
 # Determine prepopulated filter values for 'select' filters
     field = request.args.get('field', type=str)
@@ -321,29 +268,13 @@ def show_pg():
 
 @bp.route('/')
 @login_required
-#@cache.cached(timeout=30, key_prefix=makekey)
+#@cache.cached(timeout=30, key_prefix=key_zone)
 def show_jobs():
     default_project=current_user.settings.get('default_project', '')
     return render_template('jobs.html', default_project = default_project, columns = JOB_FIELDS)
 
     
 NAME_LENGTH = 15
-
-COLL_SHAPES = {
-    'source':      ('box3d', 'white'),
-    'unknown':    ('cds', 'white'),
-    'FAILED': ('cds', 'firebrick1'),
-    'OK':  ('cds',  'darkolivegreen1'),
-    'error':   ('cds', 'orange'),
-    'done':  ('cds',  'darkolivegreen1'),
-    'depends':('cds','snow3'),
-    'prepare':('cds', 'darkgoldenrod'),
-    'stage':('cds', 'gold'),
-    'queued'    :('cds', 'aquamarine'),
-    'startup' :('cds', 'aquamarine:cyan'),
-    'active'  :('cds', 'cyan'),
-    'poststartup': ('cds', 'cyan:gold'),
-    'postprocessing'  :('cds', 'gold')}
 
 def shortname(name,l):
     s = name
@@ -352,7 +283,8 @@ def shortname(name,l):
     return s
 
 def coll_shape(coll_type):
-    return COLL_SHAPES.get(coll_type, ('cylinder', 'white'))
+    layout = constants.LAYOUT.get(coll_type, constants.DEFAULT_SHAPE)
+    return layout[constants.SHAPE2], layout[constants.COLOR1]    
 
 @bp.route('/processgraph')
 @login_required
@@ -373,7 +305,7 @@ def processgraph():
         graph.node(coll, label=iqry.qcollmetavalstatic(coll, 'sys::runsheet::description'), style='filled', penwidth=penwidth, 
             shape=shape, fillcolor=shape_color, URL=url_for('jobs.jobdetails', name=iqry.qcollmetaval(coll, ATTR_RUNSHEET_ID)))
     for coll in colls:
-        ir = iqry.qcollmetaval(coll, 'sys::runsheet::input_collection_ref')
+        ir = iqry.qcollmetaval(coll, 'sys::pipeline::input_collection_id')
         input_colls = [ c for c in colls if iqry.qcollmetavalstatic(c, 'sys::dataset_id') == ir ]
         if input_colls: 
             for input_coll in input_colls:
@@ -400,38 +332,36 @@ def jobdetails():
     #this could be either the object-name of the yaml file or meta information attached to the collection
     jobnaam = request.args.get('name', '', type=str)
     
-    D = {}
+    details = {}
     metadata = {}
     joblog = ''
 
     # the jobnaam is refering to metainfo on a collection
     q = iqry.qcollbystaticmeta(ATTR_RUNSHEET_ID, jobnaam)
     if len(q) != 1:
-        return 'FAILED'
+        flash(f'Cannot find unique job collection for {jobnaam}', 'error')
+        return redirect(url_for('jobs.show_jobs'))
     runsheet = q[0][Collection.name]
     metadata = iqry.qcollmetadict(runsheet)
-    D['Runsheet collection'] = datafield('runsheet',  runsheet, 'irods_collection')
-    D['Create time'] = datafield('create_time', float(metadata[ATTR_RUNSHEET_CREATETIME]), 'timestamp')
-    # This is probably not the correct place for the job log anymore...
- 
+    details['Runsheet collection'] = datafield('runsheet',  runsheet, 'irods_collection')
+    details['Create time'] = datafield('create_time', float(metadata[ATTR_RUNSHEET_CREATETIME]), 'timestamp')
 
     FIELDS = {
         'sys::run::start_time': ('Start time', 'timestamp'),
         'sys::run::finish_time': ('End time', 'timestamp'),
-        'sys::runsheet::description': ('Description', 'text'),
         'sys::runsheet::projectID': ('Project ID', 'projectid'),
         'sys::runsheet::processID': ('Process ID', 'processid'),
+        'sys::runsheet::description': ('Description', 'text'),
         'sys::runsheet::processgroupid': ('Processgroup Instance', 'processgroupid'),
-        'sys::runsheet::next_projectID': ('Next Project ID', 'projectid'),
-        'sys::runsheet::next_processID': ('Next Process ID', 'processid'),
         'sys::run::exit_code': ('Result', 'int'),
-        'sys::runsheet::input_collection': ('Input Collection', 'irods_collection'),
+#        'sys::runsheet::input_collection': ('Input Collection', 'irods_collection'),
         'sys::run::output_collection': ('Output Collection', 'irods_collection'),
         'sys::run::account': ('Run Account', 'irods_user'),
         'sys::run::input_dir': ('Input directory', 'directory'),
         'sys::run::output_dir': ('Output directory', 'directory'),
         'sys::run::owner': ('Job owner', 'irods_user'),
         'sys::runsheet::service_account': ('Sevice account', 'irods_user'),
+        'sys::runsheet::requesting_user': ('Requesting user', 'irods_user'),
         'sys::run::pipeline_dir': ('Pipeline run directory', 'directory'),
         'sys::run::run_dir': ('Pipeline run directory', 'directory'),
         'sys::runsheet::repo': ('Git repository', 'url'),
@@ -441,28 +371,39 @@ def jobdetails():
         'sys::runsheet::omit_bringonline': ('Omit bring input data online', 'boolean'),
         'sys::runsheet::lsf_queue': ('LSF Queue', 'lsf_queue'),
         'sys::run::lsf_jobid': ('LSF Job ID', 'text'),
-        'sys::run::pid': ('Process PID', 'text')
+        'sys::run::pid': ('Process PID', 'text'),
+    }
+    MULTI_FIELDS = {
+        'sys::runsheet::input_collection': ('Input Collection', 'irods_collection'),
+        'sys::runsheet::dataobject': ('Dataobject', 'irods_object')
     }
     for field in FIELDS:
         if field in metadata:
-            D[FIELDS[field][0]] = datafield(field, metadata[field], FIELDS[field][1])
+            details[FIELDS[field][0]] = datafield(field, metadata[field], FIELDS[field][1])
+    multi = {}
+    for field, attrs in MULTI_FIELDS.items():
+        values = iqry.qcollmetavals(runsheet, field)
+        datavalues = [ datafield(field, value[CollectionMeta.value], attrs[1]).htmlstring for value in values ]
+        multi[attrs[0]] = datavalues
     processgroupid = metadata.get('sys::runsheet::processgroupid', '')
-    return render_template('jobdetails.html', details=D, runsheet=runsheet, processgroupid=processgroupid, jobnaam=datafield('jobnaam', jobnaam, 'runsheet'))
+    return render_template('jobdetails.html', details=details, multi=multi, runsheet=runsheet, processgroupid=processgroupid, jobnaam=datafield('jobnaam', jobnaam, 'runsheet'))
+
 
 @bp.route('joblogs')
 @login_required
 def job_logs():
     jobnaam = request.args.get('name', '', type=str)
+    session = irods_manager.session()
 
     # the jobnaam is refering to metainfo on a collection
-    query = current_user.irods_session.query(Collection.name, CollectionMeta).filter( 
+    query = session.query(Collection.name, CollectionMeta).filter( 
             Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_ID )).filter(
             Criterion('=', CollectionMeta.value, f'{jobnaam}'))
     # Find the job log file
     results = query.get_results()
     job = next(results)
     runsheet = job[Collection.name] 
-    q2 = current_user.irods_session.query(CollectionMeta.name, CollectionMeta.value).filter( \
+    q2 = session.query(CollectionMeta.name, CollectionMeta.value).filter( \
             Criterion('=', Collection.name, runsheet ))
     metadata = {meta[CollectionMeta.name] : meta[CollectionMeta.value] for meta in q2}
     joblog = { f'Job log', f'{runsheet}/log/{jobnaam}.log' }
@@ -490,7 +431,7 @@ def _get_logfiles(location, subdir=''):
 
 @bp.route('/_joblog')
 @login_required
-@cache.cached(timeout=120, key_prefix=makekey)
+@cache.cached(timeout=120, key_prefix=key_userzone)
 def show_logfile():
     path = request.args.get('path', '', type=str)
     try:
