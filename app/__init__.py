@@ -1,4 +1,5 @@
 from logging import FileHandler
+import json
 import os
 import requests
 from requests.auth import HTTPBasicAuth
@@ -133,17 +134,22 @@ def restcall(rest_endpoint):
 def get_header_messages():
     if not hasattr(current_user, 'irods_zone'):
         return ''
-    message = ''
-    messageobject = f'/{current_user.irods_zone}/system/ngsweb/messages'
-    if current_user.ifs.fileexists(messageobject):
-        obj = current_user.ifs.getfile(messageobject)
-        message = obj.open('r').read().decode('utf-8')
-    return message
+    messages = []
+    messageobject = os.path.join('/', current_user.irods_zone, app.config.get("HEADER_MESSAGE_OBJECT","none"))
+    try:
+        if current_user.ifs.fileexists(messageobject):
+            obj = current_user.ifs.getfile(messageobject)
+            messages_json = obj.open('r').read().decode('utf-8')
+            messages = json.loads(messages_json).get('messages', [])
+    except:
+        # Do not break the website if the message file has an invalid format
+        pass
+    return messages
 
 @app.context_processor
 def inject_header_message():
-    header_message = get_header_messages()
-    return dict(header_message=header_message)
+    header_messages = get_header_messages()
+    return dict(header_messages=header_messages)
 
 # @app.teardown_request
 # def teardown(x):

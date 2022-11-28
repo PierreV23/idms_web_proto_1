@@ -7,12 +7,13 @@ def maxid_key():
     return f"{current_app.config.get('ENV', 'none')}::maxmsgid"
 
 def read_messagefile():
-    msgfile = os.path.join(current_app.instance_path, 'messages.json')
-    if os.path.isfile(msgfile):
-        with open(msgfile, 'r') as f:
-            return json.load(f)
-    else:
-        return None
+    messages = []
+    messageobject = os.path.join('/', current_user.irods_zone, current_app.config.get("MESSAGES_OBJECT","none"))
+    if current_user.ifs.fileexists(messageobject):
+        obj = current_user.ifs.getfile(messageobject)
+        messages_json = obj.open('r').read().decode('utf-8')
+        messages = json.loads(messages_json)
+    return messages
 
 def getmessages():
     login_messages = read_messagefile()

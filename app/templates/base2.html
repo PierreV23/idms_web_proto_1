@@ -370,8 +370,10 @@
         {% endfor %}
       {% endif %}
     {% endwith %}
-    {% if header_message %}
-      <div class="flash_info"><b>{{ header_message }}</b></div>
+    {% if header_messages %}
+      {% for message in header_messages %}
+        <div class="flash_info"><b>{{ message | safe }}</b></div>
+      {% endfor %}
     {% endif %}
     <div class="title">{% block heading %}{% endblock %}</div>
 
