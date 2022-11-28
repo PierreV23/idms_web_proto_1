@@ -58,22 +58,20 @@ class JobsDBAlchemy:
             if self.default_env is None and env.get('default', False):
                 # Env in config with 'default' attr is assumed as default (e.g. 'Productie').
                 self.default_env = env_name
-            db_connect = env.get('jobs_db', 'sqlite://')
-            connect_args = {}
-            if db_connect.startswith('postgres'):
-                connect_args = {'connect_timeout': 2}
-            try:
-                engine = create_engine(db_connect, connect_args=connect_args)
-                engine.connect()
-            except OperationalError:
-                app.logger.error(f'Cannot create JOBS DB engine for {env_name}')
-                # Unable to create connection to db. Continue to create
-                # db engines for other envs.
-                continue
-            _sessionmaker = sessionmaker(autocommit=False, autoflush=False,
-                                         bind=engine)
-            self._sessions[env_name] = scoped_session(_sessionmaker, 
-                scopefunc=flask._app_ctx_stack.__ident_func__)
+            db_connect = env.get('jobs_db')
+            if db_connect:
+                try:
+                    engine = create_engine(db_connect, connect_args={'connect_timeout': 2})
+                    engine.connect()
+                except OperationalError:
+                    app.logger.error(f'Cannot create JOBS DB engine for {env_name}')
+                    # Unable to create connection to db. Continue to create
+                    # db engines for other envs.
+                    continue
+                _sessionmaker = sessionmaker(autocommit=False, autoflush=False,
+                                            bind=engine)
+                self._sessions[env_name] = scoped_session(_sessionmaker, 
+                    scopefunc=flask._app_ctx_stack.__ident_func__)
         app.teardown_request(self.remove_session)
 
     def envs(self):
