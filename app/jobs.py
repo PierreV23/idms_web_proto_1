@@ -189,13 +189,13 @@ def jobs():
     limit = request.args.get('limit', 999, type=int)
     filters = json.loads(request.args.get('filter', '{}'))
     order = request.args.get('order', 'desc')
-    orderby = request.args.get('sort', 'start_time')
+    orderby = request.args.get('sort', 'create_time')
             
     session, Jobs, Processgroups = dbsession()   
 
     count_jobs = session.query(Jobs).count()
     # default second order by start_time desc
-    jbs = session.query(Jobs).order_by(text(f"{orderby} {order}, start_time desc"))
+    jbs = session.query(Jobs).order_by(text(f"{orderby} {order}, create_time desc"))
     
     # Apply filters ('select' and 'input')
     for key, value in filters.items():
@@ -247,7 +247,7 @@ def pglist():
     limit = request.args.get('limit', 999, type=int)
     filters = json.loads(request.args.get('filter', '{}'))
     order = request.args.get('order', 'desc')
-    orderby = request.args.get('sort', 'start_time')
+    orderby = request.args.get('sort', 'create_time')
     processgroupid = request.args.get('processgroupid', None, type=str)
             
     session, Jobs, Processgroups = dbsession()   
@@ -255,7 +255,7 @@ def pglist():
     count_jobs = session.query(Processgroups).count()
 
     # order by; default second order by start_time desc
-    pgs = session.query(Processgroups).order_by(text(f"{orderby} {order}, start_time desc"))
+    pgs = session.query(Processgroups).order_by(text(f"{orderby} {order}, create_time desc"))
 
     # drilldown on processgroupid
     if processgroupid:
