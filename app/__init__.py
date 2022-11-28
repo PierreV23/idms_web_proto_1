@@ -14,7 +14,7 @@ from . import projects, cluster, admin, reports, userinfo
 from . import ngsruns, upload, flaskcache
 from . import messages
 from .ngsruns import db, NGSRunsDBUnavailableException
-from .flaskcache import cache
+from .flaskcache import cache, dep_zone
 from .irodssessions import irods_manager
 
 # This is the default log config. It can (and should) be overruled by
@@ -129,6 +129,21 @@ def restcall(rest_endpoint):
         cache.delete_memoized(restcall)
     return jsonify(return_data), response.status_code    
 
+@cache.memoize(timeout=300, make_name=dep_zone)
+def get_header_messages():
+    if not hasattr(current_user, 'irods_zone'):
+        return ''
+    message = ''
+    messageobject = f'/{current_user.irods_zone}/system/ngsweb/messages'
+    if current_user.ifs.fileexists(messageobject):
+        obj = current_user.ifs.getfile(messageobject)
+        message = obj.open('r').read().decode('utf-8')
+    return message
+
+@app.context_processor
+def inject_header_message():
+    header_message = get_header_messages()
+    return dict(header_message=header_message)
 
 # @app.teardown_request
 # def teardown(x):
