@@ -9,10 +9,13 @@ def maxid_key():
 def read_messagefile():
     messages = []
     messageobject = os.path.join('/', current_user.irods_zone, current_app.config.get("MESSAGES_OBJECT","none"))
-    if current_user.ifs.fileexists(messageobject):
-        obj = current_user.ifs.getfile(messageobject)
-        messages_json = obj.open('r').read().decode('utf-8')
-        messages = json.loads(messages_json)
+    try:
+        if current_user.ifs.fileexists(messageobject):
+            obj = current_user.ifs.getfile(messageobject)
+            messages_json = obj.open('r').read().decode('utf-8')
+            messages = json.loads(messages_json)
+    except:
+        pass
     return messages
 
 def getmessages():
