@@ -12,7 +12,7 @@ import irods.exception
 from . import auth, collbrowser, jobs, docviewer
 from . import projects, cluster, admin, reports, userinfo
 from . import ngsruns, upload, flaskcache
-from . import messages
+from . import messages, oldjobs
 from .ngsruns import db as ngsruns_db, NGSRunsDBUnavailableException
 from .jobs import db as jobs_db, JobsDBUnavailableException
 from .flaskcache import cache
@@ -64,6 +64,7 @@ app.register_blueprint(reports.bp)
 app.register_blueprint(ngsruns.bp)
 app.register_blueprint(upload.bp)
 app.register_blueprint(userinfo.bp)
+app.register_blueprint(oldjobs.bp)
 
 
 flaskcache.init(app)
@@ -163,5 +164,5 @@ def handle_bad_ngsruns_request(e):
 
 @app.errorhandler(JobsDBUnavailableException)
 def handle_bad_jobs_request(e):
-    flash('Jobs table unavailable', 'error')
-    return redirect(url_for('home'))
+    flash('Jobs table unavailable. Reverting to old jobs view ...', 'error')
+    return redirect(url_for('oldjobs.show_jobs'))
