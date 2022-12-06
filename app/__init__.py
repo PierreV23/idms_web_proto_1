@@ -1,6 +1,9 @@
 from logging import FileHandler
+import json
 import os
 import requests
+import dateutil.parser
+from datetime import datetime
 from requests.auth import HTTPBasicAuth
 from flask import Flask, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, LoginManager, login_required, logout_user
@@ -14,7 +17,7 @@ from . import projects, cluster, admin, reports, userinfo
 from . import ngsruns, upload, flaskcache
 from . import messages
 from .ngsruns import db, NGSRunsDBUnavailableException
-from .flaskcache import cache
+from .flaskcache import cache, dep_zone
 from .irodssessions import irods_manager
 
 # This is the default log config. It can (and should) be overruled by
@@ -129,6 +132,42 @@ def restcall(rest_endpoint):
         cache.delete_memoized(restcall)
     return jsonify(return_data), response.status_code    
 
+@cache.memoize(timeout=600, make_name=dep_zone)
+def get_header_messages():
+    if not hasattr(current_user, 'irods_zone'):
+        return ''
+    all_messages = []
+    messageobject = os.path.join('/', current_user.irods_zone, app.config.get("HEADER_MESSAGE_OBJECT","none"))
+    try:
+        if current_user.ifs.fileexists(messageobject):
+            obj = current_user.ifs.getfile(messageobject)
+            messages_json = obj.open('r').read().decode('utf-8')
+            all_messages = json.loads(messages_json).get('messages', [])
+    except Exception as ex:
+        raise(ex)
+        # Do not break the website if the message file has an invalid format
+        pass
+    messages = []
+    for msg in all_messages:
+        valid_msg = True
+        try:
+            if (ts := msg.get("start")):
+                if dateutil.parser.isoparse(ts) > datetime.now():
+                    valid_msg = False
+            if (ts := msg.get("end")):
+                if dateutil.parser.isoparse(ts) < datetime.now():
+                    valid_msg = False
+            if valid_msg:
+                messages.append(msg)
+        except:
+            # skip message with invalid time fields
+            pass
+    return messages
+
+@app.context_processor
+def inject_header_message():
+    header_messages = get_header_messages()
+    return dict(header_messages=header_messages)
 
 # @app.teardown_request
 # def teardown(x):

@@ -366,11 +366,15 @@
     {% with messages = get_flashed_messages(category_filter=["error"]) %}
       {% if messages %}
         {% for message in messages %}
-          <div class="error"><b>{{ message }}</b></div>
+          <div class="flash_bar bg-danger"><b>{{ message }}</b></div>
         {% endfor %}
       {% endif %}
     {% endwith %}
-
+    {% if header_messages %}
+      {% for message in header_messages %}
+        <div class="flash_bar {{ message.class }}"><b>{{ message.msg | safe }}</b></div>
+      {% endfor %}
+    {% endif %}
     <div class="title">{% block heading %}{% endblock %}</div>
 
     <!-- Main content -->

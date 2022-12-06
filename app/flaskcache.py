@@ -10,7 +10,10 @@ def init(app):
     cache.init_app(app)
 
 def dep_zone(funcname):
-    return f'{current_user.irods_zone}{funcname}'
+    if hasattr(current_user, 'irods_zone'):
+        return f'{current_user.irods_zone}{funcname}'
+    else:
+        return funcname
 
 def dep_userzone(funcname):
     return f'{current_user.username}{current_user.irods_zone}{funcname}'
