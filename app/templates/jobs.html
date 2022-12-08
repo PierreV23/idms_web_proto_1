@@ -1,7 +1,6 @@
 {% extends 'jobsmenu.html' %}
 
 {% block meta %}
-<meta http-equiv="refresh" content="30">
 {% endblock %}
 
 {% block heading %}
@@ -36,7 +35,9 @@ $(document).ready(function(){
   data-show-columns="true"
   data-show-filter-control-switch="true"
   data-custom-sort="sorter"
-  data-toggle="table">
+  data-toggle="table"
+  data-auto-refresh='true'
+  data-auto-refresh-interval=30>
   <thead>
     <tr>
         {% for c in columns %}
