@@ -1,0 +1,132 @@
+{% extends 'jobsmenu.html' %}
+
+{% block meta %}
+{% endblock %}
+
+{% block heading %}
+<h3>Processgroup overview</h3>
+{% endblock %}
+
+{%block menuname %}
+menuname='pglist'
+{% endblock %}
+
+{% block content %}
+<div class="scroll h-100">
+<script>
+$(document).ready(function(){
+  $('[data-toggle="tooltip"]').tooltip();   
+});
+
+</script>
+
+<table id="pgtable"
+  data-buttons-prefix="btn"
+  data-classes='table table-bordered table-hover table-striped'
+  data-filter-control="true"
+  data-detail-view='true'
+  data-id-field='processgroupid'
+  data-page-list=[15,25,50,100]
+  data-page-size=15
+  data-pagination='true'
+  data-row-style="rowStyle"
+  data-search="false"
+  data-url='{{ url_for("jobs.pglist", processgroupid=processgroupid) }}'
+  data-side-pagination='server'
+  data-show-columns="true"
+  data-show-filter-control-switch="true"
+  data-custom-sort="sorter"
+  data-sort-name="create_time"
+  data-sort-order="desc"
+  data-toggle="table"
+  data-auto-refresh="true"
+  data-auto-refresh-interval=30
+  data-show-auto-refresh="false">
+  <thead>
+    <tr>
+        {% for c in columns %}
+        <th data-field="{{columns[c]['field']}}"
+            data-align="left" 
+            data-sortable="{{columns[c]['sortable']}}" 
+            data-visible="{{columns[c]['visible']}}"
+            data-filter-control="{{columns[c]['filtercontrol']}}"
+            {% if columns[c]['filtercontrol'] == "select" %}
+                data-filter-data='url:{{ url_for("jobs.filterdata", field=columns[c]["field"], table="rivm_v_processgroups") }}'
+            {% endif %}>
+            {{columns[c]['title']}}
+        </th>
+        {% endfor %}
+   </tr>
+</thead>
+</table>
+
+<script>
+
+$(function() {
+    $.get('{{ url_for("jobs.pglist") }}', function(data){
+        $('table#pgtable').bootstrapTable({
+            columns: data['columns'],
+            data: data['rows']
+        })
+        $('.bootstrap-table-filter-control-project').val('{{ default_project }}')
+        $('table#jobtable').bootstrapTable('triggerSearch');      
+    })
+})
+
+$('table#pgtable').on('column-search.bs.table', function(e, column, value) {
+      console.log(column)
+      if (column == 'project') {
+         $.post('{{ url_for("userinfo.usersetting") }}', {
+            attr: 'default_project',
+            value: value
+         })
+      }
+  });
+
+    $('table#pgtable').on('expand-row.bs.table', function (e, index, row, $detail){
+        $.get('{{ url_for("jobs.pgjobs") }}?processgroupid=' + row['_processgroupid'], function(data){
+            console.log(data['columns'])
+            $detail.html('<table></table>').find('table').bootstrapTable({
+                columns: data['columns'],
+                data: data['rows'],
+                rowStyle: 'rowStyle',
+                sortName: 'create_time',
+                sortOrder: 'desc',
+                customSort: 'sorter'
+            });
+            data['columns'].forEach(function(x, i) {
+                if (x['visible'] == 'false') {
+                    $detail.find('table').bootstrapTable('hideColumn', x['field'])
+                }
+            })
+        })
+    })
+
+    function sorter(field, sortOrder, data){
+        var order = sortOrder === 'desc' ? -1 : 1
+        data.sort(function (a, b) {
+            var aa = a['_'+field]
+            var bb = b['_'+field]
+            if (aa<bb){
+                return order * -1 
+            }
+            if (aa>bb) {
+                return order
+            }
+            return 0
+        })
+    }
+
+    function rowStyle(row, index) {
+        var styles = {
+            'done': 'table-success',
+            'error': 'table-danger',
+            'active': 'table-info'
+        };
+        return {
+            classes: styles[row['state']]
+        }
+    }
+
+</script>
+{% endblock %}

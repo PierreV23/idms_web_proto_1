@@ -15,9 +15,16 @@ import irods.exception
 from . import auth, collbrowser, jobs, docviewer
 from . import projects, cluster, admin, reports, userinfo
 from . import ngsruns, upload, flaskcache
+<<<<<<< app/__init__.py
+from . import messages, oldjobs
+from .ngsruns import db as ngsruns_db, NGSRunsDBUnavailableException
+from .jobs import db as jobs_db, JobsDBUnavailableException
+from .flaskcache import cache, dep_zone
+=======
 from . import messages
 from .ngsruns import db, NGSRunsDBUnavailableException
 from .flaskcache import cache, dep_zone
+>>>>>>> app/__init__.py
 from .irodssessions import irods_manager
 
 # This is the default log config. It can (and should) be overruled by
@@ -51,7 +58,8 @@ app.config.from_pyfile(os.path.join(app.instance_path, 'constants.py'), silent=T
 
 logging.config.dictConfig(app.config.get('LOGCONFIG', DEFAULT_LOGCONFIG))
 
-db.init_app(app)
+ngsruns_db.init_app(app)
+jobs_db.init_app(app)
 irods_manager.init_app(app)
 
 app.register_blueprint(auth.bp)
@@ -65,6 +73,7 @@ app.register_blueprint(reports.bp)
 app.register_blueprint(ngsruns.bp)
 app.register_blueprint(upload.bp)
 app.register_blueprint(userinfo.bp)
+app.register_blueprint(oldjobs.bp)
 
 
 flaskcache.init(app)
@@ -194,6 +203,11 @@ def unauthorized(e):
     raise Exception(e)
 
 @app.errorhandler(NGSRunsDBUnavailableException)
-def handle_bad_request(e):
+def handle_bad_ngsruns_request(e):
     flash('NGSRuns Database Unavailable', 'error')
     return redirect(url_for('home'))
+
+@app.errorhandler(JobsDBUnavailableException)
+def handle_bad_jobs_request(e):
+    flash('Jobs table unavailable. Reverting to old jobs view ...', 'error')
+    return redirect(url_for('oldjobs.show_jobs'))

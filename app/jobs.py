@@ -6,14 +6,16 @@ Created on Mon Nov 18 13:49:12 2019
 @author: wierinve
 """
 
-from flask import Blueprint, render_template, request, url_for, redirect, flash
+from flask import Blueprint, render_template, request, url_for, jsonify, redirect, flash
 from flask_login import current_user, login_required
-from fs_irods import folder_irods
 from irods.exception import DataObjectDoesNotExist
-from irods.models import Collection, DataObject, DataObjectMeta, CollectionMeta
+from irods.models import Collection, CollectionMeta
 from irods.column import Criterion
-from app.datafield import datafield, AVU2data, INFINITE_DATE
+from app.datafield import datafield
+from app.settings import JOB_FIELDS, PG_FIELDS, PG_JOB_FIELDS
 from graphviz import Digraph
+import flask
+import json
 import os
 import sys
 import time
@@ -23,6 +25,11 @@ from app.irodssessions import irods_manager
 from . import iqry
 from . import constants
 
+from sqlalchemy import create_engine, text, MetaData, Table
+from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy.exc import OperationalError
+
+
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
 
 ATTR_RUNSHEET_PREFIX = 'sys::runsheet::'
@@ -31,6 +38,72 @@ ATTR_RUNSHEET_ID = '{}id'.format(ATTR_RUNSHEET_PREFIX)
 ATTR_RUNSHEET_CREATETIME = '{}create_time'.format(ATTR_RUNSHEET_PREFIX)
 
 MAX_READ_LOG_BYTES = 10000000
+
+class JobsDBUnavailableException(Exception):
+    pass
+
+class JobsDBAlchemy:
+    '''Handle db sessions for NGSRuns minilims database.'''
+
+    def __init__(self):
+        # Define a SQLAlchemy base class to wrap.
+        self._sessions = {}
+        self.default_env = None
+
+
+    def init_app(self, app):
+        for env_name, env in app.config.get('IRODS_ENVS', {}).items():
+            if self.default_env is None and env.get('default', False):
+                # Env in config with 'default' attr is assumed as default (e.g. 'Productie').
+                self.default_env = env_name
+            db_connect = env.get('jobs_db')
+            if db_connect:
+                try:
+                    engine = create_engine(db_connect, connect_args={'connect_timeout': 2})
+                    engine.connect()
+                except OperationalError:
+                    app.logger.error(f'Cannot create JOBS DB engine for {env_name}')
+                    # Unable to create connection to db. Continue to create
+                    # db engines for other envs.
+                    continue
+                _sessionmaker = sessionmaker(autocommit=False, autoflush=False,
+                                            bind=engine)
+                self._sessions[env_name] = scoped_session(_sessionmaker, 
+                    scopefunc=flask._app_ctx_stack.__ident_func__)
+        app.teardown_request(self.remove_session)
+
+    def envs(self):
+        return list(self._sessions)
+
+
+    def session(self, environment=None):
+        """Return session. If no specific environment is requested, use the one 
+        defined in the user object, eventually fall back to `default_env`."""
+        env = environment
+        if environment is None:
+            if hasattr(current_user, 'environment'):
+                env = current_user.environment
+            else:
+                env = self.default_env
+        
+        try:
+            return self._sessions[env]
+        except KeyError:
+            raise JobsDBUnavailableException(f'env={env}')
+
+
+    def remove_session(self, _exc=None):
+        if hasattr(current_user, 'environment') and \
+            current_user.environment in self._sessions:
+            self._sessions[current_user.environment].remove()
+
+
+db = JobsDBAlchemy()
+
+@bp.before_request
+def before_request_func():
+    # This ensures the flash error message will show up if the job table is not available
+    db.session()
 
 def utc_to_local(utc_dt):
     return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=None)
@@ -66,6 +139,7 @@ def pagebuttons(page_size, count, current_page, max_buttons, template):
         before = pagebuttons
         after = []
     return before + after
+    
 
 @bp.route('/api/pgprocs')
 @login_required
@@ -74,12 +148,12 @@ def processgroupprocs():
         'sys::runsheet::id': ('runsheet', 'runsheet'),
         'sys::runsheet::description' : ('description', 'text'),
         'sys::runsheet::state': ('state', 'text'),
-        'sys::run::result': ('result', 'text'),
+        'user::run::exit_code': ('result', 'text'),
         'sys::run::start_time': ('start', 'timestamp'),
         'sys::run::finish_time': ('end', 'timestamp'),
     }
-    pgid = request.args.get('pgid')
-    q = iqry.qcollbymeta('sys::runsheet::processgroupid', pgid)
+    processgroupid = request.args.get('processgroupid')
+    q = iqry.qcollbymeta('sys::runsheet::processgroupid', processgroupid)
     result = []
     for r in q:
         metadata = iqry.qcollmetadict(r[Collection.name])
@@ -92,81 +166,188 @@ def processgroupprocs():
     return { 'rows': result }
     
 
+def dbsession():
+
+    session = db.session()
+    engine = session.bind.engine
+    meta = MetaData()
+    meta.reflect(bind=engine, views=True, only=['rivm_mat_jobtable', 'rivm_v_processgroups'])
+
+    # retrieve tables
+    Jobs = Table("rivm_mat_jobtable", meta, autoload_with=engine)
+    Processgroups = Table("rivm_v_processgroups", meta, autoload_with=engine)
+   
+    return session, Jobs, Processgroups
+
+
+@bp.route('_jobs')
 @login_required
-@cache.memoize(timeout=30, make_name=dep_zone)
-def joblist(state='', page=1):
-    """Create a list of jobs in state state
+def jobs():
+# populate jobtable
+    offset = request.args.get('offset', 0, type=int)
+    limit = request.args.get('limit', 999, type=int)
+    filters = json.loads(request.args.get('filter', '{}'))
+    order = request.args.get('order', 'desc')
+    orderby = request.args.get('sort', 'create_time')
+            
+    session, Jobs, Processgroups = dbsession()   
+
+    # get jobs_query
+    jobs_query = session.query(Jobs)
+    # order; default second order by start_time desc
+    jobs_query = jobs_query.order_by(text(f"{orderby} {order}, create_time desc, start_time desc"))
     
-    Returns max JOB_PAGE_SIZE jobs
-    args:
-        state: state filter for job runsheets
-        page: page number. each page has MAX_PAGE jobs
+    # Apply filters on jobs_query ('select' and 'input')
+    for _, field_attrs in JOB_FIELDS.items():
+        field_name = field_attrs['field']
+        filter_value = filters.get(field_name)
+        filter_control = field_attrs.get('filtercontrol')
+        if filter_value is None or filter_control is None:
+            continue
+        if filter_control == 'select':
+            jobs_query = jobs_query.filter(text(f"{field_name}='{filter_value}'"))
+        if filter_control == 'input':
+            jobs_query = jobs_query.filter(text(f"{field_name} like('%{filter_value}%')"))
+
+    # count, offset, limit data
+    count_jobs = jobs_query.count()
+    jobs_query = jobs_query.offset(offset).limit(limit)
+
+    # format data jobs_query
+    result = []
+    for job in jobs_query:
+        record = {}
+        for f in JOB_FIELDS:
+            dbkey = JOB_FIELDS[f]['field']
+            val = getattr(job, dbkey)
+            if val:
+                formatted = datafield(dbkey, val, JOB_FIELDS[f]['format'])
+                record |= { dbkey: formatted.htmlshort, f'_{dbkey}': formatted.value }
+        result.append(record)
+    
+    engine = None
+    return { 'rows': result, 'filters': filters, 'total': count_jobs }
+
+
+@bp.route('_filterdata')
+@cache.cached(timeout=3600, key_prefix=key_zone)
+def filterdata():
+# Determine prepopulated filter values for 'select' filters
+    field = request.args.get('field', type=str)
+    table = request.args.get('table', type=str)
+    session, Jobs, Processgroups = dbsession() 
+
+    sql = f"SELECT DISTINCT {field} FROM {table} WHERE {field} IS NOT NULL"
+    filter_values = {v[0]:v[0] for v in session.execute(sql)}
+    return jsonify(filter_values)
+
+
+@bp.route('_pglist')
+@login_required
+def pglist():
+#POPULATE processgrouplist
+    offset = request.args.get('offset', 0, type=int)
+    limit = request.args.get('limit', 999, type=int)
+    filters = json.loads(request.args.get('filter', '{}'))
+    order = request.args.get('order', 'desc')
+    orderby = request.args.get('sort', 'create_time')
+    processgroupid = request.args.get('processgroupid', None, type=str)
+            
+    session, Jobs, Processgroups = dbsession()   
+
+    # get processgroups (pgs_query) 
+    pgs_query = session.query(Processgroups)
+    # order; default order by create_time desc, start_time desc
+    pgs_query = pgs_query.order_by(text(f"{orderby} {order}, create_time desc, start_time desc"))
+
+    # filter on processgroupid 
+    if processgroupid:
+        pgs_query = pgs_query.filter(Processgroups.columns.processgroupid==processgroupid)
+
+    # Apply filters on pgs_query ('select' and 'input')
+    for _, field_attrs in PG_FIELDS.items():
+        field_name = field_attrs['field']
+        filter_value = filters.get(field_name)
+        filter_control = field_attrs.get('filtercontrol')
+        if filter_value is None or filter_control is None:
+            continue
+        if filter_control == 'select':
+            pgs_query = pgs_query.filter(text(f"{field_name}='{filter_value}'"))
+        if filter_control == 'input':
+            pgs_query = pgs_query.filter(text(f"{field_name} like('%{filter_value}%')"))
+
+    # count, offset, limit data
+    count_jobs = pgs_query.count()
+    pgs_query = pgs_query.offset(offset).limit(limit)
+
+    # format data pgs_query
+    result = []
+    for processgroup in pgs_query:
+        record = {}
+        for f in PG_FIELDS:
+            dbkey = PG_FIELDS[f]['field']
+            val = getattr(processgroup, dbkey)
+            if val:
+                formatted = datafield(dbkey, val, PG_FIELDS[f]['format'])
+                record |= { dbkey: formatted.htmlshort, f'_{dbkey}': formatted.value }
+        result.append(record)
+    
+    engine = None
+    return { 'rows': result, 'filters': filters, 'total': count_jobs }
+
+ 
+@bp.route('_pgjobs')
+@login_required
+def pgjobs():
+# display jobs under a processgroupid
+    processgroupid = request.args.get('processgroupid', None, type=str)
+    session, Jobs, Processgroups = dbsession()
+    result = []
+    jobs_query = session.query(Jobs)
+    jobs_query = jobs_query.filter(Jobs.columns.processgroupid==processgroupid)
+
+    for job in jobs_query:
+        record = {}
+        for f in PG_JOB_FIELDS:
+            dbkey = PG_JOB_FIELDS[f]['field']
+            val = getattr(job, dbkey)
+            if val:
+                formatted = datafield(dbkey, val, PG_JOB_FIELDS[f]['format'])
+                record |= { dbkey: formatted.htmlshort, f'_{dbkey}': formatted.value }
+        result.append(record)
         
-    returns:
-        joblist, total_job_count
-    """
+    columns = []
+    for f in PG_JOB_FIELDS:
+        if PG_JOB_FIELDS[f].get('filtercontrol') == 'select':
+            f1 = {}
+            for v in result:
+                key = v.get(f'_{PG_JOB_FIELDS[f]["field"]}')
+                if key:
+                    f1[key] = key
+            filterdata = json.dumps(f1)
+            PG_JOB_FIELDS[f]['filterdata'] = f"json:{filterdata}"
+        columns.append(PG_JOB_FIELDS[f])
+        
+    return { 'columns': columns, 'rows': result }
+    
 
-    job_list = []
-    session = irods_manager.session()
-    if state == '':
-        q1b = session.query(Collection).filter( 
-                Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_STATE))
-    else:  
-        q1b = session.query(Collection).filter(
-                Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_STATE)).filter(
-                Criterion('=', CollectionMeta.value, f'{state}'))
+@bp.route('/pg')
+@login_required
+def show_pg():
+    processgroupid = request.args.get('processgroupid', None, type=str)
+    default_project = current_user.settings.get('default_project', '')
+    return render_template('pglist.html', default_project=default_project
+                            , processgroupid=processgroupid, columns = PG_FIELDS)
 
-    # Create a list of all collection and runsheet based jobs
-    q1b = q1b.order_by(Collection.create_time, order='desc')
-    result_list = []
-    for j in q1b:
-        result_list.append((j, j[Collection.create_time]))
-        if len(result_list) > 5000:
-            break
-    #result_list = [ (j, j[Collection.create_time]) for j in q1b ]
-
-    # Get the paged subset of the sorted job list
-    result_list_s = sorted( result_list, key = lambda j : j[1], reverse = True)[constants.JOB_PAGE_SIZE*(page-1):constants.JOB_PAGE_SIZE*page]
-
-    # Get the job details for both types of jobs
-    for res in result_list_s:
-            job_record = {}
-            runsheet_collection = res[0][Collection.name] 
-            #create runsheet object by reading collection meta-data
-            metadata = iqry.qcollmetadict(runsheet_collection)
-            state = metadata.get(ATTR_RUNSHEET_STATE, 'unknown')
-            name = metadata.get(ATTR_RUNSHEET_ID, 'unknown')
-    #        job_record['COLLECTION'] =  Collection.name
-            job_record['Name'] = datafield('runsheet', name, 'runsheet')
-            job_record['create_time'] = timestamp_to_local(metadata.get(ATTR_RUNSHEET_CREATETIME, 0)).timestamp()
-            job_record['Created'] =datafield('create_time', job_record['create_time'], 'timestamp')
-            job_record['State'] =datafield('state', state, 'job_state')
-            for field in constants.JOB_FIELDS:
-                if field in metadata:
-                    job_record[constants.JOB_FIELDS[field][0]] = datafield(field, metadata[field], constants.JOB_FIELDS[field][1])
-            job_list.append( job_record )      
-
-    coll_jobs = len(result_list)
-
-    return job_list, coll_jobs
 
 @bp.route('/')
 @login_required
-@cache.cached(timeout=30, key_prefix=key_userzone)
+#@cache.cached(timeout=30, key_prefix=key_zone)
 def show_jobs():
-    state = request.args.get('items', 'all', type=str)
-    page = request.args.get('page', 1, type=int)
-    if state == 'all':
-        l, total = joblist(page=page)
-    else:
-        l, total = joblist(state, page=page)
-    # for a in ['waiting', 'incoming', 'queued', 'active', 'postprocessing', 'done', 'stage', 'error']:
-    #     if x in ['all', a]:
-    #         l = l + joblist(a)
-    columns = ['Name', 'State'] + [constants.JOB_FIELDS[a][0] for a in constants.JOB_FIELDS]
-    buttons = pagebuttons(constants.JOB_PAGE_SIZE, total, page, 10, 'href={}?page={{}}&items={}'.format(url_for('jobs.show_jobs'), state))
-    return render_template('jobs2.html', joblist=l, items=state, columns=columns, buttons=buttons, LAYOUT=constants.LAYOUT)
+    default_project=current_user.settings.get('default_project', '')
+    return render_template('jobs.html', default_project = default_project, columns = JOB_FIELDS)
 
+    
 NAME_LENGTH = 15
 
 def shortname(name,l):
@@ -186,8 +367,8 @@ def processgraph():
     graph = Digraph('datagraph')
 
     # We need the processgroupID
-    pgid = iqry.qcollmetavalstatic(runsheet_coll, 'sys::runsheet::processgroupid')
-    q = iqry.qcollbymeta('sys::runsheet::processgroupid', pgid)
+    processgroupid = iqry.qcollmetavalstatic(runsheet_coll, 'sys::runsheet::processgroupid')
+    q = iqry.qcollbymeta('sys::runsheet::processgroupid', processgroupid)
     colls = [ r[Collection.name] for r in q ]
     for coll in colls:
         state = iqry.qcollmetaval(coll, 'sys::runsheet::state', default='unknown')
@@ -249,6 +430,7 @@ def jobdetails():
         'sys::run::exit_code': ('Result', 'int'),
 #        'sys::runsheet::input_collection': ('Input Collection', 'irods_collection'),
         'sys::run::output_collection': ('Output Collection', 'irods_collection'),
+        'sys::run::account': ('Run Account', 'irods_user'),
         'sys::run::input_dir': ('Input directory', 'directory'),
         'sys::run::output_dir': ('Output directory', 'directory'),
         'sys::run::owner': ('Job owner', 'irods_user'),
@@ -260,6 +442,7 @@ def jobdetails():
         'sys::runsheet::tag': ('Git tag', 'tag'),
         'sys::runsheet::distribution': ('Distribution pipeline', 'boolean'),
         'sys::runsheet::omit_staging': ('Omit staging', 'boolean'),
+        'sys::runsheet::omit_bringonline': ('Omit bring input data online', 'boolean'),
         'sys::runsheet::lsf_queue': ('LSF Queue', 'lsf_queue'),
         'sys::run::lsf_jobid': ('LSF Job ID', 'text'),
         'sys::run::pid': ('Process PID', 'text'),
@@ -276,8 +459,9 @@ def jobdetails():
         values = iqry.qcollmetavals(runsheet, field)
         datavalues = [ datafield(field, value[CollectionMeta.value], attrs[1]).htmlstring for value in values ]
         multi[attrs[0]] = datavalues
-    pgid = metadata.get('sys::runsheet::processgroupid', '')
-    return render_template('jobdetails.html', details=details, multi=multi, runsheet=runsheet, pgid=pgid, jobnaam=datafield('jobnaam', jobnaam, 'runsheet'))
+    processgroupid = metadata.get('sys::runsheet::processgroupid', '')
+    return render_template('jobdetails.html', details=details, multi=multi, runsheet=runsheet, processgroupid=processgroupid, jobnaam=datafield('jobnaam', jobnaam, 'runsheet'))
+
 
 @bp.route('joblogs')
 @login_required

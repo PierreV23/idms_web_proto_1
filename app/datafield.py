@@ -209,6 +209,8 @@ INFINITE_DATE = data_timestamp(name='none', value=1E11)
 class data_irods_collection(data_base):
 
     def displaystring(self, maxlen=999):
+        if not self.value:
+            return ""
         nameparts = self.value.split('/')
         shortname = nameparts[-1]
         prefix = '/{}'.format('/'.join(nameparts[1:-1]))
@@ -341,11 +343,12 @@ class data_processgroupid(data_base):
 
     @property
     def htmlstring(self):
-        return self.value
+        s = '<a href={0}?processgroupid={1}>{1}</a>'.format(url_for('jobs.show_pg'), self.value)
+        return s
 
     @property
     def htmlshort(self):
-        return f'<div data-toggle="tooltip" title={self.value}>{self.value[:8]}</div'
+        return '<a href={0}?processgroupid={1} data-toggle="tooltip" title="{1}">{2}</a>'.format(url_for('jobs.show_pg'), self.value, self.value[:8])
         
     @staticmethod
     def factory(**kwargs):

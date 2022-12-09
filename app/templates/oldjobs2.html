@@ -72,7 +72,11 @@ $(document).ready(function(){
     {% for column in columns %}    
         <TD>
         {% if column in entry %}
-        {{ entry[column].htmlshort|safe}}
+          {% if '/jobs' in entry[column].htmlshort %}
+            {{ entry[column].htmlshort | striptags }}
+          {% else %}
+            {{ entry[column].htmlshort | safe }}
+          {% endif %}
         {% endif %}</TD>
         
     {% endfor %}
