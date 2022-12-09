@@ -8,11 +8,10 @@ Created on Mon Nov 18 13:49:12 2019
 
 from flask import Blueprint, render_template, request, url_for, jsonify, redirect, flash
 from flask_login import current_user, login_required
-from fs_irods import folder_irods
 from irods.exception import DataObjectDoesNotExist
-from irods.models import Collection, DataObject, DataObjectMeta, CollectionMeta
+from irods.models import Collection, CollectionMeta
 from irods.column import Criterion
-from app.datafield import datafield, AVU2data, INFINITE_DATE
+from app.datafield import datafield
 from app.settings import JOB_FIELDS, PG_FIELDS, PG_JOB_FIELDS
 from graphviz import Digraph
 import flask
@@ -26,9 +25,8 @@ from app.irodssessions import irods_manager
 from . import iqry
 from . import constants
 
-from sqlalchemy import create_engine, Float, text, MetaData, Table
-from sqlalchemy.orm import relationship, remote, foreign, sessionmaker, scoped_session
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import create_engine, text, MetaData, Table
+from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.exc import OperationalError
 
 
@@ -100,7 +98,6 @@ class JobsDBAlchemy:
             self._sessions[current_user.environment].remove()
 
 
-
 db = JobsDBAlchemy()
 
 @bp.before_request
@@ -142,6 +139,7 @@ def pagebuttons(page_size, count, current_page, max_buttons, template):
         before = pagebuttons
         after = []
     return before + after
+    
 
 @bp.route('/api/pgprocs')
 @login_required
@@ -181,6 +179,7 @@ def dbsession():
    
     return session, Jobs, Processgroups
 
+
 @bp.route('_jobs')
 @login_required
 def jobs():
@@ -193,34 +192,38 @@ def jobs():
             
     session, Jobs, Processgroups = dbsession()   
 
-    count_jobs = session.query(Jobs).count()
-    # default second order by start_time desc
-    jbs = session.query(Jobs).order_by(text(f"{orderby} {order}, create_time desc"))
+    # get jobs_query
+    jobs_query = session.query(Jobs)
+    # order; default second order by start_time desc
+    jobs_query = jobs_query.order_by(text(f"{orderby} {order}, create_time desc, start_time desc"))
     
-    # Apply filters ('select' and 'input')
-    for key, value in filters.items():
-        for f in JOB_FIELDS:
-            if JOB_FIELDS[f]['field'] == key:
-                if JOB_FIELDS[f].get('filtercontrol') == 'select':
-                    jbs = jbs.filter(text(f"{key}='{value}'"))
-                elif JOB_FIELDS[f].get('filtercontrol') == 'input':
-                    jbs = jbs.filter(text(f"{key} like('%{value}%')"))
+    # Apply filters on jobs_query ('select' and 'input')
+    for _, field_attrs in JOB_FIELDS.items():
+        field_name = field_attrs['field']
+        filter_value = filters.get(field_name)
+        filter_control = field_attrs.get('filtercontrol')
+        if filter_value is None or filter_control is None:
+            continue
+        if filter_control == 'select':
+            jobs_query = jobs_query.filter(text(f"{field_name}='{filter_value}'"))
+        if filter_control == 'input':
+            jobs_query = jobs_query.filter(text(f"{field_name} like('%{filter_value}%')"))
 
-    # recount, offset, limit data
-    count_jobs = jbs.count()
-    jbs = jbs.offset(offset).limit(limit)
+    # count, offset, limit data
+    count_jobs = jobs_query.count()
+    jobs_query = jobs_query.offset(offset).limit(limit)
 
-    # format data
+    # format data jobs_query
     result = []
-    for j in jbs:
-        rec = {}
+    for job in jobs_query:
+        record = {}
         for f in JOB_FIELDS:
             dbkey = JOB_FIELDS[f]['field']
-            val = getattr(j, dbkey)
+            val = getattr(job, dbkey)
             if val:
-                v = datafield(dbkey, val, JOB_FIELDS[f]['format'])
-                rec |= { dbkey: v.htmlshort, f'_{dbkey}': v.value }
-        result.append(rec)
+                formatted = datafield(dbkey, val, JOB_FIELDS[f]['format'])
+                record |= { dbkey: formatted.htmlshort, f'_{dbkey}': formatted.value }
+        result.append(record)
     
     engine = None
     return { 'rows': result, 'filters': filters, 'total': count_jobs }
@@ -235,8 +238,8 @@ def filterdata():
     session, Jobs, Processgroups = dbsession() 
 
     sql = f"SELECT DISTINCT {field} FROM {table} WHERE {field} IS NOT NULL"
-    fd = {v[0]:v[0] for v in session.execute(sql)}
-    return jsonify(fd)
+    filter_values = {v[0]:v[0] for v in session.execute(sql)}
+    return jsonify(filter_values)
 
 
 @bp.route('_pglist')
@@ -252,37 +255,42 @@ def pglist():
             
     session, Jobs, Processgroups = dbsession()   
 
-    count_jobs = session.query(Processgroups).count()
+    # get processgroups (pgs_query) 
+    pgs_query = session.query(Processgroups)
+    # order; default order by create_time desc, start_time desc
+    pgs_query = pgs_query.order_by(text(f"{orderby} {order}, create_time desc, start_time desc"))
 
-    # order by; default second order by start_time desc
-    pgs = session.query(Processgroups).order_by(text(f"{orderby} {order}, create_time desc"))
-
-    # drilldown on processgroupid
+    # filter on processgroupid 
     if processgroupid:
-        pgs = pgs.filter(Processgroups.columns.processgroupid==processgroupid)
+        pgs_query = pgs_query.filter(Processgroups.columns.processgroupid==processgroupid)
 
-    for key, value in filters.items():
-        for f in PG_FIELDS:
-            if PG_FIELDS[f].get('filtercontrol') == 'select':
-                pgs = pgs.filter(text(f"{key}='{value}'"))
-            elif PG_FIELDS[f].get('filtercontrol') == 'input':
-                pgs = pgs.filter(text(f"{key} like('%{value}%')"))
+    # Apply filters on pgs_query ('select' and 'input')
+    for _, field_attrs in PG_FIELDS.items():
+        field_name = field_attrs['field']
+        filter_value = filters.get(field_name)
+        filter_control = field_attrs.get('filtercontrol')
+        if filter_value is None or filter_control is None:
+            continue
+        if filter_control == 'select':
+            pgs_query = pgs_query.filter(text(f"{field_name}='{filter_value}'"))
+        if filter_control == 'input':
+            pgs_query = pgs_query.filter(text(f"{field_name} like('%{filter_value}%')"))
 
-    # recount, offset, limit data
-    count_jobs = pgs.count()
-    pgs = pgs.offset(offset).limit(limit)
+    # count, offset, limit data
+    count_jobs = pgs_query.count()
+    pgs_query = pgs_query.offset(offset).limit(limit)
 
-    # format displayed data
+    # format data pgs_query
     result = []
-    for j in pgs:
-        rec = {}
+    for processgroup in pgs_query:
+        record = {}
         for f in PG_FIELDS:
             dbkey = PG_FIELDS[f]['field']
-            val = getattr(j, dbkey)
+            val = getattr(processgroup, dbkey)
             if val:
-                v = datafield(dbkey, val, PG_FIELDS[f]['format'])
-                rec |= { dbkey: v.htmlshort, f'_{dbkey}': v.value }
-        result.append(rec)
+                formatted = datafield(dbkey, val, PG_FIELDS[f]['format'])
+                record |= { dbkey: formatted.htmlshort, f'_{dbkey}': formatted.value }
+        result.append(record)
     
     engine = None
     return { 'rows': result, 'filters': filters, 'total': count_jobs }
@@ -295,18 +303,18 @@ def pgjobs():
     processgroupid = request.args.get('processgroupid', None, type=str)
     session, Jobs, Processgroups = dbsession()
     result = []
-    pgj = session.query(Jobs)
-    pgj = pgj.filter(Jobs.columns.processgroupid==processgroupid)
+    jobs_query = session.query(Jobs)
+    jobs_query = jobs_query.filter(Jobs.columns.processgroupid==processgroupid)
 
-    for j in pgj:
-        rec = {}
+    for job in jobs_query:
+        record = {}
         for f in PG_JOB_FIELDS:
             dbkey = PG_JOB_FIELDS[f]['field']
-            val = getattr(j, dbkey)
+            val = getattr(job, dbkey)
             if val:
-                v = datafield(dbkey, val, PG_JOB_FIELDS[f]['format'])
-                rec |= { dbkey: v.htmlshort, f'_{dbkey}': v.value }
-        result.append(rec)
+                formatted = datafield(dbkey, val, PG_JOB_FIELDS[f]['format'])
+                record |= { dbkey: formatted.htmlshort, f'_{dbkey}': formatted.value }
+        result.append(record)
         
     columns = []
     for f in PG_JOB_FIELDS:
