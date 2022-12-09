@@ -87,6 +87,9 @@ $('table#pgtable').on('column-search.bs.table', function(e, column, value) {
         $.get('{{ url_for("jobs.pgjobs") }}?processgroupid=' + row['_processgroupid'], function(data){
             console.log(data['columns'])
             $detail.html('<table></table>').find('table').bootstrapTable({
+                autoRefresh: true,
+                showAutoRefresh: false,
+                autoRefreshInterval: 30,
                 columns: data['columns'],
                 data: data['rows'],
                 rowStyle: 'rowStyle',
