@@ -39,7 +39,7 @@ $(document).ready(function(){
   data-sort-name="create_time"
   data-sort-order="desc"
   data-toggle="table"
-  data-auto-refresh='true'
+  data-auto-refresh="true"
   data-auto-refresh-interval=30
   data-show-auto-refresh="false">
   <thead>
@@ -90,8 +90,8 @@ $('table#pgtable').on('column-search.bs.table', function(e, column, value) {
                 columns: data['columns'],
                 data: data['rows'],
                 rowStyle: 'rowStyle',
-                sortName: 'start_time',
-                sortOrder: 'asc',
+                sortName: 'create_time',
+                sortOrder: 'desc',
                 customSort: 'sorter'
             });
             data['columns'].forEach(function(x, i) {
