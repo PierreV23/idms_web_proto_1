@@ -16,7 +16,7 @@ from flask import Blueprint, render_template, redirect, request, url_for, jsonif
 from flask_login import current_user, login_required
 from irods.models import Collection, CollectionMeta, DataObject, DataObjectMeta
 from irods.exception import CAT_NO_ROWS_FOUND
-from irods.column import Criterion, Like
+from irods.column import Criterion
 from app.datafield import AVU2data, datafield
 from app.irods_helper import getmetaitem
 from app.irodssessions import irods_manager
@@ -35,7 +35,6 @@ bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
 
 NAME_LENGTH = 20
 DEFAULT_GRAPH_LEVELS = 3
-SEARCHPAGE_SIZE = 1000
 
 ATTR_DATASETID = 'sys::dataset_id'
 ATTR_PROJECTID = 'projectID'
@@ -45,17 +44,12 @@ ATTR_PROCESSGROUPID = 'processgroupID'
 ATTR_ARCHIVE_PREFIX = 'sys::archive::'
 ATTR_ARCHIVE_USR_PREFIX = 'user::archive::'
 ATTR_ARCHIVE_ENABLE = f'{ATTR_ARCHIVE_PREFIX}enable'
-ATTR_ARCHIVE_DEFAULT_STATE = f'{ATTR_ARCHIVE_PREFIX}default_state'
 ATTR_ARCHIVE_DESIREDSTATE = f'{ATTR_ARCHIVE_PREFIX}desired_state'
 ATTR_ARCHIVE_KEEP_ONLINE = f'{ATTR_ARCHIVE_PREFIX}keep_online'
 ATTR_ARCHIVE_KEEP_ONLINE_TILL = f'{ATTR_ARCHIVE_USR_PREFIX}keep_online_till'
 ATTR_ARCHIVE_LOCAL = f'{ATTR_ARCHIVE_PREFIX}local'
 ATTR_PROCESSREQUEST = 'processrequest'
-ATTR_ARCHIVE_STAGE = f'{ATTR_ARCHIVE_PREFIX}stage'
 ATTR_ARCHIVE_STATE = f'{ATTR_ARCHIVE_PREFIX}state'
-ATTR_ARCHIVE_LASTRUN = f'{ATTR_ARCHIVE_PREFIX}lastrun'
-ATTR_ARCHIVE_MINSTABLE = f'{ATTR_ARCHIVE_PREFIX}min_stable'
-ATTR_ARCHIVE_ONLINEPERCENTAGE = f'{ATTR_ARCHIVE_PREFIX}online_percentage'
 ATTR_ARCHIVE_MINCOPIES = f'{ATTR_ARCHIVE_PREFIX}min_copies'
 
 
@@ -264,7 +258,6 @@ def collist():
 @login_required
 def collist_nocache():
     path = request.args.get('path','/', type=str)
-    new_path_str = request.args.get('new_path', 'true', type=str)
     display_field = iqry.qcollmetaval(path, 'ngsweb::display_field')
     options = {
         'download_btn': request.args.get('btn_download', 'true', type=str) == 'true',
@@ -282,9 +275,6 @@ def collcontents():
     filterstr = request.args.get('filter', '{}')
 
     irods_session = irods_manager.session()
-
-    cols = []
-    objs = []
 
 # Look for metadate attrs starting with ngsweb:: on the collection
     q1 = iqry.qcollmeta(path)
@@ -561,7 +551,7 @@ def generate_graph():
             del multinodes[n]
         else:
             # Combine equal multinodes:
-            for other_multinode, other_related_node, other_neighbours in multinodes[:n]:
+            for other_multinode, _ , other_neighbours in multinodes[:n]:
                 if other_neighbours == neighbours:
                     # Move the edges:
                     if input_node:
@@ -668,7 +658,6 @@ def add_items(path, level, active):
             link='<span class="tree-label path-change{}" data-path="{}">{}</span>'.format(c1, collpath, collname)
             subtree=''
             dummy=0
-            collid=''.join(collpath.split('/'))
             if len(parts)>level:
                 # Not the whole tree is expanded yet
                 if parts[level] == collname:

@@ -408,7 +408,6 @@ def jobdetails():
     
     details = {}
     metadata = {}
-    joblog = ''
 
     # the jobnaam is refering to metainfo on a collection
     q = iqry.qcollbystaticmeta(ATTR_RUNSHEET_ID, jobnaam)
@@ -480,7 +479,6 @@ def job_logs():
     q2 = session.query(CollectionMeta.name, CollectionMeta.value).filter( \
             Criterion('=', Collection.name, runsheet ))
     metadata = {meta[CollectionMeta.name] : meta[CollectionMeta.value] for meta in q2}
-    joblog = { f'Job log', f'{runsheet}/log/{jobnaam}.log' }
     ifs = current_user.ifs
 
     # Find output logs

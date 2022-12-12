@@ -1,9 +1,7 @@
-import inspect
 import ssl
 import sys
 import threading
 import time
-import traceback
 import logging
 
 from requests import session

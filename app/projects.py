@@ -13,10 +13,9 @@ from requests.auth import HTTPBasicAuth
 from flask import abort, flash, Blueprint, render_template, redirect, request, url_for, current_app
 from flask_login import current_user, login_required
 from flask import jsonify
-from irods.exception import CAT_NO_ACCESS_PERMISSION, OVERWRITE_WITHOUT_FORCE_FLAG
+from irods.exception import CAT_NO_ACCESS_PERMISSION
 from irods.models import Collection, CollectionMeta, User, UserMeta, UserGroup
 from irods.column import Criterion
-from irods.user import iRODSUser, iRODSUserGroup
 from app.datafield import AVU2data, datafield
 from app.models import deobfuscate
 from graphviz import Digraph
@@ -463,7 +462,7 @@ def pgaction():
         pl, result = rest_call('GET', f'projects/{project}/processgroups/{group}/processes')
         if result == 200:
             for procref in pl:
-                p2, result = rest_call('PUT', f'projects/{project}/processgroups/{group}/processes/{procref.get("id")}', 
+                _, result = rest_call('PUT', f'projects/{project}/processgroups/{group}/processes/{procref.get("id")}', 
                     data = { 'lsf_queue': lsf_queue })
     elif action == 'delete_process':
         process = request.args.get('process')
@@ -554,7 +553,6 @@ def pg_details():
     project = request.args.get('project')
     group = request.args.get('group', 'default')
     selected_processref = request.args.get('selected_processref')
-    selected_dependency =  request.args.get('selected_dependency')
     mode = request.args.get('mode')
     pl, result = rest_call('GET', f'projects/{project}/processgroups/{group}/processes')
     all_processes, result = rest_call('GET', f'processes')

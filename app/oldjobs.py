@@ -12,7 +12,7 @@ from fs_irods import folder_irods
 from irods.exception import DataObjectDoesNotExist
 from irods.models import Collection, DataObject, DataObjectMeta, CollectionMeta
 from irods.column import Criterion
-from app.datafield import datafield, AVU2data, INFINITE_DATE
+from app.datafield import datafield
 from graphviz import Digraph
 import os
 import sys
