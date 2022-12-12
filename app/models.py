@@ -20,7 +20,6 @@ from flask_login import current_user
 from irods.models import User, UserGroup, UserMeta
 from irods.column import Criterion
 from irods.meta import iRODSMeta
-from irods.user import iRODSUserGroup
 from fs_irods import fs_irods
 from . import flaskcache
 from . import iqry

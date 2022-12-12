@@ -92,8 +92,7 @@ IRODS_ENVS = {
         'features': [
             'JOBS',
             'MINILIMS',
-            'PROJECTS',
-            'NONACRIS'
+            'PROJECTS'
         ]
     },
     'Test_01':   {
@@ -105,8 +104,7 @@ IRODS_ENVS = {
         'features': [
             'JOBS',
             'MINILIMS',
-            'PROJECTS',
-            'NONACRIS'
+            'PROJECTS'
         ]
     },
     'MIL': {

@@ -2,8 +2,8 @@ from flask import Flask, current_app, Blueprint, flash, render_template, request
 from flask_login import current_user, login_required
 from flask_marshmallow import Marshmallow
 from marshmallow import Schema, fields, validate
-from sqlalchemy.orm import relationship, remote, foreign, sessionmaker, scoped_session
-from sqlalchemy import ForeignKey, distinct, create_engine, Column, Integer, String, TIMESTAMP, func, desc, text
+from sqlalchemy.orm import sessionmaker, scoped_session
+from sqlalchemy import ForeignKey, distinct, create_engine, Column, Integer, String, TIMESTAMP, func, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import OperationalError
 from irods.models import Collection, CollectionMeta, User

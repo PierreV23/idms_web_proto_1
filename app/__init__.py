@@ -38,13 +38,6 @@ app.config.from_mapping(
 #    DATABASE=os.path.join(app.instance_path, 'ngsrun.sqlite'),
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
     SQLALCHEMY_DATABASE_URI='sqlite:///{}/ngsruns.sqlite'.format(app.instance_path),
-# Use serverside session , seems logical to use SQLALCHEMY for session management
-# needed to store stateful Nonacris object during Kiemsurveillance upload
-# TODO: create necessary tables and switch to sqlalchemy...
-# However: the NncWeb-Object cant be 'pickled' (serialized?) since it contains the database connection: 
-#     mssql.MSSQLConnection.__reduce_cython__
-#     TypeError: no default __reduce__ due to non-trivial __cinit__
-#    SESSION_TYPE= 'filesystem'  #'sqlalchemy'
 )
 
 app.config.from_pyfile(os.path.join(app.instance_path, 'config.py'), silent=True)
@@ -147,7 +140,6 @@ def get_header_messages():
             messages_json = obj.open('r').read().decode('utf-8')
             all_messages = json.loads(messages_json).get('messages', [])
     except Exception as ex:
-        raise(ex)
         # Do not break the website if the message file has an invalid format
         pass
     messages = []
