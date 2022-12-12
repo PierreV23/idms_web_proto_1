@@ -15,16 +15,10 @@ import irods.exception
 from . import auth, collbrowser, jobs, docviewer
 from . import projects, cluster, admin, reports, userinfo
 from . import ngsruns, upload, flaskcache
-<<<<<<< app/__init__.py
 from . import messages, oldjobs
 from .ngsruns import db as ngsruns_db, NGSRunsDBUnavailableException
 from .jobs import db as jobs_db, JobsDBUnavailableException
 from .flaskcache import cache, dep_zone
-=======
-from . import messages
-from .ngsruns import db, NGSRunsDBUnavailableException
-from .flaskcache import cache, dep_zone
->>>>>>> app/__init__.py
 from .irodssessions import irods_manager
 
 # This is the default log config. It can (and should) be overruled by
