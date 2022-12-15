@@ -27,6 +27,7 @@ dependencies:
   - flask-script
   - sqlite
   - psycopg2
+  - uwsgi
   - werkzeug==2.0.3
   - pip:
     - randomname
