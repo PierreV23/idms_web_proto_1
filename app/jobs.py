@@ -25,7 +25,7 @@ from app.irodssessions import irods_manager
 from . import iqry
 from . import constants
 
-from sqlalchemy import create_engine, text, MetaData, Table
+from sqlalchemy import create_engine, text, MetaData, Table, func
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.exc import OperationalError
 
@@ -287,7 +287,7 @@ def pglist():
         for f in PG_FIELDS:
             dbkey = PG_FIELDS[f]['field']
             val = getattr(processgroup, dbkey)
-            if val:
+            if val is not None:
                 formatted = datafield(dbkey, val, PG_FIELDS[f]['format'])
                 record |= { dbkey: formatted.htmlshort, f'_{dbkey}': formatted.value }
         result.append(record)
@@ -295,6 +295,15 @@ def pglist():
     engine = None
     return { 'rows': result, 'filters': filters, 'total': count_jobs }
 
+@bp.route('_jobrefresh')
+def jobs_refresh():
+    session, Jobs, Processgroups = dbsession()
+    jobs_query = session.query(func.max(Jobs.columns.refresh_time))
+    result = list(jobs_query)
+    if not result:
+        return jsonify('unknown')
+    else:
+        return jsonify(datafield('refresh_time', result[0][0], 'timestamp').htmlshort)
  
 @bp.route('_pgjobs')
 @login_required
