@@ -43,6 +43,9 @@ COLOR1 = 'color1'
 COLOR2 = 'color2'
 TABLECLASS = 'tableclass'
 
+SYS_INVALID_COLOR = '#FF3333'
+USER_INVALID_COLOR = 'darkred'
+
 DEFAULT_SHAPE = {
         SHAPE1 : 'box',
         SHAPE2 : 'circle',
@@ -128,13 +131,6 @@ LAYOUT = {
         COLOR2: '#ebd9c6',
         TABLECLASS : 'table-notrun'
     },
-    'valid':  {
-        SHAPE1: 'box3d',
-        SHAPE2: 'cds',
-        COLOR1: '#c3e6cb',
-        COLOR2: '#c3e6cb',
-        TABLECLASS : 'table-done'
-    },
     'distributed': {
         SHAPE1 : 'box3d',
         COLOR1: '#c3e6cb:gray',
@@ -159,13 +155,6 @@ LAYOUT = {
         COLOR1: '#ff9980',
         COLOR2: '#ff9980',
         TABLECLASS : 'table-error'  
-    },
-    'invalid': {
-        SHAPE1: 'box3d',
-        SHAPE2: 'cds',
-        COLOR1: '#ffebe6',
-        COLOR2: '#ffebe6',
-        TABLECLASS : 'table-invalid'  
     },
     'unknown': {
         SHAPE1: 'box',

@@ -9,7 +9,7 @@ dependencies:
   - flask
   - freetds
   - git
-  - graphviz
+  - graphviz==5.0.1
   - jsonschema
   - marshmallow==3.17.0
   - marshmallow-sqlalchemy

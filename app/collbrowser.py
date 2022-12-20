@@ -607,6 +607,17 @@ def generate_graph():
         coll_type = collmeta.get('sys::data::type', coll_type)
         coll_type = collmeta.get('user::data::type', coll_type)
         shape, shape_color = coll_shape(coll_type)
+
+        # set border/fill colors for invalid collections
+        border_color = "black"
+        if collmeta.get('sys::data::state') == "invalid":
+            # shape_color += f":{constants.SYS_INVALID_COLOR}"
+            # shape_color += f";0.9:{constants.SYS_INVALID_COLOR}"
+            border_color = constants.SYS_INVALID_COLOR
+        elif collmeta.get('user::data::state') == "invalid":
+            # shape_color += f":{constants.USER_INVALID_COLOR}"
+            # shape_color += f";0.9:{constants.USER_INVALID_COLOR}"
+            border_color = constants.USER_INVALID_COLOR
     
         projectid = collmeta.get('projectID', '') + '\n'
         if node == coll:
@@ -616,8 +627,9 @@ def generate_graph():
             penwidth = '1'
             clss = { 'class' : 'path-change' }
 
-        graph.node(node, projectid + shortname(node,NAME_LENGTH), shape=shape, fillcolor=shape_color, style='filled', penwidth=penwidth,
-                fontsize='8', setting='extra', **clss, id=node)
+        graph.node(node, projectid + shortname(node,NAME_LENGTH), shape=shape, color=border_color, 
+            fillcolor=shape_color, style='filled', penwidth=penwidth,
+            fontsize='8', setting='extra', **clss, id=node)
 
     # multi-nodes
     for multinode, related_node, neighbours in multinodes:
