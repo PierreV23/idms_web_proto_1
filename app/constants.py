@@ -197,5 +197,11 @@ LAYOUT = {
         COLOR1: 'yellow',
         COLOR2: '#FFFF00',
         TABLECLASS: 'table-white'        
-    }  
+    },
+    'data': {
+        SHAPE1 : 'box3d',
+        COLOR1: '#c3e6cb',
+        COLOR2: '#c3e6cb',
+        TABLECLASS : 'table-data'        
+    }
 }
