@@ -179,6 +179,12 @@ def dbsession():
    
     return session, Jobs, Processgroups
 
+@bp.route('jobpage')
+def jobpage():
+    preferred_page = current_user.settings.setdefault('jobs::view', 'jobs')
+    if preferred_page == 'processgroups':
+        return redirect(url_for('jobs.show_pg'))
+    return redirect(url_for('jobs.show_jobs')) 
 
 @bp.route('_jobs')
 @login_required
@@ -336,6 +342,7 @@ def pgjobs():
 def show_pg():
     processgroupid = request.args.get('processgroupid', None, type=str)
     default_project = current_user.settings.get('default_project', '')
+    current_user.settings['jobs::view'] = 'processgroups'
     return render_template('pglist.html', default_project=default_project
                             , processgroupid=processgroupid, columns = PG_FIELDS)
 
@@ -345,6 +352,7 @@ def show_pg():
 #@cache.cached(timeout=30, key_prefix=key_zone)
 def show_jobs():
     default_project=current_user.settings.get('default_project', '')
+    current_user.settings['jobs::view'] = 'jobs'
     return render_template('jobs.html', default_project = default_project, columns = JOB_FIELDS)
 
     
