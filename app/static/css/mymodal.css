@@ -636,3 +636,7 @@ ul {
   margin-left: 5px;
   margin-right: 5px;
 }
+
+.header-right {
+  font-size: 0.8rem;
+}

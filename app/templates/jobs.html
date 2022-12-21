@@ -4,7 +4,12 @@
 {% endblock %}
 
 {% block heading %}
-<h3>Job queue overview </h3>
+<h3>
+    <div class="inline">Job queue overview</div>
+    <div class="float-right header-right">
+        Last refresh: <div class="refresh-time">... loading ...</div>
+    </div>
+</h3>
 {% endblock %}
 
 {%block menuname %}
@@ -12,94 +17,100 @@ menuname='jobs'
 {% endblock %}
 
 {% block content %}
-<div class="scroll h-100">
-<script>
-$(document).ready(function(){
-  $('[data-toggle="tooltip"]').tooltip();   
-});
+<div class="h-100">
+    <script>
+        $(document).ready(function () {
+            $('[data-toggle="tooltip"]').tooltip();
+        });
 
-</script>
+    </script>
 
-<table id="jobtable"
-  data-buttons-prefix="btn"
-  data-classes='table table-bordered table-hover table-striped'
-  data-filter-control="true"
-  data-id-field='name'
-  data-page-list=[15,25,50,100]
-  data-page-size=15
-  data-pagination='true'
-  data-row-style="rowStyle"
-  data-search="false"
-  data-url='{{ url_for("jobs.jobs") }}'
-  data-side-pagination='server'
-  data-show-columns="true"
-  data-show-filter-control-switch="true"
-  data-custom-sort="sorter"
-  data-sort-name="create_time"
-  data-sort-order="desc"
-  data-toggle="table"
-  data-auto-refresh='true'
-  data-auto-refresh-interval=30
-  data-show-auto-refresh="false">
-  <thead>
-    <tr>
-        {% for c in columns %}
-        <th data-field="{{columns[c]['field']}}"
-            data-align="left" 
-            data-sortable="{{columns[c]['sortable']}}" 
-            data-visible="{{columns[c]['visible']}}"
-            data-filter-control="{{columns[c]['filtercontrol']}}"
-            {% if columns[c]['filtercontrol'] == "select" %}
-                data-filter-data='url:{{ url_for("jobs.filterdata", field=columns[c]["field"], table="rivm_mat_jobtable") }}'
-            {% endif %}>
-            {{columns[c]['title']}}
-        </th>
-        {% endfor %}
-   </tr>
-</thead>
-</table>
+    <table id="jobtable" 
+      data-buttons-prefix="btn" 
+      data-classes='table table-bordered table-hover table-striped'
+      data-filter-control="true" 
+      data-id-field='name' 
+      data-page-list=[15,25,50,100] 
+      data-page-size=15
+      data-pagination='true' 
+      data-row-style="rowStyle" 
+      data-search="false" 
+      data-url='{{ url_for("jobs.jobs") }}'
+      data-side-pagination='server' 
+      data-show-columns="true" 
+      data-show-filter-control-switch="true"
+      data-custom-sort="sorter" 
+      data-sort-name="create_time" 
+      data-sort-order="desc" 
+      data-toggle="table"
+      data-auto-refresh='true' 
+      data-auto-refresh-interval=30 
+      data-show-auto-refresh="false">
+        <thead>
+            <tr>
+                {% for c in columns %}
+                <th data-field="{{columns[c]['field']}}" 
+                    data-align="left" 
+                    data-sortable="{{columns[c]['sortable']}}"
+                    data-visible="{{columns[c]['visible']}}" 
+                    data-filter-control="{{columns[c]['filtercontrol']}}" 
+                    {% if columns[c]['filtercontrol']=="select" %}
+                      data-filter-data='url:{{ url_for("jobs.filterdata", field=columns[c]["field"], table="rivm_mat_jobtable") }}'
+                    {% endif %}>
+                    {{columns[c]['title']}}
+                </th>
+                {% endfor %}
+            </tr>
+        </thead>
+    </table>
 
-<script>
+    <script>
 
-  $('table#jobtable').on('column-search.bs.table', function(e, column, value) {
-      $.post('{{ url_for("userinfo.usersetting") }}', {
-          attr: 'jobs::filter::' + column,
-          value: value
-      })
-  })
-  ;
-  
-  function rowStyle(row, index) {
-      var styles = {
-          'done': 'table-success',
-          'error': 'table-danger',
-          'active': 'table-info'
-      };
-      if (row['state'] == 'done' && row['exit_code'] != 0) {
-        return {
-          classes: 'table-danger'
-      }        
-      }
-      return {
-          classes: styles[row['state']]
-      }
-  }
-
-  function sorter(field, sortOrder, data){
-        var order = sortOrder === 'desc' ? -1 : 1
-        data.sort(function (a, b) {
-            var aa = a['_'+field]
-            var bb = b['_'+field]
-            if (aa<bb){
-                return order * -1 
-            }
-            if (aa>bb) {
-                return order
-            }
-            return 0
+        $('table#jobtable').on('load-success.bs.table', function (e, index, row, $data) {
+            $.get('{{ url_for("jobs.jobs_refresh") }}', function(data) {
+                $('.refresh-time').html(data);
+            });
         })
-    }
-  
-</script>
-{% endblock %}
 
+
+        $('table#jobtable').on('column-search.bs.table', function (e, column, value) {
+            $.post('{{ url_for("userinfo.usersetting") }}', {
+                attr: 'jobs::filter::' + column,
+                value: value
+            })
+        })
+            ;
+
+        function rowStyle(row, index) {
+            var styles = {
+                'done': 'table-success',
+                'error': 'table-danger',
+                'active': 'table-info'
+            };
+            if (row['state'] == 'done' && row['exit_code'] != 0) {
+                return {
+                    classes: 'table-danger'
+                }
+            }
+            return {
+                classes: styles[row['state']]
+            }
+        }
+
+        function sorter(field, sortOrder, data) {
+            var order = sortOrder === 'desc' ? -1 : 1
+            data.sort(function (a, b) {
+                var aa = a['_' + field]
+                var bb = b['_' + field]
+                if (aa < bb) {
+                    return order * -1
+                }
+                if (aa > bb) {
+                    return order
+                }
+                return 0
+            })
+        }
+
+    </script>
+    {% endblock %}

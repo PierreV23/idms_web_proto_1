@@ -1,5 +1,4 @@
 JOB_FIELDS = {
-    'refresh_time': {'title': 'Last Refresh', 'format': 'timestamp', 'field': 'refresh_time', 'sortable': 'false', 'visible': 'true'},
     'sys::runsheet::id': {'title': 'Name', 'format': 'runsheet', 'field': 'id', 'sortable': 'true', 'visible': 'true'},
     'sys::runsheet::state': {'title': 'State', 'format': 'text', 'field': 'state', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
     'sys::runsheet::description': {'title': 'Description', 'format': 'text', 'field': 'description', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'input'},
@@ -16,6 +15,7 @@ PG_FIELDS = {
     'processgroupid': {'title': 'Group ID', 'format': 'processgroupid', 'field': 'processgroupid', 'sortable': 'true', 'visible': 'true'},
     'state': {'title': 'Group state', 'format': 'text', 'field': 'state', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
     'states': {'title': 'Process states', 'format': 'text', 'field': 'states', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'input'},
+    'exit_code': {'title': 'Exit Code', 'format': 'int', 'field': 'exit_code', 'sortable': 'false', 'visible': 'true'},
     'process_count': {'title': '#', 'format': 'int', 'field': 'count', 'sortable': 'true', 'visible': 'true'},
     'project': {'title': 'Project', 'format': 'projectid', 'field': 'projectid', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
     'create_time': {'title': 'Create time', 'format': 'timestamp', 'field': 'create_time', 'sortable': 'true', 'visible': 'true'},

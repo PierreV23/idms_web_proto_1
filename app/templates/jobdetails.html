@@ -27,7 +27,6 @@ menuname='jobdetails'
   });
 
   function detailFilter(index, row) {
-    console.log(row._data)
     return row._data.multi > 1
   }
 
@@ -107,10 +106,8 @@ menuname='jobdetails'
   multi = {{ multi | safe }}
 
   function subTable($table, name) {
-    console.log(name)
     data = []
     multi[name].forEach((x,i) => data.push({'field': x}))
-    console.log(data)
     $table.bootstrapTable({
       columns: [{ field: 'field', title: name }],
       data: data,
