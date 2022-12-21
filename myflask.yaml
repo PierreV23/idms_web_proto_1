@@ -5,19 +5,17 @@ channels:
   - anaconda
 dependencies:
   - apscheduler
-  - flask
-  - freetds
+  - flask<2.2
   - git
-  - graphviz==5.0.1
+  - graphviz<6.0.0
   - jsonschema
-  - marshmallow==3.17.0
+  - marshmallow<4.0.0
   - marshmallow-sqlalchemy
-  - openssl=1.1.1
+  - openssl<2.0.0
   - pip
   - python>3.8
   - python-dateutil
   - pyyaml
-  - redis-server
   - requests
   - flask-caching
   - flask-login
@@ -28,10 +26,10 @@ dependencies:
   - sqlite
   - psycopg2
   - uwsgi
-  - werkzeug==2.0.3
+  - werkzeug<2.1
   - pip:
     - randomname
-    - python-irodsclient #==0.8.3
+    - python-irodsclient
     - redis
     - graphviz
     - jsonschema
