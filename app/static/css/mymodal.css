@@ -561,6 +561,12 @@ ul {
   background-color: #B0C4DE;
 }
 
+.table-download,
+.table-download>td,
+.table-sdownload>th {
+  background-color: #cce5e8;
+}
+
 .table-queued,
 .table-queued>td,
 .table-queued>th {

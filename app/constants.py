@@ -83,6 +83,13 @@ LAYOUT = {
         COLOR2: '#B0C4DE',
         TABLECLASS : 'table-stage'    
     },
+    'download': {
+        SHAPE1 : 'underline',
+        SHAPE2 : 'cds',
+        COLOR1: '#dcccde',
+        COLOR2: '#dcccde',
+        TABLECLASS : 'table-download'    
+    },
     'queued': {
         SHAPE1 : 'underline',
         SHAPE2 : 'cds',

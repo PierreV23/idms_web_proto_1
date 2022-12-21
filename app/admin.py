@@ -292,7 +292,7 @@ def admin():
         return render_template('denied.html')
     queues = {}
     session = irods_manager.session()
-    for q in ['incoming', 'depends', 'prepare', 'stage', 'queued', 'startup', 'active', 'finishing', 'postprocessing', 'waiting']:
+    for q in ['incoming', 'depends', 'prepare', 'stage', 'download', 'queued', 'startup', 'active', 'finishing', 'postprocessing', 'waiting']:
         enabled = True
         path = f'/{current_user.irods_zone}/system/runsheet'
         metaquery = session.query(CollectionMeta.value).filter(
