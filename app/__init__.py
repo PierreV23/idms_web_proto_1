@@ -48,6 +48,7 @@ logging.config.dictConfig(app.config.get('LOGCONFIG', DEFAULT_LOGCONFIG))
 def init_dbs():
     ngsruns_db.init_app(app)
     jobs_db.init_app(app)
+    irods_manager.init_app(app)
 
 # When running under uwsgi, the postfork decorator is required
 # for the database connections
@@ -57,8 +58,6 @@ try:
 except ModuleNotFoundError:
     init_dbs()
 
-
-irods_manager.init_app(app)
 
 app.register_blueprint(auth.bp)
 app.register_blueprint(collbrowser.bp)
