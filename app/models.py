@@ -14,6 +14,7 @@ import ssl
 import time
 import logging
 
+from Crypto.Hash import MD4
 from flask_login import UserMixin
 from flask import session, current_app
 from flask_login import current_user
@@ -150,8 +151,8 @@ class WebUser(UserMixin):
     @property
     def ntlm_hash(self):
         password = deobfuscate(self.password)
-        hash = binascii.hexlify(hashlib.new('md4', password.encode('utf-16le')).digest()).decode('ascii')
-        lmntlm = '{}:{}'.format('0' * 32, hash) 
+        ntlm_hash = MD4.new(password.encode('utf-16le')).hexdigest()
+        lmntlm = '{}:{}'.format('0' * 32, ntlm_hash)
         return lmntlm
 
     @property

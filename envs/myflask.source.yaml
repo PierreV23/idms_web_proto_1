@@ -1,0 +1,36 @@
+name: myflask
+channels:
+  - conda-forge
+  - defaults
+  - anaconda
+dependencies:
+  - apscheduler
+  - flask
+  - git
+  - graphviz
+  - jsonschema
+  - marshmallow
+  - marshmallow-sqlalchemy
+  - openssl
+  - pip
+  - pycryptodome
+  - python>3.8
+  - python-dateutil
+  - pyyaml
+  - requests
+  - flask-caching
+  - flask-login
+  - flask-marshmallow
+  - flask-migrate
+  - flask-sqlalchemy
+  - flask-script
+  - sqlite
+  - psycopg2
+  - uwsgi
+  - werkzeug
+  - pip:
+    - randomname
+    - python-irodsclient
+    - redis
+    - graphviz
+    - jsonschema

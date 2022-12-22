@@ -10,6 +10,7 @@ from irods.models import Collection, CollectionMeta, User
 from irods.column import Criterion
 from app.datafield import datafield
 import flask
+import greenlet
 import json
 import requests
 from requests.auth import HTTPBasicAuth
@@ -50,7 +51,7 @@ class NGSRunsAlchemy:
             _sessionmaker = sessionmaker(autocommit=False, autoflush=False,
                                          bind=engine)
             self._sessions[env_name] = scoped_session(_sessionmaker, 
-                scopefunc=flask._app_ctx_stack.__ident_func__)
+                scopefunc=greenlet.getcurrent)
         app.teardown_request(self.remove_session)
 
     def envs(self):
