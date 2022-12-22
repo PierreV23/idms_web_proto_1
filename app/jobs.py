@@ -15,6 +15,7 @@ from app.datafield import datafield
 from app.settings import JOB_FIELDS, PG_FIELDS, PG_JOB_FIELDS
 from graphviz import Digraph
 import flask
+import greenlet
 import json
 import os
 import sys
@@ -69,7 +70,7 @@ class JobsDBAlchemy:
                 _sessionmaker = sessionmaker(autocommit=False, autoflush=False,
                                             bind=engine)
                 self._sessions[env_name] = scoped_session(_sessionmaker, 
-                    scopefunc=flask._app_ctx_stack.__ident_func__)
+                    scopefunc=greenlet.getcurrent)
         app.teardown_request(self.remove_session)
 
     def envs(self):
