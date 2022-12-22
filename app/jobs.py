@@ -87,7 +87,7 @@ class JobsDBAlchemy:
                 env = self.default_env
         
         try:
-            return self._sessions[env]
+            return self._sessions[env]()
         except KeyError:
             raise JobsDBUnavailableException(f'env={env}')
 
@@ -225,8 +225,8 @@ def jobs():
         record = {}
         for f in JOB_FIELDS:
             dbkey = JOB_FIELDS[f]['field']
-            val = getattr(job, dbkey)
-            if val:
+            val = getattr(job, dbkey, None)
+            if val is not None:
                 formatted = datafield(dbkey, val, JOB_FIELDS[f]['format'])
                 record |= { dbkey: formatted.htmlshort, f'_{dbkey}': formatted.value }
         result.append(record)
@@ -292,7 +292,7 @@ def pglist():
         record = {}
         for f in PG_FIELDS:
             dbkey = PG_FIELDS[f]['field']
-            val = getattr(processgroup, dbkey)
+            val = getattr(processgroup, dbkey, None)
             if val is not None:
                 formatted = datafield(dbkey, val, PG_FIELDS[f]['format'])
                 record |= { dbkey: formatted.htmlshort, f'_{dbkey}': formatted.value }
@@ -325,8 +325,8 @@ def pgjobs():
         record = {}
         for f in PG_JOB_FIELDS:
             dbkey = PG_JOB_FIELDS[f]['field']
-            val = getattr(job, dbkey)
-            if val:
+            val = getattr(job, dbkey, None)
+            if val is not None:
                 formatted = datafield(dbkey, val, PG_JOB_FIELDS[f]['format'])
                 record |= { dbkey: formatted.htmlshort, f'_{dbkey}': formatted.value }
         result.append(record)
