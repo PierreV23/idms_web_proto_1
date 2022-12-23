@@ -77,11 +77,15 @@ menuname='jobs'
 
         $('table#jobtable').on('column-search.bs.table', function (e, column, value) {
             if (column == 'projectid') {
-                $.post('{{ url_for("userinfo.usersetting") }}', {
-                    attr: 'default_project',
-                    value: value
-                })
-            };
+                $.ajax({
+                    type: 'POST',
+                    url: '{{ url_for("userinfo.usersetting") }}', 
+                    data: {
+                        attr: 'default_project',
+                        value: value
+                    },
+                    async: false
+                })};
         })
             
         function rowStyle(row, index) {
