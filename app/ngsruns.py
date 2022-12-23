@@ -69,7 +69,7 @@ class NGSRunsAlchemy:
                 env = self.default_env
         
         try:
-            return self._sessions[env]
+            return self._sessions[env]()
         except KeyError:
             raise NGSRunsDBUnavailableException(f'env={env}')
 
