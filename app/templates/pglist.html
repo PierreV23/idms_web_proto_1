@@ -17,7 +17,7 @@ menuname='pglist'
 {% endblock %}
 
 {% block content %}
-<div class="scroll h-100">
+<div class="h-100">
     <script>
         $(document).ready(function () {
             $('[data-toggle="tooltip"]').tooltip();
@@ -56,6 +56,9 @@ menuname='pglist'
                     data-filter-control="{{columns[c]['filtercontrol']}}" 
                     {% if columns[c]['filtercontrol']=="select" %}
                       data-filter-data='url:{{ url_for("jobs.filterdata", field=columns[c]["field"], table="rivm_v_processgroups") }}'
+                    {% endif %}
+                    {% if columns[c]['field']=="projectid" %}
+                        data-filter-default="{{default_project}}"
                     {% endif %}>
                     {{columns[c]['title']}}
                 </th>
@@ -86,7 +89,7 @@ menuname='pglist'
                     value: value
                 })
             }
-        });
+        })
 
         $('table#pgtable').on('expand-row.bs.table', function (e, index, row, $detail) {
             openDetails.push(index)

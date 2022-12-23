@@ -189,7 +189,7 @@ def jobs():
     filters = json.loads(request.args.get('filter', '{}'))
     order = request.args.get('order', 'desc')
     orderby = request.args.get('sort', 'create_time')
-            
+    default_project = current_user.settings.setdefault('default_project', None)
     session, Jobs, Processgroups = dbsession()   
 
     # get jobs_query
@@ -201,8 +201,10 @@ def jobs():
     for _, field_attrs in JOB_FIELDS.items():
         field_name = field_attrs['field']
         filter_value = filters.get(field_name)
+        if field_name == 'projectid' and not filter_value:
+            filter_value = default_project
         filter_control = field_attrs.get('filtercontrol')
-        if filter_value is None or filter_control is None:
+        if not filter_value or filter_control is None:
             continue
         if filter_control == 'select':
             jobs_query = jobs_query.filter(text(f"{field_name}='{filter_value}'"))
@@ -252,8 +254,8 @@ def pglist():
     order = request.args.get('order', 'desc')
     orderby = request.args.get('sort', 'create_time')
     processgroupid = request.args.get('processgroupid', None, type=str)
-            
-    session, Jobs, Processgroups = dbsession()   
+    default_project = current_user.settings.setdefault('default_project', None)
+    session, Jobs, Processgroups = dbsession()  
 
     # get processgroups (pgs_query) 
     pgs_query = session.query(Processgroups)
@@ -268,8 +270,10 @@ def pglist():
     for _, field_attrs in PG_FIELDS.items():
         field_name = field_attrs['field']
         filter_value = filters.get(field_name)
+        if field_name == 'projectid' and not filter_value:
+            filter_value = default_project
         filter_control = field_attrs.get('filtercontrol')
-        if filter_value is None or filter_control is None:
+        if not filter_value or filter_control is None:
             continue
         if filter_control == 'select':
             pgs_query = pgs_query.filter(text(f"{field_name}='{filter_value}'"))
