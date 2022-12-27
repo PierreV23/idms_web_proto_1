@@ -68,6 +68,9 @@ menuname='pglist'
     </table>
 
     <script>
+        $(function(){
+            $('#pgtable').bootstrapTable('triggerSearch');
+        })
 
         openDetails = []
 
@@ -82,19 +85,6 @@ menuname='pglist'
             })
         })
 
-        $('table#pgtable').on('column-search.bs.table', function (e, column, value) {
-            if (column == 'projectid') {
-                $.ajax({
-                    type: 'POST',
-                    url: '{{ url_for("userinfo.usersetting") }}', 
-                    data: {
-                        attr: 'default_project',
-                        value: value
-                    },
-                    async: false
-                })
-            }
-        })
 
         $('table#pgtable').on('expand-row.bs.table', function (e, index, row, $detail) {
             openDetails.push(index)

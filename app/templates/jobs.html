@@ -68,24 +68,14 @@ menuname='jobs'
     </table>
 
     <script>
+        $(function(){
+            $('#jobtable').bootstrapTable('triggerSearch');
+        })
 
         $('table#jobtable').on('load-success.bs.table', function (e, index, row, $data) {
             $.get('{{ url_for("jobs.jobs_refresh") }}', function(data) {
                 $('.refresh-time').html(data);
             })
-        })
-
-        $('table#jobtable').on('column-search.bs.table', function (e, column, value) {
-            if (column == 'projectid') {
-                $.ajax({
-                    type: 'POST',
-                    url: '{{ url_for("userinfo.usersetting") }}', 
-                    data: {
-                        attr: 'default_project',
-                        value: value
-                    },
-                    async: false
-                })};
         })
             
         function rowStyle(row, index) {
