@@ -29,7 +29,7 @@ def serve_image():
     ifs = current_user.ifs
     obj = ifs.getfile(path)
     imagefile = obj.open('r')
-    return send_file(imagefile, attachment_filename=os.path.split(path)[1],
+    return send_file(imagefile, download_name=os.path.split(path)[1],
                      as_attachment=False)
 
 
@@ -38,7 +38,7 @@ def serve_image():
 def download_object():
     path = urllib.parse.unquote(request.args.get('path', '/', type=str))
     objectfile = current_user.ifs.getfile(path).open('r')
-    return send_file(objectfile, attachment_filename=os.path.split(path)[1],
+    return send_file(objectfile, download_name=os.path.split(path)[1],
                      as_attachment=True)
 
 @BP.route('/serve_object')
@@ -60,9 +60,9 @@ def serve_object():
         mimetype = "text/plain"
 
     if mimetype:
-        returnobject = send_file(objectfile, attachment_filename=os.path.split(path)[1],
-                                 as_attachment=False, mimetype=mimetype, cache_timeout=-1)
+        returnobject = send_file(objectfile, download_name=os.path.split(path)[1],
+                                 as_attachment=False, mimetype=mimetype, max_age=-1)
     else:
-        returnobject = send_file(objectfile, attachment_filename=os.path.split(path)[1],
-                                 as_attachment=False, cache_timeout=-1)
+        returnobject = send_file(objectfile, download_name=os.path.split(path)[1],
+                                 as_attachment=False, max_age=-1)
     return returnobject
