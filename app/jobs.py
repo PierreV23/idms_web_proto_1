@@ -345,16 +345,18 @@ def pgjobs():
 def show_pg():
     processgroupid = request.args.get('processgroupid', None, type=str)
     default_project = current_user.settings.get('default_project', '')
+    visible_columns = current_user.settings.get('processgroups::columns', [])
     return render_template('pglist.html', default_project=default_project
-                            , processgroupid=processgroupid, columns = PG_FIELDS)
+                            , processgroupid=processgroupid, columns = PG_FIELDS, visible_columns=visible_columns)
 
 
 @bp.route('/')
 @login_required
 #@cache.cached(timeout=30, key_prefix=key_zone)
 def show_jobs():
-    default_project=current_user.settings.get('default_project', '')
-    return render_template('jobs.html', default_project = default_project, columns = JOB_FIELDS)
+    default_project = current_user.settings.get('default_project', '')
+    visible_columns = current_user.settings.get('jobs::columns', [])
+    return render_template('jobs.html', default_project = default_project, columns = JOB_FIELDS, visible_columns=visible_columns)
 
     
 NAME_LENGTH = 15

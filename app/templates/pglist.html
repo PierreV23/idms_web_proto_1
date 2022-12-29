@@ -49,7 +49,8 @@ menuname='pglist'
         <thead>
             <tr>
                 {% for c in columns %}
-                <th data-field="{{columns[c]['field']}}" 
+                <th class="pgcolumn"
+                    data-field="{{columns[c]['field']}}" 
                     data-align="left" 
                     data-sortable="{{columns[c]['sortable']}}"
                     data-visible="{{columns[c]['visible']}}" 
@@ -69,7 +70,25 @@ menuname='pglist'
 
     <script>
         $(function(){
-            $('#pgtable').bootstrapTable('triggerSearch');
+            $table=$('#pgtable')
+            $table.bootstrapTable('showAllColumns');
+            all_columns = {{ columns.values()  | map(attribute='field') | list | safe }}
+            visible_columns = {{ visible_columns | safe }};
+            all_columns.forEach(element => {
+                if (!visible_columns.includes(element)) {
+                    $table.bootstrapTable('hideColumn', element)
+                }
+            })
+            $table.bootstrapTable('triggerSearch');
+        })
+
+
+        $('table#pgtable').on('column-switch.bs.table', function (e, field, checked) {
+            visible_fields = $("th.pgcolumn").map(function(){return $(this).data('field') ;}).get();
+            $.post('{{ url_for("userinfo.usersetting") }}', {
+                attr: 'processgroups::columns',
+                value: JSON.stringify(visible_fields)
+            })
         })
 
         openDetails = []

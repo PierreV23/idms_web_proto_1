@@ -49,7 +49,8 @@ menuname='jobs'
         <thead>
             <tr>
                 {% for c in columns %}
-                <th data-field="{{columns[c]['field']}}" 
+                <th class="jobcolumn"
+                    data-field="{{columns[c]['field']}}" 
                     data-align="left" 
                     data-sortable="{{columns[c]['sortable']}}"
                     data-visible="{{columns[c]['visible']}}" 
@@ -69,12 +70,29 @@ menuname='jobs'
 
     <script>
         $(function(){
-            $('#jobtable').bootstrapTable('triggerSearch');
+            $table=$('#jobtable')
+            $table.bootstrapTable('showAllColumns');
+            all_columns = {{ columns.values()  | map(attribute='field') | list | safe }}
+            visible_columns = {{ visible_columns | safe }};
+            all_columns.forEach(element => {
+                if (!visible_columns.includes(element)) {
+                    $table.bootstrapTable('hideColumn', element)
+                }
+            })
+            $table.bootstrapTable('triggerSearch');
         })
 
         $('table#jobtable').on('load-success.bs.table', function (e, index, row, $data) {
             $.get('{{ url_for("jobs.jobs_refresh") }}', function(data) {
                 $('.refresh-time').html(data);
+            })
+        })
+
+        $('table#jobtable').on('column-switch.bs.table', function (e, field, checked) {
+            visible_fields = $("th.jobcolumn").map(function(){return $(this).data('field') ;}).get();
+            $.post('{{ url_for("userinfo.usersetting") }}', {
+                attr: 'jobs::columns',
+                value: JSON.stringify(visible_fields)
             })
         })
             
