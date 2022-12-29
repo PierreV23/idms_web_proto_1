@@ -55,17 +55,17 @@
     function rowButtons(value, row, index, field) {
         if (row["object"] == "dataobject") {
             if (field == "dnld") {
-                dnld_url = "{{ url_for('docviewer.download_object') }}"
                 img = "{{ url_for('static', filename='img/download-button.png' ) }}"
                 path = encodeURIComponent(row['path'])
-                res = `<a href="${dnld_url}?path=${path}"><IMG src="${img}" class="mybutton"></A>`
+                displayname = encodeURIComponent(row['displayname'])
+                res = `<a onClick="download_wrapper('${path}','${displayname}')"><IMG src="${img}" class="mybutton"></A>`
                 return res;
             }
             if (field == 'view') {
                 img = "{{ url_for('static', filename='img/view-button.png' ) }}";
                 path = encodeURIComponent(row['path'])
                 displayname = encodeURIComponent(row['displayname'])
-                res = `<a data-toggle="modal" data-target="#myOutput" onClick="fillModal('${path}','${displayname}')">
+                res = `<a onClick="showModal('${path}','${displayname}')">
                     <IMG src="${img}" class="mybutton"></A>`
                 return res;
             }

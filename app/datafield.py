@@ -300,7 +300,7 @@ class data_irods_object(data_base):
     @property
     def htmlstring(self):
         shortname = self.value.split('/')[-1]
-        return '<a href="#" data-toggle="modal" data-target="#myOutput" onClick="fillModal(\'{0}\', \'{1}\')">{1}</a>'.format(self.value, shortname)
+        return '<a href="#" onClick="showModal(\'{0}\', \'{1}\')">{1}</a>'.format(self.value, shortname)
 
     @staticmethod
     def factory(**kwargs):

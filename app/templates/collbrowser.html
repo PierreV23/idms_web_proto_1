@@ -43,14 +43,44 @@ menuname='collectionbrowser'
   })
   myDefaultWhiteList.span = ['data-path']
 
-  function fillModal(path, name) {
-    var ModalHeader = document.getElementById("DocTitle")
-    ModalHeader.innerHTML = name
-    var modalEmbed = document.getElementById("DocText")
-    newEmbed = modalEmbed.cloneNode(true)
-    source = "{{ url_for('docviewer.serve_object') }}?path=" + encodeURIComponent(path)
-    newEmbed.setAttribute('src', source)
-    modalEmbed.parentNode.replaceChild(newEmbed, modalEmbed)
+  function downloadURI(uri, name) {
+    var link = document.createElement("a");
+    link.download = name;
+    link.href = uri;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    delete link;
+  }
+
+  function download_wrapper(path) {
+    $.get("{{ url_for('docviewer.test_access') }}?path=" + encodeURIComponent(path), function(result) {
+      if (result["access"] == "GRANTED" ) {
+        source = "{{ url_for('docviewer.serve_object') }}?path=" + encodeURIComponent(path)
+        filename = path.replace(/^.*[\\\/]/, '')
+        downloadURI(source, filename)  
+      } else {
+        $('#alertTitle').html('Access Denied')
+        $('#alertBody').html("<center>You don't have permissions to access " + decodeURIComponent(path) + "</center>")
+        $('#modalAlert').modal()
+      }
+    })
+  }
+
+  function showModal(path, name) {
+    $.get("{{ url_for('docviewer.test_access') }}?path=" + encodeURIComponent(path), function(result) {
+      if (result["access"] == "GRANTED" ) {
+        $('#DocTitle').html(name)
+        source = "{{ url_for('docviewer.serve_object') }}?path=" + encodeURIComponent(path)
+        newEmbed = '<embed src="' + source + '" width="100%" height="100%" id="DocText" >'
+        $('#mBody').html(newEmbed)
+        $('#myOutput').modal()
+      } else {
+        $('#alertTitle').html('Access Denied')
+        $('#alertBody').html("<center>You don't have permissions to access " + decodeURIComponent(path) + "</center>")
+        $('#modalAlert').modal()
+      }
+    })
   }
   
   function avu_table() {
@@ -383,22 +413,6 @@ menuname='collectionbrowser'
   });
 </script>
 
-<!-- Document viewer modal dialog -->
-<div class="modal modal-tall" id="myOutput" role="dialog">
-  <div class="modal-dialog modal-xl" role="document">
-    <div class="modal-content ">
-      <div class="modal-header">
-        <!--            <button type="button" class="close" data-dismiss="modal">&times;</button> -->
-        <h5 class="modal-title" id="DocTitle">Modal Header</h5>
-        <button type="button" class="btn btn-default btn-primary btn-sm" data-dismiss="modal">Close</button>
-      </div>
-      <div class="modal-body" id="mBody">
-        <embed src="" width="100%" height="100%" id="DocText">
-      </div>
-    </div>
-  </div>
-</div>
-
 </nav>
 
 <div id="content">
@@ -425,6 +439,24 @@ menuname='collectionbrowser'
   </script>
 
 
+<!-- Alert modal dialog -->
+  <div class="modal" id="modalAlert" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content ">
+        <div class="modal-header">
+          <!--            <button type="button" class="close" data-dismiss="modal">&times;</button> -->
+          <h5 class="modal-title" id="alertTitle">Alert</h5>
+          <button type="button" class="btn btn-default btn-primary btn-sm" data-dismiss="modal">Close</button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-danger" role="alert" id="alertBody">
+            Alert
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Document viewer modal dialog -->
   <div class="modal modal-tall" id="myOutput" role="dialog">
     <div class="modal-dialog modal-xl" role="document">
@@ -446,10 +478,10 @@ menuname='collectionbrowser'
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="DocTitle">Modal Header</h5>
+          <h5 class="modal-title" id="uDocTitle">Modal Header</h5>
           <button type="button" class="btn btn-default btn-primary btn-sm" data-dismiss="modal">Close</button>
         </div>
-        <div class="modal-body" id="mBody">
+        <div class="modal-body" id="umBody">
           <form action="{{ url_for('collbrowser.upload_file')}}" method="POST" enctype="multipart/form-data">
             <div class="form-group">
               <input type="hidden" id="collection" name="collection" value="{{ path }}">
