@@ -15,6 +15,7 @@ from app.datafield import datafield
 from app.settings import JOB_FIELDS, PG_FIELDS, PG_JOB_FIELDS
 from graphviz import Digraph
 import flask
+import greenlet
 import json
 import os
 import sys
@@ -69,7 +70,7 @@ class JobsDBAlchemy:
                 _sessionmaker = sessionmaker(autocommit=False, autoflush=False,
                                             bind=engine)
                 self._sessions[env_name] = scoped_session(_sessionmaker, 
-                    scopefunc=flask._app_ctx_stack.__ident_func__)
+                    scopefunc=greenlet.getcurrent)
         app.teardown_request(self.remove_session)
 
     def envs(self):
@@ -87,7 +88,7 @@ class JobsDBAlchemy:
                 env = self.default_env
         
         try:
-            return self._sessions[env]
+            return self._sessions[env]()
         except KeyError:
             raise JobsDBUnavailableException(f'env={env}')
 
@@ -179,6 +180,12 @@ def dbsession():
    
     return session, Jobs, Processgroups
 
+@bp.route('jobpage')
+def jobpage():
+    preferred_page = current_user.settings.setdefault('jobs::view', 'jobs')
+    if preferred_page == 'processgroups':
+        return redirect(url_for('jobs.show_pg'))
+    return redirect(url_for('jobs.show_jobs')) 
 
 @bp.route('_jobs')
 @login_required
@@ -189,7 +196,6 @@ def jobs():
     filters = json.loads(request.args.get('filter', '{}'))
     order = request.args.get('order', 'desc')
     orderby = request.args.get('sort', 'create_time')
-    current_user.settings['default_project'] = filters.get('projectid', '')
     session, Jobs, Processgroups = dbsession()   
 
     # get jobs_query
@@ -219,13 +225,14 @@ def jobs():
         record = {}
         for f in JOB_FIELDS:
             dbkey = JOB_FIELDS[f]['field']
-            val = getattr(job, dbkey)
-            if val:
+            val = getattr(job, dbkey, None)
+            if val is not None:
                 formatted = datafield(dbkey, val, JOB_FIELDS[f]['format'])
                 record |= { dbkey: formatted.htmlshort, f'_{dbkey}': formatted.value }
         result.append(record)
     
     engine = None
+    current_user.settings['default_project'] = filters.get('projectid', '')
     return { 'rows': result, 'filters': filters, 'total': count_jobs }
 
 
@@ -252,7 +259,6 @@ def pglist():
     order = request.args.get('order', 'desc')
     orderby = request.args.get('sort', 'create_time')
     processgroupid = request.args.get('processgroupid', None, type=str)
-    current_user.settings['default_project'] = filters.get('projectid', '')
     session, Jobs, Processgroups = dbsession()  
 
     # get processgroups (pgs_query) 
@@ -286,13 +292,14 @@ def pglist():
         record = {}
         for f in PG_FIELDS:
             dbkey = PG_FIELDS[f]['field']
-            val = getattr(processgroup, dbkey)
+            val = getattr(processgroup, dbkey, None)
             if val is not None:
                 formatted = datafield(dbkey, val, PG_FIELDS[f]['format'])
                 record |= { dbkey: formatted.htmlshort, f'_{dbkey}': formatted.value }
         result.append(record)
     
     engine = None
+    current_user.settings['default_project'] = filters.get('projectid', '')
     return { 'rows': result, 'filters': filters, 'total': count_jobs }
 
 @bp.route('_jobrefresh')
@@ -319,8 +326,8 @@ def pgjobs():
         record = {}
         for f in PG_JOB_FIELDS:
             dbkey = PG_JOB_FIELDS[f]['field']
-            val = getattr(job, dbkey)
-            if val:
+            val = getattr(job, dbkey, None)
+            if val is not None:
                 formatted = datafield(dbkey, val, PG_JOB_FIELDS[f]['format'])
                 record |= { dbkey: formatted.htmlshort, f'_{dbkey}': formatted.value }
         result.append(record)
@@ -346,8 +353,9 @@ def show_pg():
     processgroupid = request.args.get('processgroupid', None, type=str)
     default_project = current_user.settings.get('default_project', '')
     visible_columns = current_user.settings.get('processgroups::columns', [])
+    current_user.settings['jobs::view'] = 'processgroups'
     return render_template('pglist.html', default_project=default_project
-                            , processgroupid=processgroupid, columns = PG_FIELDS, visible_columns=visible_columns)
+                            ,processgroupid=processgroupid, columns = PG_FIELDS, visible_columns=visible_columns)
 
 
 @bp.route('/')
@@ -356,6 +364,7 @@ def show_pg():
 def show_jobs():
     default_project = current_user.settings.get('default_project', '')
     visible_columns = current_user.settings.get('jobs::columns', [])
+    current_user.settings['jobs::view'] = 'jobs'
     return render_template('jobs.html', default_project = default_project, columns = JOB_FIELDS, visible_columns=visible_columns)
 
     
