@@ -63,7 +63,7 @@ def download_report():
     # seeking was necessary. Python 3.5.2, Flask 0.12.2
     mem.seek(0)
     output.close()
-    return send_file(mem, attachment_filename='diskspace_report.csv',
+    return send_file(mem, download_name='diskspace_report.csv',
                      as_attachment=True)
         
     
