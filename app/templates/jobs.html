@@ -25,7 +25,7 @@ menuname='jobs'
 
     </script>
 
-    <table id="jobtable" 
+<table id="jobtable" 
       data-buttons-prefix="btn" 
       data-classes='table table-bordered table-hover table-striped'
       data-filter-control="true" 
@@ -49,13 +49,17 @@ menuname='jobs'
         <thead>
             <tr>
                 {% for c in columns %}
-                <th data-field="{{columns[c]['field']}}" 
+                <th class="jobcolumn"
+                    data-field="{{columns[c]['field']}}" 
                     data-align="left" 
                     data-sortable="{{columns[c]['sortable']}}"
                     data-visible="{{columns[c]['visible']}}" 
                     data-filter-control="{{columns[c]['filtercontrol']}}" 
                     {% if columns[c]['filtercontrol']=="select" %}
-                      data-filter-data='url:{{ url_for("jobs.filterdata", field=columns[c]["field"], table="rivm_mat_jobtable") }}'
+                        data-filter-data='url:{{ url_for("jobs.filterdata", field=columns[c]["field"], table="rivm_mat_jobtable") }}'
+                    {% endif %}
+                    {% if columns[c]['field']=="projectid" %}
+                        data-filter-default="{{default_project}}"
                     {% endif %}>
                     {{columns[c]['title']}}
                 </th>
@@ -65,22 +69,32 @@ menuname='jobs'
     </table>
 
     <script>
+        $(function(){
+            $table=$('#jobtable')
+            $table.bootstrapTable('showAllColumns');
+            all_columns = {{ columns.values() | map(attribute='field') | list | safe }}
+            visible_columns = {{ visible_columns | safe }};
+            all_columns.forEach(element => {
+                if (!visible_columns.includes(element)) {
+                    $table.bootstrapTable('hideColumn', element)
+                }
+            })
+        })
 
         $('table#jobtable').on('load-success.bs.table', function (e, index, row, $data) {
             $.get('{{ url_for("jobs.jobs_refresh") }}', function(data) {
                 $('.refresh-time').html(data);
-            });
-        })
-
-
-        $('table#jobtable').on('column-search.bs.table', function (e, column, value) {
-            $.post('{{ url_for("userinfo.usersetting") }}', {
-                attr: 'jobs::filter::' + column,
-                value: value
             })
         })
-            ;
 
+        $('table#jobtable').on('column-switch.bs.table', function (e, field, checked) {
+            visible_fields = $("th.jobcolumn").map(function(){return $(this).data('field') ;}).get();
+            $.post('{{ url_for("userinfo.usersetting") }}', {
+                attr: 'jobs::columns',
+                value: JSON.stringify(visible_fields)
+            })
+        })
+            
         function rowStyle(row, index) {
             var styles = {
                 'done': 'table-success',

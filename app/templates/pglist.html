@@ -17,7 +17,7 @@ menuname='pglist'
 {% endblock %}
 
 {% block content %}
-<div class="scroll h-100">
+<div class="h-100">
     <script>
         $(document).ready(function () {
             $('[data-toggle="tooltip"]').tooltip();
@@ -45,17 +45,21 @@ menuname='pglist'
       data-toggle="table"
       data-auto-refresh="true" 
       data-auto-refresh-interval=30 
-      data-show-auto-refresh="true">
+      data-show-auto-refresh="false">
         <thead>
             <tr>
                 {% for c in columns %}
-                <th data-field="{{columns[c]['field']}}" 
+                <th class="pgcolumn"
+                    data-field="{{columns[c]['field']}}" 
                     data-align="left" 
                     data-sortable="{{columns[c]['sortable']}}"
                     data-visible="{{columns[c]['visible']}}" 
                     data-filter-control="{{columns[c]['filtercontrol']}}" 
                     {% if columns[c]['filtercontrol']=="select" %}
                       data-filter-data='url:{{ url_for("jobs.filterdata", field=columns[c]["field"], table="rivm_v_processgroups") }}'
+                    {% endif %}
+                    {% if columns[c]['field']=="projectid" %}
+                        data-filter-default="{{default_project}}"
                     {% endif %}>
                     {{columns[c]['title']}}
                 </th>
@@ -65,28 +69,28 @@ menuname='pglist'
     </table>
 
     <script>
-
-        openDetails = []
-
-        $(function () {
-            $.get('{{ url_for("jobs.pglist") }}', function (data) {
-                $('table#pgtable').bootstrapTable({
-                    columns: data['columns'],
-                    data: data['rows']
-                })
-                $('.bootstrap-table-filter-control-project').val('{{ default_project }}')
-                $('table#jobtable').bootstrapTable('triggerSearch');
+        $(function(){
+            $table=$('#pgtable')
+            $table.bootstrapTable('showAllColumns');
+            all_columns = {{ columns.values()  | map(attribute='field') | list | safe }}
+            visible_columns = {{ visible_columns | safe }};
+            all_columns.forEach(element => {
+                if (!visible_columns.includes(element)) {
+                    $table.bootstrapTable('hideColumn', element)
+                }
             })
         })
 
-        $('table#pgtable').on('column-search.bs.table', function (e, column, value) {
-            if (column == 'projectid') {
-                $.post('{{ url_for("userinfo.usersetting") }}', {
-                    attr: 'default_project',
-                    value: value
-                })
-            }
-        });
+
+        $('table#pgtable').on('column-switch.bs.table', function (e, field, checked) {
+            visible_fields = $("th.pgcolumn").map(function(){return $(this).data('field') ;}).get();
+            $.post('{{ url_for("userinfo.usersetting") }}', {
+                attr: 'processgroups::columns',
+                value: JSON.stringify(visible_fields)
+            })
+        })
+
+        openDetails = []
 
         $('table#pgtable').on('expand-row.bs.table', function (e, index, row, $detail) {
             openDetails.push(index)

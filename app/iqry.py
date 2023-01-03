@@ -2,7 +2,7 @@ import sys
 import time
 from flask_login import current_user, login_required
 from irods.models import Collection, CollectionMeta, DataObject, DataObjectMeta, User, UserMeta, Resource, ResourceMeta
-from irods.meta import iRODSMeta
+from irods.meta import iRODSMeta, AVUOperation
 from irods.column import Criterion
 
 from . import flaskcache
@@ -57,9 +57,16 @@ def qcollmeta(collection):
     return result
 
 def scollmetaval(coll, attr, value, unit=None):
+    if qcollmetaval(coll, attr) == value:
+        return
     with irods_manager.session() as session:
         u = session.collections.get(coll)
-        u.metadata[attr] = iRODSMeta(attr, value, unit)
+        old_avus = [ m for m in u.metadata.items() if m.name == attr ]
+        new_avu = iRODSMeta(attr, value, unit)
+        u.metadata.apply_atomic_operations(
+            *[AVUOperation(operation='remove', avu=i) for i in old_avus],
+            AVUOperation(operation='add', avu=new_avu)
+        )
     flaskcache.cache.delete_memoized(qcollmeta, coll)
 
 def rmallcollmetaattr(coll, attr):

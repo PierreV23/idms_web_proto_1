@@ -196,7 +196,6 @@ def jobs():
     filters = json.loads(request.args.get('filter', '{}'))
     order = request.args.get('order', 'desc')
     orderby = request.args.get('sort', 'create_time')
-            
     session, Jobs, Processgroups = dbsession()   
 
     # get jobs_query
@@ -209,7 +208,7 @@ def jobs():
         field_name = field_attrs['field']
         filter_value = filters.get(field_name)
         filter_control = field_attrs.get('filtercontrol')
-        if filter_value is None or filter_control is None:
+        if not filter_value or filter_control is None:
             continue
         if filter_control == 'select':
             jobs_query = jobs_query.filter(text(f"{field_name}='{filter_value}'"))
@@ -233,6 +232,7 @@ def jobs():
         result.append(record)
     
     engine = None
+    current_user.settings['default_project'] = filters.get('projectid', '')
     return { 'rows': result, 'filters': filters, 'total': count_jobs }
 
 
@@ -259,8 +259,7 @@ def pglist():
     order = request.args.get('order', 'desc')
     orderby = request.args.get('sort', 'create_time')
     processgroupid = request.args.get('processgroupid', None, type=str)
-            
-    session, Jobs, Processgroups = dbsession()   
+    session, Jobs, Processgroups = dbsession()  
 
     # get processgroups (pgs_query) 
     pgs_query = session.query(Processgroups)
@@ -276,7 +275,7 @@ def pglist():
         field_name = field_attrs['field']
         filter_value = filters.get(field_name)
         filter_control = field_attrs.get('filtercontrol')
-        if filter_value is None or filter_control is None:
+        if not filter_value or filter_control is None:
             continue
         if filter_control == 'select':
             pgs_query = pgs_query.filter(text(f"{field_name}='{filter_value}'"))
@@ -300,6 +299,7 @@ def pglist():
         result.append(record)
     
     engine = None
+    current_user.settings['default_project'] = filters.get('projectid', '')
     return { 'rows': result, 'filters': filters, 'total': count_jobs }
 
 @bp.route('_jobrefresh')
@@ -352,19 +352,20 @@ def pgjobs():
 def show_pg():
     processgroupid = request.args.get('processgroupid', None, type=str)
     default_project = current_user.settings.get('default_project', '')
+    visible_columns = current_user.settings.get('processgroups::columns', [v["field"] for v in PG_FIELDS.values()])
     current_user.settings['jobs::view'] = 'processgroups'
     return render_template('pglist.html', default_project=default_project
-                            , processgroupid=processgroupid, columns = PG_FIELDS)
+                            , processgroupid=processgroupid, columns=PG_FIELDS, visible_columns=visible_columns)
 
 
 @bp.route('/')
 @login_required
 #@cache.cached(timeout=30, key_prefix=key_zone)
 def show_jobs():
-    default_project=current_user.settings.get('default_project', '')
+    default_project = current_user.settings.get('default_project', '')
+    visible_columns = current_user.settings.get('jobs::columns', [v["field"] for v in JOB_FIELDS.values()])
     current_user.settings['jobs::view'] = 'jobs'
-    return render_template('jobs.html', default_project = default_project, columns = JOB_FIELDS)
-
+    return render_template('jobs.html', default_project=default_project, columns=JOB_FIELDS, visible_columns=visible_columns)
     
 NAME_LENGTH = 15
 
