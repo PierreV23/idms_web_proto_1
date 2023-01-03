@@ -72,7 +72,7 @@ menuname='jobs'
         $(function(){
             $table=$('#jobtable')
             $table.bootstrapTable('showAllColumns');
-            all_columns = {{ columns.values()  | map(attribute='field') | list | safe }}
+            all_columns = {{ columns.values() | map(attribute='field') | list | safe }}
             visible_columns = {{ visible_columns | safe }};
             all_columns.forEach(element => {
                 if (!visible_columns.includes(element)) {

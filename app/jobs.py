@@ -352,10 +352,10 @@ def pgjobs():
 def show_pg():
     processgroupid = request.args.get('processgroupid', None, type=str)
     default_project = current_user.settings.get('default_project', '')
-    visible_columns = current_user.settings.get('processgroups::columns', [])
+    visible_columns = current_user.settings.get('processgroups::columns', [v["field"] for v in PG_FIELDS.values()])
     current_user.settings['jobs::view'] = 'processgroups'
     return render_template('pglist.html', default_project=default_project
-                            ,processgroupid=processgroupid, columns = PG_FIELDS, visible_columns=visible_columns)
+                            , processgroupid=processgroupid, columns=PG_FIELDS, visible_columns=visible_columns)
 
 
 @bp.route('/')
@@ -363,10 +363,9 @@ def show_pg():
 #@cache.cached(timeout=30, key_prefix=key_zone)
 def show_jobs():
     default_project = current_user.settings.get('default_project', '')
-    visible_columns = current_user.settings.get('jobs::columns', [])
+    visible_columns = current_user.settings.get('jobs::columns', [v["field"] for v in JOB_FIELDS.values()])
     current_user.settings['jobs::view'] = 'jobs'
-    return render_template('jobs.html', default_project = default_project, columns = JOB_FIELDS, visible_columns=visible_columns)
-
+    return render_template('jobs.html', default_project=default_project, columns=JOB_FIELDS, visible_columns=visible_columns)
     
 NAME_LENGTH = 15
 
