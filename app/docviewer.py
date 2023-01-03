@@ -7,9 +7,10 @@ Created on Mon Nov 18 15:16:25 2019
 """
 import os
 import csv
-from flask import Blueprint, render_template, request, url_for, send_file
+from flask import Blueprint, render_template, request, url_for, send_file, jsonify
 from flask_login import current_user, login_required
 import urllib.parse
+from irods.exception import CAT_NO_ACCESS_PERMISSION
 
 
 BP = Blueprint('docviewer', __name__, url_prefix='/docviewer')
@@ -32,7 +33,21 @@ def serve_image():
     return send_file(imagefile, download_name=os.path.split(path)[1],
                      as_attachment=False)
 
-
+@BP.route('_access')
+def test_access():
+    path = urllib.parse.unquote(request.args.get('path', '/', type=str))
+    print(path)
+    obj = current_user.ifs.getfile(path)
+    try:
+        objectfile = obj.open('r')
+        access = 'GRANTED'
+        objectfile.close()
+    except CAT_NO_ACCESS_PERMISSION:
+        access = 'DENIED'
+    return jsonify({
+        'access': access
+    })
+    
 @BP.route('/download_object')
 @login_required
 def download_object():
