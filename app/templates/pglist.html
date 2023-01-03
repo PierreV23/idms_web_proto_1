@@ -79,7 +79,6 @@ menuname='pglist'
                     $table.bootstrapTable('hideColumn', element)
                 }
             })
-            $table.bootstrapTable('triggerSearch');
         })
 
 
@@ -92,18 +91,6 @@ menuname='pglist'
         })
 
         openDetails = []
-
-        $(function () {
-            $.get('{{ url_for("jobs.pglist") }}', function (data) {
-                $('table#pgtable').bootstrapTable({
-                    columns: data['columns'],
-                    data: data['rows']
-                })
-                $('.bootstrap-table-filter-control-project').val('{{ default_project }}')
-                $('table#jobtable').bootstrapTable('triggerSearch');
-            })
-        })
-
 
         $('table#pgtable').on('expand-row.bs.table', function (e, index, row, $detail) {
             openDetails.push(index)
