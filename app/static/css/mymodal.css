@@ -543,6 +543,13 @@ ul {
   margin: 10px;
 }
 
+.table-data,
+.table-data>td,
+.table-data>th {
+  background-color: #c3e6cb;
+}
+
+
 .table-depends,
 .table-depends>td,
 .table-depends>th {
@@ -563,7 +570,7 @@ ul {
 
 .table-download,
 .table-download>td,
-.table-sdownload>th {
+.table-download>th {
   background-color: #cce5e8;
 }
 
@@ -627,6 +634,25 @@ ul {
 .table-invalid>th {
   background-color: #ffebe6;
 }
+
+.table-temporary,
+.table-temporary>td,
+.table-temporary>th {
+  background-color: #eec900;
+}
+
+.table-distributed,
+.table-distributed>td,
+.table-distributed>th {
+  background-color: #b8cabc;
+}
+
+.table-imported,
+.table-imported>td,
+.table-imported>th {
+  background-color: #87ceff;
+}
+
 
 .popover {
   max-width: 350px !important;

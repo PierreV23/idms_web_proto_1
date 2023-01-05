@@ -142,19 +142,19 @@ LAYOUT = {
         SHAPE1 : 'box3d',
         COLOR1: '#c3e6cb:gray',
         COLOR2: '#c3e6cb',
-        TABLECLASS : 'table-white'
+        TABLECLASS : 'table-distributed'
     },
     'imported': {
         SHAPE1: 'cylinder',
         COLOR1: 'skyblue1',
         COLOR2: '#87CEFF',
-        TABLECLASS : 'table-white'       
+        TABLECLASS : 'table-imported'       
     },
     'temporary': {
         SHAPE1 : 'note',
         COLOR1: 'gold2',
         COLOR2: '#EEC900',
-        TABLECLASS : 'table-white'  
+        TABLECLASS : 'table-temporary'  
     },
     'error': {
         SHAPE1: 'box3d',
@@ -182,7 +182,7 @@ LAYOUT = {
         SHAPE2: 'cds',
         COLOR1: 'tomato',
         COLOR2: '#FF6347',
-        TABLECLASS : 'table-tomato'
+        TABLECLASS : 'table-error'
     },
     'source': {
         SHAPE1: 'box3d',
@@ -210,5 +210,12 @@ LAYOUT = {
         COLOR1: '#c3e6cb',
         COLOR2: '#c3e6cb',
         TABLECLASS : 'table-data'        
+    },
+    'invalid': {
+        SHAPE1: 'cds',
+        SHAPE2: 'cds',
+        COLOR1: 'tomato',
+        COLOR2: '#FF6347',
+        TABLECLASS : 'table-error'
     }
 }
