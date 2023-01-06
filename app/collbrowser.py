@@ -389,6 +389,11 @@ def collcontents():
                     'owner_name': coll[Collection.owner_name]
                 }
                 objdict['type'] = iqry.qcollmetaval(coll[Collection.name], 'sys::data::type', default='')
+                objdict['state'] = iqry.qcollmetaval(coll[Collection.name], 'sys::data::state', default='')
+                if objdict['state'] != 'valid':
+                    objdict['tableclass'] = constants.LAYOUT.get(objdict['state'], constants.DEFAULT_SHAPE)['tableclass']
+                else:
+                    objdict['tableclass'] = constants.LAYOUT.get(objdict['type'], constants.DEFAULT_SHAPE)['tableclass']
                 objdict['display_field'] = iqry.qcollmetaval(coll[Collection.name], display_field, default='')
                 results['rows'].append(objdict)
         except CAT_NO_ROWS_FOUND:
