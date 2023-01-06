@@ -345,17 +345,17 @@ menuname='collectionbrowser'
     <div class="card-header">
       <div class="card-title"><b>Collection tree</b></div>
     </div>
-    <div class="card-body scroll small-font h-100">
+    <div class="card-body scrollbar-y small-font h-100">
       <div id="treeview">
       </div>
     </div>
   </div>
 
   <div class="card browser-graph h100">
-    <div class="card-header myheader">
+    <div class="card-header">
       <div class="card-title">Data graph</div>
       <form class="form-inline float-right">
-        <div class="form-group">
+        <div class="form-group" style="gap:4px">
           <label for="graph_simplify">Simplify</label>
           <INPUT class="hspace" type="checkbox" id="graph_simplify" {% if graph_simplify == "1" %}checked{% endif %}>
           <label for="graphlevels">Graph Levels</label>

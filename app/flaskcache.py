@@ -24,6 +24,16 @@ def key_zone():
 def key_userzone():
     return f'{current_user.username}{current_user.irods_zone}{request.full_path}'
 
+# These two functions can be used to push and pop a flag on to the cache
+def push_cache(flag, value=True):
+    cache.set(f'{current_user.irods_zone}{current_user.username}{flag}', value)
+
+def pop_cache(flag):
+    key = f'{current_user.irods_zone}{current_user.username}{flag}'
+    value = cache.get(key)
+    cache.delete(key)
+    return value
+
 def cache_report(prefix=''):
     print('############### CACHE #######################')
     k_prefix = cache.cache.key_prefix

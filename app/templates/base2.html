@@ -142,7 +142,7 @@
       <!-- Sidebar Menu -->
       <nav class="mt-2">
         <ul class="nav nav-pills nav-sidebar nav-child-indent flex-column" data-widget="treeview" role="menu"
-          data-accordion="false">
+          data-accordion="false" id="main_sidebar_menu_list">
           <!-- Add icons to the links using the .nav-icon class
                with font-awesome or any other icon font library -->
 
@@ -188,7 +188,7 @@
           {% endif %}
 
           {% if 'MINILIMS' in current_user.features %}
-          <li class="nav-item menu">
+          <li class="nav-item treeview menu">
             <a class="nav-link" href="#">
               <i class="nav-icon fas fa-vials"></i>
               <p>ONT sample sheet</p>
@@ -212,7 +212,7 @@
           {% endif %}
 
           {% if current_user.is_admin %}
-          <li class="nav-item menu">
+          <li class="nav-item">
             <a class="nav-link" href="#">
               <i class="nav-icon fas fa-screwdriver-wrench"></i>
               <p>Admin</p>
@@ -259,7 +259,7 @@
             </ul>
           </li>
 
-          <li class="nav-item menu">
+          <li class="nav-item">
             <a class="nav-link" href="#">
               <i class="nav-icon fas fa-chart-pie"></i>
               <p>Reports</p>
@@ -297,14 +297,14 @@
       <nav>
         <!-- CONTEXT_DEPENDANT MENU -->
         <ul class="nav nav-pills nav-sidebar nav-child-indent flex-column" data-widget="treeview" role="menu"
-          data-accordion="false">
+          data-accordion="false" id="context_dependant_menu_list1">
           {% block menuitems %}
           {% endblock %}
         </ul>
       </nav>
       <nav>
         <ul class="nav nav-pills nav-btns nav-sidebar nav-child-indent flex-column float-down" data-widget="treeview" role="menu"
-        data-accordion="false">
+        data-accordion="false"  id="context_dependant_menu_list2">
           {% block menubuttons %}
           {% endblock %}          
         </ul>
@@ -317,7 +317,7 @@
       <div class="separator"></div>
       <nav>
         <ul class="nav nav-pills nav-sidebar nav-child-indent flex-column" data-widget="treeview" role="menu"
-          data-accordion="false">
+          data-accordion="false" id="sidebar_bottom_menu_list">
           <!-- Add icons to the links using the .nav-icon class
               with font-awesome or any other icon font library -->
 
