@@ -118,14 +118,52 @@
 
     function enableArchive() {
       var selected = $( "#enableArchiveSwitch" ).is(':checked')
-        $.get('{{ url_for('collbrowser.setmeta') }}', {
-          collection: '{{ collection }}',
-          attr: "sys::archive::enable",
-          value: selected
-        }, function(data) {
-           load_meta()
-        });
+      $.get('{{ url_for('collbrowser.setmeta') }}', {
+        collection: '{{ collection }}',
+        attr: "sys::archive::enable",
+        value: selected
+      }, function(data) {
+          load_meta()
+      });
     }
+
+    function setCollectionValidity() {
+      var selected = $( "#overrideValidity" ).is(':checked')
+      $.get('{{ url_for('collbrowser.setoverride') }}', {
+          collection: '{{ collection }}',
+          attr: "user::data::state",
+          value: "{{ 'invalid' if state_metadata.sys != 'invalid' else 'valid' }}",
+          override: selected
+        }
+      )
+      .done(function() {
+        load_meta();
+        load_actions();
+        load_graph();        
+      })
+      .fail(function(data, status) {
+          alert("Set override failed");
+          load_actions(); // load actions again to show flash message)
+      })
+    }
+
+    function propagateUserState() {
+      if (confirm("Warning: This can only be reverted by manually disabling the override for each downstream collection. \n\nAre you sure you want to propagate the state to all downstream collections?")) {
+        $.post('{{ url_for('collbrowser.propagateDownstreamInvalid') }}', { 
+            collection: '{{ collection }}',
+          }
+        )
+        .done(function() {
+          load_graph()
+        })
+        .fail(function(data, status) {
+          alert("Propagation failed");
+          load_actions(); // load actions again to show flash message
+        })
+      }
+    }
+
+
 
 $('.nav-pills').on('shown.bs.tab', function(event){
   activetab = event.target.getAttribute('href')
@@ -134,14 +172,8 @@ $('.nav-pills').on('shown.bs.tab', function(event){
 
 </script>
 
-
     <div class="card-header myheader">
       <ul class="nav nav-pills">
-        <li class="nav-item mx-2">
-          <button class="btn btn-outline-primary active" id="tasks-tab" 
-            data-toggle="tab" href="#tasks" role="tab" 
-            aria-controls="tasks" aria-selected="false">Files</button>
-        </li>
         <li class="nav-item mx-2">
           <button class="btn 
               {% if archival_state.is_offline is sameas true %} btn-outline-danger {% else %}
@@ -171,15 +203,24 @@ $('.nav-pills').on('shown.bs.tab', function(event){
           </button>
         </li>
         {% endif %}
+        <li class="nav-item mx-2">
+          <button class="btn btn-outline-primary" id="validity-tab"
+            data-toggle="tab" href="#validity" role="tab"
+            aria-controls="validity" aria-selected="false">
+            Validity
+          </button>
+        </li>
       </ul>
     </div>
     <div class="card-body tab-content scrollbar-y h-100">
-        <div class="tab-pane active" id="tasks" role="tabpanel" aria-labelledby="tasks-tab">
-          <a class="btn btn-outline-secondary" data-toggle="modal" data-target="#upload" href="#upload" role="button">
-            Upload
-          </a>
-        </div>
-        <div class="tab-pane" id="archive" role="tabpanel" aria-labelledby="archive-tab">
+      {% with messages = get_flashed_messages(category_filter=["actions_panel"]) %}
+      {% if messages %}
+        {% for message in messages %}
+          <div class="error"><b>{{ message }}</b></div>
+        {% endfor %}
+      {% endif %}
+      {% endwith %}
+          <div class="tab-pane" id="archive" role="tabpanel" aria-labelledby="archive-tab">
             <h4>
             {% if archival_state.status == 'OFFLINE' %} 
               <span class="badge badge-danger">OFFLINE</span>
@@ -229,7 +270,6 @@ $('.nav-pills').on('shown.bs.tab', function(event){
             {% endif %}
 
         </div>
-
         <div class="tab-pane" id="storage" role="tabpanel" aria-labelledby="storage-tab">
           <form>
             <div class="form-group">
@@ -342,7 +382,23 @@ $('.nav-pills').on('shown.bs.tab', function(event){
           {% endif %}
 
         </div>
-    </div>
+        <div class="tab-pane" id="validity" role="tabpanel" aria-labelledby="validity-tab">
+          System state of this collection is <b>{% if state_metadata.sys == "invalid" %}in{% endif %}valid</b>
+          <div class="custom-control custom-switch vertical-down">
+            <input type="checkbox" class="custom-control-input" onChange="setCollectionValidity()"
+                  value="true"
+                  id="overrideValidity" {% if state_metadata.user %}checked{% endif %}>
+            <label class="custom-control-label" for="overrideValidity">Override state as {% if state_metadata.sys != "invalid" %}in{% endif %}valid</label>
+          </div>
+          {% if state_metadata.sys != "invalid" %}
+          <div class="mt-2">
+            Propagate invalid user state to all downstream collections:<br>
+            <button class="btn btn-outline-secondary button12" {% if state_metadata.user != "invalid" %} disabled {% endif %} onClick="propagateUserState()">Propagate</button>
+          </div>
+          {% endif %}
+        </div>
+
+      </div>
 </div>
 
 <script>

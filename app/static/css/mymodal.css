@@ -374,9 +374,20 @@ ul {
   overflow-y: scroll;
 }
 
-.myheader {
-  min-height: 42px;
-  max-height: 42px;
+.myheader ul {
+  display: flex;
+  justify-content: space-between;
+  align-content: stretch;
+  row-gap: 8px;
+}
+
+.myheader li {
+  flex-grow: 1;
+}
+
+.myheader button {
+  display: block;
+  width: 100%;
 }
 
 .sort-change {
@@ -457,6 +468,10 @@ ul {
 
 .nav-header {
   font-family: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+
+.sidebar-mini.sidebar-collapse .brand-text, .sidebar-mini.sidebar-collapse .nav-sidebar .nav-link .right {
+  display: none;
 }
 
 .search-form {

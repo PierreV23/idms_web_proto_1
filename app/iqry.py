@@ -4,6 +4,7 @@ from flask_login import current_user, login_required
 from irods.models import Collection, CollectionMeta, DataObject, DataObjectMeta, User, UserMeta, Resource, ResourceMeta
 from irods.meta import iRODSMeta, AVUOperation
 from irods.column import Criterion
+from irods.exception import CAT_NO_ACCESS_PERMISSION
 
 from . import flaskcache
 from app.irodssessions import irods_manager
@@ -63,10 +64,14 @@ def scollmetaval(coll, attr, value, unit=None):
         u = session.collections.get(coll)
         old_avus = [ m for m in u.metadata.items() if m.name == attr ]
         new_avu = iRODSMeta(attr, value, unit)
-        u.metadata.apply_atomic_operations(
-            *[AVUOperation(operation='remove', avu=i) for i in old_avus],
-            AVUOperation(operation='add', avu=new_avu)
-        )
+        # The atomic metadata operations are preferred, but require a higher permission level
+        try:
+            u.metadata.apply_atomic_operations(
+                *[AVUOperation(operation='remove', avu=i) for i in old_avus],
+                AVUOperation(operation='add', avu=new_avu)
+            )
+        except CAT_NO_ACCESS_PERMISSION:
+            u.metadata[attr] = new_avu
     flaskcache.cache.delete_memoized(qcollmeta, coll)
 
 def rmallcollmetaattr(coll, attr):

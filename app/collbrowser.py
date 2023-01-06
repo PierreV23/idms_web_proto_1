@@ -10,12 +10,14 @@ import base64
 import logging
 import os
 import time
+import logging
 from datetime import datetime, timezone
+from turtle import down
 from dateutil.relativedelta import relativedelta
-from flask import Blueprint, render_template, redirect, request, url_for, jsonify, current_app
+from flask import Blueprint, render_template, redirect, request, url_for, jsonify, make_response, flash, current_app
 from flask_login import current_user, login_required
 from irods.models import Collection, CollectionMeta, DataObject, DataObjectMeta
-from irods.exception import CAT_NO_ROWS_FOUND
+from irods.exception import CAT_NO_ROWS_FOUND, CAT_NO_ACCESS_PERMISSION
 from irods.column import Criterion
 from app.datafield import AVU2data, datafield
 from app.irods_helper import getmetaitem
@@ -26,7 +28,7 @@ from urllib.parse import urlparse
 from . import projects
 from . import iqry
 from . import irods_objects
-from .flaskcache import cache, key_zone, key_userzone, dep_zone
+from .flaskcache import cache, key_zone, key_userzone, dep_zone, pop_cache, push_cache
 import json
 from app.constants import COLL_KEY_MAP, DATA_KEY_MAP, ATTR_RESOURCE_ONLINE
 from . import constants
@@ -40,8 +42,13 @@ ATTR_DATASETID = 'sys::dataset_id'
 ATTR_PROJECTID = 'projectID'
 ATTR_PROCESSID = 'processID'
 ATTR_PROCESSGROUPID = 'processgroupID'
+ATTR_USER_STATE = 'user::data::state'
+ATTR_SYS_STATE = 'sys::data::state'
+
 #TODO: use constants.py (role irods_cronjobs)
 ATTR_ARCHIVE_PREFIX = 'sys::archive::'
+ATTR_PIPELINE_PREFIX = 'sys::pipeline::'
+ATTR_PIPELINE_INPUT_COLLECTION_ID = f'{ATTR_PIPELINE_PREFIX}input_collection_id'
 ATTR_ARCHIVE_USR_PREFIX = 'user::archive::'
 ATTR_ARCHIVE_ENABLE = f'{ATTR_ARCHIVE_PREFIX}enable'
 ATTR_ARCHIVE_DESIREDSTATE = f'{ATTR_ARCHIVE_PREFIX}desired_state'
@@ -71,6 +78,39 @@ PROCESS_SHAPE = 'cds'
 
 # TODO: use the irods_helper instead (role irods_cronjobs)
 
+@bp.route('_propagate', methods=['POST'])
+@login_required
+def propagateDownstreamInvalid():
+    irods_coll = request.form.get('collection', '/', type=str)
+    try:
+        downstream_collections = _propagateDownstreamInvalid(irods_coll, irods_coll)
+    except Exception as e:
+        logging.error(f"Propagation of user invalid state from {irods_coll} failed: {e}")
+        response =  make_response(
+            'Propagation unsuccessful',
+            500,
+        )
+        return response
+    logging.info(f"Propagated user invalid state from {irods_coll} to {downstream_collections} successfully.")
+    response =  make_response(
+        'Propagation successful',
+        200,
+    )
+    # Invalidate the cache for the next call to the graph function
+    push_cache('graph')
+    return response
+
+def _propagateDownstreamInvalid(base_irods_coll, irods_coll):
+    iqry.scollmetaval(irods_coll, ATTR_USER_STATE, "invalid")
+    logging.info(f"Invalid state propagated from {base_irods_coll} to {irods_coll}")
+
+    irods_coll_id = iqry.qcollmetadict(irods_coll)[ATTR_DATASETID]
+    next_collections = [c[Collection.name] for c in iqry.qcollbymeta(ATTR_PIPELINE_INPUT_COLLECTION_ID, irods_coll_id)]
+
+    downstream_collections = [irods_coll]
+    for coll in next_collections:
+        downstream_collections += _propagateDownstreamInvalid(base_irods_coll, coll)
+    return downstream_collections
 
 def getmetatree(irods_coll, attr, default=None):
     return  _getmetatree(irods_coll, attr, irods_coll, default=None)
@@ -160,11 +200,16 @@ def setoverride():
         if overrideStr not in ['true', 'false']:
             logging.warning( f"unknown selection for _setKeepLocal: {overrideStr}" )
             return('DONE')
-        if overrideStr == 'false':
-            iqry.rmallcollmetaattr(collection, attr)
-        else:
-            iqry.scollmetaval(collection, attr, value)
-    return('DONE')    
+        try:
+            if overrideStr == 'false':
+                iqry.rmallcollmetaattr(collection, attr)
+            else:
+                iqry.scollmetaval(collection, attr, value)
+        except CAT_NO_ACCESS_PERMISSION:
+            return 'ACCESS DENIED', 401
+    # Invalidate the cache for the next call to the graph function
+    push_cache('graph')
+    return 'DONE', 200
 
 
 @bp.route('_actions')
@@ -223,8 +268,16 @@ def coll_actions():
         "keep_online_till": keep_online_till
     }
 
+    user_coll_state = iqry.qcollmetaval(path, ATTR_USER_STATE, "")
+    sys_coll_state = iqry.qcollmetaval(path, ATTR_SYS_STATE, "")
+
+    state_metadata = {
+        "user": user_coll_state,
+        "sys": sys_coll_state,
+    }
+
     return render_template('actions.html', collection=path, 
-        name=coll_name, archival_state=archival_state,
+        name=coll_name, archival_state=archival_state, state_metadata=state_metadata,
         processes=processes, processid=processid, processrequest=processrequest,
         processgroups=processgroups, processgroupid=processgroupid,
         admin=current_user.is_admin)
@@ -453,7 +506,7 @@ def related(coll, attr, forward=True, byname=True):
 
 @bp.route('/_graph')
 @login_required
-@cache.cached(timeout=60, key_prefix=key_zone)
+@cache.cached(timeout=60, key_prefix=key_zone, unless=lambda: pop_cache('graph'))
 def generate_graph():
     coll = request.args.get('path', '/', type=str)
     maxlevels = request.args.get('levels', DEFAULT_GRAPH_LEVELS, type=int)
