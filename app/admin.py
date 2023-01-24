@@ -203,20 +203,28 @@ def consistency_details():
     if collection:
         for criterium in criteria:
             with irods_manager.session() as session:
-                q = session.query(Collection.name, DataObject.name, DataObject.path, DataObjectMeta.value).filter(criterium).filter(
-                    Criterion('=', DataObjectMeta.name, attr)).filter(
+                q = session.query(Collection.name, DataObject.name, DataObject.path, DataObject.replica_number, DataObjectMeta).filter(criterium).filter(
+                    Criterion('like', DataObjectMeta.name, f'{attr}%')).filter(
                     Criterion('=', DataObject.resource_name, resource)
                     )
                 for r in q:
-                    data.append({
-                        'dataobject': os.path.relpath(os.path.join(r[Collection.name], r[DataObject.name]), start=collection),
-                        'path': r[DataObject.path],
-                        'error': r[DataObjectMeta.value]
-                    })
+                    # Try to add only replicas that have the error
+                    attr_split = r[DataObjectMeta.name].split('::')
+                    if len(attr_split) == 4:
+                        replica_number = int(attr_split[3])
+                        if r[DataObject.replica_number] != replica_number:
+                            continue
+                        data.append({
+                            'dataobject': os.path.relpath(os.path.join(r[Collection.name], r[DataObject.name]), start=collection),
+                            'path': r[DataObject.path],
+                            'error': r[DataObjectMeta.value],
+                            'replica_number': r[DataObject.replica_number]
+                        })
 
     columns = [
         { "field": "dataobject", "title": "DataObject", "sortable": True },
         { "field": "path", "title": "Path", "sortable": True },
+        { "field": "replica_number", "title": "Replica number", "sortable": True },
         { "field": "error", "title": "Error", "sortable": False }
     ]
     data = {
