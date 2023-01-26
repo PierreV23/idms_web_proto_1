@@ -3,13 +3,15 @@ from flask_login import current_user, login_required
 from flask_marshmallow import Marshmallow
 from marshmallow import Schema, fields, validate
 from sqlalchemy.orm import sessionmaker, scoped_session
-from sqlalchemy import ForeignKey, distinct, create_engine, Column, Integer, String, TIMESTAMP, func, text
+from sqlalchemy import ForeignKey, create_engine, Column, Integer, String, TIMESTAMP, func, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import OperationalError
+from sqlalchemy.ext.hybrid import hybrid_property
 from irods.models import Collection, CollectionMeta, User
 from irods.column import Criterion
 from app.datafield import datafield
 import flask
+from .flaskcache import cache, key_zone
 import greenlet
 import json
 import requests
@@ -17,6 +19,7 @@ from requests.auth import HTTPBasicAuth
 from app.projects import get_projectlist
 from app.iqry import qcollbystaticmeta
 from app.irodssessions import irods_manager
+from app.settings import NGSRUN_FIELDS
 
 Base = declarative_base()
 
@@ -80,7 +83,6 @@ class NGSRunsAlchemy:
             self._sessions[current_user.environment].remove()
 
 
-
 db = NGSRunsAlchemy()
 
 bp = Blueprint('ngsruns', __name__, url_prefix='/ngsruns')
@@ -103,10 +105,9 @@ class NGSRun(Base):
     description = Column(String(250), default='', nullable = False)
     project = Column(String(32))
     owner = Column(String(32))
-
+        
     def __init__(self, flowcell):
         self.flowcell = flowcell
-
 
 class NGSBarcode(Base):
     #__bind_key__ = current_user.environment
@@ -179,77 +180,87 @@ def get_complete(field):
 
 @bp.route('_runs', methods=['GET'])
 def runs():
-    # Preparation for speedup: pagination for getting the list of runs,
-    # for when getting the whole list (run_list()) takes too long.
-    fields = ['id', 'name', 'flowcell', 'flowcell_display', 'project', 'owner', 'datacoll', 'description']
-    offset = int(request.args.get('offset', 0))
-    limit = int(request.args.get('limit', 12))
-
-    filterstr = request.args.get('filter', '{}')
-    filters = json.loads(filterstr)
-
-    sortfield = request.args.get('sort', 'id')
-    sortorder = request.args.get('order', 'desc' if sortfield == 'id' else 'asc' )
+    offset = request.args.get('offset', 0)
+    limit = request.args.get('limit', 12)
+    filters = json.loads(request.args.get('filter', '{}'))
+    sort = request.args.get('sort', 'creation_date')
+    order = request.args.get('order', 'desc')
 
     result = {}
-    qry = db.session().query(NGSRun)
-    for filter in filters:
-        qry = qry.filter_by(**filters)
-    qry = qry.order_by(text(f'{sortfield} {sortorder}'))
-    qry = qry.limit(limit).offset(offset)
-    data = [ vars(f) for f in qry ]
-    for run in data:
-        run['flowcell_display'] = run['flowcell']        
+    # fetch ngsruns
+    ngsruns = db.session().query(NGSRun)
+
+    # Count 'flowcell' to detect and label DUPLICATE records
+    flowcell_list = [f.flowcell for f in ngsruns.all()]
+    flowcell_dupl = {f:' (DUPLICATE)' if flowcell_list.count(f) > 1 else '' for f in flowcell_list}
+
+    # Apply filters on ngsruns ('select' and 'input')
+    for _, field_attrs in NGSRUN_FIELDS.items():
+        field_name = field_attrs['field']
+        filter_value = filters.get(field_name)
+        filter_control = field_attrs.get('filtercontrol')
+        if not filter_value or filter_control is None:
+            continue
+        if filter_control == 'select':
+            ngsruns = ngsruns.filter(text(f"{field_name}='{filter_value}'"))
+        if filter_control == 'input':
+            ngsruns = ngsruns.filter(text(f"{field_name} like('%{filter_value}%')"))
+
+    ngsruns = ngsruns.order_by(text(f'{sort} {order}'))
+
+    # count total after filter
+    count_runs = ngsruns.count() 
+    ngsruns = ngsruns.offset(offset).limit(limit)
+
+    # format data ngsruns
+    result = []
+    for run in ngsruns:
+        record = {}
+        for f in NGSRUN_FIELDS:
+            key = NGSRUN_FIELDS[f]['field']
+            val = getattr(run, key, None)
+            if key == 'flowcell' and val is not None:
+                # append (DUPLICATE) to flowcell name
+                val += flowcell_dupl.get(val)
+            if val is not None:
+                formatted = datafield(key, val, NGSRUN_FIELDS[f]['format'])
+                record |= { key: formatted.htmlshort, f'_{key}': formatted.value }
+        result.append(record)
+
+    for run in result:
+        # find collection matching for flowcell
         colls = qcollbystaticmeta('minion::flow_cell_id', run['flowcell'])
-        # q = irods_manager.session().query(Collection.name).filter( 
-        #         Criterion('=', CollectionMeta.value, run['flowcell'])).filter( \
-        #         Criterion('=', CollectionMeta.name, 'minion::flow_cell_id')).filter( \
-        #         Criterion('like', Collection.name, '/rivmZone/projects/ngslab/minion/%'))
-        # colls = [ x for x in q ]
-        if colls:
+        # sort by create_time to get first collection name 
+        colls = sorted(colls, key = lambda k: k[Collection.create_time])
+        # format available collection name
+        if colls:            
             run['datacoll'] = datafield('collection', colls[0][Collection.name], 'irods_collection').htmlshort
         else:
             run['datacoll'] = ''
-    rows = [ { f: str(d[f]) for f in fields} for d in data ]
-    result['total'] = db.session().query(NGSRun).count()
-    result['rows'] = rows
-    return result
+
+    return { 'rows': result, 'filters': filters, 'total': count_runs }
+
 
 @bp.route('list', methods=['GET'])
 def run_list():
     idrequest = request.args.get('idrequest', 0)
-    data = [ vars(f) for f in db.session().query(NGSRun).all() ]
-    # Create a list of flowcells and collections in irods
-    with irods_manager.session() as session:
-        q = session.query(Collection, CollectionMeta).filter( \
-                Criterion('=', CollectionMeta.name, 'minion::flow_cell_id')).filter( \
-                Criterion('=', Collection.parent_name, f'/{current_user.irods_zone}/projects/ngslab/minion'))
-        flowcell_list = { x[CollectionMeta.value] : x[Collection.name] for x in q }
-    flowcell_unique = set()
-    flowcell_duplicate = set()
-    for run in data:
-        if run['flowcell'] in flowcell_unique:
-            flowcell_duplicate.add(run['flowcell'])
-        else:
-            flowcell_unique.add(run['flowcell'])
-        
-        if run['flowcell'] and flowcell_list.get(run['flowcell']):
-            run['datacoll'] = datafield('collection', str(flowcell_list.get(run['flowcell'])), 'irods_collection').htmlshort
-        else:
-            run['datacoll'] = ''
-    
-    for run in data:
-        run['flowcell_display'] = run['flowcell']
-        if run['flowcell'] in flowcell_duplicate:
-            run['flowcell_display'] += ' (DUPLICATE)'
-
-    data.sort(key = lambda x: x["id"], reverse=True)
-    fields = ['id', 'name', 'flowcell', 'flowcell_display', 'project', 'owner', 'datacoll', 'description']
-    data2 = [{ p:str(x[p]) for p in fields } for x in data ]
-    return render_template('ngsruns.html', data=json.dumps(data2), 
-        idrequest=idrequest, 
+    return render_template('ngsruns.html',  
+        idrequest=idrequest, columns = NGSRUN_FIELDS,
         default_project=current_user.settings.get('default_project', ''),
         projects = current_user.projects())
+
+
+@bp.route('_filterdata')
+@cache.cached(timeout=3600, key_prefix=key_zone)
+def filterdata():
+# Determine prepopulated filter values for 'select' filters
+    field = request.args.get('field', type=str)
+    ngsruns = db.session().query(NGSRun)
+
+    # find distinct values for fields, exclude '' and None
+    filter_values = {i:i for i in set([ getattr(r, field, None) for r in ngsruns]) if i not in ['', None]}
+    return jsonify(filter_values)
+
 
 @bp.route('_barcodes', methods=['GET'])
 def run_barcodes():

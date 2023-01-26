@@ -36,3 +36,22 @@ PG_JOB_FIELDS = {
     'user::run::exit_code': {'title': 'Result', 'format': 'int', 'field': 'exit_code', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
     'sys::runsheet::input_collection': {'title': 'Input Collection', 'format': 'irods_collection', 'field': 'input_collection', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'input'},
 }
+
+NGSRUN_FIELDS = {
+    'id': {'title': 'Item ID', 'format': 'text', 'field': 'id', 'sortable': 'true', 'visible': 'false', 'align': 'center'},
+    'creation_date': {'title': 'Creation Date', 'format': 'timestamp', 'field': 'creation_date', 'sortable': 'true', 'visible': 'false'},
+    'name': {'title': 'Name', 'format': 'text', 'field': 'name', 'sortable': 'true', 'visible': 'true', 'align': 'center', 'filtercontrol': 'input'},
+    'flowcell': {'title': 'Flowcell', 'format': 'text', 'field': 'flowcell', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'input'},
+    'project': {'title': 'Project', 'format': 'projectid', 'field': 'project', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
+    'owner': {'title': 'User', 'format': 'text', 'field': 'owner', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
+    'datacoll': {'title': 'Collection', 'format': 'irods_collection', 'field': 'datacoll', 'sortable': 'false', 'visible': 'true'},
+    'description': {'title': 'Description', 'format': 'text', 'field': 'description', 'sortable': 'false', 'visible': 'false', 'filtercontrol': 'input'}
+}
+
+BARCODE_FIELDS = {
+    'barcode': {'title': 'Barcode', 'field': 'barcode', 'sortable': 'true'},
+    'sampleid': {'title': 'ID', 'field': 'sampleid', 'sortable': 'true'},
+    'virus_target': {'title': 'Virus Target', 'field': 'virus_target', 'sortable': 'true'},
+    'primer_set': {'title': 'Primer Set', 'field': 'primer_set', 'sortable': 'true'},
+    'description': {'title': 'Description', 'field': 'description', 'sortable': 'true'}
+}

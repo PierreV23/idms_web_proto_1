@@ -18,31 +18,35 @@ menuname='runlist'
       </div>
       <div class="card-body">
          <table id="runtable" class="table"
-            xdata-toggle="table"
+            data-toggle="table"
             data-striped="true" 
             data-pagination="true"
-            xdata-page-size="12"
+            data-page-size="10"
+            data-page-list=[10,25,50,100] 
             data-filter-control="true"
-            xdata-height="500"
-            data-show-columns-toggle-all="false" 
-            data-show-pagination-switch="true" 
             data-show-toggle="false"
             data-show-columns="true"
-            xdata-side-pagination="server"
-            data-rows="20"
-            data-search="true"
+            data-show-filter-control-switch="true"
+            data-custom-sort="sorter"
+            data-side-pagination="server"
             data-unique-id="id"
-            xdata-url="{{ url_for('ngsruns.runs') }}"
+            data-url="{{ url_for('ngsruns.runs') }}"
             data-buttons-prefix="btn-sm btn"
             data-buttons-toolbar=".runtable-toolbar">
             <thead>
                <tr>
-                  <th data-field="id" data-visible="false" data-align="center">Item ID</th>
-                  <th data-field="name" data-align="center" data-sortable="true" data-filter-control="input">Name</th>
-                  <th data-field="flowcell_display" data-align="" data-sortable="true" data-filter-control="input" >Flowcell</th>
-                  <th data-field="project" data-align="" data-sortable="true" data-filter-control="select">Project</th>
-                  <th data-field="owner" data-align="" data-sortable="true" data-filter-control="select">User</th>
-                  <th data-field="datacoll" data-align="" data-sortable="false" data-filter-control="input">Collection</th>
+                  {% for c in columns %}
+                  <th data-field="{{columns[c]['field']}}" 
+                      data-align="{{columns[c]['align']}}" 
+                      data-sortable="{{columns[c]['sortable']}}"
+                      data-visible="{{columns[c]['visible']}}" 
+                      data-filter-control="{{columns[c]['filtercontrol']}}" 
+                      {% if columns[c]['filtercontrol']=="select" %}
+                          data-filter-data='url:{{ url_for("ngsruns.filterdata", field=columns[c]["field"]) }}'
+                      {% endif %}>
+                      {{columns[c]['title']}}
+                  </th>
+                  {% endfor %}
                </tr>
             </thead>
          </table>
@@ -86,11 +90,8 @@ menuname='runlist'
 var selected_id = {{ idrequest }};
 
 $(function () {
-   $('#runtable').bootstrapTable({
-      data: {{ data | safe }}
-   });
+   $('#runtable').bootstrapTable();
    $('.bootstrap-table-filter-control-project').val('{{ default_project }}')
-   $('#runtable').bootstrapTable('triggerSearch');
    $('tr[data-uniqueid='+selected_id+'] > td:first-child').click()
 });
 
@@ -115,7 +116,7 @@ $('document').ready(function(){
          row_display = ', ' + row.description;
       }
       $('.rundescription').html(row_display);
-      $.get('{{ url_for('ngsruns.run_barcodes') }}', {
+      $.get('{{ url_for("ngsruns.run_barcodes") }}', {
          idrequest: row.id
          }, function (data) {
                $('#barcodepane').html(data);
@@ -137,11 +138,24 @@ $('document').ready(function(){
    });
 
    $('#deletebutton').on('click', function() {
-      window.location.href = "{{ url_for("ngsruns.delete_ngs_run") }}?id=" + selected_id;
+      window.location.href = '{{ url_for("ngsruns.delete_ngs_run") }}?id=' + selected_id;
    })
 
 })
-
+   function sorter(field, sortOrder, data) {
+         var order = sortOrder === 'desc' ? -1 : 1
+         data.sort(function (a, b) {
+               var aa = a['_' + field]
+               var bb = b['_' + field]
+               if (aa < bb) {
+                  return order * -1
+               }
+               if (aa > bb) {
+                  return order
+               }
+               return 0
+         })
+      }
 
 </script>
 {% endblock %}

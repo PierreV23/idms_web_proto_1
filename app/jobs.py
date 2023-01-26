@@ -194,14 +194,13 @@ def jobs():
     offset = request.args.get('offset', 0, type=int)
     limit = request.args.get('limit', 999, type=int)
     filters = json.loads(request.args.get('filter', '{}'))
+    sort = request.args.get('sort', 'create_time')
     order = request.args.get('order', 'desc')
-    orderby = request.args.get('sort', 'create_time')
+    
     session, Jobs, Processgroups = dbsession()   
 
     # get jobs_query
     jobs_query = session.query(Jobs)
-    # order; default second order by start_time desc
-    jobs_query = jobs_query.order_by(text(f"{orderby} {order}, create_time desc, start_time desc"))
     
     # Apply filters on jobs_query ('select' and 'input')
     for _, field_attrs in JOB_FIELDS.items():
@@ -214,7 +213,10 @@ def jobs():
             jobs_query = jobs_query.filter(text(f"{field_name}='{filter_value}'"))
         if filter_control == 'input':
             jobs_query = jobs_query.filter(text(f"{field_name} like('%{filter_value}%')"))
-
+    
+    # order; default second order by start_time desc, after filter takes less time
+    jobs_query = jobs_query.order_by(text(f"{sort} {order}, create_time desc, start_time desc"))
+    
     # count, offset, limit data
     count_jobs = jobs_query.count()
     jobs_query = jobs_query.offset(offset).limit(limit)
@@ -257,14 +259,14 @@ def pglist():
     limit = request.args.get('limit', 999, type=int)
     filters = json.loads(request.args.get('filter', '{}'))
     order = request.args.get('order', 'desc')
-    orderby = request.args.get('sort', 'create_time')
+    sort = request.args.get('sort', 'create_time')
     processgroupid = request.args.get('processgroupid', None, type=str)
     session, Jobs, Processgroups = dbsession()  
 
     # get processgroups (pgs_query) 
     pgs_query = session.query(Processgroups)
     # order; default order by create_time desc, start_time desc
-    pgs_query = pgs_query.order_by(text(f"{orderby} {order}, create_time desc, start_time desc"))
+    pgs_query = pgs_query.order_by(text(f"{sort} {order}, create_time desc, start_time desc"))
 
     # filter on processgroupid 
     if processgroupid:
