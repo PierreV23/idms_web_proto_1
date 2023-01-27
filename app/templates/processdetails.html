@@ -35,6 +35,12 @@
             value="{{ details['repo'] }}">
         </div>
 
+        <div class="form-group">
+          <label for="concurrency_limit_{{process}}">Concurrency limit (0 to disable)</label>
+          <input type="number" class="form-control" min="0" name="concurrency_limit" id="concurrency_limit_{{process}}" placeholder="Concurrency limit"
+            value="{{ details['concurrency_limit'] }}">
+        </div>
+
         <div class="form-check">
           <input class="form-check-input" type="checkbox" name="do_bringonline" value="true" {% if
             details['omit_bringonline'] !=1 %}checked{% endif %} id="do_bringonline_{{process}}">
