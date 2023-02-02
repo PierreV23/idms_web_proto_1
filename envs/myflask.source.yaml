@@ -24,6 +24,7 @@ dependencies:
   - flask-migrate
   - flask-sqlalchemy
   - flask-script
+  - sqlalchemy<2.0.0
   - sqlite
   - psycopg2
   - uwsgi
