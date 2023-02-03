@@ -355,13 +355,10 @@ def collcontents():
         qc_count = qc_count.filter(qc_filter)
     coll_count = next(qc_count.count(Collection.id).get_results())[Collection.id]
 
-    qd_count = irods_session.query(Collection.name)
+    qd_count = irods_session.query(DataObject.id)
     for qd_filter in qd_filters:
         qd_count = qd_count.filter(qd_filter)
-    try:
-        data_count = next(qd_count.count(DataObject.id).get_results())[DataObject.id]
-    except StopIteration:
-        data_count = 0
+    data_count = len(list(qd_count))
 
 # Determine offset and limits
     min_coll = min(offset, coll_count)
