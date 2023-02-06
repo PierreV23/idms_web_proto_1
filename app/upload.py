@@ -6,6 +6,7 @@
 import csv
 import io
 import os
+from pathlib import Path
 import shutil
 import sys
 import logging
@@ -22,14 +23,17 @@ import re
 from irods.models import Collection, CollectionMeta
 from irods.column import Criterion
 from irods.meta import iRODSMeta
+from irods.exception import CollectionDoesNotExist
 #from flask_session import Session
 from app.irodssessions import irods_manager
+#from glob import glob
 
 ATTR_UPLOAD = 'user::upload'
 ATTR_UPLOADNAME = f'{ATTR_UPLOAD}::name'
 ATTR_DATASETID = 'sys::dataset_id'
 ATTR_UPLOADSETTINGS = 'user::upload::settings::'
 ATTR_UPLOADMETA = 'user::upload::meta::'
+ATTR_UPLOADMETASCHEMA = 'user::upload::schemafile'
 
 class UploadType:
     Pending = 'pending'
@@ -160,6 +164,7 @@ def upload_settings():
     if request.method == 'POST':
         data = request.form.to_dict()
         coll = data.get('coll')
+        #projectID = data.get('projectID')
         for k, v in data.items():
             if k in FIELDS and v:
                 iqry.scollmetaval(coll, f'{ATTR_UPLOADSETTINGS}{k}', v)
@@ -168,6 +173,41 @@ def upload_settings():
         else:
             return redirect(url_for('upload.upload_settings', coll=coll))
 
+
+
+def getSchemataForProject( projectId ):
+    def getSchemataInColl( coll ):
+        result = {}
+        for obj in coll.data_objects:
+            schemaId = Path(obj.name).stem
+            path = f"{coll.path}/{obj.name}"
+            result[ schemaId ] = path
+        return result
+
+    with irods_manager.session() as session:
+        try:
+            schemaColl = session.collections.get( f'/{current_user.irods_zone}/system/schemata/{projectId}' )
+        except CollectionDoesNotExist:
+            schemaColl = session.collections.get( f'/{current_user.irods_zone}/system/schemata' )
+        result = getSchemataInColl( schemaColl )
+           #Alternatv: if we want always to offer a minimum standard as "default"
+           #result.update( defaultSchemata )
+    return result
+
+#POST (not very RESTful, but doesnt show up in history)
+@bp.route('_getschema', methods=['POST'])
+def get_schema():
+    if request.method == 'POST':
+        schemaFile = request.data.decode('UTF-8')
+        if schemaFile:
+            with irods_manager.session() as session:
+               obj = session.data_objects.get( schemaFile )
+               with obj.open('r') as f:
+                   content = f.read()
+                   return content
+    return {}   
+
+
 @bp.route('_uploadmeta', methods=['GET', 'POST'])
 def upload_meta():
     if request.method == 'GET':
@@ -175,11 +215,13 @@ def upload_meta():
         name = os.path.basename(collection)
         if collection is None:
             return redirect(url_for('upload.show_uploads'))
-        with open('schema.json') as f:
-            schema =  f.read()
+        schemata={}
+        projectId = iqry.qcollmetaval(collection, f'{ATTR_UPLOADSETTINGS}projectID')
+        schemata = getSchemataForProject( projectId )
         metadata = iqry.qcollmetadict(collection)
         data = { k[len(ATTR_UPLOADMETA):]: v for k, v in metadata.items() if k.startswith(ATTR_UPLOADMETA) }
-        return render_template('upload_meta.html', coll=collection, name=name, schema=schema, data=data)
+        selectedSchema = metadata.get(ATTR_UPLOADMETASCHEMA, None)
+        return render_template('upload_meta.html', coll=collection, project=projectId, name=name, schemata=schemata, selectedSchema=selectedSchema, data=data)
     if request.method == 'POST':
         record = request.json
         collection = record.get('coll')
@@ -187,8 +229,12 @@ def upload_meta():
         for k, v in metadata.items():
             if k.startswith(ATTR_UPLOADMETA):
                 iqry.delcollmeta(collection, k, v)
+            if k == ATTR_UPLOADMETASCHEMA:
+                iqry.delcollmeta(collection, k, v)
         for k, v in record.get('data', {}).items():
-            iqry.scollmetaval(collection, f'{ATTR_UPLOADMETA}{k}', v)                
+            iqry.scollmetaval(collection, f'{ATTR_UPLOADMETA}{k}', v)    
+        selectedSchema = record.get('selectedSchema')
+        iqry.scollmetaval(collection, f'{ATTR_UPLOADMETASCHEMA}', selectedSchema)              
         return jsonify({'status': 'OK' }), 200
 
 

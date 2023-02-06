@@ -10,9 +10,15 @@ menuname='upload_meta'
 
 {% block content %}
 
+
+<!--                 unpkg.com/:package@:version/:file  -->
 <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
-<script src="https://unpkg.com/@rjsf/core/dist/react-jsonschema-form.js"></script>
+<!--script src="https://unpkg.com/@rjsf/core/dist/react-jsonschema-form.js"></script-->
+<!--script src="https://unpkg.com/@rjsf/core/dist/core.cjs.production.min.js" crossorigin></script-->
+
+<script src="https://unpkg.com/react-jsonschema-form@1.8.1/dist/react-jsonschema-form.js" crossorigin></script>
+
 
 <div id="app"></div>
 <div id="res"></div>
@@ -23,9 +29,19 @@ menuname='upload_meta'
 
 <div class="card h-100">
   <div class="card-header">
-    <H2>TODO: select a schema for this project</H2>
+    <H3>Select a metadata-schema for project <em>{{ project }}</em></H3>
   </div>
+
   <div class="card-body auto-scroll">
+    <div id="schema-select-div" class="d-none">
+      <label for="schema-select">Schema:</label>
+      <select id="schema-select" class="form-control form-select"></select>
+    </div>
+    <div id="schema-select-alert" class="alert alert-warning d-none">
+      <strong>No schemata found!</strong> Your project doesnt have any metainformation schemata defined. 
+      We advise to define at least a minimal set of attributes!
+    </div>
+    <hr>
     <div id="reactform"></div>
     <button class="btn btn-primary formsubmit" type="submit" name="save" form="metaForm">Save</button>
     <button class="btn btn-primary formsubmit" type="submit" name="continue" form="metaForm">Save & Continue</button>
@@ -36,11 +52,56 @@ menuname='upload_meta'
 <script>
 
   const Form = JSONSchemaForm.default;
-  const schema = {{ schema | safe }};
+  const schemata = {{ schemata | safe }};
   const formdata = {{ data | safe }};
+  const selectedSchema = "{{ selectedSchema | safe }}";
 
   const log = (type) => console.log.bind(console, type);
   let metaForm;
+
+  function renderFormFunction( schema, fd ) {
+    //console.log( "rendering form for schema:" + schema)
+    ReactDOM.render(
+      React.createElement(
+        Form, 
+        {
+          id: "metaForm",
+          schema: schema,
+          formData: fd,
+          onChange: function () {
+            $('.formsubmit').removeAttr('disabled');
+          },
+          onSubmit: formSubmit,
+          ref: form => metaForm = form,
+          onError: log("errors")
+        },
+        React.createElement("div", null)
+      ),
+      document.getElementById("reactform"));
+  }
+
+
+  //create selectbox with available schemafiles for project
+  for( s of Object.keys( schemata )) {
+      $('#schema-select').append(new Option(s, s))
+  }
+  $('#schema-select').val(selectedSchema);
+  $('#schema-select').on('change', function(){
+    schemaId = $(this).val()
+    schemaFile = schemata[ schemaId ]
+    //AJAX call to get the content of schemafile
+    $.ajax({
+      method: "POST",
+      url: '{{ url_for("upload.get_schema") }}',
+      data: schemata[ schemaId ],
+      contentType: "application/json; charset=utf-8",
+      dataType: "json",
+      success: function (schema) {
+        fd = (schemaId == selectedSchema) ? formdata : {}
+        renderFormFunction( schema, fd );
+      }
+    })
+  })
 
   $('.formsubmit').on('click', function () {
     formaction = $(this).attr('name');
@@ -50,10 +111,11 @@ menuname='upload_meta'
     data = {
       data: e.formData,
       coll: "{{ coll }}",
+      selectedSchema: $("#schema-select").val(),
       action: formaction
     }
     $.ajax({
-      type: "POST",
+      method: "POST",
       url: '{{ url_for("upload.upload_meta") }}',
       data: JSON.stringify(data),
       contentType: "application/json; charset=utf-8",
@@ -68,20 +130,28 @@ menuname='upload_meta'
     });
   }
 
-  ReactDOM.render(
-    React.createElement(Form, {
-      id: "metaForm",
-      schema: schema,
-      formData: formdata,
-      onChange: function () {
-        $('.formsubmit').removeAttr('disabled');
-      },
-      onSubmit: formSubmit,
-      ref: form => metaForm = form,
-      onError: log("errors")
-    },
-      React.createElement("div", null)),
-    document.getElementById("reactform"));
+  //when DOM ready trigger initial rendering
+  $( document ).ready(function() {
+    if( Object.keys( schemata ).length > 0 ) {
+      schemaId = $('#schema-select').val()
+      //AJAX call to get the content of schemafile
+      $.ajax({
+        method: "POST",
+        url: '{{ url_for("upload.get_schema") }}',
+        data: schemata[ schemaId ],
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        success: function (schema) {
+          fd = (schemaId == selectedSchema) ? formdata : {}
+          renderFormFunction( schema, fd );
+          $('#schema-select-div').removeClass('d-none');
+        }
+      })
+    }
+    else {
+      $('#schema-select-alert').removeClass('d-none');
+    }
+  });
 
 
 </script>

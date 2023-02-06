@@ -81,13 +81,14 @@ def rmallcollmetaattr(coll, attr):
     flaskcache.cache.delete_memoized(qcollmeta, coll)
 
 def delcollmeta(coll, attr, value=None, unit=None):
-    q = qcollmeta(coll)
-    u = current_user.irods_session.collections.get(coll)
-    for m in q:
-        if m[CollectionMeta.name] == attr:
-            if value is None or m[CollectionMeta.value] == value:
-                if unit is None or m[CollectionMeta.units] == unit:
-                    u.metadata.remove(m[CollectionMeta.name], m[CollectionMeta.value], m[CollectionMeta.units])
+    q = qcollmeta(coll)    
+    with irods_manager.session() as session:
+        u = session.collections.get(coll)
+        for m in q:
+            if m[CollectionMeta.name] == attr:
+                if value is None or m[CollectionMeta.value] == value:
+                    if unit is None or m[CollectionMeta.units] == unit:
+                        u.metadata.remove(m[CollectionMeta.name], m[CollectionMeta.value], m[CollectionMeta.units])
     flaskcache.cache.delete_memoized(qcollmeta, coll)
 
 
