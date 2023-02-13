@@ -57,9 +57,6 @@ menuname='jobs'
                     data-filter-control="{{columns[c]['filtercontrol']}}" 
                     {% if columns[c]['filtercontrol']=="select" %}
                         data-filter-data='url:{{ url_for("jobs.filterdata", field=columns[c]["field"], table="rivm_mat_jobtable") }}'
-                    {% endif %}
-                    {% if columns[c]['field']=="projectid" %}
-                        data-filter-default="{{default_project}}"
                     {% endif %}>
                     {{columns[c]['title']}}
                 </th>
