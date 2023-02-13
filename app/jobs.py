@@ -234,7 +234,7 @@ def jobs():
         result.append(record)
     
     engine = None
-    current_user.settings['default_project'] = filters.get('projectid', '')
+    #current_user.settings['default_project'] = filters.get('projectid', '')
     return { 'rows': result, 'filters': filters, 'total': count_jobs }
 
 
@@ -301,7 +301,7 @@ def pglist():
         result.append(record)
     
     engine = None
-    current_user.settings['default_project'] = filters.get('projectid', '')
+    #current_user.settings['default_project'] = filters.get('projectid', '')
     return { 'rows': result, 'filters': filters, 'total': count_jobs }
 
 @bp.route('_jobrefresh')
