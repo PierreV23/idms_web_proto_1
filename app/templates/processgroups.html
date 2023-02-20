@@ -90,15 +90,18 @@ $(window).on('load', function() {
 
 <div class="d-flex flex-column">
   <div class="d-flex flex-row align-items-top justify-content-between">
-    <div class="form-group row flex-fill">
-      <label class="col-sm-4" for="groupselect">Process group</label>
-      <SELECT class="form-control col-sm-8" id="groupselect">
-        {% for pg in processgroups %}
-        <OPTION {% if processgroup == pg %}SELECTED{% endif %}>{{ pg }}</OPTION>
-        {% endfor %}
-      </SELECT>
+    <form class="p-2 flex-fill">
+      <div class="form-group row flex-fill">
+        <label class="col-sm-4" for="groupselect">Process group</label>
+        <SELECT class="form-control col-sm-8" id="groupselect">
+          {% for pg in processgroups %}
+          <OPTION {% if processgroup == pg %}SELECTED{% endif %}>{{ pg }}</OPTION>
+          {% endfor %}
+        </SELECT>
+      </div>
+    </form>
+    <div class="flex-fill">
     </div>
-<div class="flex-fill"></div>
     <form class="p-2 flex-fill" action="{{ url_for('projects.update_projectsettings') }}" method="POST">
       <div class="form-group row">
         <label class="col-sm-4" for="groupselect">New process group</label>
