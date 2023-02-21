@@ -91,10 +91,28 @@ def delcollmeta(coll, attr, value=None, unit=None):
                         u.metadata.remove(m[CollectionMeta.name], m[CollectionMeta.value], m[CollectionMeta.units])
     flaskcache.cache.delete_memoized(qcollmeta, coll)
 
+def restore_type( str_value, type_name=None ):
+    if type_name:
+        try:
+            # https://stackoverflow.com/questions/11775460/lexical-cast-from-string-to-type
+            #t = getattr(__builtins__, type_name)
+            t = __builtins__[type_name]
+            if not isinstance( t, type):
+                raise ValueError( f"the unit: '{type_name}' is not a type!")
+            value = t(str_value)
+            return value
+        except Exception as e: 
+            print( f"for value: {str_value} and type: {type_name} got Exception {e}" )
+    return str_value
+     
 
 def qcollmetadict(collection):
     q = qcollmeta(collection)
     return {r[CollectionMeta.name]: r[CollectionMeta.value] for r in q}
+
+def qcollmetadict_typed(collection):
+    q = qcollmeta(collection)
+    return {r[CollectionMeta.name]: restore_type(r[CollectionMeta.value], r[CollectionMeta.units]) for r in q}
 
 
 @flaskcache.cache.memoize(timeout=300, make_name=flaskcache.dep_zone)

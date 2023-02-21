@@ -24,9 +24,9 @@ from irods.models import Collection, CollectionMeta
 from irods.column import Criterion
 from irods.meta import iRODSMeta
 from irods.exception import CollectionDoesNotExist
-#from flask_session import Session
 from app.irodssessions import irods_manager
-#from glob import glob
+from ast import literal_eval
+
 
 ATTR_UPLOAD = 'user::upload'
 ATTR_UPLOADNAME = f'{ATTR_UPLOAD}::name'
@@ -34,6 +34,18 @@ ATTR_DATASETID = 'sys::dataset_id'
 ATTR_UPLOADSETTINGS = 'user::upload::settings::'
 ATTR_UPLOADMETA = 'user::upload::meta::'
 ATTR_UPLOADMETASCHEMA = 'user::upload::schemafile'
+
+# remove spacial characters, but there is no need to only allow [a-zA-Z_], quotes, paranthesis, "@" are all valid characters
+# for AVU keys a stronger sanitazition might be desired, allowing only [0-9a-Z_:-]
+def sanitize(s, strong=False):
+    s = s.replace("\t", "    ")
+    if strong:
+        s = re.sub(r"[^0-9a-zA-Z_: -]", "", s).strip()
+        s = s.strip().replace(" ", "_")
+    else:
+        s = re.sub(r"[^ -ÿ]", "", s)
+    return s.strip()
+
 
 class UploadType:
     Pending = 'pending'
@@ -167,7 +179,7 @@ def upload_settings():
         #projectID = data.get('projectID')
         for k, v in data.items():
             if k in FIELDS and v:
-                iqry.scollmetaval(coll, f'{ATTR_UPLOADSETTINGS}{k}', v)
+                iqry.scollmetaval(coll, f'{ATTR_UPLOADSETTINGS}{k}', str(v) )
         if data.get('submitbutton', 'save') == 'next':
             return redirect(url_for('upload.upload_meta', coll=coll))
         else:
@@ -218,7 +230,7 @@ def upload_meta():
         schemata={}
         projectId = iqry.qcollmetaval(collection, f'{ATTR_UPLOADSETTINGS}projectID')
         schemata = getSchemataForProject( projectId )
-        metadata = iqry.qcollmetadict(collection)
+        metadata = iqry.qcollmetadict_typed(collection) #the typed version tries reading the unit field as a python type
         data = { k[len(ATTR_UPLOADMETA):]: v for k, v in metadata.items() if k.startswith(ATTR_UPLOADMETA) }
         selectedSchema = metadata.get(ATTR_UPLOADMETASCHEMA, None)
         return render_template('upload_meta.html', coll=collection, project=projectId, name=name, schemata=schemata, selectedSchema=selectedSchema, data=data)
@@ -232,7 +244,9 @@ def upload_meta():
             if k == ATTR_UPLOADMETASCHEMA:
                 iqry.delcollmeta(collection, k, v)
         for k, v in record.get('data', {}).items():
-            iqry.scollmetaval(collection, f'{ATTR_UPLOADMETA}{k}', v)    
+            key = sanitize(k, True)
+            type_name = type(v).__name__  # gives us just int,str, etc, which we can search in builtins
+            iqry.scollmetaval(collection, f'{ATTR_UPLOADMETA}{key}', sanitize(str(v)), type_name )    
         selectedSchema = record.get('selectedSchema')
         iqry.scollmetaval(collection, f'{ATTR_UPLOADMETASCHEMA}', selectedSchema)              
         return jsonify({'status': 'OK' }), 200
