@@ -179,7 +179,7 @@ $('.nav-pills').on('shown.bs.tab', function(event){
               {% if archival_state.is_offline is sameas true %} btn-outline-danger {% else %}
               btn-outline-primary
               {% endif %}
-              {% if archival_state.is_dataset is sameas false %} btn-outline-dark disabled {% endif %}
+              {% if archival_state.enabled == 'false' %} btn-outline-dark disabled {% endif %}
               " id="archive-tab" data-toggle="tab" href="#archive" role="tab" aria-controls="archive" 
               aria-selected="false">
               Archive
