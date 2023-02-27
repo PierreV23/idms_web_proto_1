@@ -44,7 +44,7 @@ menuname='jobs'
       data-sort-order="desc" 
       data-toggle="table"
       data-auto-refresh='true' 
-      data-auto-refresh-interval=30 
+      data-auto-refresh-interval='30'
       data-show-auto-refresh="false">
         <thead>
             <tr>
@@ -57,6 +57,10 @@ menuname='jobs'
                     data-filter-control="{{columns[c]['filtercontrol']}}" 
                     {% if columns[c]['filtercontrol']=="select" %}
                         data-filter-data='url:{{ url_for("jobs.filterdata", field=columns[c]["field"], table="rivm_mat_jobtable") }}'
+                    {% endif %}
+                    
+                    {% if columns[c]['field']=="projectid" %}
+                           data-filter-default="{{default_project}}"
                     {% endif %}>
                     {{columns[c]['title']}}
                 </th>
@@ -66,9 +70,41 @@ menuname='jobs'
     </table>
 
     <script>
+
         $(function(){
+
+            //console.log( "default_project at page-load: {{default_project}}")
+            //$.get(' url_for("jobs.default_project") ', function(dp) {
+            //    console.log( "default project from backend:" + dp )
+            //})
+
             $table=$('#jobtable')
             $table.bootstrapTable('showAllColumns');
+            
+            //at initial load the default-filter is set by the data-filter-default attribute
+            //at each reload this filter MUST NOT be there anymore, otherwise the table will revert to an old state
+            $('table#jobtable').on('post-header.bs.table', function ($data) {
+                $( ".jobcolumn[data-field=projectid" ).removeAttr( 'data-filter-default' )
+            })
+
+            //This code would set the filter via JS, works in the browser but seems to be overwritten when executed on 'post-body'
+            //https://copyprogramming.com/howto/bootstrap-table-with-filter-control-and-server-site
+            // $('table#jobtable').on('post-body.bs.table', function ($data) {
+            //         console.log("post-body")
+            //         if( initial_bs_load ) {
+            //             initial_bs_load = false
+            //             //https://github.com/wenzhixin/bootstrap-table/issues/5859
+            //             console.log( "default_project: {{default_project}}" )
+            //             console.log( "available filter options: " + $( ".bootstrap-table-filter-control-projectid option" ).length )
+            //             $( ".jobcolumn[data-field=projectid" ).attr( 'data-filter-default', "{{default_project}}")
+            //             $( ".bootstrap-table-filter-control-projectid option[value='{{default_project}}']").prop('selected', true)
+            //             $( ".bootstrap-table-filter-control-projectid" ).val( "{{default_project}}" )
+            //             $( ".bootstrap-table-filter-control-projectid" ).change()
+            //             console.log( "triggered change event")
+            //         }
+            //    }
+            // )
+
             all_columns = {{ columns.values() | map(attribute='field') | list | safe }}
             visible_columns = {{ visible_columns | safe }};
             all_columns.forEach(element => {
@@ -76,20 +112,22 @@ menuname='jobs'
                     $table.bootstrapTable('hideColumn', element)
                 }
             })
-        })
 
-        $('table#jobtable').on('load-success.bs.table', function (e, index, row, $data) {
-            $.get('{{ url_for("jobs.jobs_refresh") }}', function(data) {
-                $('.refresh-time').html(data);
+            $('table#jobtable').on('load-success.bs.table', function (e, index, row, $data) {
+                 $.get('{{ url_for("jobs.jobs_refresh") }}', function(data) {
+                     $('.refresh-time').html(data);
+                 })    
             })
-        })
 
-        $('table#jobtable').on('column-switch.bs.table', function (e, field, checked) {
-            visible_fields = $("th.jobcolumn").map(function(){return $(this).data('field') ;}).get();
-            $.post('{{ url_for("userinfo.usersetting") }}', {
-                attr: 'jobs::columns',
-                value: JSON.stringify(visible_fields)
+            $('table#jobtable').on('column-switch.bs.table', function (e, field, checked) {
+                visible_fields = $("th.jobcolumn").map(function(){return $(this).data('field') ;}).get();
+                $.post('{{ url_for("userinfo.usersetting") }}', {
+                    attr: 'jobs::columns',
+                    value: JSON.stringify(visible_fields)
+                })
             })
+
+
         })
             
         function rowStyle(row, index) {

@@ -198,6 +198,8 @@ def jobs():
     order = request.args.get('order', 'desc')
     
     session, Jobs, Processgroups = dbsession()   
+    current_user.settings['default_project'] = filters.get('projectid', '')
+    session.commit()
 
     # get jobs_query
     jobs_query = session.query(Jobs)
@@ -233,8 +235,6 @@ def jobs():
                 record |= { dbkey: formatted.htmlshort, f'_{dbkey}': formatted.value }
         result.append(record)
     
-    engine = None
-    #current_user.settings['default_project'] = filters.get('projectid', '')
     return { 'rows': result, 'filters': filters, 'total': count_jobs }
 
 
@@ -262,6 +262,7 @@ def pglist():
     sort = request.args.get('sort', 'create_time')
     processgroupid = request.args.get('processgroupid', None, type=str)
     session, Jobs, Processgroups = dbsession()  
+    current_user.settings['default_project'] = filters.get('projectid', '')
 
     # get processgroups (pgs_query) 
     pgs_query = session.query(Processgroups)
@@ -300,8 +301,7 @@ def pglist():
                 record |= { dbkey: formatted.htmlshort, f'_{dbkey}': formatted.value }
         result.append(record)
     
-    engine = None
-    #current_user.settings['default_project'] = filters.get('projectid', '')
+    #engine = None
     return { 'rows': result, 'filters': filters, 'total': count_jobs }
 
 @bp.route('_jobrefresh')
@@ -314,6 +314,7 @@ def jobs_refresh():
     else:
         return jsonify(datafield('refresh_time', result[0][0], 'timestamp').htmlshort)
  
+
 @bp.route('_pgjobs')
 @login_required
 def pgjobs():

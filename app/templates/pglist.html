@@ -44,7 +44,7 @@ menuname='pglist'
       data-sort-order="desc" 
       data-toggle="table"
       data-auto-refresh="true" 
-      data-auto-refresh-interval=30 
+      data-auto-refresh-interval='30'
       data-show-auto-refresh="false">
         <thead>
             <tr>
@@ -57,6 +57,10 @@ menuname='pglist'
                     data-filter-control="{{columns[c]['filtercontrol']}}" 
                     {% if columns[c]['filtercontrol']=="select" %}
                       data-filter-data='url:{{ url_for("jobs.filterdata", field=columns[c]["field"], table="rivm_v_processgroups") }}'
+                    {% endif %}
+                    
+                    {% if columns[c]['field']=="projectid" %}
+                           data-filter-default="{{default_project}}"
                     {% endif %}>
                     {{columns[c]['title']}}
                 </th>
@@ -66,7 +70,18 @@ menuname='pglist'
     </table>
 
     <script>
+
+        openDetails = []
+
         $(function(){
+                        
+            //at initial load the default-filter is set by the data-filter-default attribute
+            //at each reload this filter MUST NOT be there anymore, otherwise the table will revert to an old state
+            $('table#jobtable').on('post-header.bs.table', function ($data) {
+                $( ".jobcolumn[data-field=projectid" ).removeAttr( 'data-filter-default' )
+            })
+
+
             $table=$('#pgtable')
             $table.bootstrapTable('showAllColumns');
             all_columns = {{ columns.values()  | map(attribute='field') | list | safe }}
@@ -76,57 +91,59 @@ menuname='pglist'
                     $table.bootstrapTable('hideColumn', element)
                 }
             })
-        })
 
 
-        $('table#pgtable').on('column-switch.bs.table', function (e, field, checked) {
-            visible_fields = $("th.pgcolumn").map(function(){return $(this).data('field') ;}).get();
-            $.post('{{ url_for("userinfo.usersetting") }}', {
-                attr: 'processgroups::columns',
-                value: JSON.stringify(visible_fields)
-            })
-        })
-
-        openDetails = []
-
-        $('table#pgtable').on('expand-row.bs.table', function (e, index, row, $detail) {
-            openDetails.push(index)
-            $.get('{{ url_for("jobs.pgjobs") }}?processgroupid=' + row['_processgroupid'], function (data) {
-                $detail.html('<table></table>').find('table').bootstrapTable({
-                    autoRefresh: true,
-                    showAutoRefresh: false,
-                    autoRefreshInterval: 30,
-                    columns: data['columns'],
-                    data: data['rows'],
-                    rowStyle: 'rowStyle',
-                    sortName: 'create_time',
-                    sortOrder: 'desc',
-                    customSort: 'sorter'
-                });
-                data['columns'].forEach(function (x, i) {
-                    if (x['visible'] == 'false') {
-                        $detail.find('table').bootstrapTable('hideColumn', x['field'])
-                    }
+            $('table#pgtable').on('column-switch.bs.table', function (e, field, checked) {
+                visible_fields = $("th.pgcolumn").map(function(){return $(this).data('field') ;}).get();
+                $.post('{{ url_for("userinfo.usersetting") }}', {
+                    attr: 'processgroups::columns',
+                    value: JSON.stringify(visible_fields)
                 })
             })
-        })
 
-        $('table#pgtable').on('page-change.bs.table', function () {
-            openDetails = []
-        })
 
-        $('table#pgtable').on('collapse-row.bs.table', function (e, index, row, $detail) {
-            const index_index = openDetails.indexOf(index);
-            openDetails.splice(index_index, 1)
-        })
-
-        $('table#pgtable').on('load-success.bs.table', function (e, index, row, $data) {
-            openDetails.forEach(function (value) {
-                $('table#pgtable').bootstrapTable('expandRow', value)
+            $('table#pgtable').on('expand-row.bs.table', function (e, index, row, $detail) {
+                openDetails.push(index)
+                $.get('{{ url_for("jobs.pgjobs") }}?processgroupid=' + row['_processgroupid'], function (data) {
+                    $detail.html('<table></table>').find('table').bootstrapTable({
+                        autoRefresh: true,
+                        showAutoRefresh: false,
+                        autoRefreshInterval: 30,
+                        columns: data['columns'],
+                        data: data['rows'],
+                        rowStyle: 'rowStyle',
+                        sortName: 'create_time',
+                        sortOrder: 'desc',
+                        customSort: 'sorter'
+                    });
+                    data['columns'].forEach(function (x, i) {
+                        if (x['visible'] == 'false') {
+                            $detail.find('table').bootstrapTable('hideColumn', x['field'])
+                        }
+                    })
+                })
             })
-            $.get('{{ url_for("jobs.jobs_refresh") }}', function(data) {
-                $('.refresh-time').html(data);
-            });
+
+
+            $('table#pgtable').on('page-change.bs.table', function () {
+                openDetails = []
+            })
+
+            $('table#pgtable').on('collapse-row.bs.table', function (e, index, row, $detail) {
+                const index_index = openDetails.indexOf(index);
+                openDetails.splice(index_index, 1)
+            })
+
+            $('table#pgtable').on('load-success.bs.table', function (e, index, row, $data) {
+                openDetails.forEach(function (value) {
+                    $('table#pgtable').bootstrapTable('expandRow', value)
+                })
+                $.get('{{ url_for("jobs.jobs_refresh") }}', function(data) {
+                    $('.refresh-time').html(data);
+                });
+            })
+
+
         })
 
         function sorter(field, sortOrder, data) {
