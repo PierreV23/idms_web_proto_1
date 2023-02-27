@@ -25,7 +25,7 @@ from fs_irods import fs_irods
 from . import flaskcache
 from . import iqry
 #from .ngsruns import db
-from app.irodssessions import irods_manager
+from app.irodssessions import irods_manager, create_session
 
 ATTR_DISPLAYNAME = 'sys::ad::displayName'
 
@@ -205,8 +205,10 @@ class WebUser(UserMixin):
 
     def validate_irods_session(self):
         try:
-            session = irods_manager.session(user=self)
-            session.collections.get("/")
+            # we cannot use the session in the sessionmanager, as it is identified by the username only
+            # to check the credentials, we need to make a new session with the password of this webuser.
+            check_pw_session = create_session(current_app.config["IRODS_ENVS"].get(self.environment, None), self)
+            check_pw_session.collections.get("/")
             self._is_authenticated = True
             return True
         except:
