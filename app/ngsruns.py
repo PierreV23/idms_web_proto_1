@@ -251,7 +251,7 @@ def run_list():
 
 
 @bp.route('_filterdata')
-@cache.cached(timeout=3600, key_prefix=key_zone)
+@cache.cached(timeout=60, key_prefix=key_zone)
 def filterdata():
 # Determine prepopulated filter values for 'select' filters
     field = request.args.get('field', type=str)
