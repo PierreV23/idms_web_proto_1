@@ -103,7 +103,7 @@ $('document').ready(function(){
    $('#runtable').on('click-row.bs.table', function(e, row) {
       selected_id = row.id
       $('#barcode-title').removeClass('d-none')
-      if ({{ projects | safe }}.includes(row.project)) {
+      if ({{ projects | safe }}.includes(row._project)) {
          $('#delete1').prop('disabled', false);
       } else {
          $('#delete1').prop('disabled', true);
