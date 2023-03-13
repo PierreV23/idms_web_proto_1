@@ -770,7 +770,11 @@ def Xclickable_path(path):
 @bp.route('/')
 @login_required
 def collbrowser():
-    path = request.args.get('path', f'/{current_user.irods_zone}/projects', type=str)
+    path = request.args.get('path', None)
+    if path:
+        current_user.settings['path'] = path
+    else:
+        path = current_user.settings.get('path', f'/{current_user.irods_zone}/projects')
     graph_levels = current_user.settings.setdefault('graph_levels', DEFAULT_GRAPH_LEVELS)
     graph_simplify = current_user.settings.setdefault('graph_simplify', 1)
 

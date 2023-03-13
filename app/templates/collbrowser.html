@@ -272,6 +272,10 @@ menuname='collectionbrowser'
       collection = $(this).attr('id')
     }
     set_path();
+    $.post('{{ url_for("userinfo.usersetting") }}', {
+      attr: 'path',
+      value: collection
+    })    
   });
 
   $(document).on('change', '#graph_simplify', function () {
