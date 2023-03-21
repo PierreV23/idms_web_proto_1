@@ -1,0 +1,30 @@
+version: '3'
+services:
+
+  # note; symlink docker-compose.development.yml to
+  # docker-compose.override.yml when developing.
+
+  ngsweb:
+    build: .
+    image: ngsweb
+    environment:
+      FLASK_APP: 'app'
+      PORT: '8080'
+    entrypoint: /bin/bash -c ". /venv/bin/activate && uwsgi --http :$${PORT} --ini ngsweb.test.ini"
+    ports:
+      - 2048:8080
+    volumes:
+      - ./instance/:/instance/
+    restart: unless-stopped
+    logging:
+      driver: syslog
+      options:
+        syslog-address: "udp://rivm-biolg-l01a.rivm.ssc-campus.nl:514"
+        tag: "ngsweb-docker"
+        syslog-format: "rfc3164"
+    networks:
+      - ngsweb_network
+
+networks:
+  ngsweb_network:
+    driver: bridge

@@ -10,3 +10,4 @@ static/images/*
 .nfs*
 *.crt
 .spyproject
+docker-compose.override.yml
