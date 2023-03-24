@@ -6,7 +6,7 @@ Created on Mon Nov 18 13:49:12 2019
 @author: wierinve
 """
 
-from flask import Blueprint, render_template, request, url_for, jsonify, redirect, flash
+from flask import Blueprint, render_template, request, url_for, jsonify, redirect, flash, current_app
 from flask_login import current_user, login_required
 from irods.exception import DataObjectDoesNotExist
 from irods.models import Collection, CollectionMeta
@@ -40,6 +40,16 @@ ATTR_RUNSHEET_CREATETIME = '{}create_time'.format(ATTR_RUNSHEET_PREFIX)
 
 MAX_READ_LOG_BYTES = 10000000
 
+
+def my_env():
+    """Return environment the current_user is logged in to 
+       or None if not set
+    Returns:
+        str: environment name
+    """    
+    if hasattr(current_user, 'environment'):
+        return current_user.environment        
+    return None
 class JobsDBUnavailableException(Exception):
     pass
 
@@ -49,45 +59,38 @@ class JobsDBAlchemy:
     def __init__(self):
         # Define a SQLAlchemy base class to wrap.
         self._sessions = {}
-        self.default_env = None
 
-
-    def init_app(self, app):
-        for env_name, env in app.config.get('IRODS_ENVS', {}).items():
-            if self.default_env is None and env.get('default', False):
-                # Env in config with 'default' attr is assumed as default (e.g. 'Productie').
-                self.default_env = env_name
-            db_connect = env.get('jobs_db')
+    def connect(self):
+        """Connect to Jobs DB for current_user.environment
+        """        
+        env = my_env()
+        if env:
+            env_params = current_app.config.get('IRODS_ENVS', {}).get(env)
+            self.remove_session()
+            db_connect = env_params.get('jobs_db')
             if db_connect:
                 try:
                     engine = create_engine(db_connect, connect_args={'connect_timeout': 2})
                     engine.connect()
                 except OperationalError:
-                    app.logger.error(f'Cannot create JOBS DB engine for {env_name}')
-                    # Unable to create connection to db. Continue to create
-                    # db engines for other envs.
-                    continue
+                    app.logger.error(f'Cannot create JOBS DB engine for {env}')
+                    return
                 _sessionmaker = sessionmaker(autocommit=False, autoflush=False,
                                             bind=engine)
-                self._sessions[env_name] = scoped_session(_sessionmaker, 
-                    scopefunc=greenlet.getcurrent)
+                self._sessions[env] = scoped_session(_sessionmaker, 
+                    scopefunc=greenlet.getcurrent)        
+
+
+    def init_app(self, app):
         app.teardown_request(self.remove_session)
 
-    def envs(self):
-        return list(self._sessions)
-
-
-    def session(self, environment=None):
+    def session(self):
         """Return session. If no specific environment is requested, use the one 
         defined in the user object, eventually fall back to `default_env`."""
-        env = environment
-        if environment is None:
-            if hasattr(current_user, 'environment'):
-                env = current_user.environment
-            else:
-                env = self.default_env
-        
+        env = my_env()      
         try:
+            if not env in self._sessions:
+                self.connect()
             return self._sessions[env]()
         except KeyError:
             raise JobsDBUnavailableException(f'env={env}')
@@ -169,15 +172,29 @@ def processgroupprocs():
 
 def dbsession():
 
-    session = db.session()
-    engine = session.bind.engine
-    meta = MetaData()
-    meta.reflect(bind=engine, views=True, only=['rivm_mat_jobtable', 'rivm_v_processgroups'])
+    success = False
+    counter = 0
+    while not success and counter<3:
+        session = db.session()
+        engine = session.bind.engine
+        meta = MetaData()
+        meta.reflect(bind=engine, views=True, only=['rivm_mat_jobtable', 'rivm_v_processgroups'])
 
-    # retrieve tables
-    Jobs = Table("rivm_mat_jobtable", meta, autoload_with=engine)
-    Processgroups = Table("rivm_v_processgroups", meta, autoload_with=engine)
-   
+        # retrieve tables
+        Jobs = Table("rivm_mat_jobtable", meta, autoload_with=engine)
+        Processgroups = Table("rivm_v_processgroups", meta, autoload_with=engine)
+        # Test query to see if session restart is required
+        # This fixes permission errors when the materialized view for jobs
+        # is recreated
+        try:
+            list(session.query(Jobs).limit(1))
+            success = True
+#        except psycopg2.errors.InsufficientPrivilege:
+        except:
+            counter += 1
+            db.connect()
+    if not success:
+        raise JobsDBUnavailableException(f'env={current_user.environment}')
     return session, Jobs, Processgroups
 
 @bp.route('jobpage')
