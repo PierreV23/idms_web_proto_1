@@ -10,7 +10,7 @@ import csv
 from flask import Blueprint, render_template, request, url_for, send_file, jsonify
 from flask_login import current_user, login_required
 import urllib.parse
-from irods.exception import CAT_NO_ACCESS_PERMISSION
+from irods.exception import CAT_NO_ACCESS_PERMISSION, SYS_FILE_DESC_OUT_OF_RANGE
 
 
 BP = Blueprint('docviewer', __name__, url_prefix='/docviewer')
@@ -42,7 +42,7 @@ def test_access():
         objectfile = obj.open('r')
         access = 'GRANTED'
         objectfile.close()
-    except CAT_NO_ACCESS_PERMISSION:
+    except (CAT_NO_ACCESS_PERMISSION, SYS_FILE_DESC_OUT_OF_RANGE):
         access = 'DENIED'
     return jsonify({
         'access': access
