@@ -41,6 +41,15 @@
       });
     }
 
+    function restartProcessGroup() {
+      $.get('{{ url_for('collbrowser.startprocess') }}', {
+        collection: '{{ collection }}',
+        processgroupguid: '{{ archival_state.processgroupguid }}'
+      }, function(data) {
+        load_actions();
+        load_graph();
+      });
+    }
 
     function overrideDatasetLocal() {
         var selected = $( "#keepLocalSwitch" ).is(':checked')
@@ -196,11 +205,19 @@ $('.nav-pills').on('shown.bs.tab', function(event){
         {% endif %}
         {% if archival_state.is_dataset is sameas true %}
         <li class="nav-item mx-2">
+          {% if archival_state.active_pg %}
+          <button class="btn btn-outline-success" id="pipeline-tab"
+            data-toggle="tab" href="#pipeline" role="tab"
+            aria-controls="pipeline" aria-selected="false">
+            Active Process(es)
+          </button>
+          {% else %}
           <button class="btn btn-outline-primary" id="pipeline-tab"
             data-toggle="tab" href="#pipeline" role="tab"
             aria-controls="pipeline" aria-selected="false">
-            Pipeline
+            Processes
           </button>
+          {% endif %}
         </li>
         {% endif %}
         <li class="nav-item mx-2">
@@ -361,17 +378,24 @@ $('.nav-pills').on('shown.bs.tab', function(event){
               <h3>Starting up processgroup:<p>{{ processgroupid }}</h3>
             {% endif %}
           {% else %}
-          <div><b>Processgroup</b></div>
-                <select class="custom-select" style="width:100%;" id="processgroupSelect">
+            <div><span><a href="{{ archival_state.runsheetid.url }}">
+              <button class="btn btn-outline-secondary button12" {% if not archival_state.runsheetid %}disabled{% endif %}
+              >Process details</button></a>
+              <a><button class="btn btn-outline-secondary button12" {% if not archival_state.failed_pg %}disabled{% endif %} onClick="restartProcessGroup()">
+              Restart processgroup
+              </button></a></span>
+            </div>
+          <div><b>Start Processgroup</b></div>
+                <select class="custom-select" style="width:100%;" id="processgroupSelect" {% if not processgroups or archival_state.complete != 'true' %}disabled{% endif %}>
                   {% for p in processgroups | sort %}
                   <option {% if p == processgroupid %}selected{% endif %}>{{ p }}</option>
                   {% endfor %}
                 </select>
 
-                <div><button class="btn btn-outline-secondary button12" {% if not processgroups %}disabled{% endif %} onClick="startProcessGroup()">Start processgroup</button>
+                <div><button class="btn btn-outline-secondary button12" {% if not processgroups or archival_state.complete != 'true' %}disabled{% endif %} onClick="startProcessGroup()">Start processgroup</button>
                 </div>
            
-           <div class="top5"><b>Single process</b></div>
+           <div class="top5"><b>Start Single process</b></div>
                 <select class="custom-select" style="width:100%;" id="processSelect">
                   {% for p in processes | sort %}
                   <option {% if p == processid %}selected{% endif %}>{{ p }}</option>

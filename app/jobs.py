@@ -37,6 +37,7 @@ ATTR_RUNSHEET_PREFIX = 'sys::runsheet::'
 ATTR_RUNSHEET_STATE = '{}state'.format(ATTR_RUNSHEET_PREFIX)
 ATTR_RUNSHEET_ID = '{}id'.format(ATTR_RUNSHEET_PREFIX)
 ATTR_RUNSHEET_CREATETIME = '{}create_time'.format(ATTR_RUNSHEET_PREFIX)
+ATTR_RUNSHEET_PROCESSGROUPGUID = '{}processgroupid'.format(ATTR_RUNSHEET_PREFIX)
 
 MAX_READ_LOG_BYTES = 10000000
 
@@ -444,16 +445,23 @@ def processgraph():
 def jobdetails():
     #this could be either the object-name of the yaml file or meta information attached to the collection
     jobnaam = request.args.get('name', '', type=str)
+    pg = request.args.get('pg', '', type=str)
     
     details = {}
     metadata = {}
 
     # the jobnaam is refering to metainfo on a collection
-    q = iqry.qcollbystaticmeta(ATTR_RUNSHEET_ID, jobnaam)
-    if len(q) != 1:
+    q = []
+    if jobnaam:
+        q = iqry.qcollbystaticmeta(ATTR_RUNSHEET_ID, jobnaam)
+    elif pg:
+        q = iqry.qcollbystaticmeta(ATTR_RUNSHEET_PROCESSGROUPGUID, pg)
+    if len(q) < 1:
         flash(f'Cannot find unique job collection for {jobnaam}', 'error')
         return redirect(url_for('jobs.show_jobs'))
     runsheet = q[0][Collection.name]
+    if not jobnaam:
+        jobnaam = iqry.qcollmetaval(runsheet, ATTR_RUNSHEET_ID)
     metadata = iqry.qcollmetadict(runsheet)
     details['Runsheet collection'] = datafield('runsheet',  runsheet, 'irods_collection')
     details['Create time'] = datafield('create_time', float(metadata[ATTR_RUNSHEET_CREATETIME]), 'timestamp')

@@ -75,6 +75,10 @@ class data_base():
         self.value = value
         self.datatype = datatype
 
+    @property
+    def url(self):
+        return ''
+
     @staticmethod
     def factory(**kwargs):
         return data_base(**kwargs)
@@ -282,7 +286,11 @@ class data_runsheet(data_base):
     @property
     def htmlstring(self):
         runsheet_id = re.sub('-runsheet.yaml', '', self.value)
-        return '<a href={0}?name={1} data-toggle="tooltip" title="{1}">{2}</a>'.format(url_for('jobs.jobdetails'), self.value, runsheet_id)
+        return '<a href="{0}" data-toggle="tooltip" title="{1}">{2}</a>'.format(self.url, self.value, runsheet_id)
+
+    @property
+    def url(self):
+        return f'{url_for("jobs.jobdetails")}?name={self.value}'
 
     @staticmethod
     def factory(**kwargs):
@@ -341,12 +349,11 @@ class data_processgroupid(data_base):
 
     @property
     def htmlstring(self):
-        s = '<a href={0}?processgroupid={1}>{1}</a>'.format(url_for('jobs.show_pg'), self.value)
-        return s
+        return '<a href={0}?pg={1}>{1}</a>'.format(url_for('jobs.jobdetails'), self.value)
 
     @property
     def htmlshort(self):
-        return '<a href={0}?processgroupid={1} data-toggle="tooltip" title="{1}">{2}</a>'.format(url_for('jobs.show_pg'), self.value, self.value[:8])
+        return '<a href={0}?pg={1} data-toggle="tooltip" title="{1}">{2}</a>'.format(url_for('jobs.jobdetails'), self.value, self.value[:8])
         
     @staticmethod
     def factory(**kwargs):
