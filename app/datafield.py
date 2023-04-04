@@ -345,19 +345,19 @@ class data_process(data_base):
         return data_process(**kwargs)
 
 
-class data_processgroupid(data_base):
+class data_processgroupguid(data_base):
 
     @property
     def htmlstring(self):
-        return '<a href={0}?pg={1}>{1}</a>'.format(url_for('jobs.jobdetails'), self.value)
+        return '<a href={0}?processgroupguid={1}>{1}</a>'.format(url_for('jobs.jobdetails'), self.value)
 
     @property
     def htmlshort(self):
-        return '<a href={0}?pg={1} data-toggle="tooltip" title="{1}">{2}</a>'.format(url_for('jobs.jobdetails'), self.value, self.value[:8])
+        return '<a href={0}?processgroupguid={1} data-toggle="tooltip" title="{1}">{2}</a>'.format(url_for('jobs.jobdetails'), self.value, self.value[:8])
         
     @staticmethod
     def factory(**kwargs):
-        return data_processgroupid(**kwargs)
+        return data_processgroupguid(**kwargs)
 
 
 class data_url(data_base):

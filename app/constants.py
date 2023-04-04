@@ -27,7 +27,7 @@ JOB_PAGE_SIZE = 25
 
 JOB_FIELDS = {
     'sys::runsheet::description': ('Description', 'text'),
-    'sys::runsheet::processgroupid': ('GroupInstance', 'processgroupid'),
+    'sys::runsheet::processgroupid': ('GroupInstance', 'processgroupguid'),
     'sys::run::start_time': ('Start time', 'timestamp'),
     'sys::run::finish_time': ('End time', 'timestamp'),
     'sys::runsheet::projectID': ('projectID', 'projectid'),

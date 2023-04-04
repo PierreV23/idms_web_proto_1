@@ -153,12 +153,13 @@ def processgroupprocs():
         'sys::runsheet::id': ('runsheet', 'runsheet'),
         'sys::runsheet::description' : ('description', 'text'),
         'sys::runsheet::state': ('state', 'text'),
+        'sys::run::result': ('result', 'text'),
         'user::run::exit_code': ('result', 'text'),
         'sys::run::start_time': ('start', 'timestamp'),
         'sys::run::finish_time': ('end', 'timestamp'),
     }
-    processgroupid = request.args.get('processgroupid')
-    q = iqry.qcollbymeta('sys::runsheet::processgroupid', processgroupid)
+    processgroupguid = request.args.get('processgroupguid')
+    q = iqry.qcollbymeta('sys::runsheet::processgroupid', processgroupguid)
     result = []
     for r in q:
         metadata = iqry.qcollmetadict(r[Collection.name])
@@ -371,12 +372,12 @@ def pgjobs():
 @bp.route('/pg')
 @login_required
 def show_pg():
-    processgroupid = request.args.get('processgroupid', None, type=str)
+    processgroupguid = request.args.get('processgroupguid', None, type=str)
     default_project = current_user.settings.get('default_project', '')
     visible_columns = current_user.settings.get('processgroups::columns', [v["field"] for v in PG_FIELDS.values()])
     current_user.settings['jobs::view'] = 'processgroups'
     return render_template('pglist.html', default_project=default_project
-                            , processgroupid=processgroupid, columns=PG_FIELDS, visible_columns=visible_columns)
+                            , processgroupguid=processgroupguid, columns=PG_FIELDS, visible_columns=visible_columns)
 
 
 @bp.route('/')
@@ -445,7 +446,7 @@ def processgraph():
 def jobdetails():
     #this could be either the object-name of the yaml file or meta information attached to the collection
     jobnaam = request.args.get('name', '', type=str)
-    pg = request.args.get('pg', '', type=str)
+    processgroupguid = request.args.get('processgroupguid', '', type=str)
     
     details = {}
     metadata = {}
@@ -454,8 +455,8 @@ def jobdetails():
     q = []
     if jobnaam:
         q = iqry.qcollbystaticmeta(ATTR_RUNSHEET_ID, jobnaam)
-    elif pg:
-        q = iqry.qcollbystaticmeta(ATTR_RUNSHEET_PROCESSGROUPGUID, pg)
+    elif processgroupguid:
+        q = iqry.qcollbystaticmeta(ATTR_RUNSHEET_PROCESSGROUPGUID, processgroupguid)
     if len(q) < 1:
         flash(f'Cannot find unique job collection for {jobnaam}', 'error')
         return redirect(url_for('jobs.show_jobs'))
@@ -470,9 +471,9 @@ def jobdetails():
         'sys::run::start_time': ('Start time', 'timestamp'),
         'sys::run::finish_time': ('End time', 'timestamp'),
         'sys::runsheet::projectID': ('Project ID', 'projectid'),
-        'sys::runsheet::processID': ('Process ID', 'processid'),
+        'sys::runsheet::processID': ('Process ID', 'process'),
         'sys::runsheet::description': ('Description', 'text'),
-        'sys::runsheet::processgroupid': ('Processgroup Instance', 'processgroupid'),
+        'sys::runsheet::processgroupid': ('Processgroup Instance', 'processgroupguid'),
         'sys::run::exit_code': ('Result', 'int'),
 #        'sys::runsheet::input_collection': ('Input Collection', 'irods_collection'),
         'sys::run::output_collection': ('Output Collection', 'irods_collection'),
