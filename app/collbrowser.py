@@ -44,6 +44,9 @@ ATTR_PROCESSID = 'processID'
 ATTR_PROCESSGROUPID = 'processgroupID'
 ATTR_USER_STATE = 'user::data::state'
 ATTR_SYS_STATE = 'sys::data::state'
+ATTR_RUNSHEET_PROCESSGROUPGUID = 'sys::runsheet::processgroupid'
+ATTR_RUNSHEET_STATE = 'sys::runsheet::state'
+ATTR_RUNSHEET_ID = 'sys::runsheet::id'
 
 #TODO: use constants.py (role irods_cronjobs)
 ATTR_ARCHIVE_PREFIX = 'sys::archive::'
@@ -213,7 +216,6 @@ def setoverride():
 
 
 @bp.route('_actions')
-@login_required
 def coll_actions():
     path = request.args.get('path','/', type=str)
     coll_name = path.split('/')[-1]
@@ -256,8 +258,24 @@ def coll_actions():
     processes = projects.get_processlist(projectid)
     processgroups = projects.get_processgrouplist(projectid)
     processrequest = iqry.qcollmetaval(path, ATTR_PROCESSREQUEST, "false")
+    myprocessgroupguid = iqry.qcollmetaval(path, ATTR_RUNSHEET_PROCESSGROUPGUID, "")
+    myrunsheetid = iqry.qcollmetaval(path, ATTR_RUNSHEET_ID, "")
+
+    # Try to detect if this collection is part of a failed/incomplete processgroup
+    # This is true if one of the processes in the group has state NOTRUN
+    active_pg = False
+    failed_pg = False
+    if myprocessgroupguid:
+        colls = iqry.qcollbymeta(ATTR_RUNSHEET_PROCESSGROUPGUID, myprocessgroupguid)
+        for coll in colls:
+            runsheet_state = iqry.qcollmetaval(coll[Collection.name], ATTR_RUNSHEET_STATE, 'OK')
+            if runsheet_state == 'notrun':
+                failed_pg = True
+            if runsheet_state not in ['done', 'error', 'notrun']:
+                active_pg = True
 
     archival_state = {
+        "complete": iqry.qcollmetaval(path, "complete", "false"),
         "enabled": iqry.qcollmetaval(path, ATTR_ARCHIVE_ENABLE, "false"),
         "is_dataset": is_dataset,
         "is_offline": is_offline,
@@ -265,7 +283,11 @@ def coll_actions():
         "status": status,
         "min_copies": min_copies,
         "keep_online": keep_online,
-        "keep_online_till": keep_online_till
+        "keep_online_till": keep_online_till,
+        "active_pg": active_pg,
+        "failed_pg": failed_pg,
+        "runsheetid": datafield('runsheetid', myrunsheetid, 'runsheet'),
+        "processgroupguid": myprocessgroupguid
     }
 
     user_coll_state = iqry.qcollmetaval(path, ATTR_USER_STATE, "")
@@ -290,15 +312,23 @@ def startprocess():
 
     processid = request.args.get('processid')
     processgroupid = request.args.get('processgroupid')
+    processgroupguid = request.args.get('processgroupguid')
     if processid:
         iqry.scollmetaval(collection, ATTR_PROCESSID, processid)
+        iqry.scollmetaval(collection, ATTR_PROCESSREQUEST, current_user.username)
     elif processgroupid:
         iqry.rmallcollmetaattr(collection, ATTR_PROCESSID)
         iqry.scollmetaval(collection, ATTR_PROCESSGROUPID, processgroupid)
+        iqry.scollmetaval(collection, ATTR_PROCESSREQUEST, current_user.username)
+    elif processgroupguid:
+        # Restart all NOTRUN tasks of current processgroup
+        pg_collections = iqry.qcollbymeta(ATTR_RUNSHEET_PROCESSGROUPGUID, processgroupguid)
+        for coll in pg_collections:
+            if iqry.qcollmetaval(coll[Collection.name], ATTR_RUNSHEET_STATE) == 'notrun':
+                iqry.scollmetaval(coll[Collection.name], ATTR_RUNSHEET_STATE, 'depends')
+        flash('RESTART', 'action_panel')
     else:
         return 'FAILED'
-    iqry.scollmetaval(collection, ATTR_PROCESSREQUEST, current_user.username)
-
     return 'DONE'
 
 @bp.route('_collist')
@@ -711,8 +741,11 @@ def add_items(path, level, active):
         with irods_manager.session() as session:
             query = session.query(Collection.id).filter(
                 Criterion('=',Collection.parent_name, path)).count(Collection.id)
-            for a in query:
-                count = a[Collection.id]
+            try:
+                for a in query:
+                    count = a[Collection.id]
+            except:
+                count = 0
         return count
         
     result = ''

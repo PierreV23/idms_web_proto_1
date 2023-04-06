@@ -2,7 +2,7 @@ JOB_FIELDS = {
     'sys::runsheet::id': {'title': 'Name', 'format': 'runsheet', 'field': 'id', 'sortable': 'true', 'visible': 'true'},
     'sys::runsheet::state': {'title': 'State', 'format': 'text', 'field': 'state', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
     'sys::runsheet::description': {'title': 'Description', 'format': 'text', 'field': 'description', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'input'},
-    'sys::runsheet::processgroupid': {'title': 'Group ID', 'format': 'processgroupid', 'field': 'processgroupid', 'sortable': 'true', 'visible': 'true'},
+    'sys::runsheet::processgroupid': {'title': 'Group ID', 'format': 'processgroupguid', 'field': 'processgroupid', 'sortable': 'true', 'visible': 'true'},
     'sys::runsheet::create_time': {'title': 'Create time', 'format': 'timestamp', 'field': 'create_time', 'sortable': 'true', 'visible': 'true'},
     'sys::run::start_time': {'title': 'Start time', 'format': 'timestamp', 'field': 'start_time', 'sortable': 'true', 'visible': 'true'},
     'sys::run::finish_time': {'title': 'End time', 'format': 'timestamp', 'field': 'finish_time', 'sortable': 'true', 'visible': 'true'},
@@ -12,7 +12,7 @@ JOB_FIELDS = {
 }
 
 PG_FIELDS = {
-    'processgroupid': {'title': 'Group ID', 'format': 'processgroupid', 'field': 'processgroupid', 'sortable': 'true', 'visible': 'true'},
+    'processgroupguid': {'title': 'Group ID', 'format': 'processgroupguid', 'field': 'processgroupid', 'sortable': 'true', 'visible': 'true'},
     'state': {'title': 'Group state', 'format': 'text', 'field': 'state', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
     'states': {'title': 'Process states', 'format': 'text', 'field': 'states', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'input'},
     'exit_code': {'title': 'Result', 'format': 'int', 'field': 'exit_code', 'sortable': 'false', 'visible': 'true'},
@@ -28,7 +28,7 @@ PG_JOB_FIELDS = {
     'sys::runsheet::id': {'title': 'Name', 'format': 'runsheet', 'field': 'id', 'sortable': 'true', 'visible': 'true'},
     'sys::runsheet::state': {'title': 'State', 'format': 'text', 'field': 'state', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
     'sys::runsheet::description': {'title': 'Description', 'format': 'text', 'field': 'description', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'input'},
-    'sys::runsheet::processgroupid': {'title': 'Group ID', 'format': 'processgroupid', 'field': 'processgroupid', 'sortable': 'true', 'visible': 'false'},
+    'sys::runsheet::processgroupid': {'title': 'Group ID', 'format': 'processgroupguid', 'field': 'processgroupid', 'sortable': 'true', 'visible': 'false'},
     'sys::runsheet::create_time': {'title': 'Create time', 'format': 'timestamp', 'field': 'create_time', 'sortable': 'true', 'visible': 'true'},
     'sys::run::start_time': {'title': 'Start time', 'format': 'timestamp', 'field': 'start_time', 'sortable': 'true', 'visible': 'true'},
     'sys::run::finish_time': {'title': 'End time', 'format': 'timestamp', 'field': 'finish_time', 'sortable': 'true', 'visible': 'true'},
