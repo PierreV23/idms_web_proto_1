@@ -10,9 +10,7 @@ services:
     environment:
       FLASK_APP: 'app'
       PORT: '8080'
-    entrypoint: /bin/bash -c ". /venv/bin/activate && uwsgi --http :$${PORT} --ini ngsweb.test.ini"
-    ports:
-      - 2048:8080
+    entrypoint: /bin/bash -c ". /venv/bin/activate && uwsgi --ini ngsweb.ini"
     volumes:
       - ./instance/:/instance/
     restart: unless-stopped
@@ -28,3 +26,7 @@ services:
 networks:
   ngsweb_network:
     driver: bridge
+
+# to expose the socket
+volumes:
+  - /srv/docker/sockets/ngsweb:/opt/ngsweb/sockets
