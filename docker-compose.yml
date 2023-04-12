@@ -10,7 +10,9 @@ services:
     environment:
       FLASK_APP: 'app'
       PORT: '8080'
-    entrypoint: /bin/bash -c ". /venv/bin/activate && uwsgi --ini ngsweb.ini --http :3333"
+    entrypoint: /bin/bash -c ". /venv/bin/activate && uwsgi --ini ngsweb.ini --http 0.0.0.0:3456"
+    ports:
+      - 3333:3456
     volumes:
       - ./instance/:/instance/
     restart: unless-stopped
