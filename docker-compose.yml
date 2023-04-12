@@ -10,9 +10,10 @@ services:
     environment:
       FLASK_APP: 'app'
       PORT: '8080'
-    entrypoint: /bin/bash -c ". /venv/bin/activate && uwsgi --ini ngsweb.ini"
+    entrypoint: /bin/bash -c ". /venv/bin/activate && uwsgi --ini ngsweb.ini --enable-threads"
     volumes:
       - ./instance/:/instance/
+      - /srv/docker/sockets/ngsweb:/opt/ngsweb/sockets
     restart: unless-stopped
     logging:
       driver: syslog
@@ -26,7 +27,3 @@ services:
 networks:
   ngsweb_network:
     driver: bridge
-
-# to expose the socket
-volumes:
-  - /srv/docker/sockets/ngsweb:/opt/ngsweb/sockets
