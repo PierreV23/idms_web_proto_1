@@ -31,4 +31,5 @@ COPY --from=build /venv /venv
 # activated:
 SHELL ["/bin/bash", "-c"]
 
-COPY . .
+WORKDIR /ngsweb
+COPY . /ngsweb/
