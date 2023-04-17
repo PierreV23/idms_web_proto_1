@@ -135,11 +135,12 @@ def qcolldataobjects(collection):
 
 
 @flaskcache.cache.memoize(timeout=120, make_name=flaskcache.dep_zone)
-def qcollbymeta(attr, value):
+def qcollbymeta(attr, value=None):
     with irods_manager.session() as session:
         q = session.query(Collection).filter(
-            Criterion('=', CollectionMeta.name, attr)).filter(
-            Criterion('=', CollectionMeta.value, value))
+            Criterion('=', CollectionMeta.name, attr))
+        if value:
+            q = q.filter(Criterion('=', CollectionMeta.value, value))
         result = [r for r in q]
     return result
 

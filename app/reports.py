@@ -8,6 +8,7 @@ Created on Mon Jun  8 11:01:32 2020
 
 import math
 import io
+import json
 from flask import Blueprint, render_template, url_for, send_file
 from flask_login import current_user, login_required
 from irods.models import Collection, CollectionMeta, Resource
@@ -15,6 +16,7 @@ from irods.column import Criterion
 from app.projects import get_projectlist
 from app.datafield import datafield
 from app.irodssessions import irods_manager
+from app import iqry, stats
 
 RESOURCES_OMIT = ('demoResc', 'bundleResc')
 
@@ -105,3 +107,66 @@ def space_report():
     projectlist, resources = get_space_usage()
     return render_template('report_space.html', projectlist=projectlist, 
                            resources=resources)
+
+def inter2(a, b):
+    """Return intersection of two list of collection objects
+
+    Args:
+        a (list): List of Collection objects
+        b (list): List of Collection objects
+
+    Returns:
+        list: List of Collection objects (a & b)
+    """    
+    aa = { x[Collection.id]: x for x in a }
+    ai = set(aa)
+    bi = { x[Collection.id] for x in b }
+    ids = ai & bi
+    return [ aa[i] for i in ids ]
+
+@bp.route('/seqdata')
+def sequencer_data():
+    if not current_user.is_admin:
+        return('<TR><TD COLSPAN=3>Access denied</TD></TR>')
+    with irods_manager.session() as session:
+        # FIND SERIALS
+        qry = session.query(CollectionMeta.value).filter(
+            Criterion('=', CollectionMeta.name, 'sequencing::serial')
+        )
+        serials = { s[CollectionMeta.value] for s in qry }
+        # Find last import
+        imports = iqry.qcollbymeta('ID')
+        sequencer_data = []
+        for serial in serials:
+            record = {
+                'serial': serial
+            }
+            mycolls = iqry.qcollbymeta('sequencing::serial', serial)
+            rootcolls = inter2(imports, mycolls)
+            rootcolls = sorted(rootcolls, key = lambda x: x[Collection.create_time])
+            if rootcolls:
+                newest = rootcolls[-1]
+                record['time'] = newest[Collection.create_time].strftime('%Y-%m-%d %H:%M:%S')
+                for f in [ 'brand', 'host', 'platform' ]:
+                    record[f] = iqry.qcollmetaval(newest[Collection.name], f'sequencing::{f}')
+            record['runs'] = len(rootcolls)
+            sequencer_data.append(record)
+        columns = [
+            { "field": "serial", "title": "Serial", "sortable": True },
+            { "field": "time", "title": "Last data uploaded", "sortable": True },
+            { "field": "brand", "title": "Sequencing brand",  "sortable": True },
+            { "field": "platform", "title": "Sequencing platform",  "sortable": True },
+            { "field": "host", "title": "Sequencing host",  "sortable": True },
+            { "field": "runs", "title": "Runs", "sortable": True}
+        ]
+        data = {
+            'id': 'sequencing_report',
+            'columnsJSON': json.dumps(columns),
+            'dataJSON': json.dumps(sequencer_data),
+        }
+    return render_template('bootstraptable.html', data=data)
+
+@bp.route('/sequencers')
+@login_required
+def sequence():
+    return render_template('report_sequencers.html')
