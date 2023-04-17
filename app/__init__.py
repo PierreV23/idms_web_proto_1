@@ -8,9 +8,10 @@ from requests.auth import HTTPBasicAuth
 from flask import Flask, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, LoginManager, login_required, logout_user
 from flask_migrate import Migrate
-from app.models import WebUser
+from app.models import WebUser, AuthException
 import logging.config
 import irods.exception
+from Crypto.PublicKey import RSA
 
 from . import auth, collbrowser, jobs, docviewer
 from . import projects, cluster, admin, reports, userinfo
@@ -58,6 +59,30 @@ try:
 except ModuleNotFoundError:
     init_dbs()
 
+def create_keys():
+    key = RSA.generate(2048)
+    private_key = key.export_key()
+    file_out = open(os.path.join(app.instance_path, "private.pem"), "wb")
+    file_out.write(private_key)
+    file_out.close()
+
+    public_key = key.publickey().export_key()
+    file_out = open(os.path.join(app.instance_path, "receiver.pem"), "wb")
+    file_out.write(public_key)
+    file_out.close()
+
+try:
+    public_key = RSA.import_key(open("instance/receiver.pem").read())
+    private_key = RSA.import_key(open("instance/private.pem").read())
+except:
+    create_keys()
+    public_key = RSA.import_key(open("instance/receiver.pem").read())
+    private_key = RSA.import_key(open("instance/private.pem").read())
+
+app.config.from_mapping(
+    RSA_PRIVATE_KEY=private_key,
+    RSA_PUBLIC_KEY=public_key,
+)
 
 app.register_blueprint(auth.bp)
 app.register_blueprint(collbrowser.bp)
@@ -182,9 +207,21 @@ def inject_header_message():
 #         pass
 
 @app.errorhandler(irods.exception.PAM_AUTH_PASSWORD_FAILED)
-def invalid_session(e):
+def invalid_session1(e):
     """Session may be stale. Destroy it and redirect to login page."""
     app.logger.info(f"Invalid session: user {current_user.username} on {current_user.environment} environment")
+    return auth.logout()
+
+@app.errorhandler(irods.exception.NetworkException)
+def invalid_session2(e):
+    """Session may be stale. Destroy it and redirect to login page."""
+    app.logger.info(f"Invalid session: user {current_user.username} on {current_user.environment} environment")
+    return auth.logout()
+
+@app.errorhandler(AuthException)
+def auth_failed(e):
+    """Destroy session and redirect to login page."""
+    app.logger.info(f"Auth Error: user {current_user.username} on {current_user.environment} environment")
     return auth.logout()
 
 # irods.exception.CAT_NO_ACCESS_PERMISSION

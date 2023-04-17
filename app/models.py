@@ -15,26 +15,34 @@ import time
 import logging
 
 from Crypto.Hash import MD4
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
 from flask_login import UserMixin
 from flask import session, current_app
 from flask_login import current_user
 from irods.models import User, UserGroup, UserMeta
 from irods.column import Criterion
-from irods.meta import iRODSMeta
 from fs_irods import fs_irods
 from . import flaskcache
 from . import iqry
-#from .ngsruns import db
 from app.irodssessions import irods_manager, create_session
 
 ATTR_DISPLAYNAME = 'sys::ad::displayName'
 
+class AuthException(Exception):
+    pass
 
-def obfuscate(data):
-    return base64.b64encode(data.encode('utf-8'))
+def encrypt(data):
+    public_key = current_app.config.get("RSA_PUBLIC_KEY")
+    cipher_rsa = PKCS1_OAEP.new(public_key)
+    enc_data = cipher_rsa.encrypt(data.encode('utf-8'))
+    return enc_data
 
-def deobfuscate(data):
-    return base64.b64decode(data).decode('utf-8')
+def decrypt(enc_data):
+    private_key = current_app.config.get("RSA_PRIVATE_KEY")
+    cipher_rsa = PKCS1_OAEP.new(private_key)
+    data = cipher_rsa.decrypt(enc_data)
+    return data.decode('utf-8')
 
 class IRSettings:
     def __init__(self, user, prefix=''):
@@ -92,7 +100,7 @@ class WebUser(UserMixin):
                     return False
         return self._is_admin
 
-    def __init__(self, password=None, obfuscated_password=None, **kwargs):
+    def __init__(self, password=None, encrypted_password=None, **kwargs):
         self.username = None
         self.environment = None
         self._is_authenticated = False
@@ -108,9 +116,11 @@ class WebUser(UserMixin):
                 setattr(self, k, v)
 
         if password:
-            self.password = obfuscate(password)
-        elif obfuscated_password:
-            self.password = obfuscated_password
+            self.password = encrypt(password)
+        elif encrypted_password:
+            self.password = encrypted_password
+        else:
+            raise AuthException
 
         irods_env = current_app.config["IRODS_ENVS"].get(self.environment, None)
         if irods_env:
@@ -150,14 +160,17 @@ class WebUser(UserMixin):
 
     @property
     def ntlm_hash(self):
-        password = deobfuscate(self.password)
+        password = self.passwd
         ntlm_hash = MD4.new(password.encode('utf-16le')).hexdigest()
         lmntlm = '{}:{}'.format('0' * 32, ntlm_hash)
         return lmntlm
 
     @property
     def passwd(self):
-        return deobfuscate(self.password)
+        try:
+            return decrypt(self.password)
+        except:
+            raise AuthException
 
     def store(self):
         """Store user in Flask session."""
@@ -165,7 +178,7 @@ class WebUser(UserMixin):
             session['user_data'] = {}
         info = {
             'username': self.username,
-            'obfuscated_password': self.password,
+            'encrypted_password': self.password,
             'environment': self.environment,
             '_is_authenticated': self.is_authenticated,
             '_is_admin': self.is_admin,
@@ -181,19 +194,16 @@ class WebUser(UserMixin):
                 user = cls(**session['user_data'][username])
             except:
                 return None
-            return user
-        if 'user_store' in session and username in session['user_store']:
-            try:
-                username, pass_obfuscated, env, is_auth, is_admin = session['user_store'][username]
-            except:
+            if user.is_authenticated:
+                return user
+            else:
                 return None
-            return cls(username=username,obfuscated_password=pass_obfuscated, environment=env, _is_authenticated=is_auth, _is_admin=is_admin)
         return None
         
     def delete(self):
         """Delete user from Flask session."""
-        if 'user_store' in session and self.username in session['user_store']:
-            del session['user_store'][self.username]
+        if 'user_data' in session:
+            del session['user_data']
 
 
     @property
