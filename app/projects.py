@@ -17,7 +17,6 @@ from irods.exception import CAT_NO_ACCESS_PERMISSION
 from irods.models import Collection, CollectionMeta, User, UserMeta, UserGroup
 from irods.column import Criterion
 from app.datafield import AVU2data, datafield
-from app.models import deobfuscate
 from graphviz import Digraph
 from . import iqry
 from .flaskcache import cache, dep_zone, dep_userzone, key_zone
