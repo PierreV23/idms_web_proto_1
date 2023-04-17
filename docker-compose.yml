@@ -22,7 +22,7 @@ services:
         syslog-address: "/dev/log"
         tag: "ngsweb-docker"
         syslog-format: "rfc3164"
-        facility: "local6"
+        syslog-facility: "local6"
     networks:
       - ngsweb_network
 
