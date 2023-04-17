@@ -19,7 +19,7 @@ services:
     logging:
       driver: syslog
       options:
-        syslog-address: "/dev/log"
+        syslog-address: "udp:///dev/log"
         tag: "ngsweb-docker"
         syslog-format: "rfc3164"
         syslog-facility: "local6"
