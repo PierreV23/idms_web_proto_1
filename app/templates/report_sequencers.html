@@ -1,0 +1,20 @@
+{% extends 'base2.html' %}
+
+{% block heading %}
+<H3>Sequencers</H3>
+{% endblock %}
+
+{%block menuname %}
+menuname='sequencers'
+{% endblock %}
+
+{% block content %}
+<div id="sequencer_table"><center><IMG SRC="{{ url_for('static', filename='img/loading.gif') }}" width="30%"></IMG><center></div>
+<script>
+$('document').ready(function(){
+    $.get("{{ url_for('reports.sequencer_data') }}", function(data) {
+        $("#sequencer_table").html(data)
+    })
+})
+</script>
+{% endblock %}
