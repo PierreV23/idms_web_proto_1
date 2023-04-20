@@ -9,13 +9,21 @@ SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 try:
     import redis
-    redis_test = redis.Redis()
+    redis_test = redis.Redis('redis')
     redis_test.set('test', 'value')
     CACHE_TYPE = "RedisCache"
-    print('Use REDIS cache')
+    CACHE_REDIS_HOST = 'redis'
+    print('Use REDIS on docker cache')
 except:
-    CACHE_TYPE = "SimpleCache"
-    print('Use Simple cache')
+    try:
+        import redis
+        redis_test = redis.Redis()
+        redis_test.set('test', 'value')
+        CACHE_TYPE = "RedisCache"
+        print('Use REDIS cache')
+    except:
+        CACHE_TYPE = "SimpleCache"
+        print('Use Simple cache')
 
 ENV = 'test'
 

@@ -24,6 +24,11 @@ RUN /venv/bin/conda-unpack
 # for us.
 FROM ubuntu:focal AS runtime
 
+RUN apt-get update && \
+    apt-get install -yq tzdata && \
+    ln -fs /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime && \
+    dpkg-reconfigure -f noninteractive tzdata
+
 # Copy /venv from the previous stage:
 COPY --from=build /venv /venv
 
