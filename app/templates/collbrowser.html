@@ -21,6 +21,17 @@ menuname='collectionbrowser'
 
 {% block content %}
 
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({
+    startOnLoad: false,
+    flowchart: {
+      htmlLabels: false
+    }
+  })
+  window.mermaid = mermaid;
+</script>
+
 <script>
 
   var collection = "{{ path }}";
@@ -182,7 +193,8 @@ menuname='collectionbrowser'
       graph_simplify: graph_simplify
     }, function (data) {
       $('#graphimg').html(data);
-      size_graph();
+      window.mermaid.htmlLabels = false;
+      window.mermaid.run();
     })
   }
 
@@ -267,6 +279,9 @@ menuname='collectionbrowser'
 
   $(document).on('click', '.path-change', function () {
     collection = (this.nodeName == "g" ? this.id : $(this).data('path'));
+    if (collection.startsWith('flowchart-')) {
+      collection = collection.split('-').slice(1,-1).join('')
+    }
     history.pushState({ "coll": collection }, 'Browse ' + collection, '/collbrowser?path=' + collection);
     if (typeof collection == 'undefined') {
       collection = $(this).attr('id')

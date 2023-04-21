@@ -681,3 +681,7 @@ ul {
 .header-right {
   font-size: 0.8rem;
 }
+
+.hidden {
+  opacity: 0% !important;
+}

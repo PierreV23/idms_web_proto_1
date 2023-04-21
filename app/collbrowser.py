@@ -28,6 +28,7 @@ from urllib.parse import urlparse
 from . import projects
 from . import iqry
 from . import irods_objects
+from app.mermaid import Mermaid
 from .flaskcache import cache, key_zone, key_userzone, dep_zone, pop_cache, push_cache
 import json
 from app.constants import COLL_KEY_MAP, DATA_KEY_MAP, ATTR_RESOURCE_ONLINE
@@ -654,7 +655,7 @@ def generate_graph():
     #######################################
     # Draw the graph
 
-    graph = Digraph('datagraph')
+    graph = Mermaid('datagraph')
     graph.graph_attr['rankdir'] = 'LR'
     graph.graph_attr['fontsize'] = '15'
 
