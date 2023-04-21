@@ -4,24 +4,41 @@ services:
   # note; symlink docker-compose.development.yml to
   # docker-compose.override.yml when developing.
 
+  redis:
+    image: redis:latest
+  redis:
+    container_name: redis
+    image: redis:latest
+    restart: always
+    entrypoint: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    networks:
+      - ngsweb_network
+    ports:
+      - "6379:6379"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+
   ngsweb:
     build: .
     image: ngsweb
     environment:
+      TZ: Europe/Amsterdam
       FLASK_APP: 'app'
       PORT: '8080'
-    entrypoint: /bin/bash -c ". /venv/bin/activate && uwsgi --http :$${PORT} --ini ngsweb.test.ini"
+    depends_on:
+      - redis
+    entrypoint: /bin/bash -c ". /venv/bin/activate && uwsgi --ini ngsweb.ini --http 0.0.0.0:3456"
     ports:
-      - 2048:8080
+      - 3333:3456
     volumes:
-      - ./instance/:/instance/
+      - ./instance/:/ngsweb/instance/
     restart: unless-stopped
     logging:
       driver: syslog
       options:
-        syslog-address: "udp://rivm-biolg-l01a.rivm.ssc-campus.nl:514"
+        syslog-address: "unixgram:///dev/log"
         tag: "ngsweb-docker"
-        syslog-format: "rfc3164"
+        syslog-facility: "local6"
     networks:
       - ngsweb_network
 
