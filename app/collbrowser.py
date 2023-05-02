@@ -22,7 +22,6 @@ from irods.column import Criterion
 from app.datafield import AVU2data, datafield
 from app.irods_helper import getmetaitem
 from app.irodssessions import irods_manager
-from graphviz import Digraph
 from irods.meta import iRODSMeta
 from urllib.parse import urlparse
 from . import projects
@@ -683,6 +682,14 @@ def generate_graph():
         coll_type = collmeta.get('sys::data::type', coll_type)
         coll_type = collmeta.get('user::data::type', coll_type)
         shape, shape_color = coll_shape(coll_type)
+   
+        projectid = collmeta.get('projectID', '') + '\n'
+        if node == coll:
+            penwidth = '4'
+            clss = { 'class' : 'path-change center-coll'}
+        else:
+            penwidth = '1'
+            clss = { 'class' : 'path-change' }
 
         # set border/fill colors for invalid collections
         border_color = "black"
@@ -690,18 +697,15 @@ def generate_graph():
             # shape_color += f":{constants.SYS_INVALID_COLOR}"
             # shape_color += f";0.9:{constants.SYS_INVALID_COLOR}"
             border_color = constants.SYS_INVALID_COLOR
+            if penwidth == '1':
+                penwidth = '2'
         elif collmeta.get('user::data::state') == "invalid":
             # shape_color += f":{constants.USER_INVALID_COLOR}"
             # shape_color += f";0.9:{constants.USER_INVALID_COLOR}"
             border_color = constants.USER_INVALID_COLOR
-    
-        projectid = collmeta.get('projectID', '') + '\n'
-        if node == coll:
-            penwidth = '3'
-            clss = { 'class' : 'path-change center-coll'}
-        else:
-            penwidth = '1'
-            clss = { 'class' : 'path-change' }
+            if penwidth == '1':
+                penwidth = '2'            
+
 
         graph.node(node, projectid + shortname(node,NAME_LENGTH), shape=shape, color=border_color, 
             fillcolor=shape_color, style='filled', penwidth=penwidth,

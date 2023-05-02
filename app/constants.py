@@ -140,7 +140,7 @@ LAYOUT = {
     },
     'distributed': {
         SHAPE1 : 'box3d',
-        COLOR1: '#c3e6cb:gray',
+        COLOR1: '#759c73',
         COLOR2: '#c3e6cb',
         TABLECLASS : 'table-distributed'
     },

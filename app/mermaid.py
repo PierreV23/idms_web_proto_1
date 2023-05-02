@@ -1,7 +1,10 @@
 COLORTABLE ={
     'black': '#000000',
     'gold2': '#EEC900',
+    'lightblue': '#34ebe5',
+    'palegreen2': '#90EE90',
     'skyblue1': '#87CEFF',
+    'tomato': '#FF6347',
     'yellow': '#FFFF00'
 }
 
@@ -15,6 +18,7 @@ class Mermaid:
         self.classes = []
 
     def node(self, name, label, shape='box', URL=None, fontsize=None, color='#000000', fillcolor='#ffffff', style=None, penwidth=1, setting=None, **kwargs):
+        #print(f'FILL {style}:{fillcolor}')
         if not label:
             label = name
         label = f'"{label}"'
@@ -28,7 +32,6 @@ class Mermaid:
             nodedef = f'{name}'
             self.classes.append(f'class {name} hidden')
         else:
-            print(f'shape {shape}')
             nodedef = f'{name}[{label}]'
         self.nodes.append(nodedef)
         if URL:
@@ -45,7 +48,6 @@ class Mermaid:
             if arg == 'class':
                 for val in value.split(' '):                    
                     self.classes.append(f'class {name} {val}')
-        print(color, fillcolor)        
         self.nodes.append(f'style {name} fill:{fcolor}, stroke:{lcolor},stroke-width:{penwidth}px')
 
     def edge(self, left, right, style=None):
@@ -53,8 +55,9 @@ class Mermaid:
             linedef = '-->'
         elif style == 'dashed':
             linedef = '-.->'
+        elif style == 'bold':
+            linedef = '==>'
         else:
-            print(f'STYLE {style}')
             linedef = '---'
         self.edges.append(f'{left} {linedef} {right}')
 
@@ -63,13 +66,13 @@ class Mermaid:
 
     def pipe(self, **kwargs):
         # Ignore format
-        result = ['<pre class="mermaid">']
+        result = []#['<div class="mermaid">']
         if self.graphtype == 'datagraph':
             result.append(f'flowchart {self.direction()}')
         result.extend(self.nodes)
         result.extend(self.edges)
         result.extend(self.classes)
-        result.append('</pre>')
+        #result.append('</div>')
         return '\n'.join(result).encode('utf-8')
 
 
