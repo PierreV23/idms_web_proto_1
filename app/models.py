@@ -208,9 +208,10 @@ class WebUser(UserMixin):
 
     @property
     def ifs(self):
-        if self._ifs is None:
-            self._ifs = fs_irods(session=irods_manager.session())
-        return self._ifs
+        return fs_irods(session=irods_manager.session())
+        # if self._ifs is None:
+        #     self._ifs = fs_irods(session=irods_manager.session())
+        # return self._ifs
 
 
     def validate_irods_session(self):

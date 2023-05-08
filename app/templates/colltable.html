@@ -31,7 +31,9 @@
             {% if options.view_btn == True %}
             <th data-field='view' data-formatter="rowButtons"></th>
             {% endif %}
-
+            {% if options.delete_btn == True %}
+            <th data-field='delete' data-formatter="rowButtons"></th>
+            {% endif %}
         </tr>
     </thead>
 </table>
@@ -51,6 +53,16 @@
         }
     }
 
+    function confirmDelete(path, displayname) {
+        if (confirm('Are you sure you want to delete ' + displayname + ' ?') == true) {
+            $.post("{{ url_for('collbrowser.delete_file') }}", { 
+                path: path
+            }, function(response) {
+                $('#colltable').bootstrapTable('refresh')
+            });
+        }
+    }
+
     function rowButtons(value, row, index, field) {
         if (row["object"] == "dataobject") {
             if (field == "dnld") {
@@ -65,6 +77,14 @@
                 path = encodeURIComponent(row['path'])
                 displayname = encodeURIComponent(row['displayname'])
                 res = `<a onClick="showModal('${path}','${displayname}')">
+                    <IMG src="${img}" class="mybutton"></A>`
+                return res;
+            }
+            if (field == 'delete') {
+                img = "{{ url_for('static', filename='img/delete-button.png' ) }}";
+                path = row['path']
+                displayname = row['displayname']
+                res = `<a onClick="confirmDelete('${path}','${displayname}')">
                     <IMG src="${img}" class="mybutton"></A>`
                 return res;
             }
