@@ -107,7 +107,6 @@ class WebUser(UserMixin):
         self._is_admin = None
         self.irods_server = None
         self.irods_zone = None
-        self._ifs = None
         self.features = []
         self._fullname = None
 
@@ -209,10 +208,6 @@ class WebUser(UserMixin):
     @property
     def ifs(self):
         return fs_irods(session=irods_manager.session())
-        # if self._ifs is None:
-        #     self._ifs = fs_irods(session=irods_manager.session())
-        # return self._ifs
-
 
     def validate_irods_session(self):
         try:
