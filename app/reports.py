@@ -135,7 +135,7 @@ def sequencer_data():
         )
         serials = { s[CollectionMeta.value] for s in qry }
         # Find last import
-        imports = iqry.qcollbymeta('ID')
+        imports = iqry.qcollbymetaattr('ID')
         sequencer_data = []
         for serial in serials:
             record = {
