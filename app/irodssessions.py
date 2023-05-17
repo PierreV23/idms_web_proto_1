@@ -196,6 +196,7 @@ class SessionPoolManager():
 
     def cleanup(self):
         """Cleanup unused session pools"""
+        empty_pools = []
         with self._lock:
             userlist = self._pools.keys()
             for user in userlist:
@@ -203,7 +204,9 @@ class SessionPoolManager():
                 counter = self._pools[user].cleanup()
                 if counter == 0:
                     logging.debug(f"Session pool for {user=} is now empty, removing {str(self._pools[user])}")
-                    del self._pools[user]
+                    empty_pools.append(user)
+            for user in empty_pools:
+                del self._pools[user]
 
     def remove(self, user):
         with self._lock:
@@ -216,11 +219,11 @@ class MultiSessionManager():
     def __init__(self):
         self._managers = {}
         self._lock = threading.Lock()
-        self.scheduler = BackgroundScheduler(daemon=True)
-        self.scheduler.add_job(func=self.cleanup, trigger="interval", seconds=60)
-        self.scheduler.start()
 
     def init_app(self, app):
+        self.scheduler = BackgroundScheduler(daemon=True)
+        self.scheduler.add_job(func=self.cleanup, trigger="interval", seconds=60, jitter=15)
+        self.scheduler.start()
         with self._lock:
             for envname, envdata in app.config.get('IRODS_ENVS', {}).items():
                 self._managers[envname] = SessionPoolManager(envdata, refresh_time=app.config.get('conn_refresh_time', 120))

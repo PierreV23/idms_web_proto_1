@@ -28,7 +28,7 @@ from urllib.parse import urlparse
 from . import projects
 from . import iqry
 from . import irods_objects
-from .flaskcache import cache, key_zone, key_userzone, dep_zone, pop_cache, push_cache
+from .flaskcache import cache, key_zone, key_userzone, dep_zone, dep_userzone
 import json
 from app.constants import COLL_KEY_MAP, DATA_KEY_MAP, ATTR_RESOURCE_ONLINE
 from . import constants
@@ -79,6 +79,24 @@ DATA_KEY_MAP = {
 
 PROCESS_SHAPE = 'cds'
 
+# CACHE CONTROL FUNCTIONS
+def contents_changed():
+    '''Function should be called if collection contents change
+    to invalidate cache entries
+    '''
+    cache.delete_memoized(_collcontents)
+
+def collections_changed(path=None):
+    '''Invalidates cache entries for collections and graph
+    Should be called when collection structure or metadata changes and
+    immediate representation of changes in the interface is required 
+    '''
+    args = [path] if path else []
+    cache.delete_memoized(_generate_graph)
+    cache.delete_memoized(add_items)
+    cache.delete_memoized(subitems, *args)
+    cache.delete_memoized(_generate_graph)
+
 # TODO: use the irods_helper instead (role irods_cronjobs)
 
 @bp.route('_propagate', methods=['POST'])
@@ -100,7 +118,7 @@ def propagateDownstreamInvalid():
         200,
     )
     # Invalidate the cache for the next call to the graph function
-    push_cache('graph')
+    collections_changed()
     return response
 
 def _propagateDownstreamInvalid(base_irods_coll, irods_coll):
@@ -211,7 +229,7 @@ def setoverride():
         except CAT_NO_ACCESS_PERMISSION:
             return 'ACCESS DENIED', 401
     # Invalidate the cache for the next call to the graph function
-    push_cache('graph')
+    collections_changed(path=collection)
     return 'DONE', 200
 
 
@@ -333,30 +351,33 @@ def startprocess():
 
 @bp.route('_collist')
 @login_required
-@cache.cached(timeout=60, key_prefix=key_zone)
 def collist():
-    return collist_nocache()
-
-@bp.route('_collist_nc')
-@login_required
-def collist_nocache():
     path = request.args.get('path','/', type=str)
     display_field = iqry.qcollmetaval(path, 'ngsweb::display_field')
+    refresh = request.args.get('refresh', 0, type=int)
+    if refresh:
+        contents_changed()   
     options = {
-        'download_btn': request.args.get('btn_download', 'true', type=str) == 'true',
-        'view_btn': request.args.get('btn_view', 'true', type=str) == 'true',
-        'delete_btn': request.args.get('btn_del', 'false', type=str) == 'true'
+        'download_btn': request.args.get('download_btn', 'true', type=str) == 'true',
+        'view_btn': request.args.get('view_btn', 'true', type=str) == 'true',
+        'delete_btn': request.args.get('delete_btn', 'false', type=str) == 'true'
     }
     return render_template('colltable.html', path=path, display_field=display_field, options=options)
 
-@bp.route('_collcontents')
-@cache.cached(timeout=60, key_prefix=key_zone)
+@bp.route('collcontents')
 def collcontents():
     path = request.args.get('path','/', type=str)
     offset = request.args.get('offset', 0, type=int)
     limit = request.args.get('limit', 999, type=int)
     filterstr = request.args.get('filter', '{}')
+    order = request.args.get('order')  
+    key = request.args.get('sort')
+    return _collcontents(path, offset, limit, filterstr, key, order)
 
+# We use dep_userzone here to prevent performance degradation
+# when a user uses the upload facility (and invalidates the cache in that way)
+@cache.memoize(timeout=60, make_name=dep_userzone)
+def _collcontents(path, offset, limit, filterstr, key, order):
     irods_session = irods_manager.session()
 
 # Look for metadate attrs starting with ngsweb:: on the collection
@@ -364,9 +385,9 @@ def collcontents():
     display_settings = { m[CollectionMeta.name][8:] : m[CollectionMeta.value] for m in q1 if m[CollectionMeta.name].startswith('ngsweb::') }
 
     display_field = display_settings.get('display_field', '')
-    sortkey = request.args.get('sort', display_settings.get('sort_order', 'displayname'))
-    sort_order = 'desc' if display_settings.get('sort_reverse', 'false') == 'true' else 'asc'
-    sort_order = request.args.get('order', sort_order)
+    sortkey = key if key else display_settings.get('sort_order', 'displayname')
+    stored_sort_order = 'desc' if display_settings.get('sort_reverse', 'false') == 'true' else 'asc'
+    sort_order = order if order else stored_sort_order
 
     c_sortkey = COLL_KEY_MAP.get(sortkey, 'displayname')
     d_sortkey = DATA_KEY_MAP.get(sortkey, 'displayname')
@@ -538,11 +559,15 @@ def related(coll, attr, forward=True, byname=True):
 
 @bp.route('/_graph')
 @login_required
-@cache.cached(timeout=60, key_prefix=key_zone, unless=lambda: pop_cache('graph'))
 def generate_graph():
     coll = request.args.get('path', '/', type=str)
     maxlevels = request.args.get('levels', DEFAULT_GRAPH_LEVELS, type=int)
     graph_simplify = request.args.get('graph_simplify', 0, type=int)
+    return _generate_graph(coll, maxlevels, graph_simplify)
+
+
+@cache.memoize(timeout=60, make_name=dep_userzone)
+def _generate_graph(coll, maxlevels, graph_simplify):
 
     multinodes = []
     nodes = set()
@@ -731,23 +756,22 @@ def generate_graph():
 
     return graph.pipe(format='svg').decode('utf-8')
 
-@login_required
+@cache.memoize(timeout=300, make_name=dep_zone)
+def subitems(path):
+    count = 0
+    with irods_manager.session() as session:
+        query = session.query(Collection.id).filter(
+            Criterion('=',Collection.parent_name, path)).count(Collection.id)
+        try:
+            for a in query:
+                count = a[Collection.id]
+        except:
+            count = 0
+        return count
+
 @cache.memoize(timeout=60, make_name=dep_zone)
 def add_items(path, level, active):
-    
-    @cache.memoize(timeout=300, make_name=dep_zone)
-    def subitems(path):
-        count = 0
-        with irods_manager.session() as session:
-            query = session.query(Collection.id).filter(
-                Criterion('=',Collection.parent_name, path)).count(Collection.id)
-            try:
-                for a in query:
-                    count = a[Collection.id]
-            except:
-                count = 0
-        return count
-        
+           
     result = ''
     parts = active.split('/')
     colls = [ c[Collection.name] for c in iqry.qcollchildren(path)]
@@ -788,17 +812,6 @@ def colltree():
     rs = add_items(current, level, active)
     return('<ul id="{}">{}</ul>'.format(current, rs))
 
-def Xclickable_path(path):
-    p = path[1:].split('/')
-    cp = ''
-    subpath = ''
-    for pe in p:
-        subpath = '{}/{}'.format(subpath, pe)
-        cp = '{}/<a href="{}?path={}">{}</a>'.format(cp, 
-                                                     url_for('collbrowser.collbrowser'),
-                                                     subpath,
-                                                     pe)
-    return cp
 
 @bp.route('/')
 @login_required
@@ -825,6 +838,7 @@ def upload_file():
         iObj = current_user.ifs.open(iObjName, 'w')
         f.save(iObj)
         iObj.close()
+        contents_changed()
     return redirect(url_for('collbrowser.collbrowser') + '?path=' + requestdata['collection'])
 
 @login_required
@@ -834,6 +848,7 @@ def delete_file():
     if 'path' in requestdata:
         path = requestdata['path']
         current_user.ifs.deletefile(path)
+        contents_changed()
     return '', 201
 
 

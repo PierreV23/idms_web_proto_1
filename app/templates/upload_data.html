@@ -12,7 +12,13 @@ menuname='upload_data'
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.7.1/min/dropzone.min.css">
 <script>
     function load_list(){
-        $.get('{{ url_for("collbrowser.collist_nocache", path=coll, download_btn="false", view_btn="false", delete_btn="true") }}', function (data) {
+        $.get('{{ url_for("collbrowser.collist") }}', {
+          path: '{{ coll }}',
+          download_btn: "false",
+          view_btn: "false",
+          delete_btn: "true",
+          refresh: 1
+        }, function (data) {
             console.log('LOADED')
             $('#collbrowser').html(data)
         });        
