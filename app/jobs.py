@@ -382,7 +382,6 @@ def show_pg():
 
 @bp.route('/')
 @login_required
-#@cache.cached(timeout=30, key_prefix=key_zone)
 def show_jobs():
     default_project = current_user.settings.get('default_project', '')
     visible_columns = current_user.settings.get('jobs::columns', [v["field"] for v in JOB_FIELDS.values()])
