@@ -17,6 +17,7 @@ from irods.query import SpecificQuery
 from app.irods_helper import getmetaitem
 from app.datafield import datafield
 from app.irodssessions import irods_manager
+from app.settings import RESOURCE_PROPS
 
 ATTR_ARCHIVE_STATUS = "sys::archive::status"
 ATTR_ARCHIVE_STATUSMSG = "sys::archive::statusmsg"
@@ -29,123 +30,6 @@ ATTR_ARCHIVE_MANIFESTFILE = 'sys::archive::manifest'
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
 # iRODS resource properties
-
-
-RESOURCE_PROPS = {
-    'group': {
-        'label': 'Group', 
-        'meta' : 'sys::tiering::group',
-        'type' : 'text',
-        'help' : 'The resource group that this resource belongs to'
-    },
-    'group_id': {
-        'label': 'ID',
-        'meta': 'sys::tiering::group',
-        'type': 'number',
-        'unit': True,
-        'help': 'Unique id within a resource group'
-    },
-    'copies': {
-        'label': 'Copies',
-        'meta': 'sys::resource::copies',
-        'type': 'number',
-        'help': 'The number of copies that this resource provides'
-    },
-    'cost': {
-        'label': 'Cost',
-        'meta': 'sys::resource::cost',
-        'type': 'number',
-        'help': 'Number that indicates cost for storing data on this resource'
-    },
-    'maxcopies': {
-        'label': 'Max copy actions',
-        'meta': 'sys::resource::maxcopies',
-        'type': 'number',
-        'help': 'Maximum number of concurrent tiering actions that will copy data TO this resource'
-    },
-    'age_before_copy': {
-        'label': 'Minimum age before copy (h)',
-        'meta': 'sys::resource::min_age_before_copy',
-        'type': 'number',
-        'factor': 3600,
-        'help': 'Data has to have this age before it will be copied to this resource'
-    },
-    'age_before_trim': {
-        'label': 'Minimum age before trim (h)',
-        'meta': 'sys::resource::min_age_before_trim',
-        'type': 'number',
-        'factor': 3600,
-        'help': 'Data has to have this age before it will be removed from this resource'
-    },
-    'minfree': {
-        'label': 'Minimum free space (GB)',
-        'meta': 'sys::resource::spacelimit',
-        'type': 'text',
-        'factor': 1000000000,
-        'help': 'No data will be copied (by tiering) to this resource once this limit is exceeded'
-    },
-    'targetfree': {
-        'label': 'Target free space (GB)',
-        'meta': 'sys::resource::spacetarget',
-        'type': 'number',
-        'factor': 1000000000,
-        'help': 'Tiering process will remove data from this resource once this limit is exceeded'
-    },
-    'local': {
-        'label': 'Local',
-        'meta': 'sys::resource::local',
-        'type': 'bool',
-        'help': 'This resource is on-site'
-    },
-    'online': {
-        'label': 'Online',
-        'meta': 'sys::resource::online',
-        'type': 'bool',
-        'help': 'Data on this resoucre can be accessed directly'
-    },
-    'stage': {
-        'label': 'Stage',
-        'meta': 'sys::resource::stage',
-        'type': 'bool',
-        'help': 'Data is copied to this resource before a pipeline starts'
-    },
-    'keep': {
-        'label': 'Keep',
-        'meta': 'sys::resource::keep',
-        'type': 'bool',
-        'help': 'Once data is on this resource, it will not be removed (except when "local" is required)'
-    },
-    'surf': {
-        'label': 'SURF',
-        'meta': 'sys::resource::surf',
-        'type': 'bool',
-        'help': 'This resource is at SURF. Special dm functions will be used'
-    },
-    'tar': {
-        'label': 'TAR',
-        'meta': 'sys::resource::tar',
-        'type': 'bool',
-        'help': 'Datasets are archived in a TAR file before being moved to this resource'
-    },
-    'manifest': {
-        'label': 'MANIFEST',
-        'meta': 'sys::resource::manifest',
-        'type': 'bool',
-        'help': 'TAR manifest files are stored on this resource'
-    },
-    'available': {
-        'label': 'Available',
-        'meta': 'sys::resource::available',
-        'type': 'bool',
-        'help': 'This resource is found to be available by the automatic resource test script'
-    },
-    'enabled': {
-        'label': 'Enabled',
-        'meta': 'sys::resource::enabled',
-        'type': 'bool',
-        'help': 'This resource can be used'
-    }
-}
 
 
 @bp.route('/_issues')

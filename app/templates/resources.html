@@ -36,12 +36,20 @@ menuname='resources'
                         name="{{ resource }}__{{ property }}"
                         value="true"
                         {% if resources[resource].get(property) == "true" %} checked {% endif %}
-                {% endif %}
-                {% if columns[property].get('help') %}
-                title="{{ columns[property].get('help') }}"
-                {% endif %}
+                    {% if columns[property].get('help') %}
+                    title="{{ columns[property].get('help') }}"
+                    {% endif %}
                     >
-                    </TD>
+                {% endif %}
+                {% if columns[property].type == 'select' %}
+                    <TD><select 
+                        name="{{ resource }}__{{ property }}">
+                    {% for value in columns[property].options %}
+                    <option value="{{ value }}" {% if value == resources[resource].get(property, '') %}selected{% endif %}>{{ value }}</option>
+                    {% endfor %}
+                </select>                
+                {% endif %}
+            </TD>
             {% endfor %}
         </TR>
         {% endfor %}
