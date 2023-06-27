@@ -196,20 +196,27 @@ LAYOUT = {
         SHAPE2: 'box3d',
         COLOR1: 'yellow',
         COLOR2: '#FFFF00',
-        TABLECLASS: 'table-white'        
+        TABLECLASS: 'table-white'
     },
     'refsamp_report': {
         SHAPE1: 'box3d',
         SHAPE2: 'box3d',
         COLOR1: 'yellow',
         COLOR2: '#FFFF00',
-        TABLECLASS: 'table-white'        
+        TABLECLASS: 'table-white'
     },
     'data': {
-        SHAPE1 : 'box3d',
+        SHAPE1: 'box3d',
         COLOR1: '#c3e6cb',
         COLOR2: '#c3e6cb',
-        TABLECLASS : 'table-data'        
+        TABLECLASS : 'table-data'
+    },
+    'uploaded': {
+        SHAPE1: 'folder',
+        SHAPE2: 'folder',
+        COLOR1: 'skyblue1',
+        COLOR2: '#87CEFF',
+        TABLECLASS : 'table-data'
     },
     'invalid': {
         SHAPE1: 'cds',
