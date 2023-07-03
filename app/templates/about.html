@@ -28,8 +28,20 @@
         iRODS environment
     </div>
     <div class="card-body">
-        iRODS Server version : {{ version }}
+        iRODS Server version : {{ irods_version }}
     </div>
 </div>
+<div class="card">
+    <div class="card-header">
+        NGSweb
+    </div>
+    <div class="card-body">
+        <ul>
+            <li>git commit hash: {{ ngsweb_version }}</li>
+            <li>git branch name: {{ ngsweb_branch }}</li>
+        </ul>
+    </div>
+</div>
+
 
 {% endblock %}
