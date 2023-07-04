@@ -917,7 +917,7 @@ COLUMNS = {
         "default_on": {"collection", "dataset"},
         "used_for": OBJECT_TYPES,
         "filter_control": "select",
-        "filter_data": {"valid": "valid" , "temporary": "temporary", "imported": "imported", "invalid": "invalid", "distributed": "distributed"},
+        "filter_data": {"valid": "valid" , "temporary": "temporary", "imported": "imported", "invalid": "invalid", "distributed": "distributed", "uploaded": "uploaded"},
         "sortable": False,
     },
     "sys::runsheet::repo": {
