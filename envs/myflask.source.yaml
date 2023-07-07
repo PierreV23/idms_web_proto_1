@@ -1,8 +1,6 @@
 name: myflask
 channels:
   - conda-forge
-  - defaults
-  - anaconda
 dependencies:
   - apscheduler
   - flask
