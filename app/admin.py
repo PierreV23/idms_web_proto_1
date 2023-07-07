@@ -147,6 +147,13 @@ RESOURCE_PROPS = {
     }
 }
 
+DATA_REPL_STATUS = {
+    '0': 'STALE_REPLICA',
+    '1': 'GOOD_REPLICA',
+    '2': 'INTERMEDIATE_REPLICA',
+    '3': 'READ_LOCKED',
+    '4': 'WRITE_LOCKED'
+}
 
 @bp.route('/_issues')
 def query_issues():
@@ -187,6 +194,25 @@ def data_consistency():
             'location'  : resources.get(r[CollectionMeta.name].split('::')[2], 'UNKNOWN'),
             'issues'    : r[CollectionMeta.value]
             } for r in query ]
+    return jsonify(results)
+
+@bp.route('/_replstate')
+def data_replstate():
+    """Get objects that have a replication state other than GOOD_REPLICA
+    """
+    with irods_manager.session() as session:
+        results = []
+        for value in ('0', '2', '3', '4'):
+            query = session.query(Collection.name, DataObject.name, DataObject.replica_number).filter(
+                Criterion('=', DataObject.replica_status, value)
+            )
+            results += [
+                { 'path': os.path.join(r[Collection.name], r[DataObject.name]),
+                  'replica': r[DataObject.replica_number],
+                  'replstate': value,
+                  'replstate_name': DATA_REPL_STATUS.get(value, 'UNKNOWN_VALUE')
+                } for r in query
+            ]
     return jsonify(results)
 
 @bp.route('/_condetails', methods=["GET"])
