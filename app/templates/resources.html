@@ -14,9 +14,17 @@ menuname='resources'
 <TABLE class="table">
     <THEAD class="thead-dark">
         <TR>
-            <TD>Name</TD>
+            <th><div><span>
+                Name
+            </span></div></th>
             {% for column in columns %}
-                <TD>{{ columns[column].label }}</TD>
+                <th 
+                    {% if columns[column].type == 'bool' %}
+                        class="rotated-text" scope="col"
+                    {% endif %}
+                ><div><span>
+                    {{ columns[column].label }}
+                </span></div></th>
             {% endfor %}
         </TR>
     </THEAD>
@@ -56,7 +64,7 @@ menuname='resources'
                     </TD>
                 {% elif columns[property].type == 'select' %}
                     <TD>
-                        <select name="{{ resource }}__{{ property }}">
+                        <select class="form-control" name="{{ resource }}__{{ property }}" style="width:auto">
                             {% for value in columns[property].options %}
                                 <option value="{{ value }}" {% if value == resources[resource].get(property, '') %}selected{% endif %}>
                                     {{ value }}
