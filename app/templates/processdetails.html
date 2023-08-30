@@ -36,6 +36,12 @@
         </div>
 
         <div class="form-group">
+          <label for="max_runtime_{{process}}">Maximum Runtime (s) (0 to disable)</label>
+          <input type="number" class="form-control" name="max_runtime" id="max_runtime_{{process}}" placeholder="Max Runtime"
+            value="{{ details['max_runtime'] }}">
+        </div>
+
+        <div class="form-group">
           <label for="concurrency_limit_{{process}}">Concurrency limit (0 to disable)</label>
           <input type="number" class="form-control" min="0" name="concurrency_limit" id="concurrency_limit_{{process}}" placeholder="Concurrency limit"
             value="{{ details['concurrency_limit'] }}">

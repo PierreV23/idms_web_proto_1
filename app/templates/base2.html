@@ -162,14 +162,12 @@
             </a>
           </li>
 
-          {% if current_user.is_admin %}
           <li class="nav-item">
             <a href="{{ url_for('upload.show_uploads') }}" data-menuname="uploads" class="nav-link">
               <i class="fas fa-upload nav-icon"></i>
               <p>Dataset Uploads</p>
             </a>
           </li>
-          {% endif %}
 
           {% if 'PROJECTS' in current_user.features %}
           <li class="nav-item">

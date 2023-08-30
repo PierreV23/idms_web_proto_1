@@ -11,6 +11,7 @@ from flask_migrate import Migrate
 from app.models import WebUser, AuthException
 import logging.config
 import irods.exception
+import subprocess
 from Crypto.PublicKey import RSA
 
 from . import auth, collbrowser, jobs, docviewer
@@ -122,9 +123,11 @@ def msgconfirm():
 
 @app.route('/about')
 def about():
+    ngsweb_version = subprocess.check_output(["git", "describe", "--always"]).strip().decode('utf-8')
+    ngsweb_branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).strip().decode('utf-8')
     with irods_manager.session() as session:
-        version = '.'.join(map(str, session.server_version))
-    return render_template('about.html', version=version)
+        irods_version = '.'.join(map(str, session.server_version))
+    return render_template('about.html', irods_version=irods_version, ngsweb_version=ngsweb_version, ngsweb_branch=ngsweb_branch)
 
 REQUESTS_METHODS = {
     'GET':   requests.get,

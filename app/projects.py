@@ -379,7 +379,7 @@ def update_process():
     data = {}
     procid = requestdata.get('procid')
     process = requestdata.get('process')
-    for attr in ['description', 'repo', 'tag', 'concurrency_limit']:
+    for attr in ['description', 'repo', 'tag', 'concurrency_limit', 'max_runtime']:
         if attr in requestdata:
             data[attr] = requestdata[attr]
     add_checkbox(data, requestdata, 'do_staging', negate=True, key='omit_staging')

@@ -210,7 +210,8 @@ class SessionPoolManager():
 
     def remove(self, user):
         with self._lock:
-            del self._pools[user.username]
+            if user.username in self._pools:
+                del self._pools[user.username]
 
 class MultiSessionManager():
     """Manage the SessionManagers for 

@@ -176,7 +176,10 @@ def upload_settings():
     if request.method == 'POST':
         data = request.form.to_dict()
         coll = data.get('coll')
-        #projectID = data.get('projectID')
+        projectID = data.get('projectID')
+        projectID_meta_current = iqry.qcollmetadict(coll).get(f'{ATTR_UPLOADSETTINGS}projectID', None)
+        if projectID_meta_current is not None and projectID != projectID_meta_current:
+            unset_upload_meta(coll)
         for k, v in data.items():
             if k in FIELDS and v:
                 iqry.scollmetaval(coll, f'{ATTR_UPLOADSETTINGS}{k}', str(v) )
@@ -238,11 +241,7 @@ def upload_meta():
         record = request.json
         collection = record.get('coll')
         metadata = iqry.qcollmetadict(collection)
-        for k, v in metadata.items():
-            if k.startswith(ATTR_UPLOADMETA):
-                iqry.delcollmeta(collection, k, v)
-            if k == ATTR_UPLOADMETASCHEMA:
-                iqry.delcollmeta(collection, k, v)
+        unset_upload_meta(collection)
         for k, v in record.get('data', {}).items():
             key = sanitize(k, True)
             type_name = type(v).__name__  # gives us just int,str, etc, which we can search in builtins
@@ -250,6 +249,14 @@ def upload_meta():
         selectedSchema = record.get('selectedSchema')
         iqry.scollmetaval(collection, f'{ATTR_UPLOADMETASCHEMA}', selectedSchema)              
         return jsonify({'status': 'OK' }), 200
+
+def unset_upload_meta(collection):
+    metadata = iqry.qcollmetadict(collection)
+    for k, v in metadata.items():
+        if k.startswith(ATTR_UPLOADMETA):
+            iqry.delcollmeta(collection, k, v)
+        if k == ATTR_UPLOADMETASCHEMA:
+            iqry.delcollmeta(collection, k, v)
 
 
 @bp.route('_uploaddata', methods=['GET', 'POST'])
@@ -279,6 +286,10 @@ def upload_actions():
     action = request.args.get('action')
     coll = request.args.get('coll')
     if action == 'finalize':
+        # show error message when metadata schema is not selected
+        if not ATTR_UPLOADMETASCHEMA in iqry.qcollmetadict(coll):
+            flash(f'No metadata schema was selected.', 'error')
+            return redirect(url_for('upload.upload_meta', coll=coll))
         iqry.scollmetaval(coll, ATTR_UPLOAD, UploadType.Ready)
         return redirect(url_for('upload.show_uploads'))
     elif action == 'cancel':
