@@ -5,8 +5,6 @@ services:
   # docker-compose.override.yml when developing.
 
   redis:
-    image: redis:latest
-  redis:
     container_name: redis
     image: redis:latest
     restart: always
