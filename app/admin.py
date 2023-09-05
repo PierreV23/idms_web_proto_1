@@ -11,18 +11,20 @@ import irods.exception
 from flask import Blueprint, render_template, redirect, jsonify, request, url_for
 from flask_login import current_user, login_required
 from irods.meta import iRODSMeta
-from irods.models import Collection, CollectionMeta, DataObject, Resource, ResourceMeta, DataObjectMeta
+from irods.models import Collection, CollectionMeta, DataObject, Resource, ResourceMeta, DataObjectMeta, RuleExec
 from irods.column import Criterion
 from irods.query import SpecificQuery
 from app.irods_helper import getmetaitem
 from app.datafield import datafield
 from app.irodssessions import irods_manager
 from app.settings import RESOURCE_PROPS
+from . import flaskcache
 
 ATTR_ARCHIVE_STATUS = "sys::archive::status"
 ATTR_ARCHIVE_STATUSMSG = "sys::archive::statusmsg"
 ATTR_ARCHIVE_LASTCHECK = "sys::archive::lastcheck"
 ATTR_ARCHIVE_STATE = "sys::archive::state"
+ATTR_ARCHIVE_DESIREDSTATE = "sys::archive::desired_state"
 
 ATTR_ARCHIVE_TARFILE = 'sys::archive::tarfile'
 ATTR_ARCHIVE_MANIFESTFILE = 'sys::archive::manifest'
@@ -312,3 +314,65 @@ def modify():
             collobj.metadata[new_meta.name] = new_meta
 
     return redirect(url_for('admin.admin'))
+
+@bp.route('/tiering/pending')
+def pending_tiering_page():
+    columns = [
+        { "field": "collection", "title": "Collection", "sortable": True },
+        { "field": "state", "title": "State", "sortable": True },
+        { "field": "desired_state", "title": "Desired state", "sortable": True },
+        { "field": "status", "title": "Status", "sortable": True }
+    ]
+    return render_template('pending_tiering.html', columns=columns)
+
+@flaskcache.cache.memoize(timeout=120, make_name=flaskcache.dep_zone)
+@bp.route('/tiering/_pending')
+def pending_tiering_ops():
+    result = []
+    with irods_manager.session() as session:
+        q = session.query(Collection.name, CollectionMeta.value).filter( \
+            Criterion('=', CollectionMeta.name, ATTR_ARCHIVE_STATE))
+        states = { r[Collection.name]: r[CollectionMeta.value] for r in q}
+        q = session.query(Collection.name, CollectionMeta.value).filter( \
+            Criterion('=', CollectionMeta.name, ATTR_ARCHIVE_DESIREDSTATE))
+        desired_states = { r[Collection.name]: r[CollectionMeta.value] for r in q}
+        for coll, state in states.items():
+            if state != ( desired_state := desired_states.get(coll)):
+                try:
+                    status = session.collections.get(coll).metadata.get_one(ATTR_ARCHIVE_STATUS).value
+                except KeyError:
+                    status = 'OK'
+                result.append( 
+                    { 'collection': datafield('Collection', coll, 'irods_collection').htmlstring, 
+                    'state': state, 
+                    'desired_state': desired_state,
+                    'status': status })
+    return jsonify(result)
+
+
+@bp.route('/tiering/active')
+def active_tiering_page():
+    columns = [
+        { "field": "collection", "title": "Collection", "sortable": True },
+        { "field": "state", "title": "State", "sortable": True },
+        { "field": "desired_state", "title": "Desired state", "sortable": True }
+    ]
+    return render_template('active_tiering.html', columns=columns)
+
+@bp.route('/tiering/_active')
+def active_tiering_ops():
+    result = []
+    with irods_manager.session() as session:
+        q = session.query(RuleExec.name)
+        rules = [ r[RuleExec.name] for r in q if 'collection_tiering' in r[RuleExec.name] ]
+        colls = { c.split("'")[1]: "" for c in rules }
+        for coll in colls:
+            m = session.collections.get(coll).metadata
+            state = m.get_one(ATTR_ARCHIVE_DESIREDSTATE).value
+            desired_state = m.get_one(ATTR_ARCHIVE_STATE).value
+            result.append({
+                'collection': datafield('Collection', coll, 'irods_collection').htmlstring,
+                'state': state,
+                'desired_state': desired_state
+            })
+    return jsonify(result)

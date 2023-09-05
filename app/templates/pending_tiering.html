@@ -1,0 +1,41 @@
+{% extends 'base2.html' %}
+
+{% block heading %}
+<H3><b>Pending Data Migration Jobs</b></H3>
+{% endblock %}
+
+{%block menuname %}
+menuname='pendingtiering'
+{% endblock %}
+
+{% block content %}
+
+<table id="pending_jobs" class="table"
+   data-toggle="table"
+   data-striped="true" 
+   data-pagination="true"
+   data-page-size="10"
+   data-page-list=[10,25,50,100] 
+   data-filter-control="true"
+   data-show-toggle="false"
+   data-show-columns="true"
+   data-show-filter-control-switch="true"
+   data-custom-sort="sorter"
+   data-side-pagination="server"
+   data-unique-id="id"
+   data-url="{{ url_for('admin.pending_tiering_ops') }}"
+   data-buttons-prefix="btn-sm btn"
+   data-buttons-toolbar=".runtable-toolbar">
+   <thead>
+      <tr>
+         {% for c in columns %}
+         <th data-field="{{ c['field'] }}" 
+             data-sortable="{{ c['sortable'] }}">
+               {{ c['title'] }}
+         </th>
+         {% endfor %}
+      </tr>
+   </thead>
+</table>
+
+{% endblock %}
