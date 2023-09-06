@@ -123,7 +123,7 @@ def msgconfirm():
 
 @app.route('/about')
 def about():
-    ngsweb_version = subprocess.check_output(["git", "describe", "--always"]).strip().decode('utf-8')
+    ngsweb_version = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode('utf-8')
     ngsweb_branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).strip().decode('utf-8')
     with irods_manager.session() as session:
         irods_version = '.'.join(map(str, session.server_version))
