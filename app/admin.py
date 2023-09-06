@@ -368,8 +368,8 @@ def active_tiering_ops():
         colls = { c.split("'")[1]: "" for c in rules }
         for coll in colls:
             m = session.collections.get(coll).metadata
-            state = m.get_one(ATTR_ARCHIVE_DESIREDSTATE).value
-            desired_state = m.get_one(ATTR_ARCHIVE_STATE).value
+            desired_state = m.get_one(ATTR_ARCHIVE_DESIREDSTATE).value
+            state = m.get_one(ATTR_ARCHIVE_STATE).value
             result.append({
                 'collection': datafield('Collection', coll, 'irods_collection').htmlstring,
                 'state': state,
