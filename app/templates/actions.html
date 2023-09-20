@@ -174,7 +174,7 @@
 
 
 
-$('.nav-pills').on('shown.bs.tab', function(event){
+$('.nav-tabs').on('shown.bs.tab', function(event){
   activetab = event.target.getAttribute('href')
 });
 
@@ -182,50 +182,48 @@ $('.nav-pills').on('shown.bs.tab', function(event){
 </script>
 
     <div class="card-header myheader">
-      <ul class="nav nav-pills">
+      <ul class="nav nav-tabs">
         <li class="nav-item mx-2">
-          <button class="btn 
-              {% if archival_state.is_offline is sameas true %} btn-outline-danger {% else %}
-              btn-outline-primary
-              {% endif %}
-              {% if archival_state.enabled == 'false' %} btn-outline-dark disabled {% endif %}
+          <a class="nav-link 
+              {% if archival_state.is_offline is sameas true %} bg-danger {% endif %}
+              {% if archival_state.enabled == 'false' %} bg-dark disabled {% endif %}
               " id="archive-tab" data-toggle="tab" href="#archive" role="tab" aria-controls="archive" 
               aria-selected="false">
               Archive
-          </button>
+        </a>
         </li>
         {% if admin is sameas True %}
         <li class="nav-item mx-2">
-          <button class="btn btn-outline-primary" id="storage-tab"
+          <a class="nav-link" id="storage-tab"
             data-toggle="tab" href="#storage" role="tab"
             aria-controls="storage" aria-selected="false">
             Storage
-          </button>
+        </a>
         </li>
         {% endif %}
         {% if archival_state.is_dataset is sameas true %}
         <li class="nav-item mx-2">
           {% if archival_state.active_pg %}
-          <button class="btn btn-outline-success" id="pipeline-tab"
+          <a class="nav-link bg-warning" id="pipeline-tab"
             data-toggle="tab" href="#pipeline" role="tab"
             aria-controls="pipeline" aria-selected="false">
             Active Process(es)
-          </button>
+        </a>
           {% else %}
-          <button class="btn btn-outline-primary" id="pipeline-tab"
+          <a class="nav-link" id="pipeline-tab"
             data-toggle="tab" href="#pipeline" role="tab"
             aria-controls="pipeline" aria-selected="false">
             Processes
-          </button>
+      </a>
           {% endif %}
         </li>
         {% endif %}
         <li class="nav-item mx-2">
-          <button class="btn btn-outline-primary" id="validity-tab"
+          <a class="nav-link" id="validity-tab"
             data-toggle="tab" href="#validity" role="tab"
             aria-controls="validity" aria-selected="false">
             Validity
-          </button>
+        </a>
         </li>
       </ul>
     </div>

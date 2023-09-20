@@ -1,29 +1,34 @@
 <script>
 
-$('.nav-pills').on('shown.bs.tab', function(event){
-    activetab = event.target.getAttribute('href')
-  });
+$('.nav-tabs').on('shown.bs.tab', function(event){
+    activemetatab = event.target.getAttribute('href')
+});
 
 </script>
 
 <div class="card-header myheader">
-    <ul class="nav nav-pills">
+    <ul class="nav nav-tabs">
         <li class="nav-item mx-2">
-          <button class="btn btn-outline-primary {% if object_avu is none %} active {% endif %}" id="collmeta-tab" 
+          <a class="nav-link {% if object_avu is none %} active {% endif %}" id="collmeta-tab" 
             data-toggle="tab" href="#collmeta" role="tab" 
-            aria-controls="collmeta" aria-selected="false">Collection metadata</button>
+            aria-controls="collmeta" aria-selected="false">Collection metadata</a>
         </li>
         <li class="nav-item mx-2">
-          <button class="btn {% if object_avu is not none %} btn-outline-primary active {% else %} btn-outline-secondary disabled {% endif %}" id="objectmeta-tab"
+          <a class="nav-link {% if object_avu is not none %} active {% else %} bg-secondary disabled {% endif %}" id="objectmeta-tab"
             data-toggle="tab" href="#objectmeta" role="tab"
-            aria-controls="objectmeta" aria-selected="false">Object metadata</button>
+            aria-controls="objectmeta" aria-selected="false">Object metadata</a>
               <!--  if archival_state.is_dataset is sameas false btn-outline-dark disabled -->
         </li>
-        <li>
-    <button class="btn btn-outline-success float-right right" onclick='avu_table()' id="metatoggle">Formatted</button>
-    </li></ul>
-    
+        </ul>
 
+        <div class="card-tools">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" value="" onchange='avu_table()' id="metatoggle" checked>
+                <label class="form-check-label" id="metatext" for="metatoggle">
+                  Formatted
+                </label>
+              </div>
+    </div>   
 </div>
 <div class="card-body scroll tab-content">
     <div class="tab-pane {% if object_avu is none %} active {% endif %}" id="collmeta" role="tabpanel" aria-labelledby="collmeta-tab">

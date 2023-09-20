@@ -172,41 +172,41 @@ function createContactRow( contact ) {
 <!-- PROJECT SETTINGS -->
 <div class="card h-100">
   <div class="card-header">
-    <ul class="nav nav-pills nav2" id="projecttabs">
+    <ul class="nav nav-tabs nav2" id="projecttabs">
       <li class="nav-item mx-2">
-        <button class="btn btn-outline-primary active" id="settings-tab" 
+        <A class="nav-link active" id="settings-tab" 
         data-toggle="tab" href="#settings" role="tab" 
-        aria-controls="settings" aria-selected="false">Settings</button>
+        aria-controls="settings" aria-selected="false">Settings</A>
       </li>
       <li class="nav-item mx-2">
-        <button class="btn btn-outline-primary" id="contacts-tab" 
+        <A class="nav-link" id="contacts-tab" 
         data-toggle="tab" href="#contacts" role="tab" 
-        aria-controls="contacts" aria-selected="false">Contacts</button>
+        aria-controls="contacts" aria-selected="false">Contacts</A>
       </li>
       <li class="nav-item mx-2">
-        <button class="btn btn-outline-primary" id="processgroups-tab" 
+        <A class="nav-link" id="processgroups-tab" 
         data-toggle="tab" href="#processgroups" role="tab" 
-        aria-controls="processgroups" aria-selected="false">Processgroups</button>
+        aria-controls="processgroups" aria-selected="false">Processgroups</A>
       </li>
       <li class="nav-item mx-2">
-        <button class="btn btn-outline-primary" id="collections-tab" 
+        <A class="nav-link" id="collections-tab" 
         data-toggle="tab" href="#collections" role="tab" 
-        aria-controls="collections" aria-selected="false">Collections</button>
+        aria-controls="collections" aria-selected="false">Collections</A>
       </li>
       <li class="nav-item mx-2">
-        <button class="btn btn-outline-primary usermanager" data-usertype="users" id="users-tab" 
+        <A class="nav-link usermanager" data-usertype="users" id="users-tab" 
         data-toggle="tab" href="#users" role="tab" 
-        aria-controls="users" aria-selected="false">Users</button>
+        aria-controls="users" aria-selected="false">Users</A>
       </li>
       <li class="nav-item mx-2">
-        <button class="btn btn-outline-primary usermanager" data-usertype="managers" id="managers-tab" 
+        <A class="nav-link usermanager" data-usertype="managers" id="managers-tab" 
         data-toggle="tab" href="#managers" role="tab" 
-        aria-controls="managers" aria-selected="false">Managers</button>
+        aria-controls="managers" aria-selected="false">Managers</A>
       </li>
       <li class="nav-item mx-2">
-        <button class="btn btn-outline-primary" id="groups-tab" 
+        <A class="nav-link" id="groups-tab" 
         data-toggle="tab" href="#groups" role="tab" 
-        aria-controls="groups" aria-selected="false">Groups</button>
+        aria-controls="groups" aria-selected="false">Groups</A>
       </li>
     </ul>
   </div>
@@ -343,7 +343,7 @@ function createContactRow( contact ) {
 <script>
 
   function load_users() {
-    usertype = $("ul#projecttabs li button.active").data('usertype')
+    usertype = $("ul#projecttabs li a.active").data('usertype')
     $.get("{{ url_for('projects.usermanager') }}", {
       object: '{{ PD.name }}',
       objecttype: 'projects',
