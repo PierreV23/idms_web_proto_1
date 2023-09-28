@@ -17,7 +17,7 @@ from dateutil.relativedelta import relativedelta
 from flask import Blueprint, render_template, redirect, request, url_for, jsonify, make_response, flash, current_app
 from flask_login import current_user, login_required
 from irods.models import Collection, CollectionMeta, DataObject, DataObjectMeta
-from irods.exception import CAT_NO_ROWS_FOUND, CAT_NO_ACCESS_PERMISSION
+from irods.exception import CAT_NO_ROWS_FOUND, CAT_NO_ACCESS_PERMISSION, CollectionDoesNotExist
 from irods.column import Criterion
 from app.datafield import AVU2data, datafield
 from app.irods_helper import getmetaitem
@@ -817,10 +817,23 @@ def colltree():
 @login_required
 def collbrowser():
     path = request.args.get('path', None)
-    if path:
-        current_user.settings['path'] = path
+    session = irods_manager.session()
+    stored_path = current_user.settings.get('path', f'/{current_user.irods_zone}/projects')
+
+    try:
+        session.collections.get(stored_path)
+    except CollectionDoesNotExist:
+        stored_path = (f'/{current_user.irods_zone}/projects')
+    if path:        
+        try:
+            session.collections.get(path)
+        except CollectionDoesNotExist:
+            flash(f"Invalid Collection: {path}", 'error')
+            path = stored_path
     else:
         path = current_user.settings.get('path', f'/{current_user.irods_zone}/projects')
+        
+    current_user.settings['path'] = path
     graph_levels = current_user.settings.setdefault('graph_levels', DEFAULT_GRAPH_LEVELS)
     graph_simplify = current_user.settings.setdefault('graph_simplify', 1)
 
