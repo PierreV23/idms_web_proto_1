@@ -87,9 +87,9 @@
     if ($('#dontshow').is(":checked")) {
       $.post('{{ url_for("msgconfirm") }}')
     }
-  })  
+  })
 </script>
-  
+
 
 {% endif %}
 {% endwith %}
@@ -127,10 +127,10 @@
         </div>
         <div class="info mt-3 ml-5">
           <a href="{{ url_for('auth.logout') }}">
-            Logout 
-            <i class="fas fa-sign-out-alt nav-item"></i> 
+            Logout
+            <i class="fas fa-sign-out-alt nav-item"></i>
           </a>
-        </div>  
+        </div>
       </div>
 
       <!-- SidebarSearch Form -->
@@ -188,7 +188,7 @@
               </i>
               <p>Processes</p>
             </a>
-          </li>          
+          </li>
           {% endif %}
 
           {% if 'MINILIMS' in current_user.features %}
@@ -271,7 +271,6 @@
                   <p>Archive issues</p>
                 </a>
               </li>
-              <a class="dropdown-item" href="{{ url_for('admin.archive_issues') }}">Archive issues</a>
             </ul>
           </li>
 
@@ -298,7 +297,7 @@
           </li>
 
           {% endif %}
-          
+
           <li class="nav-item">
             <a href="{{ url_for('collbrowser.search') }}" data-menuname="search" class="nav-link">
               <i class="fas fa-microscope nav-icon"></i>
@@ -328,7 +327,7 @@
         <ul class="nav nav-pills nav-btns nav-sidebar nav-child-indent flex-column float-down" data-widget="treeview" role="menu"
         data-accordion="false"  id="context_dependant_menu_list2">
           {% block menubuttons %}
-          {% endblock %}          
+          {% endblock %}
         </ul>
       </nav>
       <!-- /.sidebar-menu -->
