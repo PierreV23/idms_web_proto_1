@@ -89,7 +89,7 @@ def contents_changed():
 def collections_changed(path=None):
     '''Invalidates cache entries for collections and graph
     Should be called when collection structure or metadata changes and
-    immediate representation of changes in the interface is required 
+    immediate representation of changes in the interface is required
     '''
     args = [path] if path else []
     cache.delete_memoized(_generate_graph)
@@ -254,7 +254,7 @@ def coll_actions():
     # TODO: This should use the sys::resource::online property of a resource to determine
     # if a collection is online
     is_offline = not state.tag_present(ATTR_RESOURCE_ONLINE)
-      
+
     # define status:
     # OFFLINE
     # RETRIEVE_REQUEST
@@ -316,7 +316,7 @@ def coll_actions():
         "sys": sys_coll_state,
     }
 
-    return render_template('actions.html', collection=path, 
+    return render_template('actions.html', collection=path,
         name=coll_name, archival_state=archival_state, state_metadata=state_metadata,
         processes=processes, processid=processid, processrequest=processrequest,
         processgroups=processgroups, processgroupid=processgroupid,
@@ -356,7 +356,7 @@ def collist():
     display_field = iqry.qcollmetaval(path, 'ngsweb::display_field')
     refresh = request.args.get('refresh', 0, type=int)
     if refresh:
-        contents_changed()   
+        contents_changed()
     options = {
         'download_btn': request.args.get('download_btn', 'true', type=str) == 'true',
         'view_btn': request.args.get('view_btn', 'true', type=str) == 'true',
@@ -370,7 +370,7 @@ def collcontents():
     offset = request.args.get('offset', 0, type=int)
     limit = request.args.get('limit', 999, type=int)
     filterstr = request.args.get('filter', '{}')
-    order = request.args.get('order')  
+    order = request.args.get('order')
     key = request.args.get('sort')
     return _collcontents(path, offset, limit, filterstr, key, order)
 
@@ -391,7 +391,7 @@ def _collcontents(path, offset, limit, filterstr, key, order):
 
     c_sortkey = COLL_KEY_MAP.get(sortkey, 'displayname')
     d_sortkey = DATA_KEY_MAP.get(sortkey, 'displayname')
-  
+
 # Create collection and data filters
     filters = json.loads(filterstr)
     qc_filters = [Criterion('=', Collection.parent_name, path)]
@@ -400,7 +400,7 @@ def _collcontents(path, offset, limit, filterstr, key, order):
         qc_filters.append(Criterion('like', Collection.name, f'%{filters["displayname"]}%'))
         qd_filters.append(Criterion('like', DataObject.name, f'%{filters["displayname"]}%'))
 
-# Get item counts 
+# Get item counts
     qc_count = irods_session.query(Collection.id)
     for qc_filter in qc_filters:
         qc_count = qc_count.filter(qc_filter)
@@ -428,7 +428,7 @@ def _collcontents(path, offset, limit, filterstr, key, order):
         try:
             colls = q1.execute()
             for coll in colls:
-                objdict = { 
+                objdict = {
                     'displayname': datafield('irods_collection', coll[Collection.name], 'irods_collection').collentry,
                     'path': coll[Collection.name],
                     'object': 'collection',
@@ -453,11 +453,11 @@ def _collcontents(path, offset, limit, filterstr, key, order):
         for qd_filter in qd_filters:
             qd = qd.filter(qd_filter)
         qd = qd.min(DataObject.create_time)
-        qd = qd.order_by(d_sortkey, order=sort_order).offset(min_data).limit(max_data - min_data)      
+        qd = qd.order_by(d_sortkey, order=sort_order).offset(min_data).limit(max_data - min_data)
         try:
             dataobjects = qd.execute()
             for do in dataobjects:
-                objdict = { 
+                objdict = {
                     'displayname': do[DataObject.name],
                     'object': 'dataobject',
                     'path': os.path.join(path, do[DataObject.name]),
@@ -505,7 +505,7 @@ class Dictlist(dict):
 @bp.route('_related')
 def multi_list():
     # Create a small HTML page with a list of related collections
-    # 
+    #
     PARAMSETS = {
         'U':[
             ('user::pipeline::input_collection', True),
@@ -529,18 +529,18 @@ def multi_list():
     return render_template('small_collist.html', results = results)
 
 def related(coll, attr, forward=True, byname=True):
-    # Find collections related to <coll> 
+    # Find collections related to <coll>
     # In case forward=True
     #   Search for collections that have metadata attribute <attr> with the name or dataset_id of coll in the value
     # In case forward=False
     #   Search for collections that have a name or datasetid equal to the value of <attr> on <coll>
-    
+
     # Find metadata of <coll>
     collmeta = Dictlist()
     q = iqry.qcollmeta(coll)
     for m in q:
         collmeta[m[CollectionMeta.name]] = m[CollectionMeta.value]
-    
+
     if forward:
         search_value = coll if byname else collmeta.get(ATTR_DATASETID)
         q = iqry.qcollbymeta(attr, search_value)
@@ -577,7 +577,7 @@ def _generate_graph(coll, maxlevels, graph_simplify):
     multi_edges = set()
 
     def destnode(node):
-        # Determine if destination node is a collection node, 
+        # Determine if destination node is a collection node,
         # or the associated process node
         if node in processes:
             return f'G-{node}'
@@ -619,7 +619,7 @@ def _generate_graph(coll, maxlevels, graph_simplify):
                     else:
                         dashed_edges.add(vect)
                 elif neighbour in nodes:
-                    edgelist.add(vect)            
+                    edgelist.add(vect)
 
         # FIND INPUTS
         input_colls = related(coll, 'sys::pipeline::input_collection_id', forward=False, byname=False)
@@ -718,7 +718,7 @@ def _generate_graph(coll, maxlevels, graph_simplify):
             # shape_color += f":{constants.USER_INVALID_COLOR}"
             # shape_color += f";0.9:{constants.USER_INVALID_COLOR}"
             border_color = constants.USER_INVALID_COLOR
-    
+
         projectid = collmeta.get('projectID', '') + '\n'
         if node == coll:
             penwidth = '3'
@@ -727,7 +727,7 @@ def _generate_graph(coll, maxlevels, graph_simplify):
             penwidth = '1'
             clss = { 'class' : 'path-change' }
 
-        graph.node(node, projectid + shortname(node,NAME_LENGTH), shape=shape, color=border_color, 
+        graph.node(node, projectid + shortname(node,NAME_LENGTH), shape=shape, color=border_color,
             fillcolor=shape_color, style='filled', penwidth=penwidth,
             fontsize='8', setting='extra', **clss, id=node)
 
@@ -771,7 +771,7 @@ def subitems(path):
 
 @cache.memoize(timeout=60, make_name=dep_zone)
 def add_items(path, level, active):
-           
+
     result = ''
     parts = active.split('/')
     colls = [ c[Collection.name] for c in iqry.qcollchildren(path)]
@@ -800,7 +800,7 @@ def add_items(path, level, active):
             if subtree:
                 result = '{}<ul id="{}">{}</ul>'.format(result, collpath, subtree)
     return(result)
-    
+
 
 @bp.route('/_tree')
 @login_required
@@ -818,22 +818,28 @@ def colltree():
 def collbrowser():
     path = request.args.get('path', None)
     session = irods_manager.session()
-    stored_path = current_user.settings.get('path', f'/{current_user.irods_zone}/projects')
 
-    try:
-        session.collections.get(stored_path)
-    except CollectionDoesNotExist:
-        stored_path = (f'/{current_user.irods_zone}/projects')
-    if path:        
+    path_valid = False
+
+    # Check supplied path
+    if path:
+        try:
+            session.collections.get(path)
+            path_valid = True
+        except CollectionDoesNotExist:
+            flash(f"Invalid Collection: {path}", 'error')
+
+    # Get path from user settings or default
+    if not path_valid:
+        path = current_user.settings.get('path', f'/{current_user.irods_zone}/projects')
         try:
             session.collections.get(path)
         except CollectionDoesNotExist:
-            flash(f"Invalid Collection: {path}", 'error')
-            path = stored_path
-    else:
-        path = current_user.settings.get('path', f'/{current_user.irods_zone}/projects')
-        
+            path = (f'/{current_user.irods_zone}/projects')
+
+    # Store path in user settings
     current_user.settings['path'] = path
+
     graph_levels = current_user.settings.setdefault('graph_levels', DEFAULT_GRAPH_LEVELS)
     graph_simplify = current_user.settings.setdefault('graph_simplify', 1)
 
@@ -886,13 +892,13 @@ def get_projectlist_as_filter():
 #  - css_name: name as used in the css of the table, should not contain colons (:).
 #  - irods_object: an iRODS model or column. Used in the search Criterion.
 #  - meta_name: the name of the metadata field if irods_object=CollectionMeta.name.
-#  - default_on: a subset of OBJECT_TYPES. 
+#  - default_on: a subset of OBJECT_TYPES.
 #       Indicates whether the columns shown by default when loading the table.
-#  - used_for: a subset of OBJECT_TYPES. 
+#  - used_for: a subset of OBJECT_TYPES.
 #       Indicates whether the can be made visible in the table for each OBJECT_TYPE.
-#  - filter_control: the data-filter-control field of the bootstrap tables for this column. 
+#  - filter_control: the data-filter-control field of the bootstrap tables for this column.
 #  - filter_data: dict format which is parsed to json in the code.
-#       the data-filter-data field of the bootstrap tables for this column. 
+#       the data-filter-data field of the bootstrap tables for this column.
 #  - sortable: the data-sortable field of the bootstrap tables for this column.
 #  - switchable: the data-switchable field of the bootstrap tables for this column.
 COLUMNS = {
@@ -1028,7 +1034,7 @@ def search_result_count(object_type, filter_dict, search_dict, searchId):
     def _search_result_count(object_type, filter_dict, search_dict):
         logging.debug(f"Search {searchId}: Calculating count")
         query = search_result_query(object_type, filter_dict, search_dict)
-        count = len(list(query)) 
+        count = len(list(query))
         logging.debug(f"Search {searchId}: Calculating count DONE; found {count} objects")
         return count
     return _search_result_count(object_type, filter_dict, search_dict)
@@ -1055,7 +1061,7 @@ def search_result(object_type):
 
     filter_dict = json.loads(filter)
     # Change the column names as used in the css to the column names as used in iRODS
-    # Necessary because CSS doesn't handle the colons in the column names very well 
+    # Necessary because CSS doesn't handle the colons in the column names very well
     filter_dict = {
         CSS_NAME_TO_COLUMN[key]: value
         for key, value in filter_dict.items()
@@ -1085,7 +1091,7 @@ def search_result(object_type):
                 row[col] = datafield('collection', obj[Collection.name], 'irods_collection').htmlstring
                 continue
             row[col] = obj.get(props["irods_object"])
-        rows.append(row) 
+        rows.append(row)
     logging.debug(f"Search {searchId}: Retrieving column values DONE")
 
     data = {
@@ -1109,7 +1115,7 @@ def search_result_table():
         if objectType not in props["used_for"]:
             continue
 
-        column_data = { 
+        column_data = {
             "field": props.get("css_name", col),
             "title": col,
             "sortable": props["sortable"],
@@ -1137,10 +1143,10 @@ def search_result_table():
 
     # Render the bootstrap table. Information about the initial search (i.e. object type & search_dict)
     # is included in the rendered template in the bootstrap-tables data-url field and in the queryParams function
-    content = { 
+    content = {
         'searchResults': render_template(
-            'searchresults.html', 
-            columns=json.dumps(columns), 
+            'searchresults.html',
+            columns=json.dumps(columns),
             objectType=objectType,
             searchDict=search_dict,
             tableId=tableId,
@@ -1178,7 +1184,7 @@ def search_result_old():
             Criterion( '=', CollectionMeta.name, ATTR_DATASETID ) ).filter(
             #EVEN IN AN EXACT SEARCH WE NEED TO DO A LIKE SEARCH ON A PATTERN, BECAUSE
             #THE ACTUAL COLLECTION_NAME CONTAINS THE COMPLETE PATH, INCL. PARENT COLLECTION!
-            Criterion( 'like', Collection.name, ('%'+SEARCH_PATTERN).format(searchtext) ) 
+            Criterion( 'like', Collection.name, ('%'+SEARCH_PATTERN).format(searchtext) )
         )
         for coll in query:
             basename = os.path.basename(coll[Collection.name])
@@ -1186,15 +1192,15 @@ def search_result_old():
                 if searchtext != basename:
                     continue
             else:
-                #this would happen by searching part of the parent path, e.g. 'minion' 
+                #this would happen by searching part of the parent path, e.g. 'minion'
                 if searchtext not in basename:
                     continue
-            data.append( { 'collection': datafield('collection', coll[Collection.name], 'irods_collection').htmlstring , 
-                           'dataobject': '', 
-                           'metaattribute': '', 
+            data.append( { 'collection': datafield('collection', coll[Collection.name], 'irods_collection').htmlstring ,
+                           'dataobject': '',
+                           'metaattribute': '',
                            'metavalue':'' } )
-                
-    if useSearchObjectNames:        
+
+    if useSearchObjectNames:
         #search for data objects
         query = irods_session.query(Collection.name, DataObject.name).filter(
             Criterion( SEARCH_OPTION, DataObject.name, SEARCH_PATTERN.format(searchtext) )
@@ -1225,9 +1231,9 @@ def search_result_old():
                           'metavalue': obj[DataObjectMeta.value]})
 
 
-    data2 = sorted(data, key = lambda e: (e['collection'], e['dataobject'], e['metaattribute'] ) ) 
-    columns = [ { "field": "collection",    "title": "Collection", "sortable": True }, 
-                { "field": "dataobject",    "title": "File", "sortable": True  }, 
+    data2 = sorted(data, key = lambda e: (e['collection'], e['dataobject'], e['metaattribute'] ) )
+    columns = [ { "field": "collection",    "title": "Collection", "sortable": True },
+                { "field": "dataobject",    "title": "File", "sortable": True  },
                 { "field": "metaattribute", "title": "Attr", "sortable": True  },
                 { "field": "metavalue",     "title": "Value", "sortable": True  } ]
     searchResultsData = {
