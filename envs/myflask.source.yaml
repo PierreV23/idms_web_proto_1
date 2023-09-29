@@ -19,7 +19,7 @@ dependencies:
   - flask-caching
   - flask-login
   - flask-marshmallow
-  - flask-migrate<4.0.0
+  - flask-migrate
   - flask-sqlalchemy
   - flask-script
   - sqlalchemy<2.0.0
