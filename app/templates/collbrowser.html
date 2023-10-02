@@ -28,7 +28,7 @@ menuname='collectionbrowser'
   var graph_simplify = "{{ graph_simplify }}"
   var sortkey = "";
   var reverse = "";
-  var activetab = "Files";
+  var activetab = "#archive";
   var selected_object = "";
   var waiting = '<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>'
 
@@ -83,19 +83,18 @@ menuname='collectionbrowser'
     })
   }
   
+
+
   function avu_table() {
-    if ($("#metatoggle").text() == 'Formatted') {
-      d1 = 'table-cell';
-      d2 = 'none'
-      text = 'Unformatted'
-    } else {
+    if ( $("#metatoggle").is(':checked') ) {
       d2 = 'table-cell';
       d1 = 'none'
-      text = 'Formatted'
+    } else {
+      d1 = 'table-cell';
+      d2 = 'none'
     }
     $('.rawvalues').css('display', d1);
     $('.formatvalues').css('display', d2);
-    $('#metatoggle').html(text)
   }
 
   function build_title() {
@@ -232,16 +231,13 @@ menuname='collectionbrowser'
   }
 
   function load_actions() {
-    //path_elem = collection.split('/')
-    //current_col_name = path_elem[-1]
     $('#collapse-actions').html(waiting)
     $.get('{{ url_for('collbrowser.coll_actions') }}', {
       path: collection
     }, function (data) {
       $('#collapse-actions').html(data)
       $('#collection').val(collection)
-      $('.nav-pills button[href="' + activetab + '"]').tab('show')
-      //$('.nav-tabs a:last').tab('show')
+      $('.nav-tabs li a[href="' + activetab + '"]').tab('show')
     });
   }
 
@@ -385,7 +381,7 @@ menuname='collectionbrowser'
       </div>
   </div>
 
-  <div id="collapse-actions" class="card browser-actions h-100">
+  <div id="collapse-actions" class="card card-tabs browser-actions h-100">
     <div class="overlay">
       <i class="fas fa-2x fa-sync-alt fa-spin"></i>
     </div>
@@ -502,7 +498,6 @@ menuname='collectionbrowser'
       </div>
     </div>
   </div>
-
 </div> <!-- content -->
 
 <script>
