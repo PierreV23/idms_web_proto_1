@@ -9,15 +9,14 @@ $('.nav-tabs').on('shown.bs.tab', function(event){
 <div class="card-header myheader">
     <ul class="nav nav-tabs">
         <li class="nav-item mx-2">
-          <a class="nav-link {% if object_avu is none %} active {% endif %}" id="collmeta-tab" 
-            data-toggle="tab" href="#collmeta" role="tab" 
+          <a class="nav-link {% if object_avu is none %} active {% endif %}" id="collmeta-tab"
+            data-toggle="tab" href="#collmeta" role="tab"
             aria-controls="collmeta" aria-selected="false">Collection metadata</a>
         </li>
         <li class="nav-item mx-2">
           <a class="nav-link {% if object_avu is not none %} active {% else %} bg-secondary disabled {% endif %}" id="objectmeta-tab"
             data-toggle="tab" href="#objectmeta" role="tab"
             aria-controls="objectmeta" aria-selected="false">Object metadata</a>
-              <!--  if archival_state.is_dataset is sameas false btn-outline-dark disabled -->
         </li>
         </ul>
 
@@ -28,7 +27,7 @@ $('.nav-tabs').on('shown.bs.tab', function(event){
                   Formatted
                 </label>
               </div>
-    </div>   
+    </div>
 </div>
 <div class="card-body scroll tab-content">
     <div class="tab-pane {% if object_avu is none %} active {% endif %}" id="collmeta" role="tabpanel" aria-labelledby="collmeta-tab">
@@ -45,7 +44,7 @@ $('.nav-tabs').on('shown.bs.tab', function(event){
         {% for entry in coll_avu %}
             <tr>
                 <td> {{ entry.name }} </td>
-                <td class="rawvalues" style="display:none;">{{ entry.value }}</td>    
+                <td class="rawvalues" style="display:none;">{{ entry.value }}</td>
                 <td class="formatvalues"> {{ entry.htmlstring|safe }} </td>
         <!--        <td> {{ entry.datatype }} </td> -->
             </tr>
@@ -67,7 +66,7 @@ $('.nav-tabs').on('shown.bs.tab', function(event){
         {% for entry in object_avu %}
             <tr>
                 <td> {{ entry.name }} </td>
-                <td class="rawvalues" style="display:none;">{{ entry.value }}</td>    
+                <td class="rawvalues" style="display:none;">{{ entry.value }}</td>
                 <td class="formatvalues"> {{ entry.htmlstring|safe }} </td>
         <!--        <td> {{ entry.datatype }} </td> -->
             </tr>

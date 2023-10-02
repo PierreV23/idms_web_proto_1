@@ -101,7 +101,7 @@
            load_meta();
            load_actions();
         });
-    }    
+    }
 
     function keepDatasetLocal() {
         var selected = $( "#keepLocalSwitch" ).is(':checked')
@@ -148,7 +148,7 @@
       .done(function() {
         load_meta();
         load_actions();
-        load_graph();        
+        load_graph();
       })
       .fail(function(data, status) {
           alert("Set override failed");
@@ -158,7 +158,7 @@
 
     function propagateUserState() {
       if (confirm("Warning: This can only be reverted by manually disabling the override for each downstream collection. \n\nAre you sure you want to propagate the state to all downstream collections?")) {
-        $.post('{{ url_for('collbrowser.propagateDownstreamInvalid') }}', { 
+        $.post('{{ url_for('collbrowser.propagateDownstreamInvalid') }}', {
             collection: '{{ collection }}',
           }
         )
@@ -184,10 +184,10 @@ $('.nav-tabs').on('shown.bs.tab', function(event){
     <div class="card-header myheader">
       <ul class="nav nav-tabs">
         <li class="nav-item mx-2">
-          <a class="nav-link 
+          <a class="nav-link
               {% if archival_state.is_offline is sameas true %} bg-danger {% endif %}
-              {% if archival_state.enabled == 'false' %} bg-dark disabled {% endif %}
-              " id="archive-tab" data-toggle="tab" href="#archive" role="tab" aria-controls="archive" 
+              {% if archival_state.enabled == 'false' %} bg-secondary disabled {% endif %}
+              " id="archive-tab" data-toggle="tab" href="#archive" role="tab" aria-controls="archive"
               aria-selected="false">
               Archive
         </a>
@@ -237,7 +237,7 @@ $('.nav-tabs').on('shown.bs.tab', function(event){
       {% endwith %}
           <div class="tab-pane" id="archive" role="tabpanel" aria-labelledby="archive-tab">
             <h4>
-            {% if archival_state.status == 'OFFLINE' %} 
+            {% if archival_state.status == 'OFFLINE' %}
               <span class="badge badge-danger">OFFLINE</span>
             {% elif archival_state.status == 'RETRIEVE_REQUESTED' %}
               <span class="badge badge-info">RETRIEVE PENDING</span>
@@ -252,7 +252,7 @@ $('.nav-tabs').on('shown.bs.tab', function(event){
               <form>
                 <div class="form-group">
                   <label class="col-form-label">
-                  {% if archival_state.is_offline is sameas true %} 
+                  {% if archival_state.is_offline is sameas true %}
                   Bring
                   {% else %}
                   Keep
@@ -302,12 +302,12 @@ $('.nav-tabs').on('shown.bs.tab', function(event){
                       {% if archival_state.keep_local[2] == False %}disabled{% endif %}>
                 <label class="custom-control-label" for="keepLocalSwitch">keep on local storage</label>
               </div>
-          
+
               <div class="col-sm-4 custom-control custom-switch vertical-down">
                 <input type="checkbox" class="custom-control-input" onChange="overrideDatasetLocal()"
                       value="true"
                       id="overrideLocalSwitch" {% if archival_state.keep_local[2] == True %}checked{% endif %}>
-                      <label class="custom-control-label" for="overrideLocalSwitch">Override inheritance</label>               
+                      <label class="custom-control-label" for="overrideLocalSwitch">Override inheritance</label>
               </div>
               <label class="col-form-label">
                 {% if not archival_state.keep_local[2] %}
@@ -322,19 +322,19 @@ $('.nav-tabs').on('shown.bs.tab', function(event){
                       {% if archival_state.keep_online[2] == False %}disabled{% endif %}>
                 <label class="custom-control-label" for="keepOnlineSwitch">keep online</label>
               </div>
-          
+
               <div class="col-sm-4 custom-control custom-switch vertical-down">
                 <input type="checkbox" class="custom-control-input" onChange="overrideDatasetOnline()"
                       value="true"
                       id="overrideOnlineSwitch" {% if archival_state.keep_online[2] == True %}checked{% endif %}>
-                      <label class="custom-control-label" for="overrideOnlineSwitch">Override inheritance</label>               
+                      <label class="custom-control-label" for="overrideOnlineSwitch">Override inheritance</label>
               </div>
               <label class="col-form-label">
                 {% if not archival_state.keep_online[2] %}
                 Set from: {{ archival_state.keep_online[1].htmlstring | safe }}
                 {% endif %}
-              </label>               
-            </div>         
+              </label>
+            </div>
           </form>
           <hr>
           <form>
@@ -358,13 +358,13 @@ $('.nav-tabs').on('shown.bs.tab', function(event){
                 <input type="checkbox" class="custom-control-input" onChange="overrideMincopies()"
                       value="true"
                       id="overrideMincopiesSwitch" {% if archival_state.min_copies[2] == True %}checked{% endif %}>
-                      <label class="custom-control-label" for="overrideMincopiesSwitch">Override inheritance</label>               
+                      <label class="custom-control-label" for="overrideMincopiesSwitch">Override inheritance</label>
               </div>
               <label class="col-form-label" >
                 {% if not archival_state.min_copies[2] %}
                 Set from: {{ archival_state.min_copies[1].htmlstring | safe }}
                 {% endif %}
-              </label>                                       
+              </label>
             </div>
           </form>
         </div>
@@ -392,7 +392,7 @@ $('.nav-tabs').on('shown.bs.tab', function(event){
 
                 <div><button class="btn btn-outline-secondary button12" {% if not processgroups or archival_state.complete != 'true' %}disabled{% endif %} onClick="startProcessGroup()">Start processgroup</button>
                 </div>
-           
+
            <div class="top5"><b>Start Single process</b></div>
                 <select class="custom-select" style="width:100%;" id="processSelect">
                   {% for p in processes | sort %}
