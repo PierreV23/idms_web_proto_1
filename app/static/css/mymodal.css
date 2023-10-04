@@ -619,6 +619,12 @@ ul {
   background-color: #99ffcc;
 }
 
+.table-notify,
+.table-notify>td,
+.table-notify>th {
+  background-color: #c9d3cb;
+}
+
 
 .table-done,
 .table-done>td,

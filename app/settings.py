@@ -7,7 +7,8 @@ JOB_FIELDS = {
     'sys::run::start_time': {'title': 'Start time', 'format': 'timestamp', 'field': 'start_time', 'sortable': 'true', 'visible': 'true'},
     'sys::run::finish_time': {'title': 'End time', 'format': 'timestamp', 'field': 'finish_time', 'sortable': 'true', 'visible': 'true'},
     'sys::runsheet::projectID': {'title': 'Project', 'format': 'projectid', 'field': 'projectid', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
-    'sys::run::exit_code': {'title': 'Result', 'format': 'int', 'field': 'exit_code', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
+    'sys::run::exit_code': {'title': 'Exit Code', 'format': 'int', 'field': 'exit_code', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
+    'sys::run::result': {'title': 'Result', 'format': 'text', 'field': 'result', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
     'sys::runsheet::input_collection': {'title': 'Input Collection', 'format': 'irods_collection', 'field': 'input_collection', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'input'}
 }
 
@@ -33,7 +34,8 @@ PG_JOB_FIELDS = {
     'sys::run::start_time': {'title': 'Start time', 'format': 'timestamp', 'field': 'start_time', 'sortable': 'true', 'visible': 'true'},
     'sys::run::finish_time': {'title': 'End time', 'format': 'timestamp', 'field': 'finish_time', 'sortable': 'true', 'visible': 'true'},
     'sys::runsheet::projectID': {'title': 'Project', 'format': 'projectid', 'field': 'projectid', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
-    'user::run::exit_code': {'title': 'Result', 'format': 'int', 'field': 'exit_code', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
+    'user::run::exit_code': {'title': 'Exit Code', 'format': 'int', 'field': 'exit_code', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
+    'sys::run::result': {'title': 'Result', 'format': 'text', 'field': 'result', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
     'sys::runsheet::input_collection': {'title': 'Input Collection', 'format': 'irods_collection', 'field': 'input_collection', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'input'},
 }
 

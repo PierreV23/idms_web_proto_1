@@ -124,7 +124,7 @@ def delete_contact():
     if status == 200:
         ret = { "success": True }
     else:
-        ret = { "msg": f"Error: {result['msg']}"}
+        ret = { "msg": f"Error: {result['message']}"}
     return ret
 
 
@@ -140,7 +140,7 @@ def update_contact():
     if status == 200:
         ret = { "success": True }
     else:
-        ret = { "msg": f"Error: {result['msg']}", "contact": result['contact'] }
+        ret = { "msg": f"Error: {result['message']}", "contact": result['contact'] }
     return ret
 
 
@@ -155,7 +155,7 @@ def create_contact():
     if status == 201:
         ret = { "success": True , "contact": result }
     else:
-        ret = { "msg": f"Error: {result['msg']}"}
+        ret = { "msg": f"Error: {result['message']}"}
     return ret
 
 
