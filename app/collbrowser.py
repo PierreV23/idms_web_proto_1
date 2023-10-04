@@ -704,8 +704,9 @@ def _generate_graph(coll, maxlevels, graph_simplify):
             graph.edge(git_node, node)
             processes.add(node)
         coll_type = collmeta.get('sys::runsheet::state', 'unknown')
-        coll_type = collmeta.get('sys::data::type', coll_type)
-        coll_type = collmeta.get('user::data::type', coll_type)
+        if coll_type in ('done', 'unknown'):
+            coll_type = collmeta.get('sys::data::type', coll_type)
+            coll_type = collmeta.get('user::data::type', coll_type)
         shape, shape_color = coll_shape(coll_type)
 
         # set border/fill colors for invalid collections

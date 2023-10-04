@@ -125,6 +125,13 @@ LAYOUT = {
         COLOR2: '#99ffcc',
         TABLECLASS : 'table-postprocessing' 
     },
+    'notify': {
+        SHAPE1 : 'underline',
+        SHAPE2 : 'cds',
+        COLOR1: '#c9d3cb',
+        COLOR2: '#c9d3cb',
+        TABLECLASS : 'table-notify' 
+    },
     'done':  {
         SHAPE1 : 'box3d',
         COLOR1: '#c3e6cb',

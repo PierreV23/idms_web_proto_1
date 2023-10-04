@@ -179,17 +179,18 @@ menuname='pglist'
 
         function rowStyle(row, index) {
             var styles = {
-                'done': 'table-success',
-                'error': 'table-danger',
-                'active': 'table-info'
+                'OK': 'table-success',
+                'ERROR': 'table-danger',
+                'FAILED': 'table-danger',
+                'NOTRUN': 'table-secondary'
             };
-            if (row['state'] == 'done' && row['exit_code'] != 0) {
+            if (row['state'] == 'done') {
                 return {
-                    classes: 'table-danger'
+                    classes: styles[row['result']]
                 }
             }
             return {
-                classes: styles[row['state']]
+                classes: 'table-info'
             }
         }
 
