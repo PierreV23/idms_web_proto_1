@@ -229,8 +229,9 @@ function createContactRow( contact ) {
       </li>
     </ul>
   </div>
-  <div class="card-body tab-content h-100">
+<div class="card-body tab-content h-100">
 
+  <!-- Tab contents -->
     <!-- Settings -->
     <div class="tab-pane active" id="settings" role="tabpanel" aria-labelledby="settings-tab">
       {% if processing is sameas true %}
@@ -264,7 +265,6 @@ function createContactRow( contact ) {
     </div>
 
     <!-- Contacts -->
-
     <div class="tab-pane" id="contacts" role="tabpanel" aria-labelledby="contacts-tab">
     
       <div id="contacts-alert" class="alert alert-danger" role="alert">
@@ -319,16 +319,13 @@ function createContactRow( contact ) {
 
     <!-- Processgroups -->
     <div class="tab-pane" id="processgroups" role="tabpanel" aria-labelledby="processes-tab">
-
-
     </div>
 
     <!-- Collections -->
-
     <div class="tab-pane h-100 scroll" id="collections" role="tabpanel" aria-labelledby="collections-tab">
-
     </div>
 
+    <!-- Groups -->
     <div class="tab-pane" id="groups" role="tabpanel" aria-labelledby="groups-tab">
       <H3>Project groups</H3>
       <TABLE class="table table-striped table-hover table-sm" >
@@ -351,9 +348,11 @@ function createContactRow( contact ) {
       </table>
     </div>
 
+    <!-- Managers -->
     <div class="tab-pane" id="managers" role="tabpanel" aria-labelledby="managers-tab">
     </div>
 
+    <!-- Users -->
     <div class="tab-pane" id="users" role="tabpanel" aria-labelledby="users-tab">
     </div>
 

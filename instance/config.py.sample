@@ -103,7 +103,8 @@ IRODS_ENVS = {
         'features': [
             'JOBS',
             'MINILIMS',
-            'PROJECTS'
+            'PROJECTS',
+            'REFERENCE'
         ]
     },
     'MIL': {

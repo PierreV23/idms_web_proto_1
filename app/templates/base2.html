@@ -191,6 +191,16 @@
           </li>
           {% endif %}
 
+          {% if 'REFERENCE' in current_user.features %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('reference.show_reference_datasets') }}" data-menuname="reference-datasets" role="button">
+              <i class="fas fa-warehouse nav-icon"> <!-- other option: fa-boxes-stacked -->
+              </i>
+              <p>Reference datasets</p>
+            </a>
+          </li>
+          {% endif %}
+
           {% if 'MINILIMS' in current_user.features %}
           <li class="nav-item treeview menu">
             <a class="nav-link" href="#">

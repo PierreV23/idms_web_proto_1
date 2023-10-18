@@ -1,0 +1,117 @@
+<br>
+
+<!-- PROJECT SETTINGS -->
+<div class="card h-100">
+  <div class="card-header">
+    <ul class="nav nav-pills nav2" id="referencetabs">
+      <li class="nav-item mx-2">
+        <button class="btn btn-outline-primary active" id="settings-tab" 
+        data-toggle="tab" href="#settings" role="tab" 
+        aria-controls="settings" aria-selected="false">Settings</button>
+      </li>
+      <li class="nav-item mx-2">
+        <button class="btn btn-outline-primary" id="versions-tab" 
+        data-toggle="tab" href="#versions" role="tab" 
+        aria-controls="versions" aria-selected="false">Versions</button>
+      </li>
+      <li class="nav-item mx-2">
+        <button class="btn btn-outline-primary" id="importstate-tab" 
+        data-toggle="tab" href="#importstate" role="tab" 
+        aria-controls="importstate" aria-selected="false">importing status</button>
+      </li>
+    </ul>
+  </div>
+<div class="card-body tab-content h-100">
+
+
+<!-- Settings -->
+<div class="tab-pane active" id="settings" role="tabpanel" aria-labelledby="settings-tab">
+  <form action="update_reference" method="post">
+    <input type="hidden" id="action" name="action" value="update_reference">
+    <input type="hidden" id="reference" name="reference" value="{{RD.name}}">
+    <div class="form-group">
+      <label for="reference_synchronization_frequency_{{RD.name}}">Synchronization frequency (seconds)</label>
+      <input type="number" min="0" class="form-control" name="synchronization_frequency" id="reference_synchronization_frequency_{RD.name}}" placeholder="86400" value="{{ RD.synchronization_frequency }}">
+    </div>
+  
+    <div class="form-group">
+      <label for="reference_update_frequency_{{RD.name}}">Update frequency (seconds)</label>
+      <input type="number" min="0" class="form-control" name="update_frequency" id="reference_update_frequency_{RD.name}}" placeholder="86400" value="{{ RD.update_frequency }}">
+    </div>
+  
+    <div class="form-group">
+      <label for="reference_synchronize_command_{{RD.name}}">Synchronize command (bash command)</label>
+      <input type="text" class="form-control" name="synchronize_command" id="synchronize_command_{RD.name}}" placeholder="echo 'new data\n' >> ./new/dataset/data_file.txt" value="{{ RD.synchronize_command }}">
+    </div>
+  
+    <button type="submit" class="btn btn-primary">Submit</button>
+    <button type="button" class="btn btn-primary" data-href="/remove_reference?name={{RD.name}}" data-toggle="modal" data-target="#confirm-delete">
+      Remove reference dataset
+    </button>
+  </form>
+</div>
+
+<!-- Versions -->
+<div class="tab-pane" id="versions" role="tabpanel" aria-labelledby="versions-tab">
+  <div id="versions-table"></div>
+</div>
+
+<!-- ImportState -->
+<div class="tab-pane" id="importstate" role="tabpanel" aria-labelledby="importstate-tab">
+  <div class="form-group">
+    <label for="import_state_{{import_state.id}}_current_version">current version</label>
+    <input type="number" class="form-control" name="import_state_current_version" id="import_state_{{import_state.id}}_current_version" value="{{import_state.current_version}}" readonly>
+    <label for="import_state_{{import_state.id}}_last_synchronize">last synchronized</label>
+    <input type="text" class="form-control" name="import_state_last_synchronize" id="import_state_{{import_state.id}}_last_synchronize" value="{{import_state.last_synchronize}} ({{import_state.last_synchronize_iso}})" readonly>
+    <label for="import_state_{{import_state.id}}_last_update">last updated</label>
+    <input type="text" class="form-control" name="import_state_last_update" id="import_state_{{import_state.id}}_last_update" value="{{import_state.last_update}} ({{import_state.last_update_iso}})" readonly>
+    <label for="import_state_{{import_state.id}}_last_task_pid">last task PID</label>
+    <input type="number" class="form-control" name="import_state_last_task_pid" id="import_state_{{import_state.id}}_last_task_pid" value="{{import_state.last_task_pid}}" readonly>
+  </div>
+</div>
+
+<!-- PROJECT DELETE CONFIMATION DIALOG -->
+
+<div class="modal fade" id="confirm-delete" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                Remove reference
+            </div>
+            <div class="modal-body">
+                Are you sure you want to remove reference {{RD.name}}
+            </div>
+            <div class="modal-footer">
+                <form method="post" action="update_reference">
+                <input type="hidden" id="action_remove_reference" name="action" value="remove_reference">
+                <input type="hidden" id="reference" name="reference" value="{{RD.name}}">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-danger btn-ok">Delete</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+$('.nav2').on('shown.bs.tab', function(event){
+  target = event.target.getAttribute('href')
+  activetab = target
+  if (target == "#versions") {
+    load_versions();
+  }
+  console.log(target)
+})
+
+
+function load_versions() {
+  $.get('{{ url_for("reference.versions_table") }}?name={{ RD.name }}&id={{ RD.id }}', {
+    project: "{{ RD.name }}"
+  }, function(data) {
+     $('#versions-table').html(data);
+  });
+}
+
+
+</script>
