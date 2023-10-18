@@ -6,72 +6,20 @@ Created on Tue Nov 19 09:05:26 2019
 @author: wierinve
 """
 
-import base64
 import json
-import requests
-from requests.auth import HTTPBasicAuth
-from flask import abort, flash, Blueprint, render_template, redirect, request, url_for, current_app
+from flask import abort, flash, Blueprint, render_template, redirect, request, url_for
 from flask_login import current_user, login_required
 from flask import jsonify
-from irods.exception import CAT_NO_ACCESS_PERMISSION
-from irods.models import Collection, CollectionMeta, User, UserMeta, UserGroup
+from irods.models import Collection, CollectionMeta, User, UserMeta
 from irods.column import Criterion
-from app.datafield import AVU2data, datafield
+from app.datafield import datafield
 from graphviz import Digraph
 from . import iqry
-from .flaskcache import cache, dep_zone, dep_userzone, key_zone
-from dateutil import parser as dateparser
 from app.constants import COLL_KEY_MAP
 from app.irodssessions import irods_manager
-
+from .projectdb_api import EPOCH, iso2dt, search, rest_call, add_checkbox
 
 BP = Blueprint('projects', __name__, url_prefix='/projects')
-
-REQUESTS_METHODS = {
-    'GET':   requests.get,
-    'PUT':   requests.put,
-    'POST':  requests.post,
-    'DELETE':requests.delete
-}
-
-EPOCH = '1970-01-01T01:00:00'
-
-def iso2dt(timestr):
-    """Convert ISO8601 datetime string to datetime
-
-    Args:
-        timestr (str): ISO8601 datetime string
-    """
-    if timestr is None:
-        timestr = EPOCH
-    return dateparser.parse(timestr)
-
-def search(l, f, v):
-    """Find an item x in a list l of objects
-    where f(x) = v
-    """
-    matches = [ x for x in l if f(x) == v ]
-    if not matches:
-        matches = None
-    return matches
-
-@login_required
-@cache.memoize(timeout=30, make_name=dep_userzone)
-def rest_call(request_type, endpoint, data={}):
-    if (hostname := current_app.config.get('API_HOST')) is None:
-        hostname = current_user.irods_server
-    url = 'http://{}/api/1.0/{}'.format(hostname, endpoint)
-    auth = HTTPBasicAuth('alt\\{}'.format(current_user.username), current_user.ntlm_hash)
-    return_data = {}
-    if request_type in REQUESTS_METHODS:
-        response = REQUESTS_METHODS[request_type](url, auth=auth, json=data)
-    try:
-        return_data = response.json()
-    except:
-        return_data = {}
-    if request_type != 'GET':
-        cache.delete_memoized(rest_call)
-    return return_data, response.status_code
 
 @login_required
 def get_projectlist():
@@ -167,7 +115,7 @@ def show_projects():
 
     url params:
         project: switch to projects page and show <project>
-        process: swicth to processes  page and show <processid> 
+        process: switch to processes page and show <processid> 
     """
     # TODO: refactor passing of arguments
     page = request.args.get('page', 'projects')
@@ -178,12 +126,11 @@ def show_projects():
     processgroup = request.args.get('processgroup', '')
     processlist = get_process2list()
     if page == 'processes':
-        return render_template('processes2.html', processes=processlist, process=process)
+        return render_template('processes.html', processes=processlist, process=process)
     else:
         projectlist = get_projectlist()
-        return render_template('projects3.html', projects=projectlist, processes=processlist, 
+        return render_template('projects.html', projects=projectlist, processes=processlist, 
             project=project, process=process, pp=pp, processgroup=processgroup)
-
 
 
 @BP.route('/details')
@@ -316,15 +263,6 @@ def show_processdetails():
 
     return render_template('processdetails.html', details=pl)
 
-
-def add_checkbox(data, attr, name, negate=False, key=None):
-    set_value = 0 if negate else 1
-    datakey = key if key else name
-    if name in attr:
-        data[datakey] = set_value
-    else:
-        data[datakey] = 1 - set_value
-    return data
 
 @BP.route('/update_project', methods=['GET', 'POST'])
 @login_required

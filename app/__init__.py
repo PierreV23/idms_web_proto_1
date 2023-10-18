@@ -15,7 +15,7 @@ import subprocess
 from Crypto.PublicKey import RSA
 
 from . import auth, collbrowser, jobs, docviewer
-from . import projects, cluster, admin, reports, userinfo
+from . import projects, cluster, admin, reports, userinfo, referencedatasets
 from . import ngsruns, upload, flaskcache
 from . import messages, oldjobs
 from .ngsruns import db as ngsruns_db, NGSRunsDBUnavailableException
@@ -90,6 +90,7 @@ app.register_blueprint(collbrowser.bp)
 app.register_blueprint(jobs.bp)
 app.register_blueprint(docviewer.BP)
 app.register_blueprint(projects.BP)
+app.register_blueprint(referencedatasets.BP)
 app.register_blueprint(cluster.bp)
 app.register_blueprint(admin.bp)
 app.register_blueprint(reports.bp)
