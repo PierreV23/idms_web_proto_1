@@ -8,7 +8,7 @@ Created on Mon Nov 18 13:49:12 2019
 
 from flask import Blueprint, render_template, request, url_for, jsonify, redirect, flash, current_app
 from flask_login import current_user, login_required
-from irods.exception import DataObjectDoesNotExist
+from irods.exception import DataObjectDoesNotExist, CAT_NO_ACCESS_PERMISSION
 from irods.models import Collection, CollectionMeta
 from irods.column import Criterion
 from app.datafield import datafield
@@ -552,15 +552,33 @@ def _get_logfiles(location, subdir=''):
 @login_required
 @cache.cached(timeout=120, key_prefix=key_userzone)
 def show_logfile():
+    # result object
+    result = { 
+        "error": False, 
+        "data": None, 
+        "msg": None
+    }
+
     path = request.args.get('path', '', type=str)
     try:
         obj = current_user.ifs.getfile(path)
     except DataObjectDoesNotExist:
-        return 'Could not read logfile at "{}"'.format(path)
-        
-    with obj.open('r') as f:
-        data = f.read(MAX_READ_LOG_BYTES)
+        return f'Could not read logfile at "{path}"' 
 
+    try:
+        with obj.open('r') as f:
+            data = f.read(MAX_READ_LOG_BYTES)
+    except CAT_NO_ACCESS_PERMISSION: # if encountered the error
+        filename = path.split("/")[-1]
+        result["msg"] = f"You don't have the permission to access {filename}"
+        result["error"] = True
+        return result # return the result, otherwise data is being read
+    
     if sys.getsizeof(data) >= MAX_READ_LOG_BYTES:
         return '{}\n!!! log truncated to max {} bytes !!!'.format(data.decode('utf-8'), MAX_READ_LOG_BYTES)
-    return data.decode('utf-8')
+    
+    # if everything went well
+    result["data"] = data.decode('utf-8')
+    
+    return result
+
