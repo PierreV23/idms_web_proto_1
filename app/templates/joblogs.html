@@ -11,18 +11,23 @@ content %}
         $('li.logcard').bind('click', function (e) {
             $('li.logcard').removeClass('active')
             $(this).addClass('active')
+            // add loading icon 
             $('pre#logcontainer').html('<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>')
+            console.log($('pre#logcontainer'))
             $('div#logname').html($(this).html())
             $.get(
                 // URL, data, function(), datatype = optional
                 $SCRIPT_ROOT + '/jobs/_joblog', {path: $(this).data('logpath')},
                 function (data) {
-                    console.log(data)
                     if (data.error) {
                         // set up the title and body
                         $('#alertTitle').html('Access Denied')
                         $('#alertBody').html("<center>"+decodeURIComponent(data.msg)+"<center>")
-                        $('#modalAlert').modal() // alert model
+                        // raise alert model
+                        $('#modalAlert').modal()
+                        // remove selector and show select file again                  
+                        $('li.logcard').removeClass('active')
+                        $('pre#logcontainer').html('<center>.. select a log file ..</center>')
                     }
                     else {
                         $('pre#logcontainer').text(data.data);
@@ -31,7 +36,6 @@ content %}
             )
         })
     })
-    
 </script>
 
 <!-- Alert modal dialog -->
@@ -77,10 +81,8 @@ content %}
     </div>
 
     <div class="card h100">
-        <pre
-            class="card-body h100 autoscroll"
-            id="logcontainer"
-        ><center>.. select a log file ..</center></pre>
+        <pre class="card-body h100 autoscroll" id="logcontainer">
+        <center>.. select a log file ..</center></pre>
     </div>
 </div>
 
