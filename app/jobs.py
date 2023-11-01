@@ -559,24 +559,29 @@ def show_logfile():
         "msg": None
     }
 
+
     path = request.args.get('path', '', type=str)
+    filename = path.split("/")[-1]
+
     try:
         obj = current_user.ifs.getfile(path)
     except DataObjectDoesNotExist:
-        return f'Could not read logfile at "{path}"' 
+        result["msg"] = f"The {path} does not exist"
+        result["error"] = True
+        return result
 
     try:
         with obj.open('r') as f:
             data = f.read(MAX_READ_LOG_BYTES)
     except CAT_NO_ACCESS_PERMISSION: # if encountered the error
-        filename = path.split("/")[-1]
-        result["msg"] = f"You don't have the permission to access {filename}"
+        result["msg"] = f"You don't have permission to access {filename}"
         result["error"] = True
         return result # return the result, otherwise data is being read
     
     if sys.getsizeof(data) >= MAX_READ_LOG_BYTES:
-        return '{}\n!!! log truncated to max {} bytes !!!'.format(data.decode('utf-8'), MAX_READ_LOG_BYTES)
-    
+        result["data"] = f"{data.decode('utf-8')}\n!!! log truncated to max {MAX_READ_LOG_BYTES} bytes !!!"
+        return result
+
     # if everything went well
     result["data"] = data.decode('utf-8')
     
