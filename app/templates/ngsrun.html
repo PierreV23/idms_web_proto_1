@@ -1,5 +1,5 @@
 {% extends 'base2.html' %}
- 
+
 {% block heading %}
 <H3><b>New NGS Run by {{ current_user.username }}</b></H3>
 {% endblock %}
@@ -11,132 +11,249 @@ menuname='newrun'
 {% block content %}
 
 <script>
-    var barcodes={{ barcodes | safe}}
+    var barcodes = {{ barcodes | safe}}
 </script>
 
-<div class="container scroll h-100">
-    
-<form action="new" method="post">
-    <input type="hidden" id="id" name="id" value="{{ id }}">
-    <button type="submit" class="btn btn-primary float-right">Submit</button>
-    <div class="form-group row">
-        <label for="ngs_name" class="col-sm-1 col-form label">Name:</label>
-        <input type="text" class="form-control col-sm-1 input-sm" autocomplete="off" name="name" id="ngs_name" placeholder="Run Name" value="{{ data.name }}">
-        
-        <label for="ngs_flowcell" class="col-sm-1 col-form-label">Flowcell:</label>
-        <input type="text" class="form-control col-sm-1" autocomplete="off" name="flowcell" id="ngs_flowcell" placeholder="Flowcell" value="{{ data.flowcell }}">
+<form action="new" method="post" class="h-100">
+    <div class="card h-100">
+        <div class="card-header">
+            <input type="hidden" id="id" name="id" value="{{ id }}">
+            <div class="row flash_bar bg-info">
+Note: The project selection has been moved to the individual barcodes. You can use the 'Copy Down' button if all barcodes belong to the same project.
+            </div>
+            <div class="form-group row">
+                <label for="ngs_name" class="col-sm-1 col-form-label">Name:</label>
+                <input type="text" class="form-control col-sm-1 input-sm" autocomplete="off" name="name" id="ngs_name"
+                    placeholder="Run Name" value="{{ data.name }}">
+                <label for="ngs_flowcell" class="col-sm-1 col-form-label">Flowcell:</label>
+                <input type="text" class="form-control col-sm-1" autocomplete="off" name="flowcell" id="ngs_flowcell"
+                    placeholder="Flowcell" value="{{ data.flowcell }}">
 
-        <!-- label for="ngs_project" class="col-sm-1 col-form-label">Project:</label -->
-        <!-- input type="text" class="form-control col-sm-1" autocomplete="off" name="project" id="ngs_project" placeholder="Project" value="{{ data.project }}" -->
-
-        <label for="project" class="col-sm-1 col-form-label">Project:</label>
-        <select class="custom-select col-sm-1" name="project" id="projectselect">
-            {% for project in projects|sort %}
-            <option {% if project == default_project %} selected {% endif %}>{{ project }}</option>
+                <label for="ngs_description" class="col-sm-1 col-form-label">Description:</label>
+                <input type="text" class="form-control col-sm-3" autocomplete="off" name="description"
+                    id="ngs_description" placeholder="Description" value="{{ data.description }}">
+            </div>
+            <div class="form-group row bg-light">
+                <div class="col-sm-1"></div>
+                <label class="col-sm-1 col-form-label">Barcode</label>
+                <label class="col-sm-1 col-form-label">ID</label>
+                <label class="col-sm-2 col-form-label">Virus Target</label>
+                <label class="col-sm-2 col-form-label">Primer Set</label>
+                <label class="col-sm-2 col-form-label">Description</label>
+                <label class="col-sm-1 col-form-label">Project</label>
+            </div>
+            <div class="form-group row">
+                <div class="col-sm-1" data-barcode="ALL">
+                   <button type="button" class="btn btn-secondary selectall"
+                   id="allbutton">All</button>
+                   <button type="button" class="btn btn-secondary selectnone"
+                   id="allbutton">None</button>
+                </div>
+                <label class="col-sm-1 col-form-label"></label>
+                <label class="col-sm-1 col-form-label"><button type="button" class="btn btn-secondary" id="databutton"
+                        data-toggle="modal" data-target="#sampleid_list">ID List</button></label>
+                <label class="col-sm-2 col-form-label"><button type="button" class="btn btn-secondary"
+                        id="targetbutton">Copy down</button></label>
+                <label class="col-sm-2 col-form-label"><button type="button" class="btn btn-secondary"
+                        id="primerbutton">Copy down</button></label>
+                <label class="col-sm-2 col-form-label"></label>
+                <label class="col-sm-2 col-form-label"><button type="button" class="btn btn-secondary"
+                    id="projectbutton">Copy down</button></label>
+            </div>
+        </div>
+        <div class="card-body scroll h-100">
+            {% for barcode in barcodes %}
+            <div class="form-group form-row">
+                <div class="col-sm-1 barbox" data-barcode="{{ barcode }}"><input type="checkbox" tabindex=-1 class="checkbox barselect"
+                    id="check_{{ barcode }}" data-barcode="{{ barcode }}"></div>
+                <input readonly type="text" tabindex=-1 class="form-control col-sm-1" name="bar_{{ barcode }}"
+                    id="bar_{{ barcode }}" value="{{ barcode }}" >
+                <input type="text" class="form-control col-sm-1" tabxindex={{ loop.index }} autocomplete="off"
+                    name="sampleid_{{ barcode }}" id="sampleid_{{ barcode }}" placeholder="ID"
+                    value="{{ data[barcode].sampleid }}">
+                <input type="text" class="form-control col-sm-2 targetAutocomplete targetfield" tabxindex={{ loop.index +
+                    24 }} autocomplete="on" name="target_{{ barcode }}" id="target_{{ barcode }}"
+                    placeholder="Virus Target" value="{{ data[barcode].virus_target }}" data-barcode="{{ barcode }}"">
+                <input type="text" class="form-control col-sm-2 primerAutocomplete primerfield" tabxindex={{ loop.index +
+                    48 }} autocomplete="off" name="primer_{{ barcode }}" id="primer_{{ barcode }}"
+                    placeholder="Primer Set" value="{{ data[barcode].primer_set }}" data-barcode="{{ barcode }}"">
+                <input type="text" class="form-control col-sm-2" tabxindex={{ loop.index + 72 }} autocomplete="off"
+                    name="description_{{ barcode }}" id="description_{{ barcode }}" placeholder="Description"
+                    value="{{ data[barcode].description }}">
+                <select class="custom-select col-sm-1 projectfield" name="project_{{ barcode }}" id="project_{{ barcode }}" data-barcode="{{ barcode }}">
+                    {% for project in projects|sort %}
+                    <option {% if project==default_project %} selected {% endif %}>{{ project }}</option>
+                    {% endfor %}
+                </select>
+            </div>
             {% endfor %}
-        </select>
-
-        <label for="ngs_description" class="col-sm-1 col-form-label">Description:</label>
-        <input type="text" class="form-control col-sm-3" autocomplete="off" name="description" id="ngs_description" placeholder="Description" value="{{ data.description }}">
-      </div>
-<div class="form-group row">
-    <label class="col-sm-1 col-form-label">Barcode</label>
-    <label class="col-sm-1 col-form-label">ID</label>
-    <label class="col-sm-2 col-form-label">Virus Target</label>
-    <label class="col-sm-2 col-form-label">Primer Set</label>
-    <label class="col-sm-2 col-form-label">Description</label>
-</div>
-
-<div class="form-group row">
-<label class="col-sm-1 col-form-label"></label>
-<label class="col-sm-1 col-form-label"><button type="button" class="btn btn-secondary" id="databutton" data-toggle="modal" data-target="#sampleid_list">ID List</button></label>
-<label class="col-sm-2 col-form-label"><button type="button" class="btn btn-secondary" id="targetbutton">Copy down</button></label>
-<label class="col-sm-2 col-form-label"><button type="button" class="btn btn-secondary" id="primerbutton">Copy down</button></label>
-</div>
-
-{% for barcode in barcodes %}
-<div class="form-group form-row">
-    <input readonly type="text" tabindex=-1 class="form-control col-sm-1" name="bar_{{ barcode }}" id="bar_{{ barcode }}" value="{{ barcode }}">
-    <input type="text" class="form-control col-sm-1" tabindex={{ loop.index }} autocomplete="off" name="sampleid_{{ barcode }}" id="sampleid_{{ barcode }}" placeholder="ID" value="{{ data[barcode].sampleid }}">
-    <input type="text" class="form-control col-sm-2 targetAutocomplete targetfield" tabindex={{ loop.index + 24 }} autocomplete="off" name="target_{{ barcode }}" id="target_{{ barcode }}" placeholder="Virus Target" value="{{ data[barcode].virus_target }}">
-    <input type="text" class="form-control col-sm-2 primerAutocomplete primerfield" tabindex={{ loop.index + 48 }} autocomplete="off" name="primer_{{ barcode }}" id="primer_{{ barcode }}" placeholder="Primer Set" value="{{ data[barcode].primer_set }}">
-    <input type="text" class="form-control col-sm-2" tabindex={{ loop.index + 72 }} autocomplete="off" name="description_{{ barcode }}" id="description_{{ barcode }}" placeholder="Description" value="{{ data[barcode].description }}">
-</div>
-{% endfor %}
-<button type="submit" class="btn btn-primary float-right">Submit</button>
+        </div>
+        <div class="card-footer">
+            <button type="submit" class="btn btn-primary float-right">Submit</button>
+        </div>
+    </div>
 </form>
-
-</div>
 
 
 <script>
-        $('#targetbutton').click(function () {
-            $(".targetfield").val($("#target_barcode01").val());
-        });
-        $('#primerbutton').click(function () {
-            $(".primerfield").val($("#primer_barcode01").val());
-        });
+    $('.selectall').click(function(){
+        $('.barselect').prop('checked', true)
+        $('.barbox, .targetfield, .primerfield, .projectfield').addClass('bg-light').addClass('selected')
+    })
 
-        $('.targetAutocomplete').autoComplete({
-            resolverSettings: {
-                url: 'complete/virus_target'
+    $('.selectnone').click(function(){
+        $('.barselect').prop('checked', false)
+        $('.barbox, .targetfield, .primerfield, .projectfield').removeClass('bg-light').removeClass('selected')
+        $('.selected').removeClass('selected')
+    })
+
+    function copy_down(fieldname) {
+        fieldclass = '.' + fieldname + 'field'
+        if ($(".barselect:checkbox:checked").length > 0)
+            {
+               $(fieldclass + ".selected").val($(fieldclass + ".selected").first().val())
             }
-        });
-
-        $('.primerAutocomplete').autoComplete({
-            resolverSettings: {
-                url: 'complete/primer_set'
+        else
+            {
+                $(fieldclass).val($("#" + fieldname + "_barcode01").val());
             }
-        });
+    }
 
+    $('.barselect').click(function(event) {
+        $(this).prop('checked', !($(this).is(":checked")))
+    })
+
+    $('.barbox').click(function(event) {
+        if (event.shiftKey) {
+            // Undo text selection on page
+            if (window.getSelection) {
+                if (window.getSelection().empty) {  // Chrome
+                    window.getSelection().empty();
+                } else if (window.getSelection().removeAllRanges) {  // Firefox
+                    window.getSelection().removeAllRanges();
+                }
+            } else if (document.selection) {  // IE?
+                document.selection.empty();
+            }
+            if ($(".barselect:checkbox:checked").length > 0) {
+                topbar = $('.barselect.selected').first().attr('id').slice(13)
+                bottombar = $('.barselect.selected').last().attr('id').slice(13)
+                clickbar = $(this).data('barcode').slice(7)
+                start = Math.min(topbar, bottombar, clickbar)
+                end = Math.max(topbar, bottombar, clickbar)
+                for (let i = start; i <= end; i++) {
+                    barcode = 'barcode'
+                    if (i<10) {
+                        barcode = barcode + '0'
+                    }
+                    barcode = barcode + String(i)
+                    cbox = $('.barselect[data-barcode=' + barcode + ']')
+                    cbox.prop('checked', true)
+                    $('[data-barcode=' + barcode + ']').addClass('selected')
+                    $('.selected').addClass('bg-light')
+                }
+                return
+            }
+        }
+        cbox = $('.barselect[data-barcode=' + $(this).data('barcode') + ']')
+        cbox.prop('checked', !(cbox.is(":checked")))
+        if (cbox.is(":checked")) {
+            $('[data-barcode=' + $(this).data('barcode') + ']').addClass('selected')
+            $('.selected').addClass('bg-light')
+        } else {
+            $('[data-barcode=' + $(this).data('barcode') + ']').removeClass('selected').removeClass('bg-light')
+        }
+    })
+
+    $('#targetbutton').click(function(){copy_down("target")})
+    $('#primerbutton').click(function (){copy_down("primer")})
+    $('#projectbutton').click(function (){copy_down("project")})
+
+    $('.targetfield').on("input", function(){
+        if ($(".barselect:checkbox:checked").length > 0) {
+            $(".targetfield.selected").val($(this).val())
+        }
+    })
+
+    $('.targetfield').on('pick.bs.autocomplete', function(){
+        if ($(".barselect:checkbox:checked").length > 0) {
+            $(".targetfield.selected").val($(this).val())
+        }
+    })
+
+
+    $('.primerfield').on("input", function(){
+        if ($(".barselect:checkbox:checked").length > 0) {
+            $(".primerfield.selected").val($(this).val())
+        }
+    })
+
+    $('.projectfield').change(function(){
+        if ($(".barselect:checkbox:checked").length > 0) {
+            $(".projectfield.selected").val($(this).val())
+        }
+    })
+
+    $('.targetAutocomplete').autoComplete({
+        resolverSettings: {
+            url: 'complete/virus_target'
+        }
+    });
+
+    $('.primerAutocomplete').autoComplete({
+        resolverSettings: {
+            url: 'complete/primer_set'
+        }
+    });
 
 </script>
 
-<div class="modal" id="sampleid_list" role="dialog" >
+<div class="modal" id="sampleid_list" role="dialog">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="DocTitle">Paste or enter a list of IDs</h5>
             </div>
             <div class="modal-body">
-                    <div class="form-group">  
-                        <textarea class="form-control" rows="24" name = "file" id="sampleid_text" /></textarea>
-                    </div>  
-                    <div class="form-group">  
-                        <button type="button" class="btn btn-primary" data-dismiss="modal" id="modal_ok">OK</button>
-                        <button type="button" class="btn btn-default btn-primary" data-dismiss="modal">Cancel</button>
-                    </div>  
+                <div class="form-group">
+                    <textarea class="form-control" rows="24" name="file" id="sampleid_text" /></textarea>
+                </div>
+                <div class="form-group">
+                    <button type="button" class="btn btn-primary" data-dismiss="modal" id="modal_ok">OK</button>
+                    <button type="button" class="btn btn-default btn-primary" data-dismiss="modal">Cancel</button>
+                </div>
             </div>
         </div>
-    </div>            
+    </div>
 </div>
 
+
 <script>
-        $('#modal_ok').click(function () {
-            var linearray = document.getElementById("sampleid_text").value.split(/\r?\n/)
-            linearray.forEach(copy_line)
-        });
+    $('#modal_ok').click(function () {
+        var linearray = document.getElementById("sampleid_text").value.split(/\r?\n/)
+        linearray.forEach(copy_line)
+    });
 
-        function copy_line(value, index, array) {
-            var barcode = index + 1
-            var field_id="sampleid_barcode" + ((barcode<10) ? "0" : "") + barcode.toString()
-            $('#'+field_id).val(value)
-        }
+    function copy_line(value, index, array) {
+        var barcode = index + 1
+        var field_id = "sampleid_barcode" + ((barcode < 10) ? "0" : "") + barcode.toString()
+        $('#' + field_id).val(value)
+    }
 
-        $('#databutton').click(function () {
-            var text = ""
-            var v = ""
-            for (barcode=1;barcode<25;barcode++) {
-                var field_id="sampleid_barcode" + ((barcode<10) ? "0" : "") + barcode.toString()
-                v = $('#'+field_id).val()
-                if (v != "") {
-                    text = text + $('#'+field_id).val() + "\n"
-                } else {
-                    break
-                }
+    $('#databutton').click(function () {
+        var text = ""
+        var v = ""
+        for (barcode = 1; barcode < 25; barcode++) {
+            var field_id = "sampleid_barcode" + ((barcode < 10) ? "0" : "") + barcode.toString()
+            v = $('#' + field_id).val()
+            if (v != "") {
+                text = text + $('#' + field_id).val() + "\n"
+            } else {
+                break
             }
-            $('#sampleid_text').val(text)
-        });
+        }
+        $('#sampleid_text').val(text)
+    });
 </script>
 
 {% endblock %}

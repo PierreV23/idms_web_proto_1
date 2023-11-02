@@ -19,10 +19,10 @@ menuname='runlist'
       <div class="card-body">
          <table id="runtable" class="table"
             data-toggle="table"
-            data-striped="true" 
+            data-striped="true"
             data-pagination="true"
             data-page-size="10"
-            data-page-list=[10,25,50,100] 
+            data-page-list=[10,25,50,100]
             data-filter-control="true"
             data-show-toggle="false"
             data-show-columns="true"
@@ -36,11 +36,11 @@ menuname='runlist'
             <thead>
                <tr>
                   {% for c in columns %}
-                  <th data-field="{{columns[c]['field']}}" 
-                      data-align="{{columns[c]['align']}}" 
+                  <th data-field="{{columns[c]['field']}}"
+                      data-align="{{columns[c]['align']}}"
                       data-sortable="{{columns[c]['sortable']}}"
-                      data-visible="{{columns[c]['visible']}}" 
-                      data-filter-control="{{columns[c]['filtercontrol']}}" 
+                      data-visible="{{columns[c]['visible']}}"
+                      data-filter-control="{{columns[c]['filtercontrol']}}"
                       {% if columns[c]['filtercontrol']=="select" %}
                           data-filter-data='url:{{ url_for("ngsruns.filterdata", field=columns[c]["field"]) }}'
                       {% endif %}>
@@ -57,7 +57,7 @@ menuname='runlist'
    <div class="card border-primary col-md-8 d-nonxe h-100" id="barcodes">
       <div class="card-header d-none" id="barcode-title">
          <h2 class="alignleft">
-            Barcodes in run <b class="runname"></b> on project 
+            Barcodes in run <b class="runname"></b> on project
             <span class="projectname"></span> (<span class="flowcellname"></span><span class="rundescription"></span>)
          </h2>
          <button type="button" class="btn btn-danger alignright" id="delete1" data-toggle="modal" data-target="#confirm-delete">Delete</button>
@@ -75,7 +75,7 @@ menuname='runlist'
          <h5 class="modal-title">Confirm delete of </h5>
        </div>
        <div class="modal-body">
-         Are you sure you want to delete run <span class="runname"></span> and all associated barcodes?<p> This action cannot be undone! 
+         Are you sure you want to delete run <span class="runname"></span> and all associated barcodes?<p> This action cannot be undone!
        </div>
        <div class="modal-footer">
          <button type="button" class="btn btn-danger btn-sm" data-dismiss="modal" id="deletebutton">Delete</button>
@@ -103,13 +103,12 @@ $('document').ready(function(){
    $('#runtable').on('click-row.bs.table', function(e, row) {
       selected_id = row.id
       $('#barcode-title').removeClass('d-none')
-      if ({{ projects | safe }}.includes(row._project)) {
+      if (row._authorized) {
          $('#delete1').prop('disabled', false);
       } else {
          $('#delete1').prop('disabled', true);
       }
       $('.runname').html(row.name);
-      $('.projectname').html(row.project);
       $('.flowcellname').html(row.flowcell);
       var row_display = ''
       if (row.description) {
