@@ -56,20 +56,24 @@ class NGSRunsAlchemy:
                 # db engines for other envs.
                 continue
             _sessionmaker = sessionmaker(autocommit=False, autoflush=False,
-                                         bind=engine)
+                                        bind=engine)
             session = scoped_session(_sessionmaker,
                 scopefunc=greenlet.getcurrent)
             self._sessions[env_name] = {SESSION: session}
             # Determine DB version
             q = text("select count(*) as versiontables from information_schema.tables where table_name = 'version'")
             column = Column("versiontables", Integer)
-            if session.execute(q.columns(column)).all()[0][column] == 0:
-                version = 1
-            else:
-                q = text("SELECT version FROM version;")
-                column = Column("version", Integer)
-                version = session.execute(q.columns(column)).all()[0][column]
-            self._sessions[env_name][VERSION] = version
+            try:
+                if session.execute(q.columns(column)).all()[0][column] == 0:
+                    version = 1
+                else:
+                    q = text("SELECT version FROM version;")
+                    column = Column("version", Integer)
+                    version = session.execute(q.columns(column)).all()[0][column]
+                self._sessions[env_name][VERSION] = version
+            except OperationalError:
+                # catch the error when minilimsdb doesnt exist
+                continue
 
         app.teardown_request(self.remove_session)
 
