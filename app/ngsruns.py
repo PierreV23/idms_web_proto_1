@@ -59,21 +59,27 @@ class NGSRunsAlchemy:
                                         bind=engine)
             session = scoped_session(_sessionmaker,
                 scopefunc=greenlet.getcurrent)
+
+            # test if the database exist or not
+            try:
+                session.execute(text("SELECT 1"))
+            # does not exist, assign None for the session
+            except OperationalError as e:
+                self._sessions[env_name] = {SESSION: None}
+                continue
+
             self._sessions[env_name] = {SESSION: session}
             # Determine DB version
             q = text("select count(*) as versiontables from information_schema.tables where table_name = 'version'")
             column = Column("versiontables", Integer)
-            try:
-                if session.execute(q.columns(column)).all()[0][column] == 0:
-                    version = 1
-                else:
-                    q = text("SELECT version FROM version;")
-                    column = Column("version", Integer)
-                    version = session.execute(q.columns(column)).all()[0][column]
-                self._sessions[env_name][VERSION] = version
-            except OperationalError:
-                # catch the error when minilimsdb doesnt exist
-                continue
+
+            if session.execute(q.columns(column)).all()[0][column] == 0:
+                version = 1
+            else:
+                q = text("SELECT version FROM version;")
+                column = Column("version", Integer)
+                version = session.execute(q.columns(column)).all()[0][column]
+            self._sessions[env_name][VERSION] = version
 
         app.teardown_request(self.remove_session)
 
