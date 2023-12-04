@@ -65,7 +65,6 @@ class NGSRunsAlchemy:
                 session.execute(text("SELECT 1"))
             # does not exist, assign None for the session
             except OperationalError as e:
-                self._sessions[env_name] = {SESSION: None}
                 continue
 
             self._sessions[env_name] = {SESSION: session}
