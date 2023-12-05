@@ -5,7 +5,7 @@ from marshmallow import Schema, fields, validate
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy import ForeignKey, create_engine, Column, Integer, String, TIMESTAMP, func, text
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import OperationalError, ArgumentError
 from sqlalchemy.ext.hybrid import hybrid_property
 from irods.models import Collection, CollectionMeta, User
 from irods.column import Criterion
@@ -51,18 +51,27 @@ class NGSRunsAlchemy:
                 connect_args = {'connect_timeout': 10}
             try:
                 engine = create_engine(db_connect, connect_args=connect_args)
-            except OperationalError:
+            except (OperationalError, ArgumentError):
                 # Unable to create connection to db. Continue to create
                 # db engines for other envs.
                 continue
             _sessionmaker = sessionmaker(autocommit=False, autoflush=False,
-                                         bind=engine)
+                                        bind=engine)
             session = scoped_session(_sessionmaker,
                 scopefunc=greenlet.getcurrent)
+
+            # test if the database exist or not
+            try:
+                session.execute(text("SELECT 1"))
+            # does not exist, assign None for the session
+            except OperationalError as e:
+                continue
+
             self._sessions[env_name] = {SESSION: session}
             # Determine DB version
             q = text("select count(*) as versiontables from information_schema.tables where table_name = 'version'")
             column = Column("versiontables", Integer)
+
             if session.execute(q.columns(column)).all()[0][column] == 0:
                 version = 1
             else:
