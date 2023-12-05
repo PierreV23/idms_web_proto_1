@@ -5,7 +5,7 @@ from marshmallow import Schema, fields, validate
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy import ForeignKey, create_engine, Column, Integer, String, TIMESTAMP, func, text
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import OperationalError, ArgumentError
 from sqlalchemy.ext.hybrid import hybrid_property
 from irods.models import Collection, CollectionMeta, User
 from irods.column import Criterion
@@ -51,7 +51,7 @@ class NGSRunsAlchemy:
                 connect_args = {'connect_timeout': 10}
             try:
                 engine = create_engine(db_connect, connect_args=connect_args)
-            except OperationalError:
+            except (OperationalError, ArgumentError):
                 # Unable to create connection to db. Continue to create
                 # db engines for other envs.
                 continue
