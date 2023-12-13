@@ -493,6 +493,7 @@ def pg_details():
     mode = request.args.get('mode')
     pl, result = rest_call('GET', f'projects/{project}/processgroups/{group}/processes')
     all_processes, result = rest_call('GET', f'processes')
+    all_processes = sorted(all_processes, key=lambda x: x['name'].lower())
     dependency_names = []
     selected_details = None
     selected_tags = []
