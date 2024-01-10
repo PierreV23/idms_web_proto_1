@@ -8,14 +8,23 @@
 
 <body>
 
-<table class="table-sm table-striped">
+<table class="table table-sm table-striped">
 {% for row in data %}
-
+{% if loop.index == 1 %}
+<thead class="wortel">
+<tr>
+{% for col in row %}
+<th>{{ col }}</th>
+{% endfor %}
+</tr>
+</thead>
+{% else %}
 <tr>
 {% for col in row %}
 <td>{{ col }}</td>
 {% endfor %}
 </tr>
+{% endif %}
 {% endfor %}
 </table>
 </body>

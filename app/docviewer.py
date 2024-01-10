@@ -7,6 +7,7 @@ Created on Mon Nov 18 15:16:25 2019
 """
 import os
 import csv
+import ctypes
 from flask import Blueprint, render_template, request, url_for, send_file, jsonify
 from flask_login import current_user, login_required
 import urllib.parse
@@ -16,11 +17,16 @@ from fs_irods import fs_irods
 
 BP = Blueprint('docviewer', __name__, url_prefix='/docviewer')
 
+csv.field_size_limit(int(ctypes.c_ulong(-1).value // 2))
 
 @login_required
 def csvconvert(fobj):
     csvtext = fobj.read().decode('utf-8')
-    objcsv = csv.reader(csvtext.split('\n'))
+    try:
+        dialect = csv.Sniffer().sniff(csvtext[:1024], delimiters=',;\t')
+    except:
+        dialect = None
+    objcsv = csv.reader(csvtext.split('\n'), dialect)
     return render_template('csvview.html', data=objcsv)
 
 
