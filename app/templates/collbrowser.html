@@ -56,7 +56,7 @@ menuname='collectionbrowser'
   function download_wrapper(path) {
     $.get("{{ url_for('docviewer.test_access') }}?path=" + encodeURIComponent(path), function(result) {
       if (result["access"] == "GRANTED" ) {
-        source = "{{ url_for('docviewer.serve_object') }}?path=" + encodeURIComponent(path)
+        source = "{{ url_for('docviewer.download_object') }}?path=" + encodeURIComponent(path)
         filename = path.replace(/^.*[\\\/]/, '')
         downloadURI(source, filename)  
       } else {
