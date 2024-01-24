@@ -5,7 +5,7 @@ import requests
 import dateutil.parser
 from datetime import datetime
 from requests.auth import HTTPBasicAuth
-from flask import Flask, flash, jsonify, redirect, render_template, request, url_for
+from flask import Flask, flash, jsonify, redirect, render_template, request, url_for, current_app
 from flask_login import current_user, LoginManager, login_required, logout_user
 from flask_migrate import Migrate
 from app.models import WebUser, AuthException
@@ -152,9 +152,9 @@ def restcall(rest_endpoint):
         data = request.json
     else:
         data = None
-    url = 'http://{}/api/1.0/{}'.format(current_user.irods_server, rest_endpoint)
-    #TODO: remove this testing line:
-    #url = 'http://{}/api/1.0/{}'.format('0.0.0.0:5000', rest_endpoint)
+    if (hostname := current_app.config.get('API_HOST')) is None:
+        hostname = current_user.irods_server        
+    url = 'http://{}/api/1.0/{}'.format(hostname, rest_endpoint)
     auth = HTTPBasicAuth('alt\\{}'.format(current_user.username), current_user.ntlm_hash)
     return_data = {}
     if request.method in REQUESTS_METHODS:
