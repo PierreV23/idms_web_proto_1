@@ -143,7 +143,10 @@ function saveNewContact() {
     "notify_data": $('#new_contact_notify_data').prop("checked") ? 1 : 0,
     "notify_pipeline": $('#new_contact_notify_pipeline').prop("checked") ? 1 : 0,
     "notify_errors": $('#new_contact_notify_errors').prop("checked") ? 1 : 0,
+    "notify_config_changes": $('#new_contact_notify_config_changes').prop("checked") ? 1 : 0,
   });
+  // reset new contact switches
+  $('.new-contact').prop('checked', false)
 }
 
 function createContactRow( contact ) {
@@ -151,6 +154,7 @@ function createContactRow( contact ) {
   notify_data_checked = contact.notify_data == 1 ? "checked" : ""
   notify_pipeline_checked = contact.notify_pipeline == 1 ? "checked" : ""
   notify_errors_checked = contact.notify_errors == 1 ? "checked" : ""
+  notify_config_changes_checked = contact.notify_config_changes == 1 ? "checked" : ""
 
   var ct = $( "#contact-table" );
   ct.append( `<tr id="row-contact-${contact.id}">
@@ -180,6 +184,12 @@ function createContactRow( contact ) {
         <label class="custom-control-label" for="contact-notify-errors-${contact.id}">&nbsp;</label>
       </div>
     </td>
+    <td>
+      <div class="custom-control custom-switch">
+        <input type="checkbox" class="custom-control-input toggle-notify-config-changes" id="contact-notify-config-changes-${contact.id}"  data-contact_id="${contact.id}" ${notify_config_changes_checked}>
+        <label class="custom-control-label" for="contact-notify-config-changes-${contact.id}">&nbsp;</label>
+      </div>
+    </td>   
     <td><button class="btn btn-danger del-contact" data-contact_id="${contact.id}"><i class="fa fa-trash" aria-hidden="true"></i></button></td>
   </tr>` )
 }
@@ -272,14 +282,16 @@ function createContactRow( contact ) {
       </div>
       <table class="table table-bordered table-sm">
         <thead>
+          <tr><th colspan="3">Contact details</th><th colspan="4">Notification Options</th><th>Actions</th></tr>
           <tr>
             <th scope="col">Name</th>
             <th scope="col">Email</th>
             <th scope="col">Primary</th>
-            <th scope="col">Notify new data</th>
-            <th scopy="col">Notify pipeline</th>
-            <th scopy="col">Notify on errors</th>
-            <th scope="col">Action</th>
+            <th scope="col">New data</th>
+            <th scope="col">Pipeline results</th>
+            <th scope="col">Pipeline errors</th>
+            <th scope="col">Config changes</th>
+            <th scope="col"></th>
           </tr>
         </thead>
         <tbody id="contact-table">
@@ -288,28 +300,34 @@ function createContactRow( contact ) {
           <td><input type="text" class="form-control" id="new_contact_email" value=""></td>
           <td>            
             <div class="custom-control custom-switch">
-              <input type="checkbox" class="custom-control-input" id="new_contact_primary" >
+              <input type="checkbox" class="custom-control-input new-contact" id="new_contact_primary" >
               <label class="custom-control-label" for="new_contact_primary">&nbsp;</label>
             </div>
           </td>
           <td>            
             <div class="custom-control custom-switch">
-              <input type="checkbox" class="custom-control-input" id="new_contact_notify_data" >
+              <input type="checkbox" class="custom-control-input new-contact" id="new_contact_notify_data" >
               <label class="custom-control-label" for="new_contact_notify_data">&nbsp;</label>
             </div>
           </td>
           <td>            
             <div class="custom-control custom-switch">
-              <input type="checkbox" class="custom-control-input" id="new_contact_notify_pipeline" >
+              <input type="checkbox" class="custom-control-input new-contact" id="new_contact_notify_pipeline" >
               <label class="custom-control-label" for="new_contact_notify_pipeline">&nbsp;</label>
+            </div>
+          </td>       
+          <td>            
+            <div class="custom-control custom-switch">
+              <input type="checkbox" class="custom-control-input new-contact" id="new_contact_notify_errors" >
+              <label class="custom-control-label" for="new_contact_notify_errors">&nbsp;</label>
             </div>
           </td>
           <td>            
             <div class="custom-control custom-switch">
-              <input type="checkbox" class="custom-control-input" id="new_contact_notify_errors" >
-              <label class="custom-control-label" for="new_contact_notify_errors">&nbsp;</label>
+              <input type="checkbox" class="custom-control-input new-contact" id="new_contact_notify_config_changes" >
+              <label class="custom-control-label" for="new_contact_notify_config_changes">&nbsp;</label>
             </div>
-          </td>
+          </td>            
           <td><Button class="btn btn-secondary" onClick="saveNewContact()">save</Button></td>
           </tr>
         </tbody>
@@ -435,6 +453,12 @@ function createContactRow( contact ) {
   $( ".toggle-notify-pipeline" ).on( 'click', function(event){
     var contact_id = $( this ).attr("data-contact_id");
     var data = { "notify_pipeline" : $(this).prop("checked") ? 1 : 0 }
+    updateContact( "{{PD.name}}", contact_id, data );
+  });
+
+  $( ".toggle-notify-config-changes" ).on( 'click', function(event){
+    var contact_id = $( this ).attr("data-contact_id");
+    var data = { "notify_config_changes" : $(this).prop("checked") ? 1 : 0 }
     updateContact( "{{PD.name}}", contact_id, data );
   });
 

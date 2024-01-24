@@ -74,7 +74,7 @@ class JobsDBAlchemy:
                     engine = create_engine(db_connect, connect_args={'connect_timeout': 2})
                     engine.connect()
                 except OperationalError:
-                    app.logger.error(f'Cannot create JOBS DB engine for {env}')
+                    current_app.logger.error(f'Cannot create JOBS DB engine for {env}')
                     return
                 _sessionmaker = sessionmaker(autocommit=False, autoflush=False,
                                             bind=engine)
