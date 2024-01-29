@@ -28,6 +28,7 @@ dependencies:
   - uwsgi
   - werkzeug
   - pip:
+    - markdown
     - randomname
     - python-irodsclient
     - redis

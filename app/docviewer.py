@@ -8,6 +8,7 @@ Created on Mon Nov 18 15:16:25 2019
 import os
 import csv
 import ctypes
+import markdown
 from flask import Blueprint, render_template, request, url_for, send_file, jsonify
 from flask_login import current_user, login_required
 import urllib.parse
@@ -28,6 +29,9 @@ def csvconvert(fobj):
         dialect = None
     objcsv = csv.reader(csvtext.split('\n'), dialect)
     return render_template('csvview.html', data=objcsv)
+
+def mdconvert(fobj):
+    return markdown.markdown(fobj.read().decode('utf-8'))
 
 
 @BP.route('/serve_image')
@@ -79,6 +83,8 @@ def serve_object():
         if file_extension in [".csv"]:
             output = csvconvert(objectfile)
             return output
+        if file_extension in [".md"]:
+            return mdconvert(objectfile)
         if file_extension in [".jpg", ".png"]:
             output = '<IMG HEIGHT="100%" SRC="' + url_for('docviewer.serve_image') +  "?path=" + path + '">'
             return output
