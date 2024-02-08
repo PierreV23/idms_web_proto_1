@@ -331,7 +331,7 @@ def jobs_refresh():
     if not result:
         return jsonify('unknown')
     else:
-        return jsonify(datafield('refresh_time', result[0][0], 'timestamp').htmlshort)
+        return jsonify(datafield('refresh_time', float(result[0][0]), 'timestamp').htmlshort)
  
 
 @bp.route('_pgjobs')
