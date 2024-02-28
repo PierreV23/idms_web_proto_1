@@ -147,7 +147,6 @@ def pagebuttons(page_size, count, current_page, max_buttons, template):
     
 
 @bp.route('/api/pgprocs')
-@login_required
 def processgroupprocs():
     PGFIELDS = {
         'sys::runsheet::id': ('runsheet', 'runsheet'),
@@ -207,7 +206,6 @@ def jobpage():
     return redirect(url_for('jobs.show_jobs')) 
 
 @bp.route('_jobs')
-@login_required
 def jobs():
 # populate jobtable
     offset = request.args.get('offset', 0, type=int)
@@ -271,7 +269,6 @@ def filterdata():
 
 
 @bp.route('_pglist')
-@login_required
 def pglist():
 #POPULATE processgrouplist
     offset = request.args.get('offset', 0, type=int)
@@ -335,7 +332,6 @@ def jobs_refresh():
  
 
 @bp.route('_pgjobs')
-@login_required
 def pgjobs():
 # display jobs under a processgroupid
     processgroupid = request.args.get('processgroupid', None, type=str)
@@ -370,7 +366,6 @@ def pgjobs():
     
 
 @bp.route('/pg')
-@login_required
 def show_pg():
     processgroupguid = request.args.get('processgroupguid', None, type=str)
     default_project = current_user.settings.get('default_project', '')
@@ -381,7 +376,6 @@ def show_pg():
 
 
 @bp.route('/')
-@login_required
 def show_jobs():
     default_project = current_user.settings.get('default_project', '')
     visible_columns = current_user.settings.get('jobs::columns', [v["field"] for v in JOB_FIELDS.values()])
@@ -401,7 +395,6 @@ def coll_shape(coll_type):
     return layout[constants.SHAPE2], layout[constants.COLOR1]    
 
 @bp.route('/processgraph')
-@login_required
 def processgraph():
     runsheet_coll = request.args.get('runsheet', '/', type=str)
     graph = Digraph('datagraph')
@@ -441,7 +434,6 @@ def processgraph():
     return graph.pipe(format='svg').decode('utf-8')
 
 @bp.route('/jobdetails')
-@login_required
 def jobdetails():
     #this could be either the object-name of the yaml file or meta information attached to the collection
     jobnaam = request.args.get('name', '', type=str)
@@ -510,7 +502,6 @@ def jobdetails():
 
 
 @bp.route('joblogs')
-@login_required
 def job_logs():
     jobnaam = request.args.get('name', '', type=str)
     session = irods_manager.session()
@@ -549,7 +540,6 @@ def _get_logfiles(location, subdir=''):
     return(logs)
 
 @bp.route('/_joblog')
-@login_required
 @cache.cached(timeout=120, key_prefix=key_userzone)
 def show_logfile():
     # result object

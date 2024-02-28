@@ -8,7 +8,8 @@ from requests.auth import HTTPBasicAuth
 from flask import Flask, flash, jsonify, redirect, render_template, request, url_for, current_app
 from flask_login import current_user, LoginManager, login_required, logout_user
 from flask_migrate import Migrate
-from app.models import WebUser, AuthException
+from app.webuser import WebUser, AuthException
+from app.auth import auth_endpoint
 import logging.config
 import irods.exception
 import subprocess
@@ -138,7 +139,7 @@ REQUESTS_METHODS = {
 }
 
 @app.route('/_brs/<path:rest_endpoint>', methods=['GET', 'PUT', 'POST', 'DELETE'])
-@login_required
+@auth_endpoint
 def restcall(rest_endpoint):
     """Proxy endpoint for bio-rest service
 
@@ -147,7 +148,7 @@ def restcall(rest_endpoint):
 
     Returns:
         tuple: data, result_code
-    """    
+    """
     if request.method in ('PUT', 'POST'):
         data = request.json
     else:

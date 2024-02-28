@@ -19,7 +19,6 @@ BP = Blueprint('docviewer', __name__, url_prefix='/docviewer')
 
 csv.field_size_limit(int(ctypes.c_ulong(-1).value // 2))
 
-@login_required
 def csvconvert(fobj):
     csvtext = fobj.read().decode('utf-8')
     try:
@@ -31,7 +30,6 @@ def csvconvert(fobj):
 
 
 @BP.route('/serve_image')
-@login_required
 def serve_image():
     path = urllib.parse.unquote(request.args.get('path', '/', type=str))
     ifs = current_user.ifs
@@ -57,7 +55,6 @@ def test_access():
     })
     
 @BP.route('/download_object')
-@login_required
 def download_object():
     path = urllib.parse.unquote(request.args.get('path', '/', type=str))
     #objectfile = current_user.ifs.getfile(path).open('r')
@@ -68,7 +65,6 @@ def download_object():
     return AA
 
 @BP.route('/serve_object')
-@login_required
 def serve_object():
     path = urllib.parse.unquote(request.args.get('path', '/', type=str))
     filename, file_extension = os.path.splitext(path.lower())

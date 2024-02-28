@@ -25,7 +25,6 @@ BP = Blueprint('reference', __name__, url_prefix='/reference')
 
 reference_change_allowed = ['name', 'synchronize_command', 'update_frequency', 'synchronization_frequency', 'owner']
 
-@login_required
 def get_referencelist():
     referencelist_raw, status_code = rest_call('GET', 'reference')
     referencelist = {}
@@ -125,6 +124,7 @@ def update_reference_settings():
     return redirect(f'{url_for("reference.show_reference_datasets")}?{location}')
 
 @BP.route('/versions')
+@login_required
 def versions_table():
     reference_id = request.args.get('id', '', type=str)
     #reference_name = request.args.get('name', '', type=str)
@@ -182,6 +182,7 @@ def versions_table():
 
 
 @BP.route('/import_state')
+@login_required
 def import_state():
     reference_id = request.args.get('name', '', type=str)
 

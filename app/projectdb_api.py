@@ -41,7 +41,6 @@ def search(l, f, v):
         matches = None
     return matches
 
-@login_required
 @cache.memoize(timeout=30, make_name=dep_userzone)
 def rest_call(request_type, endpoint, data={}):
     if (hostname := current_app.config.get('API_HOST')) is None:

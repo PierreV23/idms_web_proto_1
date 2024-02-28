@@ -219,7 +219,6 @@ def projects_in_run(id):
     """
     return { b.project for b in db.session().query(NGSBarcode).filter(NGSBarcode.ngsrun==id).all() }
 
-@login_required
 def rest_call(request_type, endpoint, data={}):
     url = 'http://{}/api/1.0/{}'.format(current_user.irods_server, endpoint)
     #TODO: remove this testing line:
@@ -317,6 +316,7 @@ This version of biorods does not support version 1 of the MiniLIMS database.<p>
     return render_template('deprecated.html', text=text, menuname=menuname)
 
 @bp.route('list', methods=['GET'])
+@login_required
 def run_list():
     if db.version() < 2:
         return deprecated_message(menuname='runlist')
@@ -356,6 +356,7 @@ def run_barcodes():
     return render_template('bootstraptable.html', data=data, no_page=True)
 
 @bp.route('edit', methods=['GET'])
+@login_required
 def edit_form():
     id = request.args.get('idrequest', '', type=str)
     run = db.session().query(NGSRun).filter(NGSRun.id == id).one_or_none()
@@ -371,6 +372,7 @@ def edit_form():
     return render_template('ngsrun.html', data=data, barcodes=barcodes, id=id)
 
 @bp.route('new', methods=['GET'])
+@login_required
 def run_form():
     if db.version() < 2:
         return deprecated_message(menuname='newrun')
@@ -382,7 +384,6 @@ def run_form():
     return render_template('ngsrun.html', data=data, projects=projectlist, barcodes=barcodes, id=-1, default_project=current_user.settings.get('default_project', ''))
 
 @bp.route('delete', methods=['GET'])
-@login_required
 def delete_ngs_run():
     if id := request.args.get('id', type=int):
         authorized, unauthorized_projects = minilims_authorized_for_projects(projects_in_run(id))
