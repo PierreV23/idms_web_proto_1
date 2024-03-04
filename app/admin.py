@@ -18,6 +18,7 @@ from app.irods_helper import getmetaitem
 from app.datafield import datafield
 from app.irodssessions import irods_manager
 from app.settings import RESOURCE_PROPS
+from app.auth import auth_endpoint
 from . import flaskcache
 
 ATTR_ARCHIVE_STATUS = "sys::archive::status"
@@ -179,7 +180,7 @@ def archive_action():
     return jsonify({'status':'ok'})
 
 @bp.route('_archissue', methods=['GET'])
-@login_required
+@auth_endpoint
 def archive_issues():
     # Get issue collections
     with irods_manager.session() as session:
@@ -233,8 +234,8 @@ def admin():
         queues[q] = {'enabled': enabled, 'count': count}
     return render_template('queues.html', queues=queues)
 
-@login_required
 @bp.route('/resources')
+@login_required
 def resources():
     resources =  {}
     session = irods_manager.session()
@@ -260,8 +261,8 @@ def resources():
                         resources[r[Resource.name]][property] = value
     return render_template('resources.html', columns=RESOURCE_PROPS, resources=resources)
 
-@login_required
 @bp.route('/_update_resources', methods=['POST'])
+@auth_endpoint
 def update_resources():
     session = irods_manager.session()
     data = request.form.to_dict()
@@ -298,7 +299,6 @@ def update_resources():
     return redirect(url_for('admin.resources'))
 
 @bp.route('/modify')
-@login_required
 def modify():
     data = request.args.to_dict()
     action = data.get('action')
@@ -316,6 +316,7 @@ def modify():
     return redirect(url_for('admin.admin'))
 
 @bp.route('/tiering/pending')
+@login_required
 def pending_tiering_page():
     columns = [
         { "field": "collection", "title": "Collection", "sortable": True },
@@ -351,6 +352,7 @@ def pending_tiering_ops():
 
 
 @bp.route('/tiering/active')
+@login_required
 def active_tiering_page():
     columns = [
         { "field": "collection", "title": "Collection", "sortable": True },

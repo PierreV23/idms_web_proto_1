@@ -14,7 +14,7 @@ import logging
 from datetime import datetime, timezone
 from turtle import down
 from dateutil.relativedelta import relativedelta
-from flask import Blueprint, render_template, redirect, request, url_for, jsonify, make_response, flash, current_app
+from flask import Blueprint, render_template, redirect, request, url_for, jsonify, flash, current_app
 from flask_login import current_user, login_required
 from irods.models import Collection, CollectionMeta, DataObject, DataObjectMeta
 from irods.exception import CAT_NO_ROWS_FOUND, CAT_NO_ACCESS_PERMISSION, CollectionDoesNotExist
@@ -31,6 +31,7 @@ from . import irods_objects
 from .flaskcache import cache, key_zone, key_userzone, dep_zone, dep_userzone
 import json
 from app.constants import COLL_KEY_MAP, DATA_KEY_MAP, ATTR_RESOURCE_ONLINE
+from app.auth import auth_endpoint
 from . import constants
 
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
@@ -100,26 +101,18 @@ def collections_changed(path=None):
 # TODO: use the irods_helper instead (role irods_cronjobs)
 
 @bp.route('_propagate', methods=['POST'])
-@login_required
+@auth_endpoint
 def propagateDownstreamInvalid():
     irods_coll = request.form.get('collection', '/', type=str)
     try:
         downstream_collections = _propagateDownstreamInvalid(irods_coll, irods_coll)
     except Exception as e:
         logging.error(f"Propagation of user invalid state from {irods_coll} failed: {e}")
-        response =  make_response(
-            'Propagation unsuccessful',
-            500,
-        )
-        return response
+        return jsonify({'msg': 'Propagation unsuccessful',}), 500
     logging.info(f"Propagated user invalid state from {irods_coll} to {downstream_collections} successfully.")
-    response =  make_response(
-        'Propagation successful',
-        200,
-    )
     # Invalidate the cache for the next call to the graph function
     collections_changed()
-    return response
+    return jsonify({'msg': 'Propagation successful',}), 200
 
 def _propagateDownstreamInvalid(base_irods_coll, irods_coll):
     iqry.scollmetaval(irods_coll, ATTR_USER_STATE, "invalid")
@@ -136,7 +129,6 @@ def _propagateDownstreamInvalid(base_irods_coll, irods_coll):
 def getmetatree(irods_coll, attr, default=None):
     return  _getmetatree(irods_coll, attr, irods_coll, default=None)
 
-@login_required
 def _getmetatree(irods_coll, attr, base, default=None):
     value = iqry.qcollmetaval(irods_coll, attr)
     if value is not None:
@@ -147,7 +139,6 @@ def _getmetatree(irods_coll, attr, base, default=None):
     return default, None, True
 
 @bp.route('_meta')
-@login_required
 def coll_meta():
     path = request.args.get('path','/', type=str)
     selected_object = request.args.get('object', '', type=str)
@@ -179,7 +170,6 @@ def coll_meta():
     return render_template('metadata.html', coll_avu=coll_avu, object_avu=object_avu)
 
 @bp.route('_setKeepOnlineUntil', methods=['GET'])
-@login_required
 def setKeepOnlineUntil():
     irods_session = irods_manager.session()
 
@@ -200,18 +190,16 @@ def setKeepOnlineUntil():
 
 
 @bp.route('_setmeta', methods=['GET'])
-@login_required
 def setmeta():
     attr = request.args.get('attr')
     value = request.args.get('value')
     collection = request.args.get('collection')
     if attr and value and collection:
         iqry.scollmetaval(collection, attr, value)
-    return('DONE')
+    return 'DONE', 200
 
 
 @bp.route('_setoverride', methods=['GET'])
-@login_required
 def setoverride():
     attr = request.args.get('attr')
     value = request.args.get('value')
@@ -324,7 +312,6 @@ def coll_actions():
 
 
 @bp.route('_startprocess')
-@login_required
 def startprocess():
     collection = request.args.get('collection')
 
@@ -350,7 +337,6 @@ def startprocess():
     return 'DONE'
 
 @bp.route('_collist')
-@login_required
 def collist():
     path = request.args.get('path','/', type=str)
     display_field = iqry.qcollmetaval(path, 'ngsweb::display_field')
@@ -558,7 +544,6 @@ def related(coll, attr, forward=True, byname=True):
 
 
 @bp.route('/_graph')
-@login_required
 def generate_graph():
     coll = request.args.get('path', '/', type=str)
     maxlevels = request.args.get('levels', DEFAULT_GRAPH_LEVELS, type=int)
@@ -804,7 +789,6 @@ def add_items(path, level, active):
 
 
 @bp.route('/_tree')
-@login_required
 @cache.cached(timeout=60, key_prefix=key_zone)
 def colltree():
     active = request.args.get('active', '', type=str)
@@ -848,7 +832,6 @@ def collbrowser():
 
 
 @bp.route('upload_file', methods=['GET', 'POST'])
-@login_required
 def upload_file():
     if request.method == 'POST':
         requestdata = request.form.to_dict()
@@ -861,7 +844,6 @@ def upload_file():
         contents_changed()
     return redirect(url_for('collbrowser.collbrowser') + '?path=' + requestdata['collection'])
 
-@login_required
 @bp.route('_deletefile', methods=['POST'])
 def delete_file():
     requestdata = request.form.to_dict()
@@ -873,6 +855,7 @@ def delete_file():
 
 
 @bp.route('search')
+@login_required
 def search():
     return render_template('search.html')
 
@@ -1041,7 +1024,6 @@ def search_result_count(object_type, filter_dict, search_dict, searchId):
     return _search_result_count(object_type, filter_dict, search_dict)
 
 @bp.route('_search/<object_type>/', methods=['GET'])
-@login_required
 def search_result(object_type):
     limit = request.args.get('limit', -1, type=int)
     offset = request.args.get('offset', 0, type=int)
@@ -1102,7 +1084,6 @@ def search_result(object_type):
     return json.dumps(data)
 
 @bp.route('_search_table', methods=['GET'])
-@login_required
 def search_result_table():
     searchtext = (request.args.get('txt', '', type=str).strip())
     objectType = (request.args.get('objectType', 'dataset', type=str).strip())
@@ -1157,11 +1138,11 @@ def search_result_table():
     return content
 
 @bp.route('search_old')
+@login_required
 def search_old():
     return render_template('search_old.html')
 
 @bp.route('_search_old', methods=['GET'])
-@login_required
 def search_result_old():
     searchtext = (request.args.get('txt', '', type=str).strip())
     searchid = request.args.get('searchId', 0)

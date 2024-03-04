@@ -68,7 +68,6 @@ def pagebuttons(page_size, count, current_page, max_buttons, template):
     return before + after
 
 @bp.route('/api/pgprocs')
-@login_required
 def processgroupprocs():
     PGFIELDS = {
         'sys::runsheet::id': ('runsheet', 'runsheet'),
@@ -92,7 +91,6 @@ def processgroupprocs():
     return { 'rows': result }
     
 
-@login_required
 @cache.memoize(timeout=30, make_name=dep_zone)
 def joblist(state='', page=1):
     """Create a list of jobs in state state
@@ -180,7 +178,6 @@ def coll_shape(coll_type):
     return layout[constants.SHAPE2], layout[constants.COLOR1]    
 
 @bp.route('/processgraph')
-@login_required
 def processgraph():
     runsheet_coll = request.args.get('runsheet', '/', type=str)
     graph = Digraph('datagraph')
@@ -220,7 +217,6 @@ def processgraph():
     return graph.pipe(format='svg').decode('utf-8')
 
 @bp.route('/jobdetails')
-@login_required
 def jobdetails():
     #this could be either the object-name of the yaml file or meta information attached to the collection
     jobnaam = request.args.get('name', '', type=str)
@@ -280,7 +276,6 @@ def jobdetails():
     return render_template('jobdetails.html', details=details, multi=multi, runsheet=runsheet, pgid=pgid, jobnaam=datafield('jobnaam', jobnaam, 'runsheet'))
 
 @bp.route('joblogs')
-@login_required
 def job_logs():
     jobnaam = request.args.get('name', '', type=str)
     session = irods_manager.session()
@@ -320,7 +315,6 @@ def _get_logfiles(location, subdir=''):
     return(logs)
 
 @bp.route('/_joblog')
-@login_required
 @cache.cached(timeout=120, key_prefix=key_userzone)
 def show_logfile():
     path = request.args.get('path', '', type=str)

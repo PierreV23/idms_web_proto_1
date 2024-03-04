@@ -22,7 +22,6 @@ RESOURCES_OMIT = ('demoResc', 'bundleResc')
 
 bp = Blueprint('reports', __name__, url_prefix='/reports')
 
-@login_required
 def collection_size(coll, resource, timeout=86400):
     irods_session = irods_manager.session()
     size_attr = 'sys::collection_size::{}'.format(resource)
@@ -34,7 +33,6 @@ def collection_size(coll, resource, timeout=86400):
         size += int(round(float((q[CollectionMeta.value]))))
     return size
 
-@login_required
 def projectdata_in_resource(project, resource):
     # Find all collections with a specific projectid
     irods_session = irods_manager.session()
@@ -70,7 +68,6 @@ def download_report():
         
     
 
-@login_required
 def get_space_usage():
 
     #load projects
@@ -125,6 +122,7 @@ def inter2(a, b):
     return [ aa[i] for i in ids ]
 
 @bp.route('/seqdata')
+@login_required
 def sequencer_data():
     if not current_user.is_admin:
         return('<TR><TD COLSPAN=3>Access denied</TD></TR>')
@@ -167,6 +165,5 @@ def sequencer_data():
     return render_template('bootstraptable.html', data=data)
 
 @bp.route('/sequencers')
-@login_required
 def sequence():
     return render_template('report_sequencers.html')

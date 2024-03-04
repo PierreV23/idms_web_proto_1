@@ -21,14 +21,12 @@ from .projectdb_api import EPOCH, iso2dt, search, rest_call, add_checkbox
 
 BP = Blueprint('projects', __name__, url_prefix='/projects')
 
-@login_required
 def get_projectlist():
     pl, result = rest_call('GET', 'projects')
     projectlist = { p['name']: p for p in pl }
     #projectlist = sorted(projectlist)
     return projectlist
 
-@login_required
 def get_processlist(project):
     pl, result = rest_call('GET', f'projects/{project}/processes')
     processes = []
@@ -36,7 +34,6 @@ def get_processlist(project):
         processes = [ p['name'] for p in pl ]
     return processes
 
-@login_required
 def get_processgrouplist(project):
     pl, result = rest_call('GET', f'projects/{project}/processgroups')
     processgroups = []
@@ -44,7 +41,6 @@ def get_processgrouplist(project):
         processgroups = [ p['name'] for p in pl ]
     return processgroups
 
-@login_required
 def get_process2list():
     pl, result = rest_call('GET', 'processes')
     processes = []
@@ -62,7 +58,6 @@ def get_contactlist(project):
 
 
 @BP.route('/projects/delete_contact', methods=['POST'])
-@login_required
 def delete_contact():
     json = request.get_json(force=True)
     project_id = json['project_id']
@@ -77,7 +72,6 @@ def delete_contact():
 
 
 @BP.route('/projects/update_contact', methods=['POST'])
-@login_required
 def update_contact():
     json = request.get_json(force=True)
     project_id = json['project_id']
@@ -93,7 +87,6 @@ def update_contact():
 
 
 @BP.route('/projects/create_contact', methods=['POST'])
-@login_required
 def create_contact():
     json = request.get_json(force=True)
     project_id = json['project_id']
@@ -134,7 +127,6 @@ def show_projects():
 
 
 @BP.route('/details')
-@login_required
 def show_projectdetails():
     """
     Shows page with project settings and processes belonging to a project
@@ -252,7 +244,6 @@ def projectcolltable():
 
 
 @BP.route('/processdetails')
-@login_required
 def show_processdetails():
     """
     Shows page with process settings
@@ -265,7 +256,6 @@ def show_processdetails():
 
 
 @BP.route('/update_project', methods=['GET', 'POST'])
-@login_required
 def update_projectsettings():
     """
     Called when changing project settings from the web interface
@@ -311,7 +301,6 @@ def update_projectsettings():
     return redirect(f'{url_for("projects.show_projects")}?{location}')
 
 @BP.route('/_updateproc', methods=['POST'])
-@login_required
 def update_process():
     requestdata = request.form.to_dict()
     data = {}
@@ -337,7 +326,6 @@ def get_process():
     return jsonify(processlist)
 
 @BP.route('_myprojectview', methods=['GET'])
-@login_required
 def my_projectview():
 
     projectlist = current_user.projects()
@@ -355,7 +343,6 @@ def my_projectview():
 
 
 @BP.route('_pgaction', methods=['GET', 'POST'])
-@login_required
 def pgaction():
     project = request.args.get('project')
     group = request.args.get('group')
@@ -424,7 +411,6 @@ def pgaction():
     return "OK"
 
 @BP.route('_pggraph', methods=['GET'])
-@login_required
 def pg_graph():
     """Generate a graph of process flow
 
@@ -484,7 +470,6 @@ def pg_graph():
     return graph_output
 
 @BP.route('_pgdetails')
-@login_required
 def pg_details():
 
     project = request.args.get('project')
@@ -518,7 +503,6 @@ def pg_details():
         dependencies=dependency_names, message=message)
 
 @BP.route('processgroups', methods=['GET'])
-@login_required
 def processgroups():
     # Retrieve the list of processes in a group
     project = request.args.get('project')
@@ -531,7 +515,6 @@ def processgroups():
 
 
 @BP.route('usermanager', methods=['GET'])
-@login_required
 def usermanager():
     objectname = request.args.get('object')
     objecttype = request.args.get('objecttype')
@@ -541,7 +524,6 @@ def usermanager():
     return render_template('usermanager.html', object=objectname, objecttype=objecttype, usertype=usertype)
 
 @BP.route('processusage', methods=['GET'])
-@login_required
 def processusage():
     process = request.args.get('process')
     return render_template('processusage.html', process=process)

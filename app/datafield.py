@@ -259,7 +259,6 @@ class data_collection_id(data_base):
         super().__init__(name, value, datatype)
 
     @property
-    @login_required
     def ref_col(self):
         if self._searched_for_ref_col:
             return self._ref_col
