@@ -15,8 +15,8 @@ ReferenceData
           </select></td>
           <td>    
             <select class="form-control form-control-sm disabled invisible" id="refDataSetVersionSelect">
-              <option disabled selected value> -- select a version id -- </option>
-              <option value="-1">Latest (dynamic)</option>
+              <!--option disabled selected value> -- select a version id -- </option>
+              <option value="-1">Latest (dynamic)</option-->
           </select></td>
           <td><button class="btn-success disabled invisible" id="btnAddRefData"><i class="fas fa-plus-circle"></i></button></td>
       </tr>
@@ -39,13 +39,36 @@ function addEventDeleteBtn(id) {
   });
 }
 
+
+function addEventChangeVersion(id) {
+  document.getElementById('refDataSetVersion-'+id).addEventListener('change', function() {
+       alert(id);
+       $.get('{{ url_for("projects.process_set_referencedataversion") }}', { 
+            referencedataid: id,
+            referencedataversionid:  $( '#refDataSetVersion-'+id).val(),
+            processid: '{{ processid }}'
+        }, function(data) {
+            //$('#refdata-row-'+id).remove()
+            alert( JSON.stringify(data))
+        })
+  });
+}
+
+
 function build_line( ref_data, versions ) {
-     html = '<tr id="refdata-row-'+ref_data.id +'"><th scope="row"></th><th>' + ref_data.referencedata.name + ' (Version: '+ ref_data.referencedataversion.version+')</th>'
-     html += '<td><select class="form-control form-control-sm" id="refDataSetVersion-' + ref_data.id + '>'
-     html += '    <option value="0">Latest (dynamic)</option>'
+    versionidstr = "Latest (dynamic)"
+    versionid = -1
+    alert( JSON.stringify(ref_data))
+    if( ref_data.referencedataversion != null ){
+        versionidstr = ref_data.referencedataversion.version
+        versionid = ref_data.referencedataversion.version 
+    }
+     html = '<tr id="refdata-row-'+ref_data.id +'"><th scope="row"></th><th>' + ref_data.referencedata.name + '</th>'
+     html += '<td><select class="form-control form-control-sm" id="refDataSetVersion-' + ref_data.id + '">'
+     html += '    <option value="-1">Latest (dynamic)</option>'
      for ( const v of versions ) {
         selected=""
-        if (v.id == ref_data.referencedataversion.version ) {
+        if (v.id == versionid ) {
            selected="selected"
         }
         html += '<option value="'+ v.id +'"' + selected + '>'+ v.name +' ('+v.id+')</option>'
@@ -57,14 +80,12 @@ function build_line( ref_data, versions ) {
 }
 
 function build_reference_data_table(reference_datas, ref_versions) {
-    //alert(JSON.stringify(reference_datas))
-    //alert(JSON.stringify(ref_versions))
     $('#refdata_table > tbody').empty()
     for ( ref_data of reference_datas ){
         let versions  = ref_versions[ref_data.referencedataid]
-        //alert(JSON.stringify(versions))
         $('#refdata_table > tbody:last-child').append( build_line( ref_data, versions ) )
         addEventDeleteBtn(ref_data.id)
+        addEventChangeVersion(ref_data.id)
     }; 
 
 }
@@ -73,6 +94,9 @@ $('document').ready(function(){
     reference_data_sets = {{reference_data_sets|tojson}}
     reference_datas_for_process = {{reference_data_for_process|tojson}}
     ref_versions = {{ref_versions|tojson}}
+    //alert(JSON.stringify(reference_data_sets))
+    //alert(JSON.stringify(reference_datas_for_process))
+    //alert(JSON.stringify(ref_versions))
     for( ref of reference_data_sets ) {
         $('#refDataSetSelect').append( new Option(ref.name + '('+ref.id+')', ref.id ) ) 
     };
@@ -90,6 +114,10 @@ $('#refDataSetSelect').on('change', function() {
     $.get('{{ url_for("projects.referencedataversions") }}', { 
         referencedataid: this.value
     }, function(data) {
+        o = new Option( " -- select a version id -- ", null, true, true )
+        o.setAttribute("disabled", "disabled")
+        $('#refDataSetVersionSelect').append( o )
+        $('#refDataSetVersionSelect').append( new Option( "Latest (dynamic)", -1 ))
        for( version of data ) {
             $('#refDataSetVersionSelect').append( new Option(version.name + '('+version.id+')', version.id ) ) 
         };
@@ -108,20 +136,20 @@ $('#btnAddRefData').on('click', function() {
         referencedataid: $('#refDataSetSelect').val(),
         referencedataversionid:  $('#refDataSetVersionSelect').val(),
         processid: '{{ processid }}'
-    }, function(data) {
-        alert(JSON.stringify(data))
-        let all_versions = {{ref_versions|tojson}};
-        let versions_of_refdata = all_versions[data.referencedata.id]
-        $('#refdata_table > tbody:last-child').append( build_line( data, versions_of_refdata ) )
-        addEventDeleteBtn( data.id)
-      //window.location.reload();
+    }, function(refdata_conn) {
+        alert(JSON.stringify(refdata_conn))
+        $.get('{{ url_for("projects.referencedataversions") }}', { 
+            referencedataid: refdata_conn.referencedata.id
+        }, function( versions ) {
+            $('#refdata_table > tbody:last-child').append( build_line( refdata_conn, versions ) )
+            addEventChangeVersion(refdata_conn.id)
+            addEventDeleteBtn( refdata_conn.id)
+        })
     });
 
     $('#btnAddRefData').addClass('invisible disabled')
     $('#refDataSetVersionSelect').addClass('invisible')
     $('#refDataSetVersionSelect').empty()
-    $("#refDataSetSelect").prop("selectedIndex", 0 ) /* function () {
-      return this.defaultSelected;
-    }); */
+    $("#refDataSetSelect").prop("selectedIndex", 0 ) 
 }) 
 </script>

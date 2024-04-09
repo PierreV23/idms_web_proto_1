@@ -410,8 +410,8 @@ def process_add_referencedataversion():
     processid = request.args.get('processid') 
     result, r = rest_call('POST', f'/processes/{processid}/referencedataversion',
                                 {"referencedataid": referencedataid ,
-                                 "referencedata_versionid": referencedataversionid } )
-    print(result)
+                                 "referencedataversionid": referencedataversionid } )
+    print( result )
     return result
 
 @BP.route('_process_del_referencedataversion', methods=['GET'])
@@ -419,16 +419,22 @@ def process_del_referencedataversion():
     processid = request.args.get('processid') 
     referencedataid = request.args.get('referencedataid')
     result, r = rest_call('DELETE', f'/processes/{processid}/referencedataversion/{referencedataid}' )
-    print( "delete done!" )
-    print(r)
-    print(result)
     return result
+
+
+@BP.route('_process_set_referencedataversion', methods=['GET'])
+def process_set_referencedataversion():
+    referencedataid = request.args.get('referencedataid')
+    referencedataversionid = request.args.get('referencedataversionid')
+    processid = request.args.get('processid') 
+    result, r = rest_call('PUT', f'/processes/{processid}/referencedataversion/{referencedataid}',
+                                { "referencedataversionid": referencedataversionid } )
+    return result               
 
 @BP.route('_referencedataversions', methods=['GET'])
 def referencedataversions():
     referencedataid = request.args.get('referencedataid')
     all_versions, r = rest_call('GET', f'reference/{referencedataid}/versions')
-    print(all_versions)
     return all_versions
 
 @BP.route('_pg_add_referencedataversions', methods=['GET'])
