@@ -69,6 +69,13 @@ LAYOUT = {
         COLOR2: '#c3e6cb',
         TABLECLASS : 'table-done'        
     },
+    'choose': {
+        SHAPE1 : 'underline',
+        SHAPE2 : 'cds',
+        COLOR1: '#bee5eb',
+        COLOR2: '#bee5eb',
+        TABLECLASS : 'table-choose'    
+    },    
     'prepare': {
         SHAPE1 : 'underline',
         SHAPE2 : 'cds',
@@ -96,13 +103,6 @@ LAYOUT = {
         COLOR1: '#bdbdbd',
         COLOR2: '#bdbdbd',
         TABLECLASS : 'table-queued'    
-    },
-    'startup': {
-        SHAPE1 : 'underline',
-        SHAPE2 : 'cds',
-        COLOR1: '#bee5eb',
-        COLOR2: '#bee5eb',
-        TABLECLASS : 'table-startup'    
     },
     'active': {
         SHAPE1 : 'underline',
