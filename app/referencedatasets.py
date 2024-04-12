@@ -13,7 +13,6 @@ from flask import jsonify
 from irods.models import Collection, CollectionMeta, User, UserMeta
 from irods.column import Criterion
 from app.datafield import datafield
-from graphviz import Digraph
 from . import iqry
 from app.constants import COLL_KEY_MAP
 from app.irodssessions import irods_manager

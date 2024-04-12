@@ -222,14 +222,7 @@ menuname='collectionbrowser'
     }
     let top = centertop + $('#graphimg').scrollTop() - $('#graphimg').offset().top - $('#graphimg').height() / 2
     $('#graphimg').scrollTop(top)
-    if (top < 0) {
-      if ($('svg').height() < $('#graphimg').height()) {
-        $('svg').addClass('vertical-center');
-      }
-    } else {
-      $('#graphimg').scrollTop(top);
-    }
-    $('svg').width($('#graphimg').width()*0.95)
+
   }
 
   function load_list(new_path) {
