@@ -19,6 +19,10 @@
 <!-- FontAwesome -->
 <link rel="stylesheet" href="{{ url_for('static', filename='font-awesome-6.2.1/css/all.min.css') }}">
 
+<!-- MyCustomCss -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/my-custom-formatting.css') }}">
+
+
 <title>iRODS</title>
 
 <script src="{{ url_for('static', filename='js/moment.min.js') }}"></script>
@@ -83,9 +87,9 @@
     if ($('#dontshow').is(":checked")) {
       $.post('{{ url_for("msgconfirm") }}')
     }
-  })  
+  })
 </script>
-  
+
 
 {% endif %}
 {% endwith %}
@@ -123,10 +127,10 @@
         </div>
         <div class="info mt-3 ml-5">
           <a href="{{ url_for('auth.logout') }}">
-            Logout 
-            <i class="fas fa-sign-out-alt nav-item"></i> 
+            Logout
+            <i class="fas fa-sign-out-alt nav-item"></i>
           </a>
-        </div>  
+        </div>
       </div>
 
       <!-- SidebarSearch Form -->
@@ -162,14 +166,12 @@
             </a>
           </li>
 
-          {% if current_user.is_admin %}
           <li class="nav-item">
             <a href="{{ url_for('upload.show_uploads') }}" data-menuname="uploads" class="nav-link">
               <i class="fas fa-upload nav-icon"></i>
               <p>Dataset Uploads</p>
             </a>
           </li>
-          {% endif %}
 
           {% if 'PROJECTS' in current_user.features %}
           <li class="nav-item">
@@ -186,7 +188,17 @@
               </i>
               <p>Processes</p>
             </a>
-          </li>          
+          </li>
+          {% endif %}
+
+          {% if 'REFERENCE' in current_user.features %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('reference.show_reference_datasets') }}" data-menuname="reference-datasets" role="button">
+              <i class="fas fa-warehouse nav-icon"> <!-- other option: fa-boxes-stacked -->
+              </i>
+              <p>Reference datasets</p>
+            </a>
+          </li>
           {% endif %}
 
           {% if 'MINILIMS' in current_user.features %}
@@ -246,6 +258,18 @@
                 </a>
               </li>
               <li class="nav-item">
+                <a class="nav-link" data-menuname="pendingtiering" href="/admin/tiering/pending">
+                  <i class="nav-icon fas fa-stream"></i>
+                  <p>Pending data migration jobs</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" data-menuname="activetiering" href="/admin/tiering/active">
+                  <i class="nav-icon fas fa-stream"></i>
+                  <p>Active data migration jobs</p>
+                </a>
+              </li>
+              <li class="nav-item">
                 <a class="nav-link" data-menuname="dataissues" href="/admin/issues">
                   <i class="nav-icon fas fa-exclamation"></i>
                   <p>Data issues</p>
@@ -257,7 +281,6 @@
                   <p>Archive issues</p>
                 </a>
               </li>
-              <a class="dropdown-item" href="{{ url_for('admin.archive_issues') }}">Archive issues</a>
             </ul>
           </li>
 
@@ -284,7 +307,7 @@
           </li>
 
           {% endif %}
-          
+
           <li class="nav-item">
             <a href="{{ url_for('collbrowser.search') }}" data-menuname="search" class="nav-link">
               <i class="fas fa-microscope nav-icon"></i>
@@ -314,7 +337,7 @@
         <ul class="nav nav-pills nav-btns nav-sidebar nav-child-indent flex-column float-down" data-widget="treeview" role="menu"
         data-accordion="false"  id="context_dependant_menu_list2">
           {% block menubuttons %}
-          {% endblock %}          
+          {% endblock %}
         </ul>
       </nav>
       <!-- /.sidebar-menu -->

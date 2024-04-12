@@ -1,18 +1,18 @@
 <!-- PROCESS SETTINGS -->
 <div class="card h-100">
   <div class="card-header">
-    <ul class="nav nav-pills nav2">
+    <ul class="nav nav-tabs nav2">
       <li class="nav-item mx-2">
-        <button class="btn btn-outline-primary active" id="procsettings-tab" data-toggle="tab" href="#procsettings"
-          role="tab" aria-controls="procsettings" aria-selected="false">Settings</button>
+        <a class="nav-link active" id="procsettings-tab" data-toggle="tab" href="#procsettings"
+          role="tab" aria-controls="procsettings" aria-selected="false">Settings</A>
       </li>
       <li class="nav-item mx-2">
-        <button class="btn btn-outline-primary" id="users-tab" data-toggle="tab" href="#users" role="tab"
-          aria-controls="users" aria-selected="false">Managers</button>
+        <a class="nav-link" id="users-tab" data-toggle="tab" href="#users" role="tab"
+          aria-controls="users" aria-selected="false">Managers</a>
       </li>
       <li class="nav-item mx-2">
-        <button class="btn btn-outline-primary" id="usage-tab" data-toggle="tab" href="#usage-content" role="tab"
-          aria-controls="usage-content" aria-selected="false">Usage</button>
+        <a class="nav-link" id="usage-tab" data-toggle="tab" href="#usage-content" role="tab"
+          aria-controls="usage-content" aria-selected="false">Usage</a>
       </li>
     </ul>
   </div>
@@ -33,6 +33,12 @@
           <label for="gitrepo_{{process}}">GIT Repository</label>
           <input type="text" class="form-control" name="repo" id="repo_{{process}}" placeholder="GIT Repo"
             value="{{ details['repo'] }}">
+        </div>
+
+        <div class="form-group">
+          <label for="max_runtime_{{process}}">Maximum Runtime (s) (0 to disable)</label>
+          <input type="number" class="form-control" name="max_runtime" id="max_runtime_{{process}}" placeholder="Max Runtime"
+            value="{{ details['max_runtime'] }}">
         </div>
 
         <div class="form-group">

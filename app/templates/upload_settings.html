@@ -12,7 +12,7 @@ menuname='upload_settings'
 
 <div class="card">
     <div class="card-body">
-        <form method="POST" action="{{ url_for('upload.upload_settings') }}">
+        <form method="POST" action="{{ url_for('upload.upload_settings') }}" id="upload-settings-form">
             <input type="hidden" name="coll" value="{{ coll }}">
             <div class="form-group">
                 <label for="project-select">Select project</label>
@@ -32,17 +32,67 @@ menuname='upload_settings'
             {% endif %}
             {% endfor %}
             <div class="form-group float-right">
-                <button type="subbmit" class="formsubmit btn btn-primary" name="submitbutton" value="save" disabled>Save</button>
-                <button type="subbmit" class="formsubmit btn btn-primary" name="submitbutton" value="next" disabled>Save & Continue</button>
+                <button type="button" id="button-save" class="formsubmit btn btn-primary" value="save" disabled>Save</button>
+                <button type="button" id="button-save-continue" class="formsubmit btn btn-primary" value="next" disabled>Save & Continue</button>
+                <input type="hidden" id="submitbutton" name="submitbutton" value="save">
             </div>
         </form>
     </div>
 </div>
 
+
+<!-- Modal - confirm change of projects for upload -->
+<div class="modal fade" id="confirm-change-upload-project" role="dialog" data-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm change of projects</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to change the project for this upload?
+                This will remove all metadata you have already filled in!
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="save-changes-button" data-dismiss="modal">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 <script>
 
+
+function submitForm() {
+    $("#upload-settings-form").submit();
+}
+
+function openConfirmationModal() {
+    $('#confirm-change-upload-project').modal('toggle')
+}
+
+$('#button-save, #button-save-continue').on('click', function(event) {
+    var button = event.target;
+    $("#submitbutton").val(button.value);
+
+    // open confirmation modal if the project has changed
+    selected_project = document.getElementById('project-select').value
+    if ( "{{ data.get('projectID') }}" != '' && selected_project != "{{ data.get('projectID') }}") {
+        openConfirmationModal()
+    } else {
+        submitForm()
+    }
+});
+
+$("#save-changes-button").on("click", function () {
+    submitForm();
+});
+
 $('input, select').on('change', function() {
-    console.log('ENABLE')
     $('.formsubmit').prop("disabled", false);
 })
 

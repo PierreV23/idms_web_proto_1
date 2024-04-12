@@ -25,7 +25,7 @@ menuname='dataissues'
 
 <div class="card h-100">
   <div class="card-header">
-    <ul class="nav nav-pills" id="myTab" role="tablist">
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
       <li class="nav-item">
         <a class="nav-link" id="checksum-tab" data-toggle="pill" href="#checksum-issues" role="tab"
           aria-controls="checksum-issues" aria-selected="true">Checksum issues</a>
@@ -34,7 +34,10 @@ menuname='dataissues'
         <a class="nav-link" id="consistency-tab" data-toggle="pill" href="#consistency-issues" role="tab"
           aria-controls="consistency-issues" aria-selected="false">Consistency issues</a>
       </li>
-
+      <li class="nav-item">
+        <a class="nav-link" id="replicastate-tab" data-toggle="pill" href="#replicastate-issues" role="tab"
+          aria-controls="replicastate-issues" aria-selected="false">Replica issues</a>
+      </li>
     </ul>
   </div>
   <div class="card-body tab-content h-100 scroll" id="myTabContent">
@@ -68,16 +71,30 @@ menuname='dataissues'
         </thead>
       </table>
     </div>
+    <div class="tab-pane fade" id="replicastate-issues" role="tabpanel" aria-labelledby="replicastate-tab">
+      <table id="replicastate-table" data-pagination="true"
+        data-show-refresh="true" data-toggle="table">
+        <thead>
+          <tr>
+            <th data-field="path" data-sortable="true">Dataobject</th>
+            <th data-field="replica">Replica number</th>
+            <th data-field="replstate" data-sortable="true">Replication state value</th>
+            <th data-field="replstate_name" data-sortable="true">Replication state</th>
+          </tr>
+        </thead>
+      </table>
+    </div>
   </div>
 
 </div>
 
 <script>
-  var $table = $('#consistency-table')
+  var $ctable = $('#consistency-table')
+  var $rtable = $('#replicastate-table')
 
   $('a[data-toggle="pill"]').on('shown.bs.tab', function (e) {
     if (e.target.id == "consistency-tab") {
-      $table.bootstrapTable('refresh', { url: "{{ url_for('admin.data_consistency') }}" })
+      $ctable.bootstrapTable('refresh', { url: "{{ url_for('admin.data_consistency') }}" })
     } else if ( e.target.id == "checksum-tab" ) {
       cardid = $(this).data('label')
       if (!loaded_cards.has(cardid)) {
@@ -87,6 +104,8 @@ menuname='dataissues'
           })
         loaded_cards.add(cardid)
       }
+    } else if ( e.target.id == "replicastate-tab") {
+      $rtable.bootstrapTable('refresh', { url: "{{ url_for('admin.data_replstate') }}" })
     }
   })
 

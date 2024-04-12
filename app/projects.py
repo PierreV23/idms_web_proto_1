@@ -6,81 +6,28 @@ Created on Tue Nov 19 09:05:26 2019
 @author: wierinve
 """
 
-import base64
 import json
-import requests
-from requests.auth import HTTPBasicAuth
-from flask import abort, flash, Blueprint, render_template, redirect, request, url_for, current_app
+from flask import abort, flash, Blueprint, render_template, redirect, request, url_for
 from flask_login import current_user, login_required
 from flask import jsonify
-from irods.exception import CAT_NO_ACCESS_PERMISSION
-from irods.models import Collection, CollectionMeta, User, UserMeta, UserGroup
+from irods.models import Collection, CollectionMeta, User, UserMeta
 from irods.column import Criterion
-from app.datafield import AVU2data, datafield
+from app.datafield import datafield
 from app.mermaid import Mermaid
+from app.datafield import datafield
 from . import iqry
-from .flaskcache import cache, dep_zone, dep_userzone, key_zone
-from dateutil import parser as dateparser
 from app.constants import COLL_KEY_MAP
 from app.irodssessions import irods_manager
-
+from .projectdb_api import EPOCH, iso2dt, search, rest_call, add_checkbox
 
 BP = Blueprint('projects', __name__, url_prefix='/projects')
 
-REQUESTS_METHODS = {
-    'GET':   requests.get,
-    'PUT':   requests.put,
-    'POST':  requests.post,
-    'DELETE':requests.delete
-}
-
-EPOCH = '1970-01-01T01:00:00'
-
-def iso2dt(timestr):
-    """Convert ISO8601 datetime string to datetime
-
-    Args:
-        timestr (str): ISO8601 datetime string
-    """
-    if timestr is None:
-        timestr = EPOCH
-    return dateparser.parse(timestr)
-
-def search(l, f, v):
-    """Find an item x in a list l of objects
-    where f(x) = v
-    """
-    matches = [ x for x in l if f(x) == v ]
-    if not matches:
-        matches = None
-    return matches
-
-@login_required
-@cache.memoize(timeout=30, make_name=dep_userzone)
-def rest_call(request_type, endpoint, data={}):
-    if (hostname := current_app.config.get('API_HOST')) is None:
-        hostname = current_user.irods_server
-    url = 'http://{}/api/1.0/{}'.format(hostname, endpoint)
-    auth = HTTPBasicAuth('alt\\{}'.format(current_user.username), current_user.ntlm_hash)
-    return_data = {}
-    if request_type in REQUESTS_METHODS:
-        response = REQUESTS_METHODS[request_type](url, auth=auth, json=data)
-    try:
-        return_data = response.json()
-    except:
-        return_data = {}
-    if request_type != 'GET':
-        cache.delete_memoized(rest_call)
-    return return_data, response.status_code
-
-@login_required
 def get_projectlist():
     pl, result = rest_call('GET', 'projects')
     projectlist = { p['name']: p for p in pl }
     #projectlist = sorted(projectlist)
     return projectlist
 
-@login_required
 def get_processlist(project):
     pl, result = rest_call('GET', f'projects/{project}/processes')
     processes = []
@@ -88,7 +35,6 @@ def get_processlist(project):
         processes = [ p['name'] for p in pl ]
     return processes
 
-@login_required
 def get_processgrouplist(project):
     pl, result = rest_call('GET', f'projects/{project}/processgroups')
     processgroups = []
@@ -96,7 +42,6 @@ def get_processgrouplist(project):
         processgroups = [ p['name'] for p in pl ]
     return processgroups
 
-@login_required
 def get_process2list():
     pl, result = rest_call('GET', 'processes')
     processes = []
@@ -114,7 +59,6 @@ def get_contactlist(project):
 
 
 @BP.route('/projects/delete_contact', methods=['POST'])
-@login_required
 def delete_contact():
     json = request.get_json(force=True)
     project_id = json['project_id']
@@ -124,12 +68,11 @@ def delete_contact():
     if status == 200:
         ret = { "success": True }
     else:
-        ret = { "msg": f"Error: {result['msg']}"}
+        ret = { "msg": f"Error: {result['message']}"}
     return ret
 
 
 @BP.route('/projects/update_contact', methods=['POST'])
-@login_required
 def update_contact():
     json = request.get_json(force=True)
     project_id = json['project_id']
@@ -140,12 +83,11 @@ def update_contact():
     if status == 200:
         ret = { "success": True }
     else:
-        ret = { "msg": f"Error: {result['msg']}", "contact": result['contact'] }
+        ret = { "msg": f"Error: {result['message']}", "contact": result['contact'] }
     return ret
 
 
 @BP.route('/projects/create_contact', methods=['POST'])
-@login_required
 def create_contact():
     json = request.get_json(force=True)
     project_id = json['project_id']
@@ -155,7 +97,7 @@ def create_contact():
     if status == 201:
         ret = { "success": True , "contact": result }
     else:
-        ret = { "msg": f"Error: {result['msg']}"}
+        ret = { "msg": f"Error: {result['message']}"}
     return ret
 
 
@@ -167,7 +109,7 @@ def show_projects():
 
     url params:
         project: switch to projects page and show <project>
-        process: swicth to processes  page and show <processid> 
+        process: switch to processes page and show <processid> 
     """
     # TODO: refactor passing of arguments
     page = request.args.get('page', 'projects')
@@ -178,16 +120,14 @@ def show_projects():
     processgroup = request.args.get('processgroup', '')
     processlist = get_process2list()
     if page == 'processes':
-        return render_template('processes2.html', processes=processlist, process=process)
+        return render_template('processes.html', processes=processlist, process=process)
     else:
         projectlist = get_projectlist()
-        return render_template('projects3.html', projects=projectlist, processes=processlist, 
+        return render_template('projects.html', projects=projectlist, processes=processlist, 
             project=project, process=process, pp=pp, processgroup=processgroup)
 
 
-
 @BP.route('/details')
-@login_required
 def show_projectdetails():
     """
     Shows page with project settings and processes belonging to a project
@@ -305,7 +245,6 @@ def projectcolltable():
 
 
 @BP.route('/processdetails')
-@login_required
 def show_processdetails():
     """
     Shows page with process settings
@@ -317,17 +256,7 @@ def show_processdetails():
     return render_template('processdetails.html', details=pl)
 
 
-def add_checkbox(data, attr, name, negate=False, key=None):
-    set_value = 0 if negate else 1
-    datakey = key if key else name
-    if name in attr:
-        data[datakey] = set_value
-    else:
-        data[datakey] = 1 - set_value
-    return data
-
 @BP.route('/update_project', methods=['GET', 'POST'])
-@login_required
 def update_projectsettings():
     """
     Called when changing project settings from the web interface
@@ -373,13 +302,12 @@ def update_projectsettings():
     return redirect(f'{url_for("projects.show_projects")}?{location}')
 
 @BP.route('/_updateproc', methods=['POST'])
-@login_required
 def update_process():
     requestdata = request.form.to_dict()
     data = {}
     procid = requestdata.get('procid')
     process = requestdata.get('process')
-    for attr in ['description', 'repo', 'tag', 'concurrency_limit']:
+    for attr in ['description', 'repo', 'tag', 'concurrency_limit', 'max_runtime']:
         if attr in requestdata:
             data[attr] = requestdata[attr]
     add_checkbox(data, requestdata, 'do_staging', negate=True, key='omit_staging')
@@ -399,7 +327,6 @@ def get_process():
     return jsonify(processlist)
 
 @BP.route('_myprojectview', methods=['GET'])
-@login_required
 def my_projectview():
 
     projectlist = current_user.projects()
@@ -417,7 +344,6 @@ def my_projectview():
 
 
 @BP.route('_pgaction', methods=['GET', 'POST'])
-@login_required
 def pgaction():
     project = request.args.get('project')
     group = request.args.get('group')
@@ -486,7 +412,6 @@ def pgaction():
     return "OK"
 
 @BP.route('_pggraph', methods=['GET'])
-@login_required
 def pg_graph():
     """Generate a graph of process flow
 
@@ -546,7 +471,6 @@ def pg_graph():
     return graph_output
 
 @BP.route('_pgdetails')
-@login_required
 def pg_details():
 
     project = request.args.get('project')
@@ -555,7 +479,7 @@ def pg_details():
     mode = request.args.get('mode')
     pl, result = rest_call('GET', f'projects/{project}/processgroups/{group}/processes')
     all_processes, result = rest_call('GET', f'processes')
-    all_processes = sorted(all_processes, key = lambda x: x.get('name') )
+    all_processes = sorted(all_processes, key=lambda x: x.get('name').lower())
     dependency_names = []
     selected_details = None
     selected_tags = []
@@ -580,7 +504,6 @@ def pg_details():
         dependencies=dependency_names, message=message)
 
 @BP.route('processgroups', methods=['GET'])
-@login_required
 def processgroups():
     # Retrieve the list of processes in a group
     project = request.args.get('project')
@@ -593,7 +516,6 @@ def processgroups():
 
 
 @BP.route('usermanager', methods=['GET'])
-@login_required
 def usermanager():
     objectname = request.args.get('object')
     objecttype = request.args.get('objecttype')
@@ -603,7 +525,6 @@ def usermanager():
     return render_template('usermanager.html', object=objectname, objecttype=objecttype, usertype=usertype)
 
 @BP.route('processusage', methods=['GET'])
-@login_required
 def processusage():
     process = request.args.get('process')
     return render_template('processusage.html', process=process)

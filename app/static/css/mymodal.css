@@ -595,9 +595,9 @@ ul {
   background-color: #bdbdbd;
 }
 
-.table-startup,
-.table-startup>td,
-.table-startup>th {
+.table-choose,
+.table-choose>td,
+.table-choose>th {
   background-color: #bee5eb;
 }
 
@@ -617,6 +617,12 @@ ul {
 .table-postprocessing>td,
 .table-postprocessing>th {
   background-color: #99ffcc;
+}
+
+.table-notify,
+.table-notify>td,
+.table-notify>th {
+  background-color: #c9d3cb;
 }
 
 

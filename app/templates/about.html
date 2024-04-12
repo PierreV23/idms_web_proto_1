@@ -3,7 +3,9 @@
 {% block heading %}
 <H3>About</H3>
 {% endblock %}
-
+{%block menuname %}
+menuname='about'
+{% endblock %}
 {% block content %}
 
 <div class="card">
@@ -28,8 +30,20 @@
         iRODS environment
     </div>
     <div class="card-body">
-        iRODS Server version : {{ version }}
+        iRODS Server version : {{ irods_version }}
     </div>
 </div>
+<div class="card">
+    <div class="card-header">
+        NGSweb
+    </div>
+    <div class="card-body">
+        <ul>
+            <li>git commit hash: <A href="https://gitlab.rivm.nl/bioinformatics/ngsweb/-/tree/{{ ngsweb_version }}"</a>{{ ngsweb_version[:8] }}</A></li>
+            <li>git branch name: <A href="https://gitlab.rivm.nl/bioinformatics/ngsweb/-/tree/{{ ngsweb_branch }}"</a>{{ ngsweb_branch }}</A></li>
+        </ul>
+    </div>
+</div>
+
 
 {% endblock %}

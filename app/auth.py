@@ -5,12 +5,13 @@ Created on Tue Nov 12 14:33:10 2019
 
 @author: wierinve
 """
+import functools
 import logging
 
 from datetime import timedelta
-from flask import Blueprint, flash, render_template, redirect, request, url_for, current_app
+from flask import Blueprint, flash, render_template, redirect, request, url_for, current_app, jsonify
 from flask_login import login_user, logout_user, current_user, login_required
-from app.models import WebUser
+from app.webuser import WebUser
 from . import messages
 from .ngsruns import db
 
@@ -44,10 +45,18 @@ def login():
 
 
 @bp.route('/logout')
-@login_required
 def logout():
     logging.info(f"User {current_user.username} logged out of {current_user.environment} environment")
     current_user.delete()
     # TODO Remie: remove iRODS sessions as well?
     logout_user()
     return redirect(url_for('auth.login'))
+
+# This decorator can be used for API functions that require authentication
+def auth_endpoint(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return jsonify({'msg': 'Authentication required'}), 401
+        return func(*args, **kwargs)
+    return wrapper

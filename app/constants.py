@@ -69,6 +69,13 @@ LAYOUT = {
         COLOR2: '#c3e6cb',
         TABLECLASS : 'table-done'        
     },
+    'choose': {
+        SHAPE1 : 'underline',
+        SHAPE2 : 'cds',
+        COLOR1: '#bee5eb',
+        COLOR2: '#bee5eb',
+        TABLECLASS : 'table-choose'    
+    },    
     'prepare': {
         SHAPE1 : 'underline',
         SHAPE2 : 'cds',
@@ -97,13 +104,6 @@ LAYOUT = {
         COLOR2: '#bdbdbd',
         TABLECLASS : 'table-queued'    
     },
-    'startup': {
-        SHAPE1 : 'underline',
-        SHAPE2 : 'cds',
-        COLOR1: '#bee5eb',
-        COLOR2: '#bee5eb',
-        TABLECLASS : 'table-startup'    
-    },
     'active': {
         SHAPE1 : 'underline',
         SHAPE2 : 'cds',
@@ -124,6 +124,13 @@ LAYOUT = {
         COLOR1: '#99ffcc',
         COLOR2: '#99ffcc',
         TABLECLASS : 'table-postprocessing' 
+    },
+    'notify': {
+        SHAPE1 : 'underline',
+        SHAPE2 : 'cds',
+        COLOR1: '#c9d3cb',
+        COLOR2: '#c9d3cb',
+        TABLECLASS : 'table-notify' 
     },
     'done':  {
         SHAPE1 : 'box3d',
@@ -196,20 +203,27 @@ LAYOUT = {
         SHAPE2: 'box3d',
         COLOR1: 'yellow',
         COLOR2: '#FFFF00',
-        TABLECLASS: 'table-white'        
+        TABLECLASS: 'table-white'
     },
     'refsamp_report': {
         SHAPE1: 'box3d',
         SHAPE2: 'box3d',
         COLOR1: 'yellow',
         COLOR2: '#FFFF00',
-        TABLECLASS: 'table-white'        
+        TABLECLASS: 'table-white'
     },
     'data': {
-        SHAPE1 : 'box3d',
+        SHAPE1: 'box3d',
         COLOR1: '#c3e6cb',
         COLOR2: '#c3e6cb',
-        TABLECLASS : 'table-data'        
+        TABLECLASS : 'table-data'
+    },
+    'uploaded': {
+        SHAPE1: 'folder',
+        SHAPE2: 'folder',
+        COLOR1: 'skyblue1',
+        COLOR2: '#87CEFF',
+        TABLECLASS : 'table-data'
     },
     'invalid': {
         SHAPE1: 'cds',

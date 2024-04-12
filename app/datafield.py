@@ -46,9 +46,9 @@ KNOWN_ATTRIBUTE_TEMPLATES = {
     'sys::collection_size_time::.*' : 'timestamp',
     'sys::collection_size::.*' : 'bytes',
     'sys::run::.*_time': 'timestamp',
-    'sys::lock::time::.*::valid_till': 'timestamp',
-    'sys::lock::time::.*::runtime': 'timedelta',
-    'sys::lock::time::.*::timeout': 'timedelta',
+    'sys::lock::.*::time::.*::valid_till': 'timestamp',
+    'sys::lock::.*::time::.*::runtime': 'timedelta',
+    'sys::lock::.*::time::.*::timeout': 'timedelta',
     'sys::consistency::.*::timestamp': 'timestamp'
 }
 
@@ -183,7 +183,7 @@ class data_timestamp(data_base):
             # Assuming this is an irods timestamp, it will be local time without tz info
             myvalue = datetime.timestamp(value.replace(tzinfo=timezone.utc))
         else:
-            raise ValueError(f'Data type {type(value)} cannot be converted to timestamp')      
+            raise ValueError(f'Data type {type(value)} cannot be converted to timestamp')
         self._formatted_date = datetime.fromtimestamp(myvalue).strftime("%d-%m-%Y %H:%M:%S")
         super().__init__(name, myvalue, datatype)
 
@@ -259,7 +259,6 @@ class data_collection_id(data_base):
         super().__init__(name, value, datatype)
 
     @property
-    @login_required
     def ref_col(self):
         if self._searched_for_ref_col:
             return self._ref_col
@@ -354,7 +353,7 @@ class data_processgroupguid(data_base):
     @property
     def htmlshort(self):
         return '<a href={0}?processgroupguid={1} data-toggle="tooltip" title="{1}">{2}</a>'.format(url_for('jobs.jobdetails'), self.value, self.value[:8])
-        
+
     @staticmethod
     def factory(**kwargs):
         return data_processgroupguid(**kwargs)
@@ -374,4 +373,4 @@ class data_url(data_base):
 # Register all AVU objects
 for classname in [a for a in globals() if a[:5] == 'data_' and a != 'data_base']:
     factory.register_builder(classname[5:], globals()[classname].factory)
- 
+

@@ -1,20 +1,20 @@
 {% extends 'base2.html' %}
 
 {% block heading %}
-<h3>Project details : <div class="activeproject" style="display:inline"></div>
+<h3>Reference dataset details : <div class="activereferencedataset" style="display:inline"></div>
 </h3>
 {% endblock %}
 
 {%block menuname %}
-menuname='projects'
+menuname='reference-datasets'
 {% endblock %}
 
 {% block menuitems %}
 <li class="nav-header">ACTIONS</li>
 <li class="nav-item">
-  <A class="nav-link" data-toggle="modal" data-target="#projectModal">
+  <A class="nav-link" data-toggle="modal" data-target="#referenceModal">
     <i class="fas fa-plus nav-icon"></i>
-    Add new project
+    Add new reference dataset
   </a>
 </li>
 
@@ -24,15 +24,15 @@ menuname='projects'
 {% block content %}
 <script>
 
-$(document).on('click', '.projectname', function() {
-  project=$(this).data('projectname');
-  $('.projectname').removeClass('active')
+$(document).on('click', '.referencename', function() {
+  reference=$(this).data('referencename');
+  $('.referencename').removeClass('active')
   $('.processname').removeClass('active')
-  $('.activeproject').html(project)
+  $('.activereferencedataset').html(reference)
   $(this).addClass("active")
   $('#details').html('<center><IMG SRC="{{ url_for('static', filename='img/loading.gif') }}" width="30%"></IMG><center>')
-  $.get('{{ url_for('projects.show_projectdetails') }}', {
-    name: project,
+  $.get('{{ url_for("reference.show_reference_details") }}', {
+    name: reference,
     processgroup: "{{ processgroup }}"
   }, function(data) {
     $('#details').html(data);
@@ -41,7 +41,7 @@ $(document).on('click', '.projectname', function() {
 });
 
 $(window).on('load', function() {
-  $("li[data-projectname='{{ project }}']").trigger('click');
+  $("li[data-referencename='{{ reference }}']").trigger('click');
 });
 
 // Some functions for the processgroup graphs 
@@ -59,23 +59,23 @@ $(document).on('click', '#select_input_button', function(){
 
 </script>
 
-<div class="modal fade" id="projectModal">
+<div class="modal fade" id="referenceModal">
   <div class="modal-dialog modal-dialog-centered" role="document">
     <div class="modal-content">
       <div class="modal-header">
         <div class="modal-title">
-          Add project
+          Add reference dataset
         </div>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
-      <form class="form" action="{{ url_for('projects.update_projectsettings') }}" method="post">
+      <form class="form" action="{{ url_for('reference.update_reference_settings') }}" method="post">
         <div class="form-group">
           <div class="modal-body">
             <label for="new_pname" class="col-form-label">Project identifier (no spaces)</label>
-            <INPUT TYPE="text" class="form-control menuexpand" id='new_pname' name="project">
-            <INPUT TYPE="hidden" name="action" value="add_project">
+            <INPUT TYPE="text" class="form-control menuexpand" id='new_pname' name="reference">
+            <INPUT TYPE="hidden" name="action" value="add_reference">
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
@@ -93,8 +93,10 @@ $(document).on('click', '#select_input_button', function(){
   <div class="card selectlist">
     <div class="card-body nopadding scroll">
       <UL class="list-group">
-        {% for project in projects | sort %}
-          <li class="list-group-item projectname " data-projectname="{{ project }}">{{ project }}</LI>
+        {% for reference in referencedatasets | sort %}
+          <li class="list-group-item referencename" data-referencename="{{ reference }}" >
+            {{ reference }} <!-- {% if referencedatasets[reference]['processing'] %} <i class="fas fa-cogs "></i> {% endif %}-->
+          </li>
         {% endfor %}
       </UL>      
     </div>

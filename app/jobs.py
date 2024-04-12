@@ -8,7 +8,7 @@ Created on Mon Nov 18 13:49:12 2019
 
 from flask import Blueprint, render_template, request, url_for, jsonify, redirect, flash, current_app
 from flask_login import current_user, login_required
-from irods.exception import DataObjectDoesNotExist
+from irods.exception import DataObjectDoesNotExist, CAT_NO_ACCESS_PERMISSION
 from irods.models import Collection, CollectionMeta
 from irods.column import Criterion
 from app.datafield import datafield
@@ -74,7 +74,7 @@ class JobsDBAlchemy:
                     engine = create_engine(db_connect, connect_args={'connect_timeout': 2})
                     engine.connect()
                 except OperationalError:
-                    app.logger.error(f'Cannot create JOBS DB engine for {env}')
+                    current_app.logger.error(f'Cannot create JOBS DB engine for {env}')
                     return
                 _sessionmaker = sessionmaker(autocommit=False, autoflush=False,
                                             bind=engine)
@@ -147,7 +147,6 @@ def pagebuttons(page_size, count, current_page, max_buttons, template):
     
 
 @bp.route('/api/pgprocs')
-@login_required
 def processgroupprocs():
     PGFIELDS = {
         'sys::runsheet::id': ('runsheet', 'runsheet'),
@@ -207,7 +206,6 @@ def jobpage():
     return redirect(url_for('jobs.show_jobs')) 
 
 @bp.route('_jobs')
-@login_required
 def jobs():
 # populate jobtable
     offset = request.args.get('offset', 0, type=int)
@@ -271,7 +269,6 @@ def filterdata():
 
 
 @bp.route('_pglist')
-@login_required
 def pglist():
 #POPULATE processgrouplist
     offset = request.args.get('offset', 0, type=int)
@@ -331,11 +328,10 @@ def jobs_refresh():
     if not result:
         return jsonify('unknown')
     else:
-        return jsonify(datafield('refresh_time', result[0][0], 'timestamp').htmlshort)
+        return jsonify(datafield('refresh_time', float(result[0][0]), 'timestamp').htmlshort)
  
 
 @bp.route('_pgjobs')
-@login_required
 def pgjobs():
 # display jobs under a processgroupid
     processgroupid = request.args.get('processgroupid', None, type=str)
@@ -370,7 +366,6 @@ def pgjobs():
     
 
 @bp.route('/pg')
-@login_required
 def show_pg():
     processgroupguid = request.args.get('processgroupguid', None, type=str)
     default_project = current_user.settings.get('default_project', '')
@@ -381,7 +376,6 @@ def show_pg():
 
 
 @bp.route('/')
-@login_required
 def show_jobs():
     default_project = current_user.settings.get('default_project', '')
     visible_columns = current_user.settings.get('jobs::columns', [v["field"] for v in JOB_FIELDS.values()])
@@ -401,7 +395,6 @@ def coll_shape(coll_type):
     return layout[constants.SHAPE2], layout[constants.COLOR1]    
 
 @bp.route('/processgraph')
-@login_required
 def processgraph():
     runsheet_coll = request.args.get('runsheet', '/', type=str)
     graph = Mermaid('datagraph')
@@ -441,7 +434,6 @@ def processgraph():
     return graph.pipe(format='svg').decode('utf-8')
 
 @bp.route('/jobdetails')
-@login_required
 def jobdetails():
     #this could be either the object-name of the yaml file or meta information attached to the collection
     jobnaam = request.args.get('name', '', type=str)
@@ -510,7 +502,6 @@ def jobdetails():
 
 
 @bp.route('joblogs')
-@login_required
 def job_logs():
     jobnaam = request.args.get('name', '', type=str)
     session = irods_manager.session()
@@ -549,18 +540,40 @@ def _get_logfiles(location, subdir=''):
     return(logs)
 
 @bp.route('/_joblog')
-@login_required
 @cache.cached(timeout=120, key_prefix=key_userzone)
 def show_logfile():
+    # result object
+    result = { 
+        "error": False, 
+        "data": None, 
+        "msg": None
+    }
+
+
     path = request.args.get('path', '', type=str)
+    filename = path.split("/")[-1]
+
     try:
         obj = current_user.ifs.getfile(path)
     except DataObjectDoesNotExist:
-        return 'Could not read logfile at "{}"'.format(path)
-        
-    with obj.open('r') as f:
-        data = f.read(MAX_READ_LOG_BYTES)
+        result["msg"] = f"The {path} does not exist"
+        result["error"] = True
+        return result
 
+    try:
+        with obj.open('r') as f:
+            data = f.read(MAX_READ_LOG_BYTES)
+    except CAT_NO_ACCESS_PERMISSION: # if encountered the error
+        result["msg"] = f"You don't have permission to access {filename}"
+        result["error"] = True
+        return result # return the result, otherwise data is being read
+    
     if sys.getsizeof(data) >= MAX_READ_LOG_BYTES:
-        return '{}\n!!! log truncated to max {} bytes !!!'.format(data.decode('utf-8'), MAX_READ_LOG_BYTES)
-    return data.decode('utf-8')
+        result["data"] = f"{data.decode('utf-8')}\n!!! log truncated to max {MAX_READ_LOG_BYTES} bytes !!!"
+        return result
+
+    # if everything went well
+    result["data"] = data.decode('utf-8')
+    
+    return result
+

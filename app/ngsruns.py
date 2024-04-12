@@ -5,7 +5,7 @@ from marshmallow import Schema, fields, validate
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy import ForeignKey, create_engine, Column, Integer, String, TIMESTAMP, func, text
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import OperationalError, ArgumentError
 from sqlalchemy.ext.hybrid import hybrid_property
 from irods.models import Collection, CollectionMeta, User
 from irods.column import Criterion
@@ -19,9 +19,13 @@ from requests.auth import HTTPBasicAuth
 from app.projects import get_projectlist
 from app.iqry import qcollbystaticmeta
 from app.irodssessions import irods_manager
-from app.settings import NGSRUN_FIELDS
+from app.settings import NGSRUN_FIELDS, BARCODE_FIELDS
 
 Base = declarative_base()
+
+
+SESSION = 'session'
+VERSION = 'version'
 
 class NGSRunsDBUnavailableException(Exception):
     pass
@@ -33,6 +37,7 @@ class NGSRunsAlchemy:
         # Define a SQLAlchemy base class to wrap.
         self._sessions = {}
         self.default_env = None
+        self._versions = {}
 
 
     def init_app(self, app):
@@ -40,29 +45,48 @@ class NGSRunsAlchemy:
             if self.default_env is None and env.get('default', False):
                 # Env in config with 'default' attr is assumed as default (e.g. 'Productie').
                 self.default_env = env_name
-            db_connect = env.get('minilims_db', 'sqlite://')
+            db_connect = env.get('minilims_db', '')
             connect_args = {}
             if db_connect.startswith('postgres'):
                 connect_args = {'connect_timeout': 10}
             try:
                 engine = create_engine(db_connect, connect_args=connect_args)
-                Base.metadata.create_all(bind=engine)
-            except OperationalError:
+            except (OperationalError, ArgumentError):
                 # Unable to create connection to db. Continue to create
                 # db engines for other envs.
                 continue
             _sessionmaker = sessionmaker(autocommit=False, autoflush=False,
-                                         bind=engine)
-            self._sessions[env_name] = scoped_session(_sessionmaker, 
+                                        bind=engine)
+            session = scoped_session(_sessionmaker,
                 scopefunc=greenlet.getcurrent)
+
+            # test if the database exist or not
+            try:
+                session.execute(text("SELECT 1"))
+            # does not exist, assign None for the session
+            except OperationalError as e:
+                continue
+
+            self._sessions[env_name] = {SESSION: session}
+            # Determine DB version
+            q = text("select count(*) as versiontables from information_schema.tables where table_name = 'version'")
+            column = Column("versiontables", Integer)
+
+            if session.execute(q.columns(column)).all()[0][column] == 0:
+                version = 1
+            else:
+                q = text("SELECT version FROM version;")
+                column = Column("version", Integer)
+                version = session.execute(q.columns(column)).all()[0][column]
+            self._sessions[env_name][VERSION] = version
+
         app.teardown_request(self.remove_session)
 
     def envs(self):
         return list(self._sessions)
 
-
-    def session(self, environment=None):
-        """Return session. If no specific environment is requested, use the one 
+    def _sessiondict(self, environment=None):
+        """Return session. If no specific environment is requested, use the one
         defined in the user object, eventually fall back to `default_env`."""
         env = environment
         if environment is None:
@@ -70,18 +94,22 @@ class NGSRunsAlchemy:
                 env = current_user.environment
             else:
                 env = self.default_env
-        
+
         try:
-            return self._sessions[env]()
+            return self._sessions[env]
         except KeyError:
             raise NGSRunsDBUnavailableException(f'env={env}')
 
+    def session(self, environment=None):
+        return self._sessiondict(environment)[SESSION]
+
+    def version(self, environment=None):
+        return self._sessiondict(environment)[VERSION]
 
     def remove_session(self, _exc=None):
         if hasattr(current_user, 'environment') and \
             current_user.environment in self._sessions:
-            self._sessions[current_user.environment].remove()
-
+            self._sessions[current_user.environment][SESSION].remove()
 
 db = NGSRunsAlchemy()
 
@@ -103,11 +131,20 @@ class NGSRun(Base):
     flowcell = Column(String(30), default='', nullable = False)
     creation_date = Column(TIMESTAMP, server_default=func.current_timestamp(), nullable=False)
     description = Column(String(250), default='', nullable = False)
-    project = Column(String(32))
     owner = Column(String(32))
-        
+
     def __init__(self, flowcell):
         self.flowcell = flowcell
+
+class NGSRunView(Base):
+    __tablename__ = 'v_ngsruns'
+    id = Column(Integer, primary_key=True)
+    name = Column(String(128), nullable = False)
+    flowcell = Column(String(30), default='', nullable = False)
+    creation_date = Column(TIMESTAMP, server_default=func.current_timestamp(), nullable=False)
+    description = Column(String(250), default='', nullable = False)
+    project = Column(String(32))
+    owner = Column(String(32))
 
 class NGSBarcode(Base):
     #__bind_key__ = current_user.environment
@@ -119,6 +156,7 @@ class NGSBarcode(Base):
     primer_set = Column(String(128), nullable = True)
     virus_target = Column(String(128), nullable = True)
     description = Column(String(256), nullable = True)
+    project = Column(String(32))
     creation_date = Column(TIMESTAMP, server_default=func.current_timestamp(), nullable=False)
 
     def __init__(self, ngsrun, barcode):
@@ -143,11 +181,10 @@ class NGSBarcodesSchema(ma.Schema):
     sampleid = fields.String()
     virus_target = fields.String()
     description = fields.String()
-
+    project = fields.String()
 
 ngsrun_schema = NGSRunSchema()
 ngsruns_schema = NGSRunsSchema(many=True)
-barcode_schema = NGSBarcodesSchema()
 barcodes_schema = NGSBarcodesSchema(many=True)
 
 barcodes = [ 'barcode{:02d}'.format(bar) for bar in range(1,97) ]
@@ -157,8 +194,32 @@ FIELDS = {
     'primer_set': NGSBarcode.primer_set
 }
 
-@login_required
-def rest_call(request_type, endpoint, data={}):    
+def minilims_authorized_for_projects(projectlist):
+    """Check if a user is authorized to make/delete a minilims samplesheet
+
+    Args:
+        projectlist (list): List of project names in sample sheet
+
+    Returns:
+        bool, list: True if authorized, False if not. list is list of unauthorized projects
+    """
+    if current_app.config.get('MINILIMS_AUTHORS_GROUP') in current_user.groups():
+        return True, []
+    unauthorized_projects = [ project for project in projectlist if not project in current_user.projects() ]
+    return not bool(unauthorized_projects), unauthorized_projects
+
+def projects_in_run(id):
+    """Return a list of all project names in the run
+
+    Args:
+        id (int): id of the ngsrun
+
+    Returns:
+        list: List of project names
+    """
+    return { b.project for b in db.session().query(NGSBarcode).filter(NGSBarcode.ngsrun==id).all() }
+
+def rest_call(request_type, endpoint, data={}):
     url = 'http://{}/api/1.0/{}'.format(current_user.irods_server, endpoint)
     #TODO: remove this testing line:
     #url = 'http://{}/api/1.0/{}'.format('0.0.0.0:5000', endpoint)
@@ -175,7 +236,7 @@ def rest_call(request_type, endpoint, data={}):
 @bp.route('complete/<field>', methods=['GET'])
 def get_complete(field):
     req = request.args.to_dict().get('q', '')
-    data1 = db.session().query(FIELDS[field]).filter(FIELDS[field].like('%{}%'.format(req))).distinct().all()
+    data1 = [ d[field] for d in db.session().query(FIELDS[field]).filter(FIELDS[field].like('%{}%'.format(req))).distinct().all()]
     return jsonify(data1)
 
 @bp.route('_runs', methods=['GET'])
@@ -188,7 +249,7 @@ def runs():
 
     result = {}
     # fetch ngsruns
-    ngsruns = db.session().query(NGSRun)
+    ngsruns = db.session().query(NGSRunView)
 
     # Count 'flowcell' to detect and label DUPLICATE records
     flowcell_list = [f.flowcell for f in ngsruns.all()]
@@ -209,7 +270,7 @@ def runs():
     ngsruns = ngsruns.order_by(text(f'{sort} {order}'))
 
     # count total after filter
-    count_runs = ngsruns.count() 
+    count_runs = ngsruns.count()
     ngsruns = ngsruns.offset(offset).limit(limit)
 
     # format data ngsruns
@@ -225,26 +286,43 @@ def runs():
             if val is not None:
                 formatted = datafield(key, val, NGSRUN_FIELDS[f]['format'])
                 record |= { key: formatted.htmlshort, f'_{key}': formatted.value }
+            # Check the projects in this run
+        projects = projects_in_run(run.id)
+        authorized, _ = minilims_authorized_for_projects(projects)
+        record['_authorized'] = authorized
         result.append(record)
 
     for run in result:
         # find collection matching for flowcell
         colls = qcollbystaticmeta('minion::flow_cell_id', run['flowcell'])
-        # sort by create_time to get first collection name 
+        # sort by create_time to get first collection name
         colls = sorted(colls, key = lambda k: k[Collection.create_time])
         # format available collection name
-        if colls:            
+        if colls:
             run['datacoll'] = datafield('collection', colls[0][Collection.name], 'irods_collection').htmlshort
         else:
             run['datacoll'] = ''
 
     return { 'rows': result, 'filters': filters, 'total': count_runs }
 
+def deprecated_message(menuname):
+    text = """
+<h3>
+This version of biorods does not support version 1 of the MiniLIMS database.<p>
+<p>Try accessing the MiniLIMS through <A HREF="https://biorods.rivm.nl">BioRODS production</A>.
+<p>If that does not work, contact support through the <A HREF="{contacts}">contacts</A> page.
+</h3>
+""".format(contacts=url_for('about'))
+    return render_template('deprecated.html', text=text, menuname=menuname)
 
 @bp.route('list', methods=['GET'])
+@login_required
 def run_list():
+    if db.version() < 2:
+        return deprecated_message(menuname='runlist')
+
     idrequest = request.args.get('idrequest', 0)
-    return render_template('ngsruns.html',  
+    return render_template('ngsruns.html',
         idrequest=idrequest, columns = NGSRUN_FIELDS,
         default_project=current_user.settings.get('default_project', ''),
         projects = current_user.projects())
@@ -255,7 +333,8 @@ def run_list():
 def filterdata():
 # Determine prepopulated filter values for 'select' filters
     field = request.args.get('field', type=str)
-    ngsruns = db.session().query(NGSRun)
+
+    ngsruns = db.session().query(NGSRunView)
 
     # find distinct values for fields, exclude '' and None
     filter_values = {i:i for i in set([ getattr(r, field, None) for r in ngsruns]) if i not in ['', None]}
@@ -266,23 +345,18 @@ def filterdata():
 def run_barcodes():
     id = request.args.get('idrequest', type=int)
     barcodes = db.session().query(NGSBarcode).filter(NGSBarcode.ngsrun == id).all()
-    fields = [ 'barcode', 'description', 'primer_set', 'sampleid', 'virus_target']
+    fields = [ v.get("field") for k, v in BARCODE_FIELDS.items() ]
     data = [ { p: getattr(x, p) for p in fields } for x in barcodes ]
-    columns = [
-        { "field": "barcode", "title": "Barcode", "sortable": True },
-        { "field": "sampleid", "title": "ID", "sortable": True },
-        { "field": "virus_target", "title": "Virus Target", "sortable": True },
-        { "field": "primer_set", "title": "Primer Set", "sortable": True },
-        { "field": "description", "title": "Description", "sortable": True }
-    ]
+    columns = [ v for _, v in BARCODE_FIELDS.items() ]
     data = {
         'columnsJSON': json.dumps(columns),
         'dataJSON': json.dumps(data),
         'id': 'barcodetable'
     }
     return render_template('bootstraptable.html', data=data, no_page=True)
-    
+
 @bp.route('edit', methods=['GET'])
+@login_required
 def edit_form():
     id = request.args.get('idrequest', '', type=str)
     run = db.session().query(NGSRun).filter(NGSRun.id == id).one_or_none()
@@ -294,27 +368,27 @@ def edit_form():
     data.update({"flowcell": run.flowcell})
     data.update({"name": run.name})
     data.update({"description": run.description})
-    data.update({"project": run.project})
     data.update({"owner": run.owner})
     return render_template('ngsrun.html', data=data, barcodes=barcodes, id=id)
 
 @bp.route('new', methods=['GET'])
+@login_required
 def run_form():
+    if db.version() < 2:
+        return deprecated_message(menuname='newrun')
     if current_app.config.get('MINILIMS_AUTHORS_GROUP') in current_user.groups():
         projectlist = get_projectlist().keys()
     else:
         projectlist = current_user.projects()
     data = { barcode : None for barcode in barcodes }
-    # user=current_user.username
     return render_template('ngsrun.html', data=data, projects=projectlist, barcodes=barcodes, id=-1, default_project=current_user.settings.get('default_project', ''))
 
 @bp.route('delete', methods=['GET'])
-@login_required
 def delete_ngs_run():
     if id := request.args.get('id', type=int):
-        record = db.session().query(NGSRun).filter(NGSRun.id == id).one()
-        if (project := record.project) not in current_user.projects():
-            flash(f'You are not authorized to remove a sample sheet for project {project}', 'error')
+        authorized, unauthorized_projects = minilims_authorized_for_projects(projects_in_run(id))
+        if not authorized:
+            flash(f'You are not authorized to remove a sample sheet for project(s) {",".join(project)}', 'error')
             return redirect(url_for('ngsruns.run_list', idrequest=id))
         db.session().query(NGSBarcode).filter(NGSBarcode.ngsrun==id).delete()
         db.session().query(NGSRun).filter(NGSRun.id == id).delete()
@@ -326,13 +400,17 @@ def run_update():
     f = request.form.to_dict()
     new_run = NGSRun(f.get('flowcell', ''))
     new_run.name = f.get('name', '')
-    new_run.project = f.get('project', '')
     new_run.owner = current_user.username
     new_run.description = f.get('description', '')
 
-    if not(new_run.project in current_user.projects() or current_app.config.get('MINILIMS_AUTHORS_GROUP') in current_user.groups()):
-            flash(f'You are not authorized to create a sample sheet for project {new_run.project}', 'error')
-            return redirect(url_for('ngsruns.run_list'))  
+    # Check if user is authorized
+    # either the user is in MINILIMS_AUTHORS_GROUP
+    # or he/she is a member of all projects in the runsheet
+    projects = { f.get('project_{}'.format(barcode)) for barcode in barcodes if f.get('sampleid_{}'.format(barcode)) }
+    authorized, invalid_projects = minilims_authorized_for_projects(projects)
+    if not authorized:
+        flash(f'You are not authorized to create a sample sheet for projects {",".join(invalid_projects)}', 'error')
+        return redirect(url_for('ngsruns.run_list'))
 
     db.session().add(new_run)
     db.session().commit()
@@ -343,9 +421,11 @@ def run_update():
             new_barcode.virus_target = f.get('target_{}'.format(barcode))
             new_barcode.primer_set = f.get('primer_{}'.format(barcode))
             new_barcode.description = f.get('description_{}'.format(barcode))
+            new_barcode.project = f.get('project_{}'.format(barcode))
             db.session().add(new_barcode)
     db.session().commit()
-    current_user.settings['default_project'] = new_run.project
+    if len(projects) == 1:
+        current_user.settings['default_project'] = projects.pop()
     return redirect(url_for('ngsruns.run_list', idrequest=new_run.id))
 
 # MiniLIMS API GET
@@ -355,7 +435,7 @@ def get_ngs_runs():
     """Retrieve a list of all ngs runs
     """
     env = request.args.get('env', None)
-    all_runs = db.session(env).query(NGSRun).all()
+    all_runs = db.session(env).query(NGSRunView).all()
     dump = ngsruns_schema.dump(all_runs)
     return jsonify(dump)
 
@@ -364,7 +444,7 @@ def get_ngs_run(flowcell):
     """Retrieve a single ngs runs
     """
     env = request.args.get('env', None)
-    ngsrun = db.session(env).query(NGSRun).filter(NGSRun.flowcell == flowcell).one_or_none()
+    ngsrun = db.session(env).query(NGSRunView).filter(NGSRunView.flowcell == flowcell).one_or_none()
     return jsonify(ngsrun_schema.dump(ngsrun))
 
 @bp.route('/api/runs/<flowcell>/barcodes', methods=['GET'])
@@ -372,6 +452,6 @@ def get_ngs_barcodes(flowcell):
     """Retrieve barcodes for a single ngs runs
     """
     env = request.args.get('env', None)
-    ngsrun = db.session(env).query(NGSRun).filter(NGSRun.flowcell == flowcell).one_or_none()
+    ngsrun = db.session(env).query(NGSRunView).filter(NGSRunView.flowcell == flowcell).one_or_none()
     barcodes = db.session(env).query(NGSBarcode).filter(NGSBarcode.ngsrun == ngsrun.id).all()
     return jsonify(barcodes_schema.dump(barcodes))

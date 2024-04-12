@@ -14,9 +14,17 @@ menuname='resources'
 <TABLE class="table">
     <THEAD class="thead-dark">
         <TR>
-            <TD>Name</TD>
+            <th><div><span>
+                Name
+            </span></div></th>
             {% for column in columns %}
-                <TD>{{ columns[column].label }}</TD>
+                <th 
+                    {% if columns[column].type == 'bool' %}
+                        class="rotated-text" scope="col"
+                    {% endif %}
+                ><div><span>
+                    {{ columns[column].label }}
+                </span></div></th>
             {% endfor %}
         </TR>
     </THEAD>
@@ -26,22 +34,45 @@ menuname='resources'
             <TD id="{{resource}}">{{ resource }}</TD>
             {% for property in columns %}
                 {% if columns[property].type == 'text' %}
-                    <TD><input type="text" class="form-control" name="{{ resource }}__{{ property }}"
-                        value="{{ resources[resource].get(property, '') }}"
-                {% elif columns[property].type == 'number' %}
-                    <TD><input type="number" class="form-control" name="{{ resource }}__{{ property }}"
-                        value="{{ resources[resource].get(property, '') }}"
-                {% elif columns[property].type == 'bool' %}
-                    <TD><input class="checkbx" type="checkbox"
-                        name="{{ resource }}__{{ property }}"
-                        value="true"
-                        {% if resources[resource].get(property) == "true" %} checked {% endif %}
-                {% endif %}
-                {% if columns[property].get('help') %}
-                title="{{ columns[property].get('help') }}"
-                {% endif %}
-                    >
+                    <TD>
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            name="{{ resource }}__{{ property }}"
+                            value="{{ resources[resource].get(property, '') }}"
+                        >
                     </TD>
+                {% elif columns[property].type == 'number' %}
+                    <TD>
+                        <input 
+                            type="number" 
+                            class="form-control" 
+                            name="{{ resource }}__{{ property }}"
+                            value="{{ resources[resource].get(property, '') }}"
+                        >
+                    </TD>
+                {% elif columns[property].type == 'bool' %}
+                    <TD>
+                        <input class="checkbx" type="checkbox"
+                            name="{{ resource }}__{{ property }}"
+                            value="true"
+                            {% if resources[resource].get(property) == "true" %} checked {% endif %}
+                            {% if columns[property].get('help') %}
+                            title="{{ columns[property].get('help') }}"
+                            {% endif %} 
+                        >
+                    </TD>
+                {% elif columns[property].type == 'select' %}
+                    <TD>
+                        <select class="form-control" name="{{ resource }}__{{ property }}" style="width:auto">
+                            {% for value in columns[property].options %}
+                                <option value="{{ value }}" {% if value == resources[resource].get(property, '') %}selected{% endif %}>
+                                    {{ value }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </TD>
+                {% endif %}
             {% endfor %}
         </TR>
         {% endfor %}

@@ -7,6 +7,8 @@ Created on Mon Nov 18 15:16:25 2019
 """
 import os
 import csv
+import ctypes
+import markdown
 from flask import Blueprint, render_template, request, url_for, send_file, jsonify
 from flask_login import current_user, login_required
 import urllib.parse
@@ -16,16 +18,22 @@ from fs_irods import fs_irods
 
 BP = Blueprint('docviewer', __name__, url_prefix='/docviewer')
 
+csv.field_size_limit(int(ctypes.c_ulong(-1).value // 2))
 
-@login_required
 def csvconvert(fobj):
     csvtext = fobj.read().decode('utf-8')
-    objcsv = csv.reader(csvtext.split('\n'))
+    try:
+        dialect = csv.Sniffer().sniff(csvtext[:1024], delimiters=',;\t')
+    except:
+        dialect = None
+    objcsv = csv.reader(csvtext.split('\n'), dialect)
     return render_template('csvview.html', data=objcsv)
+
+def mdconvert(fobj):
+    return markdown.markdown(fobj.read().decode('utf-8'))
 
 
 @BP.route('/serve_image')
-@login_required
 def serve_image():
     path = urllib.parse.unquote(request.args.get('path', '/', type=str))
     ifs = current_user.ifs
@@ -50,7 +58,6 @@ def test_access():
     })
     
 @BP.route('/download_object')
-@login_required
 def download_object():
     path = urllib.parse.unquote(request.args.get('path', '/', type=str))
     #objectfile = current_user.ifs.getfile(path).open('r')
@@ -61,7 +68,6 @@ def download_object():
     return AA
 
 @BP.route('/serve_object')
-@login_required
 def serve_object():
     path = urllib.parse.unquote(request.args.get('path', '/', type=str))
     filename, file_extension = os.path.splitext(path.lower())
@@ -72,6 +78,8 @@ def serve_object():
         if file_extension in [".csv"]:
             output = csvconvert(objectfile)
             return output
+        if file_extension in [".md"]:
+            return mdconvert(objectfile)
         if file_extension in [".jpg", ".png"]:
             output = '<IMG HEIGHT="100%" SRC="' + url_for('docviewer.serve_image') +  "?path=" + path + '">'
             return output

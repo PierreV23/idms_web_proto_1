@@ -11,142 +11,35 @@ import irods.exception
 from flask import Blueprint, render_template, redirect, jsonify, request, url_for
 from flask_login import current_user, login_required
 from irods.meta import iRODSMeta
-from irods.models import Collection, CollectionMeta, DataObject, Resource, ResourceMeta, DataObjectMeta
+from irods.models import Collection, CollectionMeta, DataObject, Resource, ResourceMeta, DataObjectMeta, RuleExec
 from irods.column import Criterion
 from irods.query import SpecificQuery
 from app.irods_helper import getmetaitem
 from app.datafield import datafield
 from app.irodssessions import irods_manager
+from app.settings import RESOURCE_PROPS
+from app.auth import auth_endpoint
+from . import flaskcache
 
 ATTR_ARCHIVE_STATUS = "sys::archive::status"
 ATTR_ARCHIVE_STATUSMSG = "sys::archive::statusmsg"
 ATTR_ARCHIVE_LASTCHECK = "sys::archive::lastcheck"
 ATTR_ARCHIVE_STATE = "sys::archive::state"
+ATTR_ARCHIVE_DESIREDSTATE = "sys::archive::desired_state"
 
 ATTR_ARCHIVE_TARFILE = 'sys::archive::tarfile'
 ATTR_ARCHIVE_MANIFESTFILE = 'sys::archive::manifest'
 
 bp = Blueprint('admin', __name__, url_prefix='/admin')
 
-# iRODS resource properties
 
-
-RESOURCE_PROPS = {
-    'group': {
-        'label': 'Group', 
-        'meta' : 'sys::tiering::group',
-        'type' : 'text',
-        'help' : 'The resource group that this resource belongs to'
-    },
-    'group_id': {
-        'label': 'ID',
-        'meta': 'sys::tiering::group',
-        'type': 'number',
-        'unit': True,
-        'help': 'Unique id within a resource group'
-    },
-    'copies': {
-        'label': 'Copies',
-        'meta': 'sys::resource::copies',
-        'type': 'number',
-        'help': 'The number of copies that this resource provides'
-    },
-    'cost': {
-        'label': 'Cost',
-        'meta': 'sys::resource::cost',
-        'type': 'number',
-        'help': 'Number that indicates cost for storing data on this resource'
-    },
-    'maxcopies': {
-        'label': 'Max copy actions',
-        'meta': 'sys::resource::maxcopies',
-        'type': 'number',
-        'help': 'Maximum number of concurrent tiering actions that will copy data TO this resource'
-    },
-    'age_before_copy': {
-        'label': 'Minimum age before copy (h)',
-        'meta': 'sys::resource::min_age_before_copy',
-        'type': 'number',
-        'factor': 3600,
-        'help': 'Data has to have this age before it will be copied to this resource'
-    },
-    'age_before_trim': {
-        'label': 'Minimum age before trim (h)',
-        'meta': 'sys::resource::min_age_before_trim',
-        'type': 'number',
-        'factor': 3600,
-        'help': 'Data has to have this age before it will be removed from this resource'
-    },
-    'minfree': {
-        'label': 'Minimum free space (GB)',
-        'meta': 'sys::resource::spacelimit',
-        'type': 'text',
-        'factor': 1000000000,
-        'help': 'No data will be copied (by tiering) to this resource once this limit is exceeded'
-    },
-    'targetfree': {
-        'label': 'Target free space (GB)',
-        'meta': 'sys::resource::spacetarget',
-        'type': 'number',
-        'factor': 1000000000,
-        'help': 'Tiering process will remove data from this resource once this limit is exceeded'
-    },
-    'local': {
-        'label': 'Local',
-        'meta': 'sys::resource::local',
-        'type': 'bool',
-        'help': 'This resource is on-site'
-    },
-    'online': {
-        'label': 'Online',
-        'meta': 'sys::resource::online',
-        'type': 'bool',
-        'help': 'Data on this resoucre can be accessed directly'
-    },
-    'stage': {
-        'label': 'Stage',
-        'meta': 'sys::resource::stage',
-        'type': 'bool',
-        'help': 'Data is copied to this resource before a pipeline starts'
-    },
-    'keep': {
-        'label': 'Keep',
-        'meta': 'sys::resource::keep',
-        'type': 'bool',
-        'help': 'Once data is on this resource, it will not be removed (except when "local" is required)'
-    },
-    'surf': {
-        'label': 'SURF',
-        'meta': 'sys::resource::surf',
-        'type': 'bool',
-        'help': 'This resource is at SURF. Special dm functions will be used'
-    },
-    'tar': {
-        'label': 'TAR',
-        'meta': 'sys::resource::tar',
-        'type': 'bool',
-        'help': 'Datasets are archived in a TAR file before being moved to this resource'
-    },
-    'manifest': {
-        'label': 'MANIFEST',
-        'meta': 'sys::resource::manifest',
-        'type': 'bool',
-        'help': 'TAR manifest files are stored on this resource'
-    },
-    'available': {
-        'label': 'Available',
-        'meta': 'sys::resource::available',
-        'type': 'bool',
-        'help': 'This resource is found to be available by the automatic resource test script'
-    },
-    'enabled': {
-        'label': 'Enabled',
-        'meta': 'sys::resource::enabled',
-        'type': 'bool',
-        'help': 'This resource can be used'
-    }
+DATA_REPL_STATUS = {
+    '0': 'STALE_REPLICA',
+    '1': 'GOOD_REPLICA',
+    '2': 'INTERMEDIATE_REPLICA',
+    '3': 'READ_LOCKED',
+    '4': 'WRITE_LOCKED'
 }
-
 
 @bp.route('/_issues')
 def query_issues():
@@ -187,6 +80,25 @@ def data_consistency():
             'location'  : resources.get(r[CollectionMeta.name].split('::')[2], 'UNKNOWN'),
             'issues'    : r[CollectionMeta.value]
             } for r in query ]
+    return jsonify(results)
+
+@bp.route('/_replstate')
+def data_replstate():
+    """Get objects that have a replication state other than GOOD_REPLICA
+    """
+    with irods_manager.session() as session:
+        results = []
+        for value in ('0', '2', '3', '4'):
+            query = session.query(Collection.name, DataObject.name, DataObject.replica_number).filter(
+                Criterion('=', DataObject.replica_status, value)
+            )
+            results += [
+                { 'path': os.path.join(r[Collection.name], r[DataObject.name]),
+                  'replica': r[DataObject.replica_number],
+                  'replstate': value,
+                  'replstate_name': DATA_REPL_STATUS.get(value, 'UNKNOWN_VALUE')
+                } for r in query
+            ]
     return jsonify(results)
 
 @bp.route('/_condetails', methods=["GET"])
@@ -268,7 +180,7 @@ def archive_action():
     return jsonify({'status':'ok'})
 
 @bp.route('_archissue', methods=['GET'])
-@login_required
+@auth_endpoint
 def archive_issues():
     # Get issue collections
     with irods_manager.session() as session:
@@ -300,7 +212,7 @@ def admin():
         return render_template('denied.html')
     queues = {}
     session = irods_manager.session()
-    for q in ['incoming', 'depends', 'prepare', 'stage', 'download', 'queued', 'startup', 'active', 'finishing', 'postprocessing', 'waiting']:
+    for q in ['incoming', 'depends', 'choose', 'prepare', 'stage', 'download', 'queued', 'active', 'finishing', 'postprocessing', 'notify', 'waiting']:
         enabled = True
         path = f'/{current_user.irods_zone}/system/runsheet'
         metaquery = session.query(CollectionMeta.value).filter(
@@ -322,8 +234,8 @@ def admin():
         queues[q] = {'enabled': enabled, 'count': count}
     return render_template('queues.html', queues=queues)
 
-@login_required
 @bp.route('/resources')
+@login_required
 def resources():
     resources =  {}
     session = irods_manager.session()
@@ -349,8 +261,8 @@ def resources():
                         resources[r[Resource.name]][property] = value
     return render_template('resources.html', columns=RESOURCE_PROPS, resources=resources)
 
-@login_required
 @bp.route('/_update_resources', methods=['POST'])
+@auth_endpoint
 def update_resources():
     session = irods_manager.session()
     data = request.form.to_dict()
@@ -387,7 +299,6 @@ def update_resources():
     return redirect(url_for('admin.resources'))
 
 @bp.route('/modify')
-@login_required
 def modify():
     data = request.args.to_dict()
     action = data.get('action')
@@ -403,3 +314,67 @@ def modify():
             collobj.metadata[new_meta.name] = new_meta
 
     return redirect(url_for('admin.admin'))
+
+@bp.route('/tiering/pending')
+@login_required
+def pending_tiering_page():
+    columns = [
+        { "field": "collection", "title": "Collection", "sortable": True },
+        { "field": "state", "title": "State", "sortable": True },
+        { "field": "desired_state", "title": "Desired state", "sortable": True },
+        { "field": "status", "title": "Status", "sortable": True }
+    ]
+    return render_template('pending_tiering.html', columns=columns)
+
+@flaskcache.cache.memoize(timeout=120, make_name=flaskcache.dep_zone)
+@bp.route('/tiering/_pending')
+def pending_tiering_ops():
+    result = []
+    with irods_manager.session() as session:
+        q = session.query(Collection.name, CollectionMeta.value).filter( \
+            Criterion('=', CollectionMeta.name, ATTR_ARCHIVE_STATE))
+        states = { r[Collection.name]: r[CollectionMeta.value] for r in q}
+        q = session.query(Collection.name, CollectionMeta.value).filter( \
+            Criterion('=', CollectionMeta.name, ATTR_ARCHIVE_DESIREDSTATE))
+        desired_states = { r[Collection.name]: r[CollectionMeta.value] for r in q}
+        for coll, state in states.items():
+            if state != ( desired_state := desired_states.get(coll)):
+                try:
+                    status = session.collections.get(coll).metadata.get_one(ATTR_ARCHIVE_STATUS).value
+                except KeyError:
+                    status = 'OK'
+                result.append( 
+                    { 'collection': datafield('Collection', coll, 'irods_collection').htmlstring, 
+                    'state': state, 
+                    'desired_state': desired_state,
+                    'status': status })
+    return jsonify(result)
+
+
+@bp.route('/tiering/active')
+@login_required
+def active_tiering_page():
+    columns = [
+        { "field": "collection", "title": "Collection", "sortable": True },
+        { "field": "state", "title": "State", "sortable": True },
+        { "field": "desired_state", "title": "Desired state", "sortable": True }
+    ]
+    return render_template('active_tiering.html', columns=columns)
+
+@bp.route('/tiering/_active')
+def active_tiering_ops():
+    result = []
+    with irods_manager.session() as session:
+        q = session.query(RuleExec.name)
+        rules = [ r[RuleExec.name] for r in q if 'collection_tiering' in r[RuleExec.name] ]
+        colls = { c.split("'")[1]: "" for c in rules }
+        for coll in colls:
+            m = session.collections.get(coll).metadata
+            desired_state = m.get_one(ATTR_ARCHIVE_DESIREDSTATE).value
+            state = m.get_one(ATTR_ARCHIVE_STATE).value
+            result.append({
+                'collection': datafield('Collection', coll, 'irods_collection').htmlstring,
+                'state': state,
+                'desired_state': desired_state
+            })
+    return jsonify(result)

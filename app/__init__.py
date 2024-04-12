@@ -5,16 +5,18 @@ import requests
 import dateutil.parser
 from datetime import datetime
 from requests.auth import HTTPBasicAuth
-from flask import Flask, flash, jsonify, redirect, render_template, request, url_for
+from flask import Flask, flash, jsonify, redirect, render_template, request, url_for, current_app
 from flask_login import current_user, LoginManager, login_required, logout_user
 from flask_migrate import Migrate
-from app.models import WebUser, AuthException
+from app.webuser import WebUser, AuthException
+from app.auth import auth_endpoint
 import logging.config
 import irods.exception
+import subprocess
 from Crypto.PublicKey import RSA
 
 from . import auth, collbrowser, jobs, docviewer
-from . import projects, cluster, admin, reports, userinfo
+from . import projects, cluster, admin, reports, userinfo, referencedatasets
 from . import ngsruns, upload, flaskcache
 from . import messages, oldjobs
 from .ngsruns import db as ngsruns_db, NGSRunsDBUnavailableException
@@ -89,6 +91,7 @@ app.register_blueprint(collbrowser.bp)
 app.register_blueprint(jobs.bp)
 app.register_blueprint(docviewer.BP)
 app.register_blueprint(projects.BP)
+app.register_blueprint(referencedatasets.BP)
 app.register_blueprint(cluster.bp)
 app.register_blueprint(admin.bp)
 app.register_blueprint(reports.bp)
@@ -122,9 +125,11 @@ def msgconfirm():
 
 @app.route('/about')
 def about():
+    ngsweb_version = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode('utf-8')
+    ngsweb_branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).strip().decode('utf-8')
     with irods_manager.session() as session:
-        version = '.'.join(map(str, session.server_version))
-    return render_template('about.html', version=version)
+        irods_version = '.'.join(map(str, session.server_version))
+    return render_template('about.html', irods_version=irods_version, ngsweb_version=ngsweb_version, ngsweb_branch=ngsweb_branch)
 
 REQUESTS_METHODS = {
     'GET':   requests.get,
@@ -134,7 +139,7 @@ REQUESTS_METHODS = {
 }
 
 @app.route('/_brs/<path:rest_endpoint>', methods=['GET', 'PUT', 'POST', 'DELETE'])
-@login_required
+@auth_endpoint
 def restcall(rest_endpoint):
     """Proxy endpoint for bio-rest service
 
@@ -143,14 +148,14 @@ def restcall(rest_endpoint):
 
     Returns:
         tuple: data, result_code
-    """    
+    """
     if request.method in ('PUT', 'POST'):
         data = request.json
     else:
         data = None
-    url = 'http://{}/api/1.0/{}'.format(current_user.irods_server, rest_endpoint)
-    #TODO: remove this testing line:
-    #url = 'http://{}/api/1.0/{}'.format('0.0.0.0:5000', rest_endpoint)
+    if (hostname := current_app.config.get('API_HOST')) is None:
+        hostname = current_user.irods_server        
+    url = 'http://{}/api/1.0/{}'.format(hostname, rest_endpoint)
     auth = HTTPBasicAuth('alt\\{}'.format(current_user.username), current_user.ntlm_hash)
     return_data = {}
     if request.method in REQUESTS_METHODS:
@@ -224,17 +229,6 @@ def auth_failed(e):
     """Destroy session and redirect to login page."""
     app.logger.info(f"Auth Error: user {current_user.username} on {current_user.environment} environment")
     return auth.logout()
-
-# irods.exception.CAT_NO_ACCESS_PERMISSION
-@app.errorhandler(irods.exception.CAT_NO_ACCESS_PERMISSION)
-def unauthorized(e):
-    """Log trial of access to object or collection for which user has no 
-    authorization."""
-    # N.B. we can't extract the object that was accessed (tried to) from 
-    # the exception, so just log the request path instead.
-    app.logger.warning("Unauthorized access attempt: '{}' on '{}'".format(current_user.get_id(), request.path))
-    # Re-raise, since we don't have a solution.
-    raise Exception(e)
 
 @app.errorhandler(NGSRunsDBUnavailableException)
 def handle_bad_ngsruns_request(e):

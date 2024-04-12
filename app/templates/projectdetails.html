@@ -136,33 +136,62 @@ function createContact( project_id, contact ) {
 }
 
 function saveNewContact() {
-   var name = $( '#new_contact_name' ).val()
-   var email =$( '#new_contact_email' ).val()
-   var primary = 0
-   if( $( '#new_contact_primary').prop("checked") == true) {
-        primary = 1
-   }
-   var data = { "name": name, "email": email, "primary" : primary }
-      createContact( "{{PD.name}}", data );
+  createContact( "{{PD.name}}", { 
+    "name": $( '#new_contact_name' ).val(),
+    "email": $( '#new_contact_email' ).val(),
+    "primary" : $('#new_contact_primary').prop("checked") ? 1 : 0,
+    "notify_data": $('#new_contact_notify_data').prop("checked") ? 1 : 0,
+    "notify_pipeline": $('#new_contact_notify_pipeline').prop("checked") ? 1 : 0,
+    "notify_errors": $('#new_contact_notify_errors').prop("checked") ? 1 : 0,
+    "notify_config_changes": $('#new_contact_notify_config_changes').prop("checked") ? 1 : 0,
+  });
+  // reset new contact switches
+  $('.new-contact').prop('checked', false)
 }
 
 function createContactRow( contact ) {
-  var checked = ""
-       if(contact.primary == 1) {
-         checked = "checked"
-       }
-       var ct = $( "#contact-table" );
-       ct.append( `<tr id="row-contact-${contact.id}">
-          <td>${contact.name}</td>
-          <td>${contact.email}</td>
-          <td>
-            <div class="custom-control custom-switch">
-              <input type="checkbox" class="custom-control-input toggle-primary-contact" id="contact-primary-${contact.id}"  data-contact_id="${contact.id}" ${checked}>
-              <label class="custom-control-label" for="contact-primary-${contact.id}">&nbsp;</label>
-            </div>
-          </td>
-          <td><button class="btn btn-danger del-contact" data-contact_id="${contact.id}"><i class="fa fa-trash" aria-hidden="true"></i></button></td>
-        </tr>` )
+  primary_checked = contact.primary == 1 ? "checked" : ""
+  notify_data_checked = contact.notify_data == 1 ? "checked" : ""
+  notify_pipeline_checked = contact.notify_pipeline == 1 ? "checked" : ""
+  notify_errors_checked = contact.notify_errors == 1 ? "checked" : ""
+  notify_config_changes_checked = contact.notify_config_changes == 1 ? "checked" : ""
+
+  var ct = $( "#contact-table" );
+  ct.append( `<tr id="row-contact-${contact.id}">
+    <td>${contact.name}</td>
+    <td>${contact.email}</td>
+    <td>
+      <div class="custom-control custom-switch">
+        <input type="checkbox" class="custom-control-input toggle-primary-contact" id="contact-primary-${contact.id}"  data-contact_id="${contact.id}" ${primary_checked}>
+        <label class="custom-control-label" for="contact-primary-${contact.id}">&nbsp;</label>
+      </div>
+    </td>
+    <td>
+      <div class="custom-control custom-switch">
+        <input type="checkbox" class="custom-control-input toggle-notify-data" id="contact-notify-data-${contact.id}"  data-contact_id="${contact.id}" ${notify_data_checked}>
+        <label class="custom-control-label" for="contact-notify-data-${contact.id}">&nbsp;</label>
+      </div>
+    </td>
+    <td>
+      <div class="custom-control custom-switch">
+        <input type="checkbox" class="custom-control-input toggle-notify-pipeline" id="contact-notify-pipeline-${contact.id}"  data-contact_id="${contact.id}" ${notify_pipeline_checked}>
+        <label class="custom-control-label" for="contact-notify-pipeline-${contact.id}">&nbsp;</label>
+      </div>
+    </td>
+    <td>
+      <div class="custom-control custom-switch">
+        <input type="checkbox" class="custom-control-input toggle-notify-errors" id="contact-notify-errors-${contact.id}"  data-contact_id="${contact.id}" ${notify_errors_checked}>
+        <label class="custom-control-label" for="contact-notify-errors-${contact.id}">&nbsp;</label>
+      </div>
+    </td>
+    <td>
+      <div class="custom-control custom-switch">
+        <input type="checkbox" class="custom-control-input toggle-notify-config-changes" id="contact-notify-config-changes-${contact.id}"  data-contact_id="${contact.id}" ${notify_config_changes_checked}>
+        <label class="custom-control-label" for="contact-notify-config-changes-${contact.id}">&nbsp;</label>
+      </div>
+    </td>   
+    <td><button class="btn btn-danger del-contact" data-contact_id="${contact.id}"><i class="fa fa-trash" aria-hidden="true"></i></button></td>
+  </tr>` )
 }
 
 </script>
@@ -172,46 +201,47 @@ function createContactRow( contact ) {
 <!-- PROJECT SETTINGS -->
 <div class="card h-100">
   <div class="card-header">
-    <ul class="nav nav-pills nav2" id="projecttabs">
+    <ul class="nav nav-tabs nav2" id="projecttabs">
       <li class="nav-item mx-2">
-        <button class="btn btn-outline-primary active" id="settings-tab" 
+        <A class="nav-link active" id="settings-tab" 
         data-toggle="tab" href="#settings" role="tab" 
-        aria-controls="settings" aria-selected="false">Settings</button>
+        aria-controls="settings" aria-selected="false">Settings</A>
       </li>
       <li class="nav-item mx-2">
-        <button class="btn btn-outline-primary" id="contacts-tab" 
+        <A class="nav-link" id="contacts-tab" 
         data-toggle="tab" href="#contacts" role="tab" 
-        aria-controls="contacts" aria-selected="false">Contacts</button>
+        aria-controls="contacts" aria-selected="false">Contacts</A>
       </li>
       <li class="nav-item mx-2">
-        <button class="btn btn-outline-primary" id="processgroups-tab" 
+        <A class="nav-link" id="processgroups-tab" 
         data-toggle="tab" href="#processgroups" role="tab" 
-        aria-controls="processgroups" aria-selected="false">Processgroups</button>
+        aria-controls="processgroups" aria-selected="false">Processgroups</A>
       </li>
       <li class="nav-item mx-2">
-        <button class="btn btn-outline-primary" id="collections-tab" 
+        <A class="nav-link" id="collections-tab" 
         data-toggle="tab" href="#collections" role="tab" 
-        aria-controls="collections" aria-selected="false">Collections</button>
+        aria-controls="collections" aria-selected="false">Collections</A>
       </li>
       <li class="nav-item mx-2">
-        <button class="btn btn-outline-primary usermanager" data-usertype="users" id="users-tab" 
+        <A class="nav-link usermanager" data-usertype="users" id="users-tab" 
         data-toggle="tab" href="#users" role="tab" 
-        aria-controls="users" aria-selected="false">Users</button>
+        aria-controls="users" aria-selected="false">Users</A>
       </li>
       <li class="nav-item mx-2">
-        <button class="btn btn-outline-primary usermanager" data-usertype="managers" id="managers-tab" 
+        <A class="nav-link usermanager" data-usertype="managers" id="managers-tab" 
         data-toggle="tab" href="#managers" role="tab" 
-        aria-controls="managers" aria-selected="false">Managers</button>
+        aria-controls="managers" aria-selected="false">Managers</A>
       </li>
       <li class="nav-item mx-2">
-        <button class="btn btn-outline-primary" id="groups-tab" 
+        <A class="nav-link" id="groups-tab" 
         data-toggle="tab" href="#groups" role="tab" 
-        aria-controls="groups" aria-selected="false">Groups</button>
+        aria-controls="groups" aria-selected="false">Groups</A>
       </li>
     </ul>
   </div>
-  <div class="card-body tab-content h-100">
+<div class="card-body tab-content h-100">
 
+  <!-- Tab contents -->
     <!-- Settings -->
     <div class="tab-pane active" id="settings" role="tabpanel" aria-labelledby="settings-tab">
       {% if processing is sameas true %}
@@ -245,7 +275,6 @@ function createContactRow( contact ) {
     </div>
 
     <!-- Contacts -->
-
     <div class="tab-pane" id="contacts" role="tabpanel" aria-labelledby="contacts-tab">
     
       <div id="contacts-alert" class="alert alert-danger" role="alert">
@@ -253,11 +282,16 @@ function createContactRow( contact ) {
       </div>
       <table class="table table-bordered table-sm">
         <thead>
+          <tr><th colspan="3">Contact details</th><th colspan="4">Notification Options</th><th>Actions</th></tr>
           <tr>
             <th scope="col">Name</th>
             <th scope="col">Email</th>
             <th scope="col">Primary</th>
-            <th scope="col">Action</th>
+            <th scope="col">New data</th>
+            <th scope="col">Pipeline results</th>
+            <th scope="col">Pipeline errors</th>
+            <th scope="col">Config changes</th>
+            <th scope="col"></th>
           </tr>
         </thead>
         <tbody id="contact-table">
@@ -266,10 +300,34 @@ function createContactRow( contact ) {
           <td><input type="text" class="form-control" id="new_contact_email" value=""></td>
           <td>            
             <div class="custom-control custom-switch">
-              <input type="checkbox" class="custom-control-input" id="new_contact_primary" >
+              <input type="checkbox" class="custom-control-input new-contact" id="new_contact_primary" >
               <label class="custom-control-label" for="new_contact_primary">&nbsp;</label>
             </div>
           </td>
+          <td>            
+            <div class="custom-control custom-switch">
+              <input type="checkbox" class="custom-control-input new-contact" id="new_contact_notify_data" >
+              <label class="custom-control-label" for="new_contact_notify_data">&nbsp;</label>
+            </div>
+          </td>
+          <td>            
+            <div class="custom-control custom-switch">
+              <input type="checkbox" class="custom-control-input new-contact" id="new_contact_notify_pipeline" >
+              <label class="custom-control-label" for="new_contact_notify_pipeline">&nbsp;</label>
+            </div>
+          </td>       
+          <td>            
+            <div class="custom-control custom-switch">
+              <input type="checkbox" class="custom-control-input new-contact" id="new_contact_notify_errors" >
+              <label class="custom-control-label" for="new_contact_notify_errors">&nbsp;</label>
+            </div>
+          </td>
+          <td>            
+            <div class="custom-control custom-switch">
+              <input type="checkbox" class="custom-control-input new-contact" id="new_contact_notify_config_changes" >
+              <label class="custom-control-label" for="new_contact_notify_config_changes">&nbsp;</label>
+            </div>
+          </td>            
           <td><Button class="btn btn-secondary" onClick="saveNewContact()">save</Button></td>
           </tr>
         </tbody>
@@ -279,16 +337,13 @@ function createContactRow( contact ) {
 
     <!-- Processgroups -->
     <div class="tab-pane" id="processgroups" role="tabpanel" aria-labelledby="processes-tab">
-
-
     </div>
 
     <!-- Collections -->
-
     <div class="tab-pane h-100 scroll" id="collections" role="tabpanel" aria-labelledby="collections-tab">
-
     </div>
 
+    <!-- Groups -->
     <div class="tab-pane" id="groups" role="tabpanel" aria-labelledby="groups-tab">
       <H3>Project groups</H3>
       <TABLE class="table table-striped table-hover table-sm" >
@@ -311,9 +366,11 @@ function createContactRow( contact ) {
       </table>
     </div>
 
+    <!-- Managers -->
     <div class="tab-pane" id="managers" role="tabpanel" aria-labelledby="managers-tab">
     </div>
 
+    <!-- Users -->
     <div class="tab-pane" id="users" role="tabpanel" aria-labelledby="users-tab">
     </div>
 
@@ -343,7 +400,7 @@ function createContactRow( contact ) {
 <script>
 
   function load_users() {
-    usertype = $("ul#projecttabs li button.active").data('usertype')
+    usertype = $("ul#projecttabs li a.active").data('usertype')
     $.get("{{ url_for('projects.usermanager') }}", {
       object: '{{ PD.name }}',
       objecttype: 'projects',
@@ -382,13 +439,32 @@ function createContactRow( contact ) {
   })
 
   $( ".toggle-primary-contact" ).on( 'click', function(event){
-    var primary = 0
-    if( $(this).prop("checked") == true) {
-      primary = 1
-    }
-
     var contact_id = $( this ).attr("data-contact_id");
-    var data = { "primary" : primary }
+    var data = { "primary" : $(this).prop("checked") ? 1 : 0 }
+    updateContact( "{{PD.name}}", contact_id, data );
+  });
+
+  $( ".toggle-notify-data" ).on( 'click', function(event){
+    var contact_id = $( this ).attr("data-contact_id");
+    var data = { "notify_data" : $(this).prop("checked") ? 1 : 0 }
+    updateContact( "{{PD.name}}", contact_id, data );
+  });
+
+  $( ".toggle-notify-pipeline" ).on( 'click', function(event){
+    var contact_id = $( this ).attr("data-contact_id");
+    var data = { "notify_pipeline" : $(this).prop("checked") ? 1 : 0 }
+    updateContact( "{{PD.name}}", contact_id, data );
+  });
+
+  $( ".toggle-notify-config-changes" ).on( 'click', function(event){
+    var contact_id = $( this ).attr("data-contact_id");
+    var data = { "notify_config_changes" : $(this).prop("checked") ? 1 : 0 }
+    updateContact( "{{PD.name}}", contact_id, data );
+  });
+
+  $( ".toggle-notify-errors" ).on( 'click', function(event){
+    var contact_id = $( this ).attr("data-contact_id");
+    var data = { "notify_errors" : $(this).prop("checked") ? 1 : 0 }
     updateContact( "{{PD.name}}", contact_id, data );
   });
 
