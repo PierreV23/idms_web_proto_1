@@ -29,7 +29,6 @@ ReferenceData
 
 function addEventDeleteBtn(id) {
   document.getElementById('btn-delete-'+id).addEventListener('click', function() {
-       alert(id);
        $.get('{{ url_for("projects.process_del_referencedataversion") }}', { 
             referencedataid: id,
             processid: '{{ processid }}'
@@ -42,14 +41,12 @@ function addEventDeleteBtn(id) {
 
 function addEventChangeVersion(id) {
   document.getElementById('refDataSetVersion-'+id).addEventListener('change', function() {
-       alert(id);
+       //alert( '{{ processid }}' + "," + id + "," + $( '#refDataSetVersion-'+id).val())
        $.get('{{ url_for("projects.process_set_referencedataversion") }}', { 
             referencedataid: id,
             referencedataversionid:  $( '#refDataSetVersion-'+id).val(),
             processid: '{{ processid }}'
         }, function(data) {
-            //$('#refdata-row-'+id).remove()
-            alert( JSON.stringify(data))
         })
   });
 }
@@ -58,7 +55,6 @@ function addEventChangeVersion(id) {
 function build_line( ref_data, versions ) {
     versionidstr = "Latest (dynamic)"
     versionid = -1
-    alert( JSON.stringify(ref_data))
     if( ref_data.referencedataversion != null ){
         versionidstr = ref_data.referencedataversion.version
         versionid = ref_data.referencedataversion.version 
@@ -87,16 +83,12 @@ function build_reference_data_table(reference_datas, ref_versions) {
         addEventDeleteBtn(ref_data.id)
         addEventChangeVersion(ref_data.id)
     }; 
-
 }
 
 $('document').ready(function(){
     reference_data_sets = {{reference_data_sets|tojson}}
     reference_datas_for_process = {{reference_data_for_process|tojson}}
     ref_versions = {{ref_versions|tojson}}
-    //alert(JSON.stringify(reference_data_sets))
-    //alert(JSON.stringify(reference_datas_for_process))
-    //alert(JSON.stringify(ref_versions))
     for( ref of reference_data_sets ) {
         $('#refDataSetSelect').append( new Option(ref.name + '('+ref.id+')', ref.id ) ) 
     };
@@ -137,7 +129,6 @@ $('#btnAddRefData').on('click', function() {
         referencedataversionid:  $('#refDataSetVersionSelect').val(),
         processid: '{{ processid }}'
     }, function(refdata_conn) {
-        alert(JSON.stringify(refdata_conn))
         $.get('{{ url_for("projects.referencedataversions") }}', { 
             referencedataid: refdata_conn.referencedata.id
         }, function( versions ) {

@@ -411,7 +411,6 @@ def process_add_referencedataversion():
     result, r = rest_call('POST', f'/processes/{processid}/referencedataversion',
                                 {"referencedataid": referencedataid ,
                                  "referencedataversionid": referencedataversionid } )
-    print( result )
     return result
 
 @BP.route('_process_del_referencedataversion', methods=['GET'])
@@ -437,6 +436,72 @@ def referencedataversions():
     all_versions, r = rest_call('GET', f'reference/{referencedataid}/versions')
     return all_versions
 
+
+#Awful lot of RESTCalls happening here...
+@BP.route('pg_list_processref_refdata', methods=['GET'])
+def pg_list_processref_refdata():
+    project = request.args.get('project')
+    group = request.args.get('group')
+    process = request.args.get('process')
+    process_ref = request.args.get('process_ref')
+    refdatasForProcess, code = rest_call('GET', f'processes/{process}/referencedataversion')
+    if code != 200:
+        return []
+
+    for refdataFP in refdatasForProcess:
+        id = refdataFP["id"]
+        refdataid = refdataFP["referencedataid"]
+        versions, code = rest_call('GET', f'reference/{refdataid}/versions')    
+        if code != 200:
+            return[] 
+        else:
+            refdataFP["versions"] = versions
+   
+    refdatasForProcessRef, code = rest_call('GET', f'/projects/{project}/processgroups/{group}/processes/{process_ref}/referencedataversion')   
+    refdatasForProcessRefByRDFBID = {}
+    if code != 200:
+        return [] 
+    for refdataFPR in refdatasForProcessRef:
+        refdataFP_id = refdataFPR["processreferencedataversion"]["id"]
+        refdatasForProcessRefByRDFBID[refdataFP_id] = refdataFPR
+        
+    result = { "refdatasForProcess": refdatasForProcess , "refdatasForProcessRef": refdatasForProcessRefByRDFBID}
+    return result
+
+
+@BP.route('_pg_set_referencedataversion', methods=['GET'])
+def pg_set_referencedataversion():
+    refdataversion2processrefid = request.args.get('refdataversion2processrefid')
+    referencedataid = int(request.args.get('referencedataid'))
+    referencedataversionid = int(request.args.get('referencedataversionid'))
+    process_ref = request.args.get('process_ref_id')
+    overwriting_rdf2process_id = request.args.get('overwriting_rdf2process_id')
+
+    project = request.args.get('project')
+    group = request.args.get('group')
+    #process = request.args.get('process')
+
+    result = {}
+    #depending on referencedataversionid either delete existing entries (-2), put null in (-1) or set on the given value.
+    if referencedataversionid == -2:
+        result, code = rest_call('DELETE', f'/projects/{project}/processgroups/{group}/processes/{process_ref}/referencedataversion/{refdataversion2processrefid}' )
+    else:
+        if referencedataversionid == -1:
+            referencedataversionid = None
+        if refdataversion2processrefid:
+            refdataversion2processrefid = int(refdataversion2processrefid)
+            #existing entry should be changed, via PUT
+            result, code = rest_call('PUT', f'/projects/{project}/processgroups/{group}/processes/{process_ref}/referencedataversion/{refdataversion2processrefid}',
+                                    { "referencedataversionid": referencedataversionid} )
+        else:
+            #a new entry needs to be created via POST
+            result, code = rest_call('POST', f'/projects/{project}/processgroups/{group}/processes/{process_ref}/referencedataversion',
+                                    {"refdataversion2processrefid": refdataversion2processrefid,
+                                    "referencedata_versionid": referencedataversionid, 
+                                    "process_referencedataversionid": overwriting_rdf2process_id} )
+    return result
+
+
 @BP.route('_pg_add_referencedataversions', methods=['GET'])
 def pg_add_referencedataversions():
     referencedataid = request.args.get('referencedataid')
@@ -454,7 +519,6 @@ def pg_list_referencedataversions():
     group = request.args.get('group')
     process = request.args.get('process')
     result, r = rest_call('GET', f'/projects/{project}/processgroups/{group}/processes/{process}/referencedataversion')
-    print(result)
     return result
 
 
@@ -541,7 +605,6 @@ def pg_details():
         selected_processlist = search(all_processes, lambda x: x.get('id'), selected_details.get('processid'))
         #additional rest calls to get all reference data
         all_reference_datasets, r3 = rest_call('GET', f'reference' )
-        print(all_reference_datasets)
         connected_reference_datasets, r4 = rest_call('GET', f'projects/{project}/processgroups/{group}/processes/{selected_processref}/referencedataversion')
         if selected_processlist:
             selected_process = datafield('process', selected_processlist[0].get('name'), 'process')
@@ -555,7 +618,7 @@ def pg_details():
         all_processes=all_processes, pg_processes=pl, selected_details=selected_details,
         selected_tags = selected_tags, selected_process=selected_process,
         dependencies=dependency_names, 
-        all_reference_datasets=all_reference_datasets, connected_reference_datasets=connected_reference_datasets ,
+        all_reference_datasets=all_reference_datasets, connected_reference_datasets=connected_reference_datasets , 
         message=message)
 
 @BP.route('processgroups', methods=['GET'])
@@ -575,7 +638,6 @@ def usermanager():
     objectname = request.args.get('object')
     objecttype = request.args.get('objecttype')
     usertype = request.args.get('usertype')
-
     return render_template('usermanager.html', object=objectname, objecttype=objecttype, usertype=usertype)
 
 @BP.route('processusage', methods=['GET'])

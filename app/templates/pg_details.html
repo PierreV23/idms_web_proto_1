@@ -74,32 +74,16 @@
         <div class="col col-mb-3">
             {% if selected_details %}
             <h5>Reference-Data</h5>
-            <div class="form-row">
-                <div class="col">
-                    <label for="refDataSetSelect">Dataset</label>
-                    <select class="form-control form-control-sm" id="refDataSetSelect">
-                        <option disabled selected value> -- select a reference dataset -- </option>
-                        {% for ref in all_reference_datasets %}
-                        <option value="{{ ref.id }}">{{ ref.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div id="refDataVersionSelectArea" class="col invisible">
-                    <label for="refDataSetVersionSelect">Version</label>
-                    <select class="form-control form-control-sm" id="refDataSetVersionSelect" class="">
-                        <option disabled selected value> -- select a version id -- </option>
-                        <option value="">Latest (dynamic)</option>
-                    </select>
-                </div>
-            </div>
-            <BUTTON type="button" class="btn btn-sm btn-primary disabled invisible" id="btn_add_referencedata_version">Add</BUTTON>
             <hr>
-            <ul id="listOfConnectedRefDataVersions" class="list-group list-group-flush">
-            {% for ref in connected_reference_datasets %}
-            <li class="list-group-item">{{ ref }}</li>
-            {% endfor %}
-            </ul>
-            {% endif %}           
+            <div>
+                <table id="tableReferenceDataVersions">
+                    <tr>
+                       <th>ReferenceDataSet</th>
+                       <th>Version</th>
+                    </tr>
+                </table>
+            </div>   
+            {% endif %}       
         </div>
     </div>
 </div>
@@ -195,7 +179,6 @@ $('#del_dep').on('click', function() {
         project: "{{ project }}",
         group: "{{ group }}",
         action: 'delete_dependency',
-        process: "{{ selected_details.name }}",
         depend: $('.select-dep.active').text()
     }, function(data) {
         load_pgpage();
@@ -216,10 +199,9 @@ $('#add_ref').on('click', function() {
 
 $('#refDataSetSelect').on('change', function() {
     $('#refDataVersionSelectArea').removeClass('invisible')
-    $.get('{{ url_for("projects.pgreferencedataversions") }}', { 
+    $.get('{{ url_for("projects.pg_list_referencedataversions") }}', { 
         referencedataid: this.value
     }, function(data) {
-       //alert( JSON.stringify( data ) )
        for( version of data ) {
             $('#refDataSetVersionSelect').append( new Option(version.name + '('+version.id+')', version.id ) ) 
         };
@@ -234,7 +216,6 @@ $('#refDataSetVersionSelect').on('change', function() {
 
 function build_connected_reference_data_version_list( data ) {
     $( '#listOfConnectedRefDataVersions').empty()
-    alert(JSON.stringify(data) )
     for( version of data ) {
         $( '#listOfConnectedRefDataVersions').append( '<li class="list-group-item">'+version.id+'</li>')
     }
@@ -250,7 +231,6 @@ $('#btn_add_referencedata_version').on('click', function() {
        referencedataSetId: referencedataSetId,
        referenceDataVersionId: referenceDataVersionId
     }, function(data) {
-       //alert(data)
        //rebuild list of connected referencedataversions
        $.get('{{ url_for("projects.pg_list_referencedataversions") }}', {
           processref: selected_processref
@@ -259,6 +239,99 @@ $('#btn_add_referencedata_version').on('click', function() {
        }
     })
 })
+
+function build_line( p_ref_data, default_version, versions, selected_version ) {
+    id = p_ref_data.id //of the process specific default that we might want to overrride
+    versionidstr = "Default of process"
+    versionid = -2
+    selOption1 = "selected"
+    selOption2 = ""
+    if( selected_version != null ){
+        versionidstr = "Latest (dynamic)"
+        versionid = -1
+        selOption1 = ""
+        selOption2 = "selected"
+        if( selected_version["referencedataversion"] ) {
+            versionidstr = selected_version["referencedataversion"]["version_name"]   
+            versionid = selected_version["referencedataversion"]["version"]  
+            selOption1 = ""
+            selOption2 = ""
+        }    
+    }
+    defaultversionstr = "Latest (dynamic)"
+    if( default_version ) {
+        defaultversionstr = default_version.id
+    }
+    html = '<tr id="refdata-row-'+id +'"><th scope="row"></th><th>' + p_ref_data.referencedata.name + '<br>'
+    html += 'default:' + defaultversionstr
+    html += '</th>'
+    html += '<td><select class="form-control form-control-sm" id="refDataSetVersion-' + id + '">'
+    html += '    <option value="-2" '+ selOption1 +'>Default of process</option>'
+    html += '    <option value="-1" '+ selOption2 +'>Latest (dynamic)</option>'
+    for ( const v of versions ) {
+        selected=""
+        if (v.id == versionid ) {
+           selected="selected"
+        }
+        html += '<option value="'+ v.id +'"' + selected + '>'+ v.name +' ('+v.id+')</option>'
+    }
+    html += '</select></td>'
+    html += '</tr>'
+    return html
+}
+
+
+
+function addEventChangeVersion( id, /* of the process specific default*/
+                                overwriting, /* the entry of refData2processRef*/
+                                data /* the specified default in refData2process */ ) {
+  document.getElementById('refDataSetVersion-'+id).addEventListener('change', function() {
+        existing_entry_id = null
+        if( overwriting ){
+            existing_entry_id = overwriting["id"]
+        } 
+        $.get('{{ url_for("projects.pg_set_referencedataversion") }}', { 
+            refdataversion2processrefid: existing_entry_id,
+            overwriting_rdf2process_id: data["id"], //the refdataversion2process thats beeing overwritten
+            referencedataid: id,
+            referencedataversionid:  $( '#refDataSetVersion-'+id).val(), //concrete value of a version that should overwrite the process default!
+            process_ref_id: '{{selected_details.id}}',
+            project: "{{ project }}",
+            group: "{{ group }}",
+            process: "{{selected_details.processid}}",
+        }, function(data) {
+            build_reference_data_table()
+        })
+        
+  });
+}
+
+function build_reference_data_table() {
+    $.get('{{ url_for("projects.pg_list_processref_refdata") }}', {
+          project: "{{ project }}",
+          group: "{{ group }}",
+          process: "{{selected_details.processid}}",
+          process_ref: "{{selected_details.id}}"
+       }, function( data ) {
+            $('#tableReferenceDataVersions > tbody').empty()
+            p_rds = data["refdatasForProcess"]
+            pr_rds = data["refdatasForProcessRef"]
+            for ( p_ref_data of p_rds ) {
+                let all_versions  = p_ref_data["versions"] 
+                let default_version = p_ref_data["referencedataversion"] 
+                let overwriting_version = null;
+                if (p_ref_data["id"] in pr_rds ) {
+                     overwriting_version = pr_rds[p_ref_data["id"]]
+                }
+                $('#tableReferenceDataVersions > tbody:last-child').append( build_line( p_ref_data, default_version, all_versions, overwriting_version ) )
+                addEventChangeVersion(p_ref_data["id"], overwriting_version ,p_ref_data)
+            }
+        })
+}
+
+//$('document').ready(function(){
+    if( selected_processref ) { build_reference_data_table() }
+//})
 
 
 
