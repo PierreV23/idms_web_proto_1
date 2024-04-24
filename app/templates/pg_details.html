@@ -251,9 +251,9 @@ function build_line( p_ref_data, default_version, versions, selected_version ) {
         versionid = -1
         selOption1 = ""
         selOption2 = "selected"
-        if( selected_version["referencedataversion"] ) {
-            versionidstr = selected_version["referencedataversion"]["version_name"]   
-            versionid = selected_version["referencedataversion"]["version"]  
+        if( selected_version["supersedingversion"] ) {
+            versionidstr = selected_version["supersedingversion"]["version_name"]   
+            versionid = selected_version["supersedingversion"]["version"]  
             selOption1 = ""
             selOption2 = ""
         }    
@@ -292,13 +292,12 @@ function addEventChangeVersion( id, /* of the process specific default*/
         } 
         $.get('{{ url_for("projects.pg_set_referencedataversion") }}', { 
             refdataversion2processrefid: existing_entry_id,
-            overwriting_rdf2process_id: data["id"], //the refdataversion2process thats beeing overwritten
-            referencedataid: id,
-            referencedataversionid:  $( '#refDataSetVersion-'+id).val(), //concrete value of a version that should overwrite the process default!
+            processdefaultid: data["id"], //the refdataversion2process thats beeing overwritten
+            //referencedataid: id,
+            supersedingversionid:  $( '#refDataSetVersion-'+id).val(), //concrete value of a version that should overwrite the process default!
             process_ref_id: '{{selected_details.id}}',
             project: "{{ project }}",
-            group: "{{ group }}",
-            process: "{{selected_details.processid}}",
+            group: "{{ group }}"
         }, function(data) {
             build_reference_data_table()
         })
@@ -312,26 +311,26 @@ function build_reference_data_table() {
           group: "{{ group }}",
           process: "{{selected_details.processid}}",
           process_ref: "{{selected_details.id}}"
-       }, function( data ) {
-            $('#tableReferenceDataVersions > tbody').empty()
-            p_rds = data["refdatasForProcess"]
-            pr_rds = data["refdatasForProcessRef"]
-            for ( p_ref_data of p_rds ) {
-                let all_versions  = p_ref_data["versions"] 
-                let default_version = p_ref_data["referencedataversion"] 
-                let overwriting_version = null;
-                if (p_ref_data["id"] in pr_rds ) {
-                     overwriting_version = pr_rds[p_ref_data["id"]]
-                }
-                $('#tableReferenceDataVersions > tbody:last-child').append( build_line( p_ref_data, default_version, all_versions, overwriting_version ) )
-                addEventChangeVersion(p_ref_data["id"], overwriting_version ,p_ref_data)
+    }, function( data ) {
+        $('#tableReferenceDataVersions > tbody').empty()
+        p_rds = data["refdatasForProcess"]
+        pr_rds = data["refdatasForProcessRef"]
+        for ( p_ref_data of p_rds ) {
+            let all_versions  = p_ref_data["versions"] 
+            let default_version = p_ref_data["referencedataversion"] 
+            let overwriting_version = null;
+            if (p_ref_data["id"] in pr_rds ) {
+                overwriting_version = pr_rds[p_ref_data["id"]]
             }
-        })
+            $('#tableReferenceDataVersions > tbody:last-child').append( build_line( p_ref_data, default_version, all_versions, overwriting_version ) )
+            addEventChangeVersion(p_ref_data["id"], overwriting_version ,p_ref_data)
+        }
+    })
 }
 
-//$('document').ready(function(){
-    if( selected_processref ) { build_reference_data_table() }
-//})
+$( document ).ready(function() {
+   if( selected_processref ) { build_reference_data_table() }
+})
 
 
 

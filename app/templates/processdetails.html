@@ -167,7 +167,7 @@
 
   function load_refdata() {
     $('#refdatacontent').html('').addClass('pending')
-    $.get("{{ url_for('projects.processrefdata') }}", {
+    $.get("{{ url_for('projects.process_list_refdata') }}", {
       process: '{{ details['id'] }}'
     }, function(data) {
       $('#refdata-content').html(data).removeClass('pending')

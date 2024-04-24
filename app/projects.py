@@ -403,6 +403,19 @@ def pgaction():
     return "OK"
 
 
+@BP.route('_process_list_refdata', methods=['GET'])
+def process_list_refdata():
+    processid = request.args.get('process')
+    refdatasForProcess, result = rest_call('GET', f'processes/{processid}/referencedataversion')
+    refdatasets, result = rest_call('GET', f'reference')
+    ref_versions = {}
+    for refdataFP in refdatasForProcess:
+        refdataid = refdataFP['referencedataid']
+        versions, result = rest_call('GET', f'reference/{refdataid}/versions')
+        ref_versions[refdataid] = versions
+    return render_template('process_reference_data.html', processid=processid, reference_data_sets=refdatasets, reference_data_for_process=refdatasForProcess, ref_versions=ref_versions)
+
+
 @BP.route('_process_add_referencedataversion', methods=['GET'])
 def process_add_referencedataversion():
     referencedataid = request.args.get('referencedataid')
@@ -462,43 +475,43 @@ def pg_list_processref_refdata():
     if code != 200:
         return [] 
     for refdataFPR in refdatasForProcessRef:
-        refdataFP_id = refdataFPR["processreferencedataversion"]["id"]
+        refdataFP_id = refdataFPR["processdefault"]["id"]
         refdatasForProcessRefByRDFBID[refdataFP_id] = refdataFPR
-        
     result = { "refdatasForProcess": refdatasForProcess , "refdatasForProcessRef": refdatasForProcessRefByRDFBID}
     return result
 
 
 @BP.route('_pg_set_referencedataversion', methods=['GET'])
 def pg_set_referencedataversion():
+    #None or Id of the entry in table refdataversion2processref, that contains the superseeding versionid
     refdataversion2processrefid = request.args.get('refdataversion2processrefid')
-    referencedataid = int(request.args.get('referencedataid'))
-    referencedataversionid = int(request.args.get('referencedataversionid'))
-    process_ref = request.args.get('process_ref_id')
-    overwriting_rdf2process_id = request.args.get('overwriting_rdf2process_id')
-
+    #either -2 (remove superseedig entry), -1 (convert to null) or the id of a version that will superseeed the process-default
+    supersedingversionid = int(request.args.get('supersedingversionid'))
+    #the entry-id in refdataversio2processref that defines the default version to use, which will be superseeded by a pg-specific entry
+    processdefaultid = request.args.get('processdefaultid')
     project = request.args.get('project')
     group = request.args.get('group')
-    #process = request.args.get('process')
+    process_ref = request.args.get('process_ref_id')
 
     result = {}
-    #depending on referencedataversionid either delete existing entries (-2), put null in (-1) or set on the given value.
-    if referencedataversionid == -2:
+    #depending on supersedingversionid either delete existing entries (-2), put null in (-1) or set on the given value.
+    if supersedingversionid == -2:
         result, code = rest_call('DELETE', f'/projects/{project}/processgroups/{group}/processes/{process_ref}/referencedataversion/{refdataversion2processrefid}' )
     else:
-        if referencedataversionid == -1:
-            referencedataversionid = None
+        if supersedingversionid == -1:
+            supersedingversionid = None
         if refdataversion2processrefid:
             refdataversion2processrefid = int(refdataversion2processrefid)
             #existing entry should be changed, via PUT
             result, code = rest_call('PUT', f'/projects/{project}/processgroups/{group}/processes/{process_ref}/referencedataversion/{refdataversion2processrefid}',
-                                    { "referencedataversionid": referencedataversionid} )
+                                    { "supersedingversionid": supersedingversionid} )
         else:
             #a new entry needs to be created via POST
             result, code = rest_call('POST', f'/projects/{project}/processgroups/{group}/processes/{process_ref}/referencedataversion',
-                                    {"refdataversion2processrefid": refdataversion2processrefid,
-                                    "referencedata_versionid": referencedataversionid, 
-                                    "process_referencedataversionid": overwriting_rdf2process_id} )
+                                    {
+                                        "supersedingversionid": supersedingversionid, 
+                                        "processdefaultid": processdefaultid
+                                    } )
     return result
 
 
@@ -645,17 +658,5 @@ def processusage():
     process = request.args.get('process')
     return render_template('processusage.html', process=process)
 
-
-@BP.route('processrefdata', methods=['GET'])
-def processrefdata():
-    processid = request.args.get('process')
-    refdatasForProcess, result = rest_call('GET', f'processes/{processid}/referencedataversion')
-    refdatas, result = rest_call('GET', f'reference')
-    ref_versions = {}
-    for refdataFP in refdatasForProcess:
-        refdataid = refdataFP['referencedataid']
-        versions, result = rest_call('GET', f'reference/{refdataid}/versions')
-        ref_versions[refdataid] = versions
-    return render_template('process_reference_data.html', processid=processid, reference_data_sets=refdatas, reference_data_for_process=refdatasForProcess, ref_versions=ref_versions)
 
 

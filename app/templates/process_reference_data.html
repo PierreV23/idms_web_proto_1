@@ -15,8 +15,6 @@ ReferenceData
           </select></td>
           <td>    
             <select class="form-control form-control-sm disabled invisible" id="refDataSetVersionSelect">
-              <!--option disabled selected value> -- select a version id -- </option>
-              <option value="-1">Latest (dynamic)</option-->
           </select></td>
           <td><button class="btn-success disabled invisible" id="btnAddRefData"><i class="fas fa-plus-circle"></i></button></td>
       </tr>
@@ -41,7 +39,6 @@ function addEventDeleteBtn(id) {
 
 function addEventChangeVersion(id) {
   document.getElementById('refDataSetVersion-'+id).addEventListener('change', function() {
-       //alert( '{{ processid }}' + "," + id + "," + $( '#refDataSetVersion-'+id).val())
        $.get('{{ url_for("projects.process_set_referencedataversion") }}', { 
             referencedataid: id,
             referencedataversionid:  $( '#refDataSetVersion-'+id).val(),
@@ -138,7 +135,7 @@ $('#btnAddRefData').on('click', function() {
         })
     });
 
-    $('#btnAddRefData').addClass('invisible disabled')
+    $('#btnAddRefData').addClass('invisible disabled') 
     $('#refDataSetVersionSelect').addClass('invisible')
     $('#refDataSetVersionSelect').empty()
     $("#refDataSetSelect").prop("selectedIndex", 0 ) 
