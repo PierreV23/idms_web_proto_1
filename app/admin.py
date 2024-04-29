@@ -8,6 +8,7 @@ Created on Wed Apr 15 10:46:50 2020
 import json
 import os
 import irods.exception
+from datetime import date, timedelta
 from flask import Blueprint, render_template, redirect, jsonify, request, url_for
 from flask_login import current_user, login_required
 from irods.meta import iRODSMeta
@@ -20,6 +21,7 @@ from app.irodssessions import irods_manager
 from app.settings import RESOURCE_PROPS
 from app.auth import auth_endpoint
 from . import flaskcache
+from app.accounting_page import *
 
 ATTR_ARCHIVE_STATUS = "sys::archive::status"
 ATTR_ARCHIVE_STATUSMSG = "sys::archive::statusmsg"
@@ -53,12 +55,12 @@ def query_issues():
             data = '{}<TR><TD COLSPAN=5><A HREF="{}?path={}">{}</A></TD></TR>'.format(data, url_for("collbrowser.collbrowser"), base, result[0])
             q = session.query(DataObject.path,
                                 DataObject.resource_name,
-                                DataObject.size, 
+                                DataObject.size,
                                 DataObject.checksum).filter(
                 Criterion('=', Collection.name, base)).filter(
                 Criterion('=', DataObject.name, name))
             for objfile in q:
-                data = '{}<TR><td></td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></TR>'.format(data, 
+                data = '{}<TR><td></td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></TR>'.format(data,
                                                                 objfile[DataObject.path],
                                                                 objfile[DataObject.resource_name],
                                                                 objfile[DataObject.size],
@@ -73,7 +75,7 @@ def data_consistency():
         resources = { r[Resource.name]: r[Resource.location] for r in query }
         query = session.query(Collection.name, CollectionMeta.name, CollectionMeta.value).filter(
             Criterion('like', CollectionMeta.name, 'sys::consistency::%::errors'))
-        results = [ 
+        results = [
             { 'collection': r[Collection.name],
             'collink'   : datafield('collection', r[Collection.name], 'irods_collection').htmlstring,
             'resource'  : r[CollectionMeta.name].split('::')[2],
@@ -196,7 +198,7 @@ def archive_issues():
             state = getmetaitem(coll, ATTR_ARCHIVE_STATE)
             if state and state.count('1')>1:
                 allow_remove = True
-            items.append({ 
+            items.append({
                 'collection': datafield('Collection', result[Collection.name], 'irods_collection'),
                 'status': result[CollectionMeta.value],
                 'statusmsg': statusmsg,
@@ -343,9 +345,9 @@ def pending_tiering_ops():
                     status = session.collections.get(coll).metadata.get_one(ATTR_ARCHIVE_STATUS).value
                 except KeyError:
                     status = 'OK'
-                result.append( 
-                    { 'collection': datafield('Collection', coll, 'irods_collection').htmlstring, 
-                    'state': state, 
+                result.append(
+                    { 'collection': datafield('Collection', coll, 'irods_collection').htmlstring,
+                    'state': state,
                     'desired_state': desired_state,
                     'status': status })
     return jsonify(result)
@@ -378,3 +380,37 @@ def active_tiering_ops():
                 'desired_state': desired_state
             })
     return jsonify(result)
+
+@bp.route('/accounting', methods = ["GET"])
+def accounting():
+    api = AccountingAPI()
+    accoutning_data = api.get_request()
+    departments = list_departments(accoutning_data)
+    all_department_overview = total_usage_perDepartment(accoutning_data)
+    per_department_overview = total_userusage_perDeparment(accoutning_data)
+    return render_template(
+        'accounting.html',
+        title = "Accounting page",
+        departments = departments,
+        all_department_overview = all_department_overview,
+        per_department_overview = per_department_overview, )
+        # main_chartdata = prepChartdata(main_display))
+
+@bp.route('/accounting_getdate', methods = ["GET"])
+def get_dates():
+    # get datevalue from the selector
+    start = request.args.get('start')
+    end = request.args.get('end')
+    acc_data = request_accdata(start, end, "DAILY", dummydata=True)
+    departments = [depa for depa in list(acc_data)]
+    main_display = perDepartment(acc_data)
+    detailed_display = [perUser(depa, acc_data) for depa in departments]
+    return redirect(
+        url_for(
+            "admin.accounting",
+            departments = departments,
+            main_display = main_display,
+            detailed_display = zip(departments, detailed_display),
+            main_chartdata = prepChartdata(main_display)
+        )
+    )
