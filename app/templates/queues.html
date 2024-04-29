@@ -22,9 +22,9 @@ menuname="jobqueues"
 </thead>
 <tbody>
 {% for entry in queues %}
-   <TD>{{ entry }}</TD>
-   <TD><A HREF="{{ url_for('jobs.show_jobs') }}?items={{ entry }}">{{ queues[entry]['count'] }}</A></TD>
-   <TD>
+    <TD>{{ entry }}</TD>
+    <TD><A HREF="{{ url_for('jobs.show_jobs') }}?items={{ entry }}">{{ queues[entry]['count'] }}</A></TD>
+    <TD>
 
 {% if queues[entry]['enabled'] == True %}
 <div class="btn-group">

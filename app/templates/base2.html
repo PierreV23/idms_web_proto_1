@@ -281,9 +281,16 @@
                   <p>Archive issues</p>
                 </a>
               </li>
+              {% if "ACCOUNTING" in current_user.features %}
+              <li class="nav-item">
+                <a class="nav-link" data-menuname="accounting" href="/admin/accounting">
+                  <i class="fa-solid fa-chart-line"></i>
+                  <p>Accounting dashboard</p>
+                </a>
+              </li>
+              {% endif %}
             </ul>
           </li>
-
           <li class="nav-item">
             <a class="nav-link" href="#">
               <i class="nav-icon fas fa-chart-pie"></i>
