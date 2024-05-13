@@ -4,7 +4,7 @@ stages:
 deploy_minilims:
   stage: deploy
   script:
-  - cp -r ${CI_PROJECT_DIR}/* /opt/ngsweb
+  - sudo cp -r ${CI_PROJECT_DIR}/. /opt/ngsweb
   - sudo /bin/systemctl restart ngsweb.service
   only:
     - minilims_creators
@@ -17,7 +17,7 @@ deploy_minilims:
 deploy_test:
   stage: deploy
   script:
-  - cp -r ${CI_PROJECT_DIR}/* /opt/ngsweb
+  - sudo cp -r ${CI_PROJECT_DIR}/. /opt/ngsweb
   - sudo /bin/systemctl restart ngsweb.service
   only:
     - master
@@ -29,7 +29,7 @@ deploy_test:
 deploy_production:
   stage: deploy
   script:
-  - cp -r ${CI_PROJECT_DIR}/* /opt/ngsweb
+  - sudo cp -r ${CI_PROJECT_DIR}/. /opt/ngsweb
   - sudo /bin/systemctl restart ngsweb.service
   only:
     - release
