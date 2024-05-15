@@ -20,7 +20,7 @@ deploy_test:
   - sudo cp -r ${CI_PROJECT_DIR}/. /opt/ngsweb
   - sudo /bin/systemctl restart ngsweb.service
   only:
-    - master
+    - vsl_about_commit_hash
   parallel: 2
   tags:
     - test
@@ -29,7 +29,7 @@ deploy_test:
 deploy_production:
   stage: deploy
   script:
-  - sudo cp -r ${CI_PROJECT_DIR}/. /opt/ngsweb
+  - cp -r ${CI_PROJECT_DIR}/. /opt/ngsweb
   - sudo /bin/systemctl restart ngsweb.service
   only:
     - release
