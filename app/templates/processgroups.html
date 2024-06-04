@@ -1,3 +1,14 @@
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({
+    startOnLoad: false,
+    flowchart: {
+      htmlLabels: false
+    }
+  })
+  window.mermaid = mermaid;
+</script>
+
 <script>
 
 selected_processref = null
@@ -7,6 +18,12 @@ function waiting() {
   $('#pg_graph').html("<div><img src={{ url_for('static', filename='img/loading.gif') }}></img></div>")
 }
 
+function show_pg(data) {
+  $('#pg_graph').html(data.svg)
+  let w=$("#pg_graph").width().toString() + 'px';
+  $('svg').width(w);
+}
+
 function load_pggraph() {
   $.get('{{ url_for('projects.pg_graph') }}', {
     project: project,
@@ -14,11 +31,8 @@ function load_pggraph() {
     selected_processref: selected_processref,
     mode: mode
   }, function(data) {
-     $('#pg_graph').html(data)
-     let w=$("#pg_graph").width().toString() + 'px';
-     $('svg').width(w);
+     window.mermaid.render('dummy', data).then(show_pg)
   });
-
 };
 
 function load_pgdetails() {
@@ -41,12 +55,12 @@ function load_pgpage() {
 
 $(document).on('click', '.node', function(event){
     event.stopPropagation();
-    object = this.id.split(',')
+    object = this.id.split('-').slice(1,-1).join('-').split(',')
     oldmode = mode
     mode = 'display'
     if (oldmode == 'display') {
         if (object[0] == 'n') {
-            selected_processref = object[2];
+            selected_processref = object[1];
             load_pgpage();
         }
     } else if (oldmode == 'select_input') {

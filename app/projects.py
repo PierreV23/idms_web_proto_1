@@ -13,7 +13,8 @@ from flask import jsonify
 from irods.models import Collection, CollectionMeta, User, UserMeta
 from irods.column import Criterion
 from app.datafield import datafield
-from graphviz import Digraph
+from app.mermaid import Mermaid
+from app.datafield import datafield
 from . import iqry
 from app.constants import COLL_KEY_MAP
 from app.irodssessions import irods_manager
@@ -433,23 +434,23 @@ def pg_graph():
                 'fillcolor': 'lightblue'
             }
         nodename = f'n,{procid}'
-        nodeid = f'n,{procid},{name}'
-        graph.node(nodename, label=name, shape='cds', id=nodeid, **extra_settings)
+        graph.node(nodename, label=name, shape='cds', **extra_settings)
 
     project = request.args.get('project')
     group = request.args.get('group', 'default')
-    selected_processref = request.args.get('selected_processref')
+    selected_processref = request.args.get('selected_processref', type=int)
     pl, result = rest_call('GET', f'projects/{project}/processgroups/{group}/processes')
     if result != 200:
         return ""
     # Create the process group graph
-    graph = Digraph('datagraph')
+    graph = Mermaid('datagraph')
     graph.graph_attr['rankdir'] = 'LR'
     # There is always a node for NEW_DATA
     graph.node('d,0', label="NEW DATA", shape='box', id='d,0')
     for process in pl:
         pname = process.get('name')
-        add_process(pname, process.get('id'), pname==selected_processref)
+        pid = process.get('id')
+        add_process(pname, pid, pid==selected_processref)
     # get the dependencies
     pd, r2 = rest_call('GET', f'projects/{project}/processgroups/{group}/dependencies')
     for process in pl:
@@ -474,17 +475,17 @@ def pg_details():
 
     project = request.args.get('project')
     group = request.args.get('group', 'default')
-    selected_processref = request.args.get('selected_processref')
+    selected_processref = request.args.get('selected_processref', type=int)
     mode = request.args.get('mode')
     pl, result = rest_call('GET', f'projects/{project}/processgroups/{group}/processes')
     all_processes, result = rest_call('GET', f'processes')
-    all_processes = sorted(all_processes, key=lambda x: x['name'].lower())
+    all_processes = sorted(all_processes, key=lambda x: x.get('name').lower())
     dependency_names = []
     selected_details = None
     selected_tags = []
     selected_process = datafield('process', 'NOT FOUND', 'base')
     if selected_processref:
-        sel_list = search(pl, lambda x: x.get('name'), selected_processref)
+        sel_list = search(pl, lambda x: x.get('id'), selected_processref)
         selected_details  = sel_list[0] if sel_list else None
         dependencies, r2 = rest_call('GET', f'projects/{project}/processgroups/{group}/processes/{selected_processref}/dependencies')
         dependency_names = [ p['name'] for p in pl if p['id'] in [ d['depends_on'] for d in dependencies ]]

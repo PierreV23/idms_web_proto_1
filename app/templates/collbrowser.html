@@ -21,6 +21,21 @@ menuname='collectionbrowser'
 
 {% block content %}
 
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({
+    startOnLoad: false,
+    securityLevel: 'loose',
+    maxTextSize: 256000,
+    flowchart: {
+//      defaultRenderer: 'elk',
+//      curve: 'linear',
+      htmlLabels: false
+    }
+  })
+  window.mermaid = mermaid;
+</script>
+
 <script>
 
   var collection = "{{ path }}";
@@ -173,34 +188,41 @@ menuname='collectionbrowser'
     //window.open( "webdavs:"+path, '_blank');
   }
 
+  function show_graph(data) {
+    $('#graphimg').html(data.svg)
+    $('.node').each(function() {
+      name = $(this).attr('id').split('-').slice(1,-1).join('-')
+      if (name.startsWith('G')) {
+          name = $(this).find('tspan').first().text()
+      }
+      $(this).attr('title', name).tooltip()
+    })
+    size_graph()
+  }
+
+  function graph_error() {
+    $('#graphimg').html('<CENTER>LOAD FAILED</CENTER>')
+  }
+
   function load_graph() {
     $('#graphimg').html(waiting);
     $.get('{{ url_for('collbrowser.generate_graph') }}', {
       path: collection,
       levels: graph_levels,
       graph_simplify: graph_simplify
-    }, function (data) {
-      $('#graphimg').html(data);
-      size_graph();
-    })
-  }
+    }, async function (data) {
+       window.mermaid.render('harry', data).then(show_graph, graph_error);
+      }
+    )}
 
   function size_graph() {
-    let w = $("#graphimg").width().toString() + 'px';
-      $('svg').width(w);
-      centertop = 0
-      if ($('.center-coll').length !== 0) {
-        centertop = $('.center-coll').offset().top
-      }
-      let top = centertop + $('#graphdiv').scrollTop() - $('#graphdiv').offset().top - $('#graphdiv').height() / 2
-      $('#graphdiv').scrollTop(top)
-      if (top<0) {
-        if ($('#graphimg').height()<$('#graphdiv').height()) {
-          $('svg').addClass('vertical-center');
-        }
-      } else {
-        $('#graphdiv').scrollTop(top);
-      }
+    centertop = 0
+    if ($('.label').length !== 0) {
+      centertop = $('.center-coll').offset().top
+    }
+    let top = centertop + $('#graphimg').scrollTop() - $('#graphimg').offset().top - $('#graphimg').height() / 2
+    $('#graphimg').scrollTop(top)
+
   }
 
   function load_list(new_path) {
@@ -262,8 +284,12 @@ menuname='collectionbrowser'
   };
 
   $(document).on('click', '.path-change', function () {
+    $('.tooltip').tooltip('hide')
     $('.flash_bar').remove()
     collection = (this.nodeName == "g" ? this.id : $(this).data('path'));
+    if (collection.startsWith('flowchart-')) {
+      collection = collection.split('-').slice(1, -1).join('-')
+    }
     history.pushState({ "coll": collection }, 'Browse ' + collection, '/collbrowser?path=' + collection);
     if (typeof collection == 'undefined') {
       collection = $(this).attr('id')
@@ -312,22 +338,26 @@ menuname='collectionbrowser'
 
   $(document).on('click', '.collist', function (e) {
     myid = e.currentTarget.id
-    query = myid.substring(0,2)
+    if (myid.startsWith('flowchart-')) {
+      myid = myid.split('-').slice(1, -1).join('-')
+    }    
+    query = myid.substring(0, 2)
     coll = myid.substring(3)
     $myel = $(this)
     $.get('{{ url_for('collbrowser.multi_list') }}', {
       collection: coll,
-      q: query}, function(data){
-        $myel.popover('dispose');
-        $myel.popover({
-                trigger: 'focus',
-                placement: 'bottom',
-                html: true,
-                title: 'Collections',
-                content: data
-        })
-        $myel.popover('show');
+      q: query
+    }, function (data) {
+      $myel.popover('dispose');
+      $myel.popover({
+        trigger: 'focus',
+        placement: 'bottom',
+        html: true,
+        title: 'Collections',
+        content: data
       })
+      $myel.popover('show');
+    })
   });
 
 
@@ -370,8 +400,8 @@ menuname='collectionbrowser'
         </div>
       </form>
     </div>
-    <div class="card-body scroll h-100 nopadding" id="graphdiv">
-      <div id="graphimg"></div>
+    <div class="card-body h-100 nopadding" id="graphdiv">
+      <div id="graphimg" class="h-100 nopadding scroll"></div>
     </div>
   </div>
 

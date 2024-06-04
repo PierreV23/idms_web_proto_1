@@ -5,7 +5,6 @@ dependencies:
   - apscheduler
   - flask
   - git
-  - graphviz
   - jsonschema
   - marshmallow
   - marshmallow-sqlalchemy
@@ -32,5 +31,4 @@ dependencies:
     - randomname
     - python-irodsclient
     - redis
-    - graphviz
     - jsonschema

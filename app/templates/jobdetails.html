@@ -14,15 +14,30 @@ menuname='jobdetails'
 
 {% block content %}
 
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({
+    startOnLoad: false,
+    flowchart: {
+      htmlLabels: false
+    }
+  })
+  window.mermaid = mermaid;
+</script>
+
 <script>
+
+  function show_graph(data) {
+    $('#processgraph').html(data.svg)
+    let w = $("#processgraph").width().toString() + 'px';
+    $('svg').width(w).addClass('vertical-center');
+  }
 
   $(window).on('load', function () {
     $.get('{{ url_for("jobs.processgraph") }}', {
       runsheet: '{{ runsheet }}'
     }, function (data) {
-      $('#processgraph').html(data)
-      let w = $("#processgraph").width().toString() + 'px';
-      $('svg').width(w);
+      window.mermaid.render('dummy', data).then(show_graph);
     })
   });
 
