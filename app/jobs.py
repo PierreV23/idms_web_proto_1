@@ -13,7 +13,7 @@ from irods.models import Collection, CollectionMeta
 from irods.column import Criterion
 from app.datafield import datafield
 from app.settings import JOB_FIELDS, PG_FIELDS, PG_JOB_FIELDS
-from app.mermaid import Mermaid
+from graphviz import Digraph
 import flask
 import greenlet
 import json
@@ -397,7 +397,7 @@ def coll_shape(coll_type):
 @bp.route('/processgraph')
 def processgraph():
     runsheet_coll = request.args.get('runsheet', '/', type=str)
-    graph = Mermaid('datagraph')
+    graph = Digraph('datagraph')
 
     # We need the processgroupID
     processgroupid = iqry.qcollmetavalstatic(runsheet_coll, 'sys::runsheet::processgroupid')
