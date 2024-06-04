@@ -22,12 +22,12 @@ from irods.column import Criterion
 from app.datafield import AVU2data, datafield
 from app.irods_helper import getmetaitem
 from app.irodssessions import irods_manager
+from graphviz import Digraph
 from irods.meta import iRODSMeta
 from urllib.parse import urlparse
 from . import projects
 from . import iqry
 from . import irods_objects
-from app.mermaid import Mermaid
 from .flaskcache import cache, key_zone, key_userzone, dep_zone, dep_userzone
 import json
 from app.constants import COLL_KEY_MAP, DATA_KEY_MAP, ATTR_RESOURCE_ONLINE
@@ -664,7 +664,7 @@ def _generate_graph(coll, maxlevels, graph_simplify):
     #######################################
     # Draw the graph
 
-    graph = Mermaid('datagraph')
+    graph = Digraph('datagraph')
     graph.graph_attr['rankdir'] = 'LR'
     graph.graph_attr['fontsize'] = '15'
 
@@ -693,14 +693,6 @@ def _generate_graph(coll, maxlevels, graph_simplify):
             coll_type = collmeta.get('sys::data::type', coll_type)
             coll_type = collmeta.get('user::data::type', coll_type)
         shape, shape_color = coll_shape(coll_type)
-   
-        projectid = collmeta.get('projectID', '') + '\n'
-        if node == coll:
-            penwidth = '4'
-            clss = { 'class' : 'path-change center-coll'}
-        else:
-            penwidth = '1'
-            clss = { 'class' : 'path-change' }
 
         # set border/fill colors for invalid collections
         border_color = "black"
@@ -708,15 +700,10 @@ def _generate_graph(coll, maxlevels, graph_simplify):
             # shape_color += f":{constants.SYS_INVALID_COLOR}"
             # shape_color += f";0.9:{constants.SYS_INVALID_COLOR}"
             border_color = constants.SYS_INVALID_COLOR
-            if penwidth == '1':
-                penwidth = '2'
         elif collmeta.get('user::data::state') == "invalid":
             # shape_color += f":{constants.USER_INVALID_COLOR}"
             # shape_color += f";0.9:{constants.USER_INVALID_COLOR}"
             border_color = constants.USER_INVALID_COLOR
-            if penwidth == '1':
-                penwidth = '2'            
-
 
         projectid = collmeta.get('projectID', '') + '\n'
         if node == coll:

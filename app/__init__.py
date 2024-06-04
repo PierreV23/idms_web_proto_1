@@ -220,8 +220,7 @@ def invalid_session1(e):
 @app.errorhandler(irods.exception.NetworkException)
 def invalid_session2(e):
     """Session may be stale. Destroy it and redirect to login page."""
-    app.logger.info(f"Exception {e}: user {current_user.username} on {current_user.environment} environment")
-    return
+    app.logger.info(f"Invalid session: user {current_user.username} on {current_user.environment} environment")
     return auth.logout()
 
 @app.errorhandler(AuthException)

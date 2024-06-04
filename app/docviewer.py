@@ -45,6 +45,7 @@ def serve_image():
 @BP.route('_access')
 def test_access():
     path = urllib.parse.unquote(request.args.get('path', '/', type=str))
+    print(path)
     with irods_manager.session() as session:
         obj = fs_irods(session=session).getfile(path)
         try:

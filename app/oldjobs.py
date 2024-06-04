@@ -13,7 +13,7 @@ from irods.exception import DataObjectDoesNotExist
 from irods.models import Collection, DataObject, DataObjectMeta, CollectionMeta
 from irods.column import Criterion
 from app.datafield import datafield
-from app.mermaid import Mermaid
+from graphviz import Digraph
 import os
 import sys
 import time
@@ -176,6 +176,45 @@ def shortname(name,l):
 def coll_shape(coll_type):
     layout = constants.LAYOUT.get(coll_type, constants.DEFAULT_SHAPE)
     return layout[constants.SHAPE2], layout[constants.COLOR1]    
+
+@bp.route('/processgraph')
+def processgraph():
+    runsheet_coll = request.args.get('runsheet', '/', type=str)
+    graph = Digraph('datagraph')
+
+    # We need the processgroupID
+    pgid = iqry.qcollmetavalstatic(runsheet_coll, 'sys::runsheet::processgroupid')
+    q = iqry.qcollbymeta('sys::runsheet::processgroupid', pgid)
+    colls = [ r[Collection.name] for r in q ]
+    for coll in colls:
+        state = iqry.qcollmetaval(coll, 'sys::runsheet::state', default='unknown')
+        if state == 'done':
+            state = iqry.qcollmetaval(coll, 'sys::run::result')
+        shape, shape_color = coll_shape(state)
+        penwidth = '3' if runsheet_coll == coll else '1'
+        graph.node(coll, label=iqry.qcollmetavalstatic(coll, 'sys::runsheet::description'), style='filled', penwidth=penwidth, 
+            shape=shape, fillcolor=shape_color, URL=url_for('oldjobs.jobdetails', name=iqry.qcollmetaval(coll, ATTR_RUNSHEET_ID)))
+    for coll in colls:
+        ir = iqry.qcollmetaval(coll, 'sys::pipeline::input_collection_id')
+        input_colls = [ c for c in colls if iqry.qcollmetavalstatic(c, 'sys::dataset_id') == ir ]
+        if input_colls: 
+            for input_coll in input_colls:
+                graph.edge(input_coll, coll)
+        else:
+            q = iqry.qcollbystaticmeta('sys::dataset_id', ir)
+            src = None
+            for r in q:
+                src = r[Collection.name]
+            if src:
+                shape, shape_color = coll_shape('source')
+                graph.node(src, shortname(src, NAME_LENGTH), shape=shape, fillcolor=shape_color, style='filled',
+                    URL=url_for('collbrowser.collbrowser', path=src))
+                graph.edge(src, coll)
+
+    graph.graph_attr['rankdir'] = 'LR'
+    graph.graph_attr['fontsize'] = '15'
+
+    return graph.pipe(format='svg').decode('utf-8')
 
 @bp.route('/jobdetails')
 def jobdetails():
