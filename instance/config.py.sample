@@ -79,7 +79,9 @@ IRODS_ENVS = {
         'features': [
             'JOBS',
             'MINILIMS',
-            'PROJECTS'
+            'PROJECTS',
+            'REFERENCE',
+            'ACCOUNTING'
         ]
     },
     'Acceptatie':   {
@@ -91,7 +93,9 @@ IRODS_ENVS = {
         'features': [
             'JOBS',
             'MINILIMS',
-            'PROJECTS'
+            'PROJECTS',
+            'REFERENCE',
+            'ACCOUNTING'
         ]
     },
     'Test_01':   {
@@ -104,7 +108,8 @@ IRODS_ENVS = {
             'JOBS',
             'MINILIMS',
             'PROJECTS',
-            'REFERENCE'
+            'REFERENCE',
+            'ACCOUNTING'
         ]
     },
     'MIL': {
