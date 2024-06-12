@@ -24,7 +24,7 @@ deploy_test:
   parallel: 2
   tags:
     - test
-    - ${CI_NODE_INDEX}
+    - 0${CI_NODE_INDEX}
 
 deploy_production:
   stage: deploy
