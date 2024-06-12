@@ -21,10 +21,8 @@ deploy_test:
   - sudo /bin/systemctl restart ngsweb.service
   only:
     - master
-  parallel: 2
   tags:
     - test
-    - 0${CI_NODE_INDEX}
 
 deploy_production:
   stage: deploy
