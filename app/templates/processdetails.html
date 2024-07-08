@@ -14,10 +14,12 @@
         <a class="nav-link" id="usage-tab" data-toggle="tab" href="#usage-content" role="tab"
           aria-controls="usage-content" aria-selected="false">Usage</a>
       </li>
+      {% if 'REFERENCE' in current_user.features %}      
       <li class="nav-item mx-2">
         <a class="nav-link" id="refdata-tab" data-toggle="tab" href="#refdata-content" role="tab"
           aria-controls="refdata-content" aria-selected="false">ReferenceData</a>
       </li>
+      {% endif %}
     </ul>
   </div>
   <div class="card-body tab-content h-100">
