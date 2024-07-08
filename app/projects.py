@@ -249,9 +249,7 @@ def show_processdetails():
     Shows page with process settings
     """
     processnaam = request.args.get('name', '', type=str)
-
     pl, result = rest_call('GET', f'processes/{processnaam}')
-
     return render_template('processdetails.html', details=pl)
 
 
@@ -262,7 +260,6 @@ def update_projectsettings():
     The request contains an <action> variable that specifiec the kind of update
     that is requested
     """
-
     requestdata = request.form.to_dict()
     location = ''
     project = requestdata.get('project')
@@ -325,20 +322,15 @@ def get_process():
     processlist = get_processlist(data['project'])
     return jsonify(processlist)
 
+
 @BP.route('_myprojectview', methods=['GET'])
 def my_projectview():
-
     projectlist = current_user.projects()
-
     projectdetails = {}
-
     pl, result = rest_call('GET', 'projects')
-
     if result == 200:
         projectdetails = { project['name'] : project['default_collection'] for project in pl if project['name'] in projectlist }
-
     columns = min(4, 1 + len(projectdetails) // 20)
-
     return render_template('_myprojects.html', projectdetails=projectdetails, columns=columns )
 
 
@@ -410,6 +402,139 @@ def pgaction():
             f'projects/{project}/processgroups/{group}/processes/{process}/dependencies/{depend}')
     return "OK"
 
+
+@BP.route('_process_list_refdata', methods=['GET'])
+def process_list_refdata():
+    processid = request.args.get('process')
+    refdatasForProcess, result = rest_call('GET', f'processes/{processid}/referencedataversion')
+    refdatasets, result = rest_call('GET', f'reference')
+    ref_versions = {}
+    for refdataFP in refdatasForProcess:
+        refdataid = refdataFP['referencedataid']
+        versions, result = rest_call('GET', f'reference/{refdataid}/versions')
+        ref_versions[refdataid] = versions
+    return render_template('process_reference_data.html', processid=processid, reference_data_sets=refdatasets, reference_data_for_process=refdatasForProcess, ref_versions=ref_versions)
+
+
+@BP.route('_process_add_referencedataversion', methods=['GET'])
+def process_add_referencedataversion():
+    referencedataid = request.args.get('referencedataid')
+    referencedataversionid = request.args.get('referencedataversionid')
+    processid = request.args.get('processid') 
+    result, r = rest_call('POST', f'/processes/{processid}/referencedataversion',
+                                {"referencedataid": referencedataid ,
+                                 "referencedataversionid": referencedataversionid } )
+    return result
+
+@BP.route('_process_del_referencedataversion', methods=['GET'])
+def process_del_referencedataversion():
+    processid = request.args.get('processid') 
+    referencedataid = request.args.get('referencedataid')
+    result, r = rest_call('DELETE', f'/processes/{processid}/referencedataversion/{referencedataid}' )
+    return result
+
+
+@BP.route('_process_set_referencedataversion', methods=['GET'])
+def process_set_referencedataversion():
+    referencedataid = request.args.get('referencedataid')
+    referencedataversionid = request.args.get('referencedataversionid')
+    processid = request.args.get('processid') 
+    result, r = rest_call('PUT', f'/processes/{processid}/referencedataversion/{referencedataid}',
+                                { "referencedataversionid": referencedataversionid } )
+    return result               
+
+@BP.route('_referencedataversions', methods=['GET'])
+def referencedataversions():
+    referencedataid = request.args.get('referencedataid')
+    all_versions, r = rest_call('GET', f'reference/{referencedataid}/versions')
+    return all_versions
+
+
+#Awful lot of RESTCalls happening here...
+@BP.route('pg_list_processref_refdata', methods=['GET'])
+def pg_list_processref_refdata():
+    project = request.args.get('project')
+    group = request.args.get('group')
+    process = request.args.get('process')
+    process_ref = request.args.get('process_ref')
+    refdatasForProcess, code = rest_call('GET', f'processes/{process}/referencedataversion')
+    if code != 200:
+        return []
+
+    for refdataFP in refdatasForProcess:
+        id = refdataFP["id"]
+        refdataid = refdataFP["referencedataid"]
+        versions, code = rest_call('GET', f'reference/{refdataid}/versions')    
+        if code != 200:
+            return[] 
+        else:
+            refdataFP["versions"] = versions
+   
+    refdatasForProcessRef, code = rest_call('GET', f'/projects/{project}/processgroups/{group}/processes/{process_ref}/referencedataversion')   
+    refdatasForProcessRefByRDFBID = {}
+    if code != 200:
+        return [] 
+    for refdataFPR in refdatasForProcessRef:
+        refdataFP_id = refdataFPR["processdefault"]["id"]
+        refdatasForProcessRefByRDFBID[refdataFP_id] = refdataFPR
+    result = { "refdatasForProcess": refdatasForProcess , "refdatasForProcessRef": refdatasForProcessRefByRDFBID}
+    return result
+
+
+@BP.route('_pg_set_referencedataversion', methods=['GET'])
+def pg_set_referencedataversion():
+    #None or Id of the entry in table refdataversion2processref, that contains the superseeding versionid
+    refdataversion2processrefid = request.args.get('refdataversion2processrefid')
+    #either -2 (remove superseedig entry), -1 (convert to null) or the id of a version that will superseeed the process-default
+    supersedingversionid = int(request.args.get('supersedingversionid'))
+    #the entry-id in refdataversio2processref that defines the default version to use, which will be superseeded by a pg-specific entry
+    processdefaultid = request.args.get('processdefaultid')
+    project = request.args.get('project')
+    group = request.args.get('group')
+    process_ref = request.args.get('process_ref_id')
+
+    result = {}
+    #depending on supersedingversionid either delete existing entries (-2), put null in (-1) or set on the given value.
+    if supersedingversionid == -2:
+        result, code = rest_call('DELETE', f'/projects/{project}/processgroups/{group}/processes/{process_ref}/referencedataversion/{refdataversion2processrefid}' )
+    else:
+        if supersedingversionid == -1:
+            supersedingversionid = None
+        if refdataversion2processrefid:
+            refdataversion2processrefid = int(refdataversion2processrefid)
+            #existing entry should be changed, via PUT
+            result, code = rest_call('PUT', f'/projects/{project}/processgroups/{group}/processes/{process_ref}/referencedataversion/{refdataversion2processrefid}',
+                                    { "supersedingversionid": supersedingversionid} )
+        else:
+            #a new entry needs to be created via POST
+            result, code = rest_call('POST', f'/projects/{project}/processgroups/{group}/processes/{process_ref}/referencedataversion',
+                                    {
+                                        "supersedingversionid": supersedingversionid, 
+                                        "processdefaultid": processdefaultid
+                                    } )
+    return result
+
+
+@BP.route('_pg_add_referencedataversions', methods=['GET'])
+def pg_add_referencedataversions():
+    referencedataid = request.args.get('referencedataid')
+    project = request.args.get('project')
+    group = request.args.get('group')
+    process = request.args.get('process')
+    result, r = rest_call('POST', f'/projects/{project}/processgroups/{group}/processes/{process}/referencedataversion',
+                                {"referencedata_versionid": referencedataid } )
+    return result
+
+
+@BP.route('_pg_list_referencedataversions',  methods=['GET'])
+def pg_list_referencedataversions(): 
+    project = request.args.get('project')
+    group = request.args.get('group')
+    process = request.args.get('process')
+    result, r = rest_call('GET', f'/projects/{project}/processgroups/{group}/processes/{process}/referencedataversion')
+    return result
+
+
 @BP.route('_pggraph', methods=['GET'])
 def pg_graph():
     """Generate a graph of process flow
@@ -469,9 +594,9 @@ def pg_graph():
     graph_output = graph.pipe(format='svg').decode('utf-8')
     return graph_output
 
+
 @BP.route('_pgdetails')
 def pg_details():
-
     project = request.args.get('project')
     group = request.args.get('group', 'default')
     selected_processref = request.args.get('selected_processref')
@@ -482,6 +607,8 @@ def pg_details():
     dependency_names = []
     selected_details = None
     selected_tags = []
+    all_reference_datasets = []
+    connected_reference_datasets = []
     selected_process = datafield('process', 'NOT FOUND', 'base')
     if selected_processref:
         sel_list = search(pl, lambda x: x.get('name'), selected_processref)
@@ -489,9 +616,12 @@ def pg_details():
         dependencies, r2 = rest_call('GET', f'projects/{project}/processgroups/{group}/processes/{selected_processref}/dependencies')
         dependency_names = [ p['name'] for p in pl if p['id'] in [ d['depends_on'] for d in dependencies ]]
         selected_processlist = search(all_processes, lambda x: x.get('id'), selected_details.get('processid'))
+        #additional rest calls to get all reference data
+        all_reference_datasets, r3 = rest_call('GET', f'reference' )
+        connected_reference_datasets, r4 = rest_call('GET', f'projects/{project}/processgroups/{group}/processes/{selected_processref}/referencedataversion')
         if selected_processlist:
             selected_process = datafield('process', selected_processlist[0].get('name'), 'process')
-        selected_tags, r3 = rest_call('GET', f'processes/{selected_details.get("processid")}/tags')
+        selected_tags, r5 = rest_call('GET', f'processes/{selected_details.get("processid")}/tags')
     message = ''
     if mode == 'select_input':
         message = f'Please select input for process {selected_processref}'
@@ -500,7 +630,9 @@ def pg_details():
     return render_template('pg_details.html', project=project, group=group, 
         all_processes=all_processes, pg_processes=pl, selected_details=selected_details,
         selected_tags = selected_tags, selected_process=selected_process,
-        dependencies=dependency_names, message=message)
+        dependencies=dependency_names, 
+        all_reference_datasets=all_reference_datasets, connected_reference_datasets=connected_reference_datasets , 
+        message=message)
 
 @BP.route('processgroups', methods=['GET'])
 def processgroups():
@@ -519,11 +651,12 @@ def usermanager():
     objectname = request.args.get('object')
     objecttype = request.args.get('objecttype')
     usertype = request.args.get('usertype')
-    url = f'/{objecttype}/{objectname}/{usertype}'
-
     return render_template('usermanager.html', object=objectname, objecttype=objecttype, usertype=usertype)
 
 @BP.route('processusage', methods=['GET'])
 def processusage():
     process = request.args.get('process')
     return render_template('processusage.html', process=process)
+
+
+

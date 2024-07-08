@@ -14,6 +14,12 @@
         <a class="nav-link" id="usage-tab" data-toggle="tab" href="#usage-content" role="tab"
           aria-controls="usage-content" aria-selected="false">Usage</a>
       </li>
+      {% if 'REFERENCE' in current_user.features %}      
+      <li class="nav-item mx-2">
+        <a class="nav-link" id="refdata-tab" data-toggle="tab" href="#refdata-content" role="tab"
+          aria-controls="refdata-content" aria-selected="false">ReferenceData</a>
+      </li>
+      {% endif %}
     </ul>
   </div>
   <div class="card-body tab-content h-100">
@@ -100,6 +106,9 @@
 
     <div class="tab-pane h-100" id="usage-content" role="tabpanel" aria-labelledby="usage-tab">
     </div>
+
+    <div class="tab-pane h-100 overflow-auto" id="refdata-content" role="tabpanel" aria-labelledby="refdata-tab">
+    </div>
   </div>
 </div>
 
@@ -156,6 +165,21 @@
   $('#usage-tab').on('shown.bs.tab', function (e) {
     load_usage();
   });
+
+
+  function load_refdata() {
+    $('#refdatacontent').html('').addClass('pending')
+    $.get("{{ url_for('projects.process_list_refdata') }}", {
+      process: '{{ details['id'] }}'
+    }, function(data) {
+      $('#refdata-content').html(data).removeClass('pending')
+    });  
+  }
+
+  $('#refdata-tab').on('shown.bs.tab', function (e) {
+    load_refdata();
+  });
+
 
   function omit_check() {
     if ($('input[name="do_bringonline"]').is(":checked")) {
