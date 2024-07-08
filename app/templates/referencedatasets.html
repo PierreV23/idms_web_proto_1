@@ -41,7 +41,7 @@ $(document).on('click', '.referencename', function() {
 });
 
 $(window).on('load', function() {
-  $("li[data-referencename='{{ reference }}']").trigger('click');
+  $("li[data-referencename='{{ reference_dataset }}']").trigger('click');
 });
 
 // Some functions for the processgroup graphs 
@@ -73,7 +73,7 @@ $(document).on('click', '#select_input_button', function(){
       <form class="form" action="{{ url_for('reference.update_reference_settings') }}" method="post">
         <div class="form-group">
           <div class="modal-body">
-            <label for="new_pname" class="col-form-label">Project identifier (no spaces)</label>
+            <label for="new_pname" class="col-form-label">Reference dataset identifier (no spaces)</label>
             <INPUT TYPE="text" class="form-control menuexpand" id='new_pname' name="reference">
             <INPUT TYPE="hidden" name="action" value="add_reference">
           </div>
@@ -94,8 +94,8 @@ $(document).on('click', '#select_input_button', function(){
     <div class="card-body nopadding scroll">
       <UL class="list-group">
         {% for reference in referencedatasets | sort %}
-          <li class="list-group-item referencename" data-referencename="{{ reference }}" >
-            {{ reference }} <!-- {% if referencedatasets[reference]['processing'] %} <i class="fas fa-cogs "></i> {% endif %}-->
+          <li class="list-group-item referencename" data-referencename="{{ reference  }}" >
+            {{ reference  }} <!-- {% if referencedatasets[reference]['processing'] %} <i class="fas fa-cogs "></i> {% endif %}-->
           </li>
         {% endfor %}
       </UL>      

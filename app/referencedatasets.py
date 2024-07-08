@@ -108,12 +108,14 @@ def update_reference_settings():
         for attr in reference_change_allowed:
             if attr in requestdata:
                 data[attr] = requestdata[attr]
-        rest_call('PUT', 'reference/{}'.format(reference), data=data)
-        location=f'reference={reference}'
+        response, result = rest_call('PUT', 'reference/{}'.format(reference), data=data)
+        if result != 405:
+            flash(response.get('message', f'Unknown error: {result}'), 'error')
+        location=f'reference_dataset={reference}'
     elif action == 'add_reference':
         response, result = rest_call('POST', 'reference'.format(reference), data={'name': reference})
-        if result == 202:
-            location=f'reference={reference}'
+        if result == 201:
+            location = f'reference_dataset={reference}'
         else:            
             flash(response.get('message', 'Unknown error'), 'error')
             location='page=reference'
