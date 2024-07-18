@@ -22,16 +22,18 @@
 <!-- MyCustomCss -->
 <link rel="stylesheet" href="{{ url_for('static', filename='css/my-custom-formatting.css') }}">
 
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.7.1/css/bootstrap-datepicker.min.css" rel="stylesheet"/>
 
 <title>iRODS</title>
 
 <script src="{{ url_for('static', filename='js/moment.min.js') }}"></script>
 
-<script src="{{ url_for('static', filename='js/jquery-3.3.1.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/jquery-3.7.1.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/popper.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/bootstrap-autocomplete.min.js') }}"></script>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.7.1/js/bootstrap-datepicker.min.js"></script>
 <script src="{{ url_for('static', filename='js/bootstrap-table.min.js') }}"></script>
 <!-- https://copyprogramming.com/howto/bootstrap-table-with-filter-control-and-server-site -->
 <script src="{{ url_for('static', filename='js/bootstrap-table-filter-control.js') }}"></script>
@@ -314,6 +316,13 @@
           </li>
 
           {% endif %}
+
+          <li class="nav-item">
+            <a href="{{ url_for('collbrowser.shared_collections') }}" data-menuname="shared" class="nav-link">
+              <i class="fas fa-share nav-icon"></i>
+              <p>Shared Collections</p>
+            </a>
+          </li>          
 
           <li class="nav-item">
             <a href="{{ url_for('collbrowser.search') }}" data-menuname="search" class="nav-link">

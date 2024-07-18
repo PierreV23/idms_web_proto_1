@@ -33,6 +33,7 @@ import json
 from app.constants import COLL_KEY_MAP, DATA_KEY_MAP, ATTR_RESOURCE_ONLINE
 from app.auth import auth_endpoint
 from . import constants
+from .projectdb_api import rest_call2
 
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
 
@@ -303,13 +304,69 @@ def coll_actions():
         "user": user_coll_state,
         "sys": sys_coll_state,
     }
-
+    
     return render_template('actions.html', collection=path,
         name=coll_name, archival_state=archival_state, state_metadata=state_metadata,
         processes=processes, processid=processid, processrequest=processrequest,
         processgroups=processgroups, processgroupid=processgroupid,
         admin=current_user.is_admin)
 
+@bp.route('_actions_sharing')
+def actions_sharing():
+    collection = request.args.get('collection')
+    coll_id = iqry.qcollproperty(collection, 'id')
+    shares, status = rest_call2('GET', '0.0.0.0:7438', 'external', f'collections/{ coll_id }/shares')
+    data = []
+    cancel_button = '<div class="overlay"><i class="fa-solid fa-trash"></i></div>'
+    for share in shares:  
+        data.append({
+            'description': share.get('description'),
+            'endtime': share.get('endtime'),
+            'actions': cancel_button
+        })
+    columns = [
+        { "field": "description", "title": "Description", "sortable": True },
+        { "field": "endtime", "title": "Endtime", "sortable": True },
+        { "field": "actions", "title": "Action", "sortable": True }
+    ]
+    data = {
+        'columnsJSON': json.dumps(columns),
+        'dataJSON': json.dumps(data),
+        'id': collection.replace('/', '_')
+    }    
+    return render_template('bootstraptable.html', data=data)
+
+@bp.route('_actions_newshare', methods=['POST'])
+def actions_newshare():
+    NEW_SHARE_FIELDS = [ 'description', 'endtime' ]
+    formdata = request.form.to_dict()
+    coll_id = iqry.qcollproperty(formdata.get('collection'), 'id')
+    requestdata = { k: v for k, v in formdata.items() if k in NEW_SHARE_FIELDS }
+    data, result = rest_call2('POST', '0.0.0.0:7438', 'external', 
+                    f'collections/{coll_id}/shares', requestdata)
+    data['result'] = result
+    return data
+
+@bp.route('shared')
+def shared_collections():
+    return render_template('shared.html')
+
+@bp.route('_shared_colls')
+def shared_collections_table():
+    colls, result = rest_call2('GET', '0.0.0.0:7438', 'external',
+                            'collections')
+    print(colls)
+    data = [ {'collection': datafield('collection', r.get('path'), 'irods_collection').htmlstring} for r in colls ]
+    print(data)
+    columns = [
+        { "field": "collection", "title": "Collection", "sortable": True }
+    ]    
+    tabledata = {
+        'columnsJSON': json.dumps(columns),
+        'dataJSON': json.dumps(data),
+        'id': 'shared_colls'
+    }    
+    return render_template('bootstraptable.html', data=tabledata)
 
 @bp.route('_startprocess')
 def startprocess():

@@ -32,7 +32,7 @@ menuname='collectionbrowser'
   var selected_object = "";
   var waiting = '<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>'
 
-  var myDefaultWhiteList = $.fn.tooltip.Constructor.Default.whiteList
+  // var myDefaultWhiteList = $.fn.tooltip.Constructor.Default.whiteList
   $(function() {
     $.fn.popover.Constructor.Default.whiteList.table = [];
     $.fn.popover.Constructor.Default.whiteList.tr = [];
@@ -41,7 +41,7 @@ menuname='collectionbrowser'
     $.fn.popover.Constructor.Default.whiteList.tbody = [];
     $.fn.popover.Constructor.Default.whiteList.thead = [];  
   })
-  myDefaultWhiteList.span = ['data-path']
+  // myDefaultWhiteList.span = ['data-path']
 
   function downloadURI(uri, name) {
     var link = document.createElement("a");

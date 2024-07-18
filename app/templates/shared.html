@@ -1,0 +1,33 @@
+{% extends 'base2.html' %}
+
+{% block heading %}
+<H3><b>Shared collections</b></H3>
+{% endblock %}
+
+{%block menuname %}
+menuname='shared'
+{% endblock %}
+
+{% block content %}
+
+<script>
+
+$(document).ready(function() {
+    $('#shared_content').addClass('pending')
+    $.get('{{ url_for("collbrowser.shared_collections_table")}}')
+        .done(function(data){
+            $('#shared_content').removeClass('pending').html(data)
+
+        })
+})
+
+
+</script>
+
+<div class="h100" id="shared_content">
+
+</div>
+
+
+
+{% endblock %}

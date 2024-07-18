@@ -170,6 +170,10 @@ class WebUser(UserMixin):
             return decrypt(self.password)
         except:
             raise AuthException
+    
+    @property
+    def passwd_hash(self):
+        return base64.b64encode(self.passwd.encode()).decode('ascii')
 
     def store(self):
         """Store user in Flask session."""
