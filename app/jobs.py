@@ -29,6 +29,8 @@ import psycopg2
 from psycopg2 import pool
 from psycopg2.extras import RealDictCursor
 
+from app.stats import TD
+
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
 
 ATTR_RUNSHEET_PREFIX = 'sys::runsheet::'
@@ -86,7 +88,7 @@ class DBPools:
         env = my_env()
         env_params = current_app.config.get('IRODS_ENVS', {}).get(env)
         db_connect = env_params.get('jobs_db')
-        self._pools[env] = pool.ThreadedConnectionPool(1, 50, db_connect)
+        self._pools[env] = pool.ThreadedConnectionPool(5, 50, db_connect)
         
     def connection(self):
         env = my_env()
@@ -199,17 +201,12 @@ def jobs():
     
     # order; default second order by start_time desc, after filter takes less time
 
-    sqlj = f'select * from rivm_mat_jobtable {where_clause} order by {sort} {order}, create_time desc, start_time desc offset {offset} limit {limit}'
-    sqlc = f'select count(*) from rivm_mat_jobtable {where_clause}'
-    with db.connection() as conn:
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-        cursor.execute(sqlc)
-        result_jobcount = cursor.fetchall()
-        cursor.execute(sqlj)
-        jobs_query = cursor.fetchall()
+    sqlj = f'select *, count(*) over () as total_count from rivm_mat_jobtable {where_clause} order by {sort} {order}, create_time desc, start_time desc offset {offset} limit {limit}'
+
+    jobs_query = db.connection().sql(sqlj)
     
     # count, offset, limit data
-    count_jobs = result_jobcount[0]['count']
+    count_jobs = jobs_query[0]['total_count']
 
     # format data jobs_query
     result = []
@@ -269,20 +266,12 @@ def pglist():
         if filter_control == 'input':
             where_clause = f"{where_clause} and {field_name} like('%{filter_value}%')"
 
-    fieldlist = { PG_FIELDS[v]['field'] for v in PG_FIELDS.keys() }
-    fields = ','.join(fieldlist)
-    # Most efficient to use separate queries for total row count and page of processgroups
-    sqlj = f'select {fields} from rivm_v_processgroups {where_clause} order by {sort} {order} offset {offset} limit {limit}'
-    sqlc = f'select count(*) from rivm_v_processgroups {where_clause}'
+    # fieldlist = { PG_FIELDS[v]['field'] for v in PG_FIELDS.keys() }
+    # fields = ','.join(fieldlist)
+    sqlj = f'select *, count(*) OVER () AS total_count from rivm_v_processgroups {where_clause} order by {sort} {order} offset {offset} limit {limit}'
 
-    with db.connection() as conn:
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-        cursor.execute(sqlc)
-        c_query = cursor.fetchall()
-        cursor.execute(sqlj)
-        pgs_query = cursor.fetchall()
-
-    count_jobs = c_query[0]['count']
+    pgs_query = db.connection().sql(sqlj)
+    count_jobs = pgs_query[0]['total_count']
 
     # format data pgs_query
     result = []
