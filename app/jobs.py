@@ -25,11 +25,9 @@ from .flaskcache import cache, dep_zone, key_zone, key_userzone
 from app.irodssessions import irods_manager
 from . import iqry
 from . import constants
-
-from sqlalchemy import create_engine, text, MetaData, Table, func
-from sqlalchemy.orm import sessionmaker, scoped_session
-from sqlalchemy.exc import OperationalError
-
+import psycopg2
+from psycopg2 import pool
+from psycopg2.extras import RealDictCursor
 
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
 
@@ -54,61 +52,58 @@ def my_env():
 class JobsDBUnavailableException(Exception):
     pass
 
-class JobsDBAlchemy:
-    '''Handle db sessions for NGSRuns minilims database.'''
+class DBConnection:
+    
+    def __init__(self, pool):
+        self._pool = pool
+              
+    def sql(self, statement):
+        with self as conn:
+            cursor = conn.cursor(cursor_factory=RealDictCursor)
+            cursor.execute(statement)
+            if cursor.rowcount == 0:
+                return []
+            else:
+                return cursor.fetchall()            
+        
+    def __enter__(self):
+        self._conn = self._pool.getconn()
+        return self._conn
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._pool.putconn(self._conn)
 
+class DBPools:
+    
     def __init__(self):
-        # Define a SQLAlchemy base class to wrap.
-        self._sessions = {}
-
-    def connect(self):
-        """Connect to Jobs DB for current_user.environment
-        """        
-        env = my_env()
-        if env:
-            env_params = current_app.config.get('IRODS_ENVS', {}).get(env)
-            self.remove_session()
-            db_connect = env_params.get('jobs_db')
-            if db_connect:
-                try:
-                    engine = create_engine(db_connect, connect_args={'connect_timeout': 2})
-                    engine.connect()
-                except OperationalError:
-                    current_app.logger.error(f'Cannot create JOBS DB engine for {env}')
-                    return
-                _sessionmaker = sessionmaker(autocommit=False, autoflush=False,
-                                            bind=engine)
-                self._sessions[env] = scoped_session(_sessionmaker, 
-                    scopefunc=greenlet.getcurrent)        
-
+        self._pools = {}
 
     def init_app(self, app):
-        app.teardown_request(self.remove_session)
-
-    def session(self):
-        """Return session. If no specific environment is requested, use the one 
-        defined in the user object, eventually fall back to `default_env`."""
-        env = my_env()      
-        try:
-            if not env in self._sessions:
-                self.connect()
-            return self._sessions[env]()
-        except KeyError:
+        pass
+        #app.teardown_request(self.remove_session)
+        
+    def startpool(self):
+        env = my_env()
+        env_params = current_app.config.get('IRODS_ENVS', {}).get(env)
+        db_connect = env_params.get('jobs_db')
+        self._pools[env] = pool.ThreadedConnectionPool(1, 50, db_connect)
+        
+    def connection(self):
+        env = my_env()
+        if not env in self._pools:
+            self.startpool()
+        if env in self._pools:
+            return DBConnection(self._pools.get(env))
+        else:
             raise JobsDBUnavailableException(f'env={env}')
 
 
-    def remove_session(self, _exc=None):
-        if hasattr(current_user, 'environment') and \
-            current_user.environment in self._sessions:
-            self._sessions[current_user.environment].remove()
+db = DBPools()
 
-
-db = JobsDBAlchemy()
-
-@bp.before_request
-def before_request_func():
-    # This ensures the flash error message will show up if the job table is not available
-    db.session()
+# @bp.before_request
+# def before_request_func():
+#     # This ensures the flash error message will show up if the job table is not available
+#     db.connection()
 
 def utc_to_local(utc_dt):
     return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=None)
@@ -170,34 +165,6 @@ def processgroupprocs():
         result.append(job)
     return { 'rows': result }
     
-
-def dbsession():
-
-    success = False
-    counter = 0
-    while not success and counter<3:
-        session = db.session()
-        engine = session.bind.engine
-        meta = MetaData()
-        meta.reflect(bind=engine, views=True, only=['rivm_mat_jobtable', 'rivm_v_processgroups'])
-
-        # retrieve tables
-        Jobs = Table("rivm_mat_jobtable", meta, autoload_with=engine)
-        Processgroups = Table("rivm_v_processgroups", meta, autoload_with=engine)
-        # Test query to see if session restart is required
-        # This fixes permission errors when the materialized view for jobs
-        # is recreated
-        try:
-            list(session.query(Jobs).limit(1))
-            success = True
-#        except psycopg2.errors.InsufficientPrivilege:
-        except:
-            counter += 1
-            db.connect()
-    if not success:
-        raise JobsDBUnavailableException(f'env={current_user.environment}')
-    return session, Jobs, Processgroups
-
 @bp.route('jobpage')
 def jobpage():
     preferred_page = current_user.settings.setdefault('jobs::view', 'jobs')
@@ -214,12 +181,9 @@ def jobs():
     sort = request.args.get('sort', 'create_time')
     order = request.args.get('order', 'desc')
     
-    session, Jobs, Processgroups = dbsession()   
     current_user.settings['default_project'] = filters.get('projectid', '')
-    session.commit()
 
-    # get jobs_query
-    jobs_query = session.query(Jobs)
+    where_clause = 'where 1=1'
     
     # Apply filters on jobs_query ('select' and 'input')
     for _, field_attrs in JOB_FIELDS.items():
@@ -229,16 +193,23 @@ def jobs():
         if not filter_value or filter_control is None:
             continue
         if filter_control == 'select':
-            jobs_query = jobs_query.filter(text(f"{field_name}='{filter_value}'"))
+            where_clause = f"{where_clause} and {field_name}='{filter_value}'"
         if filter_control == 'input':
-            jobs_query = jobs_query.filter(text(f"{field_name} like('%{filter_value}%')"))
+            where_clause = f"{where_clause} and {field_name} like('%{filter_value}%')"
     
     # order; default second order by start_time desc, after filter takes less time
-    jobs_query = jobs_query.order_by(text(f"{sort} {order}, create_time desc, start_time desc"))
+
+    sqlj = f'select * from rivm_mat_jobtable {where_clause} order by {sort} {order}, create_time desc, start_time desc offset {offset} limit {limit}'
+    sqlc = f'select count(*) from rivm_mat_jobtable {where_clause}'
+    with db.connection() as conn:
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor.execute(sqlc)
+        result_jobcount = cursor.fetchall()
+        cursor.execute(sqlj)
+        jobs_query = cursor.fetchall()
     
     # count, offset, limit data
-    count_jobs = jobs_query.count()
-    jobs_query = jobs_query.offset(offset).limit(limit)
+    count_jobs = result_jobcount[0]['count']
 
     # format data jobs_query
     result = []
@@ -246,7 +217,7 @@ def jobs():
         record = {}
         for f in JOB_FIELDS:
             dbkey = JOB_FIELDS[f]['field']
-            val = getattr(job, dbkey, None)
+            val = job.get(dbkey, None)
             if val is not None:
                 formatted = datafield(dbkey, val, JOB_FIELDS[f]['format'])
                 record |= { dbkey: formatted.htmlshort, f'_{dbkey}': formatted.value }
@@ -261,10 +232,12 @@ def filterdata():
 # Determine prepopulated filter values for 'select' filters
     field = request.args.get('field', type=str)
     table = request.args.get('table', type=str)
-    session, Jobs, Processgroups = dbsession() 
-
-    sql = f"SELECT DISTINCT {field} FROM {table} WHERE {field} IS NOT NULL"
-    filter_values = {v[0]:v[0] for v in session.execute(sql)}
+    
+    with db.connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT DISTINCT {field} FROM {table} WHERE {field} IS NOT NULL")
+        results = cursor.fetchall()
+    filter_values = {v[0]:v[0] for v in results}
     return jsonify(filter_values)
 
 
@@ -277,18 +250,13 @@ def pglist():
     order = request.args.get('order', 'desc')
     sort = request.args.get('sort', 'create_time')
     processgroupid = request.args.get('processgroupid', None, type=str)
-    session, Jobs, Processgroups = dbsession()  
     current_user.settings['default_project'] = filters.get('projectid', '')
 
-    # get processgroups (pgs_query) 
-    pgs_query = session.query(Processgroups)
-    # order; default order by create_time desc, start_time desc
-    pgs_query = pgs_query.order_by(text(f"{sort} {order}, create_time desc, start_time desc"))
+    where_clause = 'where 1=1'
 
-    # filter on processgroupid 
     if processgroupid:
-        pgs_query = pgs_query.filter(Processgroups.columns.processgroupid==processgroupid)
-
+        where_clause = f'{where_clause} and processgroupid={processgroupid}'
+   
     # Apply filters on pgs_query ('select' and 'input')
     for _, field_attrs in PG_FIELDS.items():
         field_name = field_attrs['field']
@@ -297,13 +265,24 @@ def pglist():
         if not filter_value or filter_control is None:
             continue
         if filter_control == 'select':
-            pgs_query = pgs_query.filter(text(f"{field_name}='{filter_value}'"))
+            where_clause = f"{where_clause} and {field_name}='{filter_value}'"
         if filter_control == 'input':
-            pgs_query = pgs_query.filter(text(f"{field_name} like('%{filter_value}%')"))
+            where_clause = f"{where_clause} and {field_name} like('%{filter_value}%')"
 
-    # count, offset, limit data
-    count_jobs = pgs_query.count()
-    pgs_query = pgs_query.offset(offset).limit(limit)
+    fieldlist = { PG_FIELDS[v]['field'] for v in PG_FIELDS.keys() }
+    fields = ','.join(fieldlist)
+    # Most efficient to use separate queries for total row count and page of processgroups
+    sqlj = f'select {fields} from rivm_v_processgroups {where_clause} order by {sort} {order} offset {offset} limit {limit}'
+    sqlc = f'select count(*) from rivm_v_processgroups {where_clause}'
+
+    with db.connection() as conn:
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor.execute(sqlc)
+        c_query = cursor.fetchall()
+        cursor.execute(sqlj)
+        pgs_query = cursor.fetchall()
+
+    count_jobs = c_query[0]['count']
 
     # format data pgs_query
     result = []
@@ -311,40 +290,40 @@ def pglist():
         record = {}
         for f in PG_FIELDS:
             dbkey = PG_FIELDS[f]['field']
-            val = getattr(processgroup, dbkey, None)
+            val = processgroup.get(dbkey, None)
             if val is not None:
                 formatted = datafield(dbkey, val, PG_FIELDS[f]['format'])
                 record |= { dbkey: formatted.htmlshort, f'_{dbkey}': formatted.value }
         result.append(record)
     
-    #engine = None
     return { 'rows': result, 'filters': filters, 'total': count_jobs }
 
 @bp.route('_jobrefresh')
 def jobs_refresh():
-    session, Jobs, Processgroups = dbsession()
-    jobs_query = session.query(func.max(Jobs.columns.refresh_time))
-    result = list(jobs_query)
+    sql = 'select max(refresh_time) from rivm_mat_jobtable'
+    result = db.connection().sql(sql)
     if not result:
         return jsonify('unknown')
     else:
-        return jsonify(datafield('refresh_time', float(result[0][0]), 'timestamp').htmlshort)
+        return jsonify(datafield('refresh_time', float(result[0]['max']), 'timestamp').htmlshort)
  
 
 @bp.route('_pgjobs')
 def pgjobs():
 # display jobs under a processgroupid
     processgroupid = request.args.get('processgroupid', None, type=str)
-    session, Jobs, Processgroups = dbsession()
+
     result = []
-    jobs_query = session.query(Jobs)
-    jobs_query = jobs_query.filter(Jobs.columns.processgroupid==processgroupid)
+
+    sql = f"select * from rivm_mat_jobtable where processgroupid='{processgroupid}'"
+
+    jobs_query = db.connection().sql(sql)
 
     for job in jobs_query:
         record = {}
         for f in PG_JOB_FIELDS:
             dbkey = PG_JOB_FIELDS[f]['field']
-            val = getattr(job, dbkey, None)
+            val = job.get(dbkey, None)
             if val is not None:
                 formatted = datafield(dbkey, val, PG_JOB_FIELDS[f]['format'])
                 record |= { dbkey: formatted.htmlshort, f'_{dbkey}': formatted.value }
