@@ -206,7 +206,7 @@ def jobs():
     jobs_query = db.connection().sql(sqlj)
     
     # count, offset, limit data
-    count_jobs = jobs_query[0]['total_count']
+    count_jobs = jobs_query[0]['total_count'] if len(jobs_query) else 0
 
     # format data jobs_query
     result = []
@@ -271,7 +271,7 @@ def pglist():
     sqlj = f'select *, count(*) OVER () AS total_count from rivm_v_processgroups {where_clause} order by {sort} {order} offset {offset} limit {limit}'
 
     pgs_query = db.connection().sql(sqlj)
-    count_jobs = pgs_query[0]['total_count']
+    count_processgroups = pgs_query[0]['total_count'] if len(pgs_query) else 0
 
     # format data pgs_query
     result = []
@@ -285,7 +285,7 @@ def pglist():
                 record |= { dbkey: formatted.htmlshort, f'_{dbkey}': formatted.value }
         result.append(record)
     
-    return { 'rows': result, 'filters': filters, 'total': count_jobs }
+    return { 'rows': result, 'filters': filters, 'total': count_processgroups }
 
 @bp.route('_jobrefresh')
 def jobs_refresh():
