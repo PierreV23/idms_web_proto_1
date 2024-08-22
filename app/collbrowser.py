@@ -342,9 +342,10 @@ def actions_newshare():
     formdata = request.form.to_dict()
     coll_id = iqry.qcollproperty(formdata.get('collection'), 'id')
     requestdata = { k: v for k, v in formdata.items() if k in NEW_SHARE_FIELDS }
-    data, result = rest_call2('POST', '0.0.0.0:7438', 'external', 
+    data, result = rest_call2('POST', '0.0.0.0:7438', 'external',
                     f'collections/{coll_id}/shares', requestdata)
     data['result'] = result
+    data['access_string'] = f"{data.get('dataset_id', '')}:{data.get('string', '')}"
     return data
 
 @bp.route('shared')
