@@ -231,5 +231,11 @@ LAYOUT = {
         COLOR1: 'tomato',
         COLOR2: '#FF6347',
         TABLECLASS : 'table-error'
-    }
+    },
+    'reference_data': {
+        SHAPE1: 'folder',
+        COLOR1: '#fdaa48',
+        COLOR2: '#fdaa48',
+        TABLECLASS : 'table-data'
+    },
 }

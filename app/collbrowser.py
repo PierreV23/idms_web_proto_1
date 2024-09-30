@@ -619,10 +619,21 @@ def _generate_graph(coll, maxlevels, graph_simplify):
         extra_colls |= set(related(coll, 'user::pipeline::input_collection_id', forward=False, byname=False))
         handle_neighbours(coll, extra_colls, dashed_edges, levels, inputs=True, relation_type='U')
 
+        # FIND EXTRA INPUTS OF REFERENCE_DATA
+        reference_data_colls = set()
+        for i in range(1000): #just an arbitrary but large number
+           temp = set(related(coll, f'sys::pipeline::refdata::{i}::reference_version_dataset_id', forward=False, byname=False))
+           if temp == set():
+               #we couldnt find any more reference_version
+               break
+           reference_data_colls |= temp
+        handle_neighbours(coll, reference_data_colls, dashed_edges, levels, inputs=True, relation_type='S')
+
         # FIND EXTRA OUTPUTS
         ref_colls = set(related(coll, 'user::pipeline::input_collection', forward=True, byname=True))
         ref_colls |= set(related(coll, 'user::pipeline::input_collection_id', forward=True, byname=False))
         handle_neighbours(coll, ref_colls, dashed_edges, levels, inputs=False, relation_type='U')
+
 
     traverse(coll, levels=maxlevels)
 

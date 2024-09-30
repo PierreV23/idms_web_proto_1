@@ -4,13 +4,15 @@ ReferenceData
     <thead>
       <tr>
         <th scope="col">#</th>
+        <th scope="col" title="identifier in pipeline">Label</th>
         <th scope="col">ReferenceDataset</th>
         <th scope="col">Version</th>
         <th scope="col">Action</th>
       </tr>
       <tr class="table-primary">
           <td></td>
-          <td><select class="form-control form-control-sm" id="refDataSetSelect">
+          <td width="200"><input id="refDataSetLabel" required pattern="[0-9a-zA-Z\-]+" placeholder="a_unique_label"></td>
+          <td><select class="form-control form-control-sm invisible" id="refDataSetSelect">
               <option disabled selected value> -- select a reference dataset -- </option>
           </select></td>
           <td>    
@@ -52,22 +54,26 @@ function addEventChangeVersion(id) {
 function build_line( ref_data, versions ) {
     versionidstr = "Latest (dynamic)"
     versionid = -1
+    console.log(JSON.stringify(ref_data))
     if( ref_data.referencedataversion != null ){
-        versionidstr = ref_data.referencedataversion.version
-        versionid = ref_data.referencedataversion.version 
+        versionidstr = ref_data.referencedata.version
+        versionid    = ref_data.referencedataversionid
     }
-     html = '<tr id="refdata-row-'+ref_data.id +'"><th scope="row"></th><th>' + ref_data.referencedata.name + '</th>'
-     html += '<td><select class="form-control form-control-sm" id="refDataSetVersion-' + ref_data.id + '">'
-     html += '    <option value="-1">Latest (dynamic)</option>'
+     html = '<tr id="refdata-row-'+ref_data.id +'">'
+     html += '  <th scope="row"></th>'
+     html += '  <th>'+ref_data.label+'</th>'
+     html += '  <th>' + ref_data.referencedata.name + '</th>'
+     html += '  <td><select class="form-control form-control-sm" id="refDataSetVersion-' + ref_data.id + '">'
+     html += '      <option value="-1">Latest (dynamic)</option>'
      for ( const v of versions ) {
         selected=""
         if (v.id == versionid ) {
            selected="selected"
         }
-        html += '<option value="'+ v.id +'"' + selected + '>'+ v.name +' ('+v.id+')</option>'
+        html += '    <option value="'+ v.id +'"' + selected + '>'+ v.name +' ('+v.id+')</option>'
      }
-     html += '</select></td>'
-     html += '<td><button class="btn-danger" id="btn-delete-'+ ref_data.id +'"><i class="fas fa-trash"></i></button></td>'
+     html += '      </select></td>'
+     html += '  <td><button class="btn-danger" id="btn-delete-'+ ref_data.id +'"><i class="fas fa-trash"></i></button></td>'
      html += '</tr>'
      return html
 }
@@ -91,53 +97,63 @@ $('document').ready(function(){
     };
 
     build_reference_data_table(reference_datas_for_process, ref_versions)
+
+    $('#refDataSetLabel').on('input', function() {
+        $('#refDataSetSelect').removeClass('invisible')
+    })
+
+    $('#refDataSetVersionSelect').on('change', function() {
+        $('#btnAddRefData').removeClass('invisible disabled')
+    })
+
+
+    $('#btnAddRefData').on('click', function() {
+        $.get("{{ url_for('projects.process_add_referencedataversion') }}", {
+            referencedataid: $('#refDataSetSelect').val(),
+            referencedataversionid:  $('#refDataSetVersionSelect').val(),
+            processid: '{{ processid }}',
+            label: $('#refDataSetLabel').val(),
+        }, function(refdata_conn) {
+            $.get('{{ url_for("projects.referencedataversions") }}', { 
+                referencedataid: refdata_conn.referencedata.id
+            }, function( versions ) {
+                $('#refdata_table > tbody:last-child').append( build_line( refdata_conn, versions ) )
+                addEventChangeVersion(refdata_conn.id)
+                addEventDeleteBtn( refdata_conn.id)
+            })
+        });
+
+        $('#btnAddRefData').addClass('invisible disabled') 
+        $('#refDataSetVersionSelect').addClass('invisible')
+        $('#refDataSetVersionSelect').empty()
+        $("#refDataSetSelect").prop("selectedIndex", 0 ) 
+        $("#refDataSetSelect").addClass('invisible')
+    }) 
+
+    $('#refDataSetSelect').on('change', function() {
+        $('#refDataSetVersionSelect').removeClass('invisible')
+    
+        $.get('{{ url_for("projects.referencedataversions") }}', { 
+            referencedataid: this.value
+        }, function(data) {
+            o = new Option( " -- select a version id -- ", null, true, true )
+            o.setAttribute("disabled", "disabled")
+            $('#refDataSetVersionSelect').append( o )
+            $('#refDataSetVersionSelect').append( new Option( "Latest (dynamic)", -1 ))
+        for( version of data ) {
+                $('#refDataSetVersionSelect').append( new Option(version.name + '('+version.id+')', version.id ) ) 
+            };
+        })
+        
+    })
+
 });
 
 /////////////////////////////////////////
 
 
 
-$('#refDataSetSelect').on('change', function() {
-    $('#refDataSetVersionSelect').removeClass('invisible')
-    
-    $.get('{{ url_for("projects.referencedataversions") }}', { 
-        referencedataid: this.value
-    }, function(data) {
-        o = new Option( " -- select a version id -- ", null, true, true )
-        o.setAttribute("disabled", "disabled")
-        $('#refDataSetVersionSelect').append( o )
-        $('#refDataSetVersionSelect').append( new Option( "Latest (dynamic)", -1 ))
-       for( version of data ) {
-            $('#refDataSetVersionSelect').append( new Option(version.name + '('+version.id+')', version.id ) ) 
-        };
-    })
-    
-})
 
 
-$('#refDataSetVersionSelect').on('change', function() {
-    $('#btnAddRefData').removeClass('invisible disabled')
-})
 
-
-$('#btnAddRefData').on('click', function() {
-    $.get("{{ url_for('projects.process_add_referencedataversion') }}", {
-        referencedataid: $('#refDataSetSelect').val(),
-        referencedataversionid:  $('#refDataSetVersionSelect').val(),
-        processid: '{{ processid }}'
-    }, function(refdata_conn) {
-        $.get('{{ url_for("projects.referencedataversions") }}', { 
-            referencedataid: refdata_conn.referencedata.id
-        }, function( versions ) {
-            $('#refdata_table > tbody:last-child').append( build_line( refdata_conn, versions ) )
-            addEventChangeVersion(refdata_conn.id)
-            addEventDeleteBtn( refdata_conn.id)
-        })
-    });
-
-    $('#btnAddRefData').addClass('invisible disabled') 
-    $('#refDataSetVersionSelect').addClass('invisible')
-    $('#refDataSetVersionSelect').empty()
-    $("#refDataSetSelect").prop("selectedIndex", 0 ) 
-}) 
 </script>
