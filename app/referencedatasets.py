@@ -142,9 +142,9 @@ def versions_table():
     db_versions = [
                  {
                     'version': v['version'],
-                    'creation_date': v['creation_date'],   #datafield( 'creation_date', v['creation_date'], 'timestamp').htmlstring,
-                    'location': None,
-                    'version_name': None
+                    'creation_date': v['creation_date'],   
+                    'dataset_id': v['dataset_id'],
+                    'version_name': v['version_name']
                  }
                  for v in response ]
 

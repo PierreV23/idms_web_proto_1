@@ -421,9 +421,11 @@ def process_add_referencedataversion():
     referencedataid = request.args.get('referencedataid')
     referencedataversionid = request.args.get('referencedataversionid')
     processid = request.args.get('processid') 
+    label = request.args.get('label')
     result, r = rest_call('POST', f'/processes/{processid}/referencedataversion',
-                                {"referencedataid": referencedataid ,
-                                 "referencedataversionid": referencedataversionid } )
+                                { "referencedataid": referencedataid ,
+                                  "referencedataversionid": referencedataversionid,
+                                  "label": label } )
     return result
 
 @BP.route('_process_del_referencedataversion', methods=['GET'])
@@ -651,6 +653,7 @@ def usermanager():
     objectname = request.args.get('object')
     objecttype = request.args.get('objecttype')
     usertype = request.args.get('usertype')
+    #                             object: '{{ details['name'] }}',      objecttype: 'processes',     usertype: 'managers'
     return render_template('usermanager.html', object=objectname, objecttype=objecttype, usertype=usertype)
 
 @BP.route('processusage', methods=['GET'])
