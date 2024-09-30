@@ -243,6 +243,7 @@ $('#btn_add_referencedata_version').on('click', function() {
 })
 
 function build_line( p_ref_data, default_version, versions, selected_version ) {
+    //alert(JSON.stringify(selected_version))
     id = p_ref_data.id //of the process specific default that we might want to overrride
     versionidstr = "Default of process"
     versionid = -2
@@ -254,15 +255,15 @@ function build_line( p_ref_data, default_version, versions, selected_version ) {
         selOption1 = ""
         selOption2 = "selected"
         if( selected_version["supersedingversion"] ) {
-            versionidstr = selected_version["supersedingversion"]["version_name"]   
-            versionid = selected_version["supersedingversion"]["version"]  
+            versionidstr = selected_version["supersedingversion"]["version"]   
+            versionid = selected_version["supersedingversion"]["id"]  
             selOption1 = ""
             selOption2 = ""
         }    
     }
     defaultversionstr = "Latest (dynamic)"
     if( default_version ) {
-        defaultversionstr = default_version.id
+        defaultversionstr = default_version.version
     }
     html = '<tr id="refdata-row-'+id +'"><th scope="row"></th><th>' + p_ref_data.referencedata.name + '<br>'
     html += 'default:' + defaultversionstr
@@ -274,8 +275,12 @@ function build_line( p_ref_data, default_version, versions, selected_version ) {
         selected=""
         if (v.id == versionid ) {
            selected="selected"
+        } 
+        optional_name = ""
+        if( v.name ) {
+            optional_name = ' ('+ v.name +')'
         }
-        html += '<option value="'+ v.id +'"' + selected + '>'+ v.name +' ('+v.id+')</option>'
+        html += '<option value="'+ v.id +'"' + selected + '>'+ v.version + optional_name +'</option>'
     }
     html += '</select></td>'
     html += '</tr>'
@@ -288,6 +293,7 @@ function addEventChangeVersion( id, /* of the process specific default*/
                                 overwriting, /* the entry of refData2processRef*/
                                 data /* the specified default in refData2process */ ) {
   document.getElementById('refDataSetVersion-'+id).addEventListener('change', function() {
+        //alert($( '#refDataSetVersion-'+id).val())
         existing_entry_id = null
         if( overwriting ){
             existing_entry_id = overwriting["id"]
