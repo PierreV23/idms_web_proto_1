@@ -1,0 +1,81 @@
+<form>
+    <div class="form-group">
+      <div class="col-sm-4 custom-control custom-switch vertical-down">
+        <input type="checkbox" class="custom-control-input" onChange="enableArchive()"
+              value="true"
+              id="enableArchiveSwitch" {% if coll_state.enabled == 'true' %}checked{% endif %}>
+        <label class="custom-control-label" for="enableArchiveSwitch">Enable archiving</label>
+      </div>
+      <hr>
+      <div class="col-sm-4 custom-control custom-switch vertical-down">
+        <input type="checkbox" class="custom-control-input" onChange="keepDatasetLocal()"
+              value="true"
+              id="keepLocalSwitch" {% if coll_state.keep_local[0] == 'true' %}checked{% endif %}
+              {% if coll_state.keep_local[2] == False %}disabled{% endif %}>
+        <label class="custom-control-label" for="keepLocalSwitch">keep on local storage</label>
+      </div>
+
+      <div class="col-sm-4 custom-control custom-switch vertical-down">
+        <input type="checkbox" class="custom-control-input" onChange="overrideDatasetLocal()"
+              value="true"
+              id="overrideLocalSwitch" {% if coll_state.keep_local[2] == True %}checked{% endif %}>
+              <label class="custom-control-label" for="overrideLocalSwitch">Override inheritance</label>
+      </div>
+      <label class="col-form-label">
+        {% if not coll_state.keep_local[2] %}
+        Set from: {{ coll_state.keep_local[1].htmlstring | safe }}
+        {% endif %}
+      </label>
+      <hr>
+      <div class="col-sm-4 custom-control custom-switch vertical-down">
+        <input type="checkbox" class="custom-control-input" onChange="keepDatasetOnline()"
+              value="true"
+              id="keepOnlineSwitch" {% if coll_state.keep_online[0] == 'true' %}checked{% endif %}
+              {% if coll_state.keep_online[2] == False %}disabled{% endif %}>
+        <label class="custom-control-label" for="keepOnlineSwitch">keep online</label>
+      </div>
+
+      <div class="col-sm-4 custom-control custom-switch vertical-down">
+        <input type="checkbox" class="custom-control-input" onChange="overrideDatasetOnline()"
+              value="true"
+              id="overrideOnlineSwitch" {% if coll_state.keep_online[2] == True %}checked{% endif %}>
+              <label class="custom-control-label" for="overrideOnlineSwitch">Override inheritance</label>
+      </div>
+      <label class="col-form-label">
+        {% if not coll_state.keep_online[2] %}
+        Set from: {{ coll_state.keep_online[1].htmlstring | safe }}
+        {% endif %}
+      </label>
+    </div>
+  </form>
+  <hr>
+  <form>
+    <div class="form-group">
+      {% for i in range(1,5) %}
+      <div class="form-check form-check-inline">
+        <input class="form-check-input min-copies" type="radio" name="inlineRadioOptions"
+        {% if i == (coll_state.min_copies[0] | int) %}
+        checked
+        {% endif %}
+        {% if coll_state.min_copies[2] == False %}
+        disabled
+        {% endif %}
+        id="inlineRadio1" value="{{ i }}" onChange="setMincopies({{ i }})">
+        <label class="form-check-label" for="inlineRadio1">{{ i }}</label>
+      </div>
+      {% endfor %}
+      <label class="col-form-label" for="inlineRadio4">copies to store</label>
+
+      <div class="col-sm-4 custom-control custom-switch vertical-down">
+        <input type="checkbox" class="custom-control-input" onChange="overrideMincopies()"
+              value="true"
+              id="overrideMincopiesSwitch" {% if coll_state.min_copies[2] == True %}checked{% endif %}>
+              <label class="custom-control-label" for="overrideMincopiesSwitch">Override inheritance</label>
+      </div>
+      <label class="col-form-label" >
+        {% if not coll_state.min_copies[2] %}
+        Set from: {{ coll_state.min_copies[1].htmlstring | safe }}
+        {% endif %}
+      </label>
+    </div>
+  </form>
