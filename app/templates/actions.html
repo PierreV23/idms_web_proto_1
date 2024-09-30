@@ -44,7 +44,7 @@
     function restartProcessGroup() {
       $.get('{{ url_for('collbrowser.startprocess') }}', {
         collection: '{{ collection }}',
-        processgroupguid: '{{ archival_state.processgroupguid }}'
+        processgroupguid: '{{ coll_state.processgroupguid }}'
       }, function(data) {
         load_actions();
         load_graph();
@@ -141,7 +141,7 @@
       $.get('{{ url_for('collbrowser.setoverride') }}', {
           collection: '{{ collection }}',
           attr: "user::data::state",
-          value: "{{ 'invalid' if state_metadata.sys != 'invalid' else 'valid' }}",
+          value: "{{ 'invalid' if coll_state.sys_coll_state != 'invalid' else 'valid' }}",
           override: selected
         }
       )
@@ -176,7 +176,17 @@
 
 $('.nav-tabs').on('shown.bs.tab', function(event){
   activetab = event.target.getAttribute('href')
-});
+  $.get('{{ url_for("collbrowser.actions_tabs") }}', {
+    collection: '{{ collection }}',
+    tabname: activetab.substring(1)
+  })
+  .done(function(data) {
+    $(activetab).html(data)
+  })
+  .fail(function(){
+    $(activetab).html('<CENTER>Error retrieving content</CENTER>')
+  })
+})
 
 
 </script>
@@ -185,8 +195,8 @@ $('.nav-tabs').on('shown.bs.tab', function(event){
       <ul class="nav nav-tabs">
         <li class="nav-item mx-2">
           <a class="nav-link
-              {% if archival_state.is_offline is sameas true %} bg-danger {% endif %}
-              {% if archival_state.enabled == 'false' %} bg-secondary disabled {% endif %}
+              {% if coll_state.is_offline is sameas true %} bg-danger {% endif %}
+              {% if coll_state.enabled == 'false' %} bg-secondary disabled {% endif %}
               " id="archive-tab" data-toggle="tab" href="#archive" role="tab" aria-controls="archive"
               aria-selected="false">
               Archive
@@ -201,9 +211,9 @@ $('.nav-tabs').on('shown.bs.tab', function(event){
         </a>
         </li>
         {% endif %}
-        {% if archival_state.is_dataset is sameas true %}
+        {% if coll_state.is_dataset is sameas true %}
         <li class="nav-item mx-2">
-          {% if archival_state.active_pg %}
+          {% if coll_state.active_pg %}
           <a class="nav-link bg-warning" id="pipeline-tab"
             data-toggle="tab" href="#pipeline" role="tab"
             aria-controls="pipeline" aria-selected="false">
@@ -235,191 +245,10 @@ $('.nav-tabs').on('shown.bs.tab', function(event){
         {% endfor %}
       {% endif %}
       {% endwith %}
-          <div class="tab-pane" id="archive" role="tabpanel" aria-labelledby="archive-tab">
-            <h4>
-            {% if archival_state.status == 'OFFLINE' %}
-              <span class="badge badge-danger">OFFLINE</span>
-            {% elif archival_state.status == 'RETRIEVE_REQUESTED' %}
-              <span class="badge badge-info">RETRIEVE PENDING</span>
-            {% elif archival_state.status == 'RETRIEVE_IN_PROGRESS' %}
-              <span class="badge badge-warning">RETRIEVING</span>
-            {% elif archival_state.status == 'ONLINE' %}
-              <span class="badge badge-success">ONLINE</span>
-            {% else %}
-              <span class="badge badge-dark">STATUS UNKNOWN</span>
-            {% endif %}</h4>
-              <hr>
-              <form>
-                <div class="form-group">
-                  <label class="col-form-label">
-                  {% if archival_state.is_offline is sameas true %}
-                  Bring
-                  {% else %}
-                  Keep
-                  {% endif %}
-                  online for:
-                  </label>
-                </div>
-                <div class="form-group row">
-                  <div class="col-sm-4">
-                    <select class="custom-select" id="inputSelectDate" onChange="updateUntilDate()">
-                        <option selected>Choose...</option>
-                        <option value="7">1 Week</option>
-                        <option value="14">2 Weeks</option>
-                        <option value="30">1 Month</option>
-                        <option value="90">3 Months</option>
-                        <option value="182">6 Month</option>
-                    </select>
-                  </div>
-                  <div class="col-sm-3">
-                      <button class="btn btn-outline-secondary" type="button" onClick="bringDatasetOnline()">bring online</button>
-                  </div>
-                  <div class="col-sm-3 vertical-down">
-                      <span id="untilDate"></span>
-                  </div>
-                </div>
-              </form>
-            <hr>
-            {% if archival_state.keep_online_till.value > 0 %}
-            Dataset will be {% if archival_state.is_offline %}brought{% else %}kept{% endif %} online until {{ archival_state.keep_online_till }}
-            {% endif %}
-
-        </div>
-        <div class="tab-pane" id="storage" role="tabpanel" aria-labelledby="storage-tab">
-          <form>
-            <div class="form-group">
-              <div class="col-sm-4 custom-control custom-switch vertical-down">
-                <input type="checkbox" class="custom-control-input" onChange="enableArchive()"
-                      value="true"
-                      id="enableArchiveSwitch" {% if archival_state.enabled == 'true' %}checked{% endif %}>
-                <label class="custom-control-label" for="enableArchiveSwitch">Enable archiving</label>
-              </div>
-              <hr>
-              <div class="col-sm-4 custom-control custom-switch vertical-down">
-                <input type="checkbox" class="custom-control-input" onChange="keepDatasetLocal()"
-                      value="true"
-                      id="keepLocalSwitch" {% if archival_state.keep_local[0] == 'true' %}checked{% endif %}
-                      {% if archival_state.keep_local[2] == False %}disabled{% endif %}>
-                <label class="custom-control-label" for="keepLocalSwitch">keep on local storage</label>
-              </div>
-
-              <div class="col-sm-4 custom-control custom-switch vertical-down">
-                <input type="checkbox" class="custom-control-input" onChange="overrideDatasetLocal()"
-                      value="true"
-                      id="overrideLocalSwitch" {% if archival_state.keep_local[2] == True %}checked{% endif %}>
-                      <label class="custom-control-label" for="overrideLocalSwitch">Override inheritance</label>
-              </div>
-              <label class="col-form-label">
-                {% if not archival_state.keep_local[2] %}
-                Set from: {{ archival_state.keep_local[1].htmlstring | safe }}
-                {% endif %}
-              </label>
-              <hr>
-              <div class="col-sm-4 custom-control custom-switch vertical-down">
-                <input type="checkbox" class="custom-control-input" onChange="keepDatasetOnline()"
-                      value="true"
-                      id="keepOnlineSwitch" {% if archival_state.keep_online[0] == 'true' %}checked{% endif %}
-                      {% if archival_state.keep_online[2] == False %}disabled{% endif %}>
-                <label class="custom-control-label" for="keepOnlineSwitch">keep online</label>
-              </div>
-
-              <div class="col-sm-4 custom-control custom-switch vertical-down">
-                <input type="checkbox" class="custom-control-input" onChange="overrideDatasetOnline()"
-                      value="true"
-                      id="overrideOnlineSwitch" {% if archival_state.keep_online[2] == True %}checked{% endif %}>
-                      <label class="custom-control-label" for="overrideOnlineSwitch">Override inheritance</label>
-              </div>
-              <label class="col-form-label">
-                {% if not archival_state.keep_online[2] %}
-                Set from: {{ archival_state.keep_online[1].htmlstring | safe }}
-                {% endif %}
-              </label>
-            </div>
-          </form>
-          <hr>
-          <form>
-            <div class="form-group">
-              {% for i in range(1,5) %}
-              <div class="form-check form-check-inline">
-                <input class="form-check-input min-copies" type="radio" name="inlineRadioOptions"
-                {% if i == (archival_state.min_copies[0] | int) %}
-                checked
-                {% endif %}
-                {% if archival_state.min_copies[2] == False %}
-                disabled
-                {% endif %}
-                id="inlineRadio1" value="{{ i }}" onChange="setMincopies({{ i }})">
-                <label class="form-check-label" for="inlineRadio1">{{ i }}</label>
-              </div>
-              {% endfor %}
-              <label class="col-form-label" for="inlineRadio4">copies to store</label>
-
-              <div class="col-sm-4 custom-control custom-switch vertical-down">
-                <input type="checkbox" class="custom-control-input" onChange="overrideMincopies()"
-                      value="true"
-                      id="overrideMincopiesSwitch" {% if archival_state.min_copies[2] == True %}checked{% endif %}>
-                      <label class="custom-control-label" for="overrideMincopiesSwitch">Override inheritance</label>
-              </div>
-              <label class="col-form-label" >
-                {% if not archival_state.min_copies[2] %}
-                Set from: {{ archival_state.min_copies[1].htmlstring | safe }}
-                {% endif %}
-              </label>
-            </div>
-          </form>
-        </div>
-        <div class="tab-pane" id="pipeline" role="tabpanel" aria-labelledby="pipeline-tab">
-          {% if processrequest != "false" %}
-            {% if processid %}
-              <h3>Starting up process:<p>{{ processid }}</h3>
-            {% elif processgroupid %}
-              <h3>Starting up processgroup:<p>{{ processgroupid }}</h3>
-            {% endif %}
-          {% else %}
-            <div><span><a href="{{ archival_state.runsheetid.url }}">
-              <button class="btn btn-outline-secondary button12" {% if not archival_state.runsheetid %}disabled{% endif %}
-              >Process details</button></a>
-              <a><button class="btn btn-outline-secondary button12" {% if not archival_state.failed_pg %}disabled{% endif %} onClick="restartProcessGroup()">
-              Restart processgroup
-              </button></a></span>
-            </div>
-          <div><b>Start Processgroup</b></div>
-                <select class="custom-select" style="width:100%;" id="processgroupSelect" {% if not processgroups or archival_state.complete != 'true' %}disabled{% endif %}>
-                  {% for p in processgroups | sort %}
-                  <option {% if p == processgroupid %}selected{% endif %}>{{ p }}</option>
-                  {% endfor %}
-                </select>
-
-                <div><button class="btn btn-outline-secondary button12" {% if not processgroups or archival_state.complete != 'true' %}disabled{% endif %} onClick="startProcessGroup()">Start processgroup</button>
-                </div>
-
-           <div class="top5"><b>Start Single process</b></div>
-                <select class="custom-select" style="width:100%;" id="processSelect">
-                  {% for p in processes | sort %}
-                  <option {% if p == processid %}selected{% endif %}>{{ p }}</option>
-                  {% endfor %}
-                </select>
-                <div><button class="btn btn-outline-secondary btn-small button12" {% if not processes %}disabled{% endif %} onClick="startProcess()">Start process</button></div>
-
-          {% endif %}
-
-        </div>
-        <div class="tab-pane" id="validity" role="tabpanel" aria-labelledby="validity-tab">
-          System state of this collection is <b>{% if state_metadata.sys == "invalid" %}in{% endif %}valid</b>
-          <div class="custom-control custom-switch vertical-down">
-            <input type="checkbox" class="custom-control-input" onChange="setCollectionValidity()"
-                  value="true"
-                  id="overrideValidity" {% if state_metadata.user %}checked{% endif %}>
-            <label class="custom-control-label" for="overrideValidity">Override state as {% if state_metadata.sys != "invalid" %}in{% endif %}valid</label>
-          </div>
-          {% if state_metadata.sys != "invalid" %}
-          <div class="mt-2">
-            Propagate invalid user state to all downstream collections:<br>
-            <button class="btn btn-outline-secondary button12" {% if state_metadata.user != "invalid" %} disabled {% endif %} onClick="propagateUserState()">Propagate</button>
-          </div>
-          {% endif %}
-        </div>
-
+        <div class="tab-pane" id="archive" role="tabpanel" aria-labelledby="archive-tab"></div>
+        <div class="tab-pane" id="storage" role="tabpanel" aria-labelledby="storage-tab"></div>
+        <div class="tab-pane" id="pipeline" role="tabpanel" aria-labelledby="pipeline-tab"></div>
+        <div class="tab-pane" id="validity" role="tabpanel" aria-labelledby="validity-tab"></div>
       </div>
 </div>
 
