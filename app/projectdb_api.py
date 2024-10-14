@@ -42,27 +42,13 @@ def search(l, f, v):
     return matches
 
 @cache.memoize(timeout=30, make_name=dep_userzone)
-def rest_call(request_type, endpoint, data={}, hostname=None, prefix='/api/1.0'):
+def rest_call(request_type, endpoint, data={}, hostname=None, user=None, prefix='/api/1.0'):
     if hostname is None:
         if (hostname := current_app.config.get('API_HOST')) is None:
             hostname = current_user.irods_server
     url = 'http://{}{}/{}'.format(hostname, prefix, endpoint)
-    auth = HTTPBasicAuth('alt\\{}'.format(current_user.username), current_user.ntlm_hash)
-    return_data = {}
-    if request_type in REQUESTS_METHODS:
-        response = REQUESTS_METHODS[request_type](url, auth=auth, json=data)
-    try:
-        return_data = response.json()
-    except:
-        return_data = {}
-    if request_type != 'GET':
-        cache.delete_memoized(rest_call)
-    return return_data, response.status_code
-
-@cache.memoize(timeout=30, make_name=dep_userzone)
-def rest_call2(request_type, hostname, prefix, endpoint, data={}):
-    url = 'http://{}/{}/{}'.format(hostname, prefix, endpoint)
-    auth = HTTPBasicAuth(current_user.username, current_user.passwd_hash)
+    username = 'alt\\{}'.format(current_user.username) if user is None else user
+    auth = HTTPBasicAuth(username, current_user.ntlm_hash)
     return_data = {}
     if request_type in REQUESTS_METHODS:
         response = REQUESTS_METHODS[request_type](url, auth=auth, json=data)
