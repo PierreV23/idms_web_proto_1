@@ -166,6 +166,22 @@ def qcollmetavals(collection, attr):
     return [r for r in q if r[CollectionMeta.name] == attr]
 
 
+def qcollmetavals_with_placeholder(collection, attr, placeholder='[0]'):
+    result = []
+    q = qcollmeta(collection)
+    attr_parts = attr.split(placeholder)
+    #fallback in case there is no placeholder
+    if len(attr_parts) == 1:
+        return qcollmetavals(collection, attr)
+    for i in range(1000):
+        concrete_attr = f"{attr_parts[0]}{i}{attr_parts[1]}"
+        matches = [r for r in q if r[CollectionMeta.name] == concrete_attr]
+        result += matches
+        if len(matches) == 0:
+            return result
+    return result
+
+
 def qcollmetaval(collection, attr, default=None):
     m = qcollmetadict(collection)
     return m.get(attr, default)

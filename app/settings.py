@@ -168,6 +168,12 @@ RESOURCE_PROPS = {
         'type': 'bool',
         'help': 'TAR manifest files are stored on this resource'
     },
+    'refdata': {
+        'label': 'RefData',
+        'meta': 'sys::resource::reference_data_resource',
+        'type': 'bool',
+        'help': 'This resource is suitable to store Reference Datasets'
+    },
     'available': {
         'label': 'Available',
         'meta': 'sys::resource::available',

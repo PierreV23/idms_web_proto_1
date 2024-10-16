@@ -433,8 +433,8 @@ def jobdetails():
         'sys::runsheet::processID': ('Process ID', 'process'),
         'sys::runsheet::description': ('Description', 'text'),
         'sys::runsheet::processgroupid': ('Processgroup Instance', 'processgroupguid'),
+        'sys::runsheet::processgroup': ('Processgroup', 'text'),  
         'sys::run::exit_code': ('Result', 'int'),
-#        'sys::runsheet::input_collection': ('Input Collection', 'irods_collection'),
         'sys::run::output_collection': ('Output Collection', 'irods_collection'),
         'sys::run::account': ('Run Account', 'irods_user'),
         'sys::run::input_dir': ('Input directory', 'directory'),
@@ -458,12 +458,19 @@ def jobdetails():
         'sys::runsheet::input_collection': ('Input Collection', 'irods_collection'),
         'sys::runsheet::dataobject': ('Dataobject', 'irods_object')
     }
+    MULTI_PLACEHOLDER_FIELDS = {
+        'sys::pipeline::refdata::[0]::reference_version_dataset_id': ('Reference Datasets', 'text') 
+    }
     for field in FIELDS:
         if field in metadata:
             details[FIELDS[field][0]] = datafield(field, metadata[field], FIELDS[field][1])
     multi = {}
     for field, attrs in MULTI_FIELDS.items():
         values = iqry.qcollmetavals(runsheet, field)
+        datavalues = [ datafield(field, value[CollectionMeta.value], attrs[1]).htmlstring for value in values ]
+        multi[attrs[0]] = datavalues
+    for field, attrs in MULTI_PLACEHOLDER_FIELDS.items():
+        values = iqry.qcollmetavals_with_placeholder(runsheet, field)
         datavalues = [ datafield(field, value[CollectionMeta.value], attrs[1]).htmlstring for value in values ]
         multi[attrs[0]] = datavalues
     processgroupid = metadata.get('sys::runsheet::processgroupid', '')
