@@ -33,7 +33,7 @@ import json
 from app.constants import COLL_KEY_MAP, DATA_KEY_MAP, ATTR_RESOURCE_ONLINE
 from app.auth import auth_endpoint
 from . import constants
-from .projectdb_api import rest_call2
+from .projectdb_api import rest_call
 
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
 
@@ -315,7 +315,8 @@ def coll_actions():
 def actions_sharing():
     collection = request.args.get('collection')
     coll_id = iqry.qcollproperty(collection, 'id')
-    shares, status = rest_call2('GET', '0.0.0.0:7438', 'external', f'collections/{ coll_id }/shares')
+#    shares, status = rest_call2('GET', '0.0.0.0:7438', 'external', f'collections/{ coll_id }/shares')
+    shares, status = rest_call('GET', f'collections/{ coll_id }/shares', prefix='/external', user=current_user.username, passwd=current_user.passwd)
     data = []
     cancel_button = '<div class="overlay"><i class="fa-solid fa-trash"></i></div>'
     for share in shares:  
@@ -342,8 +343,9 @@ def actions_newshare():
     formdata = request.form.to_dict()
     coll_id = iqry.qcollproperty(formdata.get('collection'), 'id')
     requestdata = { k: v for k, v in formdata.items() if k in NEW_SHARE_FIELDS }
-    data, result = rest_call2('POST', '0.0.0.0:7438', 'external',
-                    f'collections/{coll_id}/shares', requestdata)
+    # data, result = rest_call2('POST', '0.0.0.0:7438', 'external',
+    #                 f'collections/{coll_id}/shares', requestdata)
+    data, result = rest_call('POST', f'collections/{coll_id}/shares', prefix='/external', data=requestdata, user=current_user.username, passwd=current_user.passwd)
     data['result'] = result
     data['access_string'] = f"{data.get('dataset_id', '')}:{data.get('string', '')}"
     return data
@@ -356,6 +358,7 @@ def shared_collections():
 def shared_collections_table():
     colls, result = rest_call2('GET', '0.0.0.0:7438', 'external',
                             'collections')
+    colls, result = rest_call('GET', 'collections', prefix='/external', user=current_user.username, passwd=current_user.passwd)
     print(colls)
     data = [ {'collection': datafield('collection', r.get('path'), 'irods_collection').htmlstring} for r in colls ]
     print(data)
