@@ -12,7 +12,7 @@ import os
 import time
 import logging
 from datetime import datetime, timezone
-from turtle import down
+from functools import cached_property
 from dateutil.relativedelta import relativedelta
 from flask import Blueprint, render_template, redirect, request, url_for, jsonify, flash, current_app
 from flask_login import current_user, login_required
@@ -221,95 +221,176 @@ def setoverride():
     collections_changed(path=collection)
     return 'DONE', 200
 
+@cache.memoize(timeout=3600, make_name=dep_zone)
+def tiers():
+    return irods_objects.Tierlist('default')
+
+class CollectionState():
+    def __init__(self, collection):
+        self.collection = collection
+        self.__metadata = {}
+
+    @cached_property
+    def active_or_failed_pg(self):
+        active_pg = False
+        failed_pg = False
+        if self.myprocessgroupguid:
+            for coll in self.processgroupcolls:
+                runsheet_state = iqry.qcollmetaval(coll[Collection.name], ATTR_RUNSHEET_STATE, 'OK')
+                if runsheet_state == 'notrun':
+                    failed_pg = True
+                if runsheet_state not in ['done', 'error', 'notrun']:
+                    active_pg = True
+        return active_pg, failed_pg
+
+    def _meta(self, attr, default=None):
+        name = f'__meta__{attr}'
+        if (attr in self.__metadata):
+            result = self.__metadata.get(attr)
+        else:
+            result = iqry.qcollmetaval(self.collection, attr, '_MY_DEFAULT_STRING_')
+            if result == '_MY_DEFAULT_STRING_':
+                result = default
+            else:
+                self.__metadata[attr] = result
+        return result
+
+    @cached_property
+    def active_pg(self):
+        return self.active_or_failed_pg[0]
+
+    @cached_property
+    def available_processes(self):
+        return projects.get_processlist(self.projectid)
+
+    @cached_property
+    def available_processgroups(self):
+        return projects.get_processgrouplist(self.projectid)
+
+    @property             
+    def complete(self):
+        return self._meta("complete", "false")
+
+    @cached_property
+    def desired_state(self):
+        return irods_objects.iState(self.tiers, self._meta(ATTR_ARCHIVE_DESIREDSTATE, "000"))
+
+    @property
+    def enabled(self):
+        return self._meta(ATTR_ARCHIVE_ENABLE, "false")
+
+    @property
+    def failed_pg(self):
+        return self.active_or_failed_pg[1]
+    
+    @property
+    def is_dataset(self):
+        return self._meta(ATTR_DATASETID, "") != ""
+
+    @cached_property
+    def is_offline(self):
+        return not self.state.tag_present(ATTR_RESOURCE_ONLINE)
+
+    @cached_property
+    def keep_local(self):
+        return getmetatree(self.collection, ATTR_ARCHIVE_LOCAL, False)
+
+    @cached_property
+    def keep_online(self):
+        return getmetatree(self.collection, ATTR_ARCHIVE_KEEP_ONLINE, "false")
+
+    @cached_property
+    def keep_online_till(self):
+        return datafield('keep_online', self.keep_online_time, 'timestamp')
+
+    @cached_property
+    def keep_online_time(self):
+        kot = float(iqry.qcollmetaval(self.collection, ATTR_ARCHIVE_KEEP_ONLINE_TILL, default=0))
+        if kot < time.time():
+            kot = 0
+        return kot
+
+    @cached_property
+    def min_copies(self):
+        return getmetatree(self.collection, ATTR_ARCHIVE_MINCOPIES, 2)
+
+    @property
+    def myprocessgroupguid(self):
+        return self._meta(ATTR_RUNSHEET_PROCESSGROUPGUID, "")
+
+    @property
+    def myrunsheetid(self):
+        return self._meta(ATTR_RUNSHEET_ID, "")
+
+    @cached_property
+    def processgroupcolls(self):
+        return iqry.qcollbymeta(ATTR_RUNSHEET_PROCESSGROUPGUID, self.myprocessgroupguid)
+
+    @property
+    def processgroupid(self):
+        return self._meta(ATTR_PROCESSGROUPID, "")
+
+    @property
+    def processid(self):
+        return self._meta(ATTR_PROCESSID, "")
+
+    @property
+    def processrequest(self):
+        return self._meta(ATTR_PROCESSREQUEST, "false")
+
+    @property
+    def projectid(self):
+        return self._meta(ATTR_PROJECTID, "")
+
+    @cached_property
+    def runsheetid(self):
+        return datafield('runsheetid', self.myrunsheetid, 'runsheet')
+
+    @cached_property
+    def state(self):
+        return irods_objects.iState(self.tiers, iqry.qcollmetaval(self.collection, ATTR_ARCHIVE_STATE, "000"))
+
+    @cached_property
+    def status(self):
+        if not self.is_offline:
+            status = 'ONLINE'
+        elif self.state != self.desired_state and self.desired_state.tag_present(ATTR_RESOURCE_ONLINE):
+            status = 'RETRIEVE_IN_PROGRESS'
+        elif self.keep_online_time:
+            status = 'RETRIEVE_REQUESTED'
+        else:
+            status = 'OFFLINE'
+        return status
+
+    @cached_property
+    # This is now more of a proxy function: other member functions expect it
+    def tiers(self):
+        return tiers()
+
+    @property
+    def user_coll_state(self):
+        return self._meta(ATTR_USER_STATE, "")
+
+    @property
+    def sys_coll_state(self):
+        return self._meta(ATTR_SYS_STATE, "")    
+
+@bp.route('_actions_tabs')
+def actions_tabs():
+    collection = request.args.get('collection', type=str)
+    tabname = request.args.get('tabname', type=str)
+    coll_state = CollectionState(collection)
+    TABS = ['archive', 'storage', 'pipeline', 'validity']
+    if tabname in TABS:
+        return render_template(f'actions_{tabname}.html', coll_state=coll_state)
+    else:
+        return 'ERROR'
 
 @bp.route('_actions')
 def coll_actions():
-    path = request.args.get('path','/', type=str)
-    coll_name = path.split('/')[-1]
-
-    tiers = irods_objects.Tierlist('default')
-
-    is_dataset = iqry.qcollmetavalstatic(path, ATTR_DATASETID, "") != ""
-    keep_local = getmetatree(path, ATTR_ARCHIVE_LOCAL, False)
-    state = irods_objects.iState(tiers, iqry.qcollmetaval(path, ATTR_ARCHIVE_STATE, "000"))
-    desired_state = irods_objects.iState(tiers, iqry.qcollmetaval(path, ATTR_ARCHIVE_DESIREDSTATE, "000"))
-    min_copies = getmetatree(path, ATTR_ARCHIVE_MINCOPIES, 2)
-    keep_online = getmetatree(path, ATTR_ARCHIVE_KEEP_ONLINE, "false")
-    keep_online_time = float(iqry.qcollmetaval(path, ATTR_ARCHIVE_KEEP_ONLINE_TILL, default=0))
-    if keep_online_time < time.time():
-        keep_online_time = 0
-    keep_online_till = datafield('keep_online', keep_online_time, 'timestamp')
-
-    # TODO: This should use the sys::resource::online property of a resource to determine
-    # if a collection is online
-    is_offline = not state.tag_present(ATTR_RESOURCE_ONLINE)
-
-    # define status:
-    # OFFLINE
-    # RETRIEVE_REQUEST
-    # RETRIEVE_IN_PROGRESS
-    # ONLINE
-    #
-    if not is_offline:
-        status = 'ONLINE'
-    elif state != desired_state and desired_state.tag_present(ATTR_RESOURCE_ONLINE):
-        status = 'RETRIEVE_IN_PROGRESS'
-    elif keep_online_time:
-        status = 'RETRIEVE_REQUESTED'
-    else:
-        status = 'OFFLINE'
-
-    projectid = iqry.qcollmetavalstatic(path, ATTR_PROJECTID, "")
-    processid = iqry.qcollmetaval(path, ATTR_PROCESSID, "")
-    processgroupid = iqry.qcollmetaval(path, ATTR_PROCESSGROUPID, "")
-    processes = projects.get_processlist(projectid)
-    processgroups = projects.get_processgrouplist(projectid)
-    processrequest = iqry.qcollmetaval(path, ATTR_PROCESSREQUEST, "false")
-    myprocessgroupguid = iqry.qcollmetaval(path, ATTR_RUNSHEET_PROCESSGROUPGUID, "")
-    myrunsheetid = iqry.qcollmetaval(path, ATTR_RUNSHEET_ID, "")
-
-    # Try to detect if this collection is part of a failed/incomplete processgroup
-    # This is true if one of the processes in the group has state NOTRUN
-    active_pg = False
-    failed_pg = False
-    if myprocessgroupguid:
-        colls = iqry.qcollbymeta(ATTR_RUNSHEET_PROCESSGROUPGUID, myprocessgroupguid)
-        for coll in colls:
-            runsheet_state = iqry.qcollmetaval(coll[Collection.name], ATTR_RUNSHEET_STATE, 'OK')
-            if runsheet_state == 'notrun':
-                failed_pg = True
-            if runsheet_state not in ['done', 'error', 'notrun']:
-                active_pg = True
-
-    archival_state = {
-        "complete": iqry.qcollmetaval(path, "complete", "false"),
-        "enabled": iqry.qcollmetaval(path, ATTR_ARCHIVE_ENABLE, "false"),
-        "is_dataset": is_dataset,
-        "is_offline": is_offline,
-        "keep_local": keep_local,
-        "status": status,
-        "min_copies": min_copies,
-        "keep_online": keep_online,
-        "keep_online_till": keep_online_till,
-        "active_pg": active_pg,
-        "failed_pg": failed_pg,
-        "runsheetid": datafield('runsheetid', myrunsheetid, 'runsheet'),
-        "processgroupguid": myprocessgroupguid
-    }
-
-    user_coll_state = iqry.qcollmetaval(path, ATTR_USER_STATE, "")
-    sys_coll_state = iqry.qcollmetaval(path, ATTR_SYS_STATE, "")
-
-    state_metadata = {
-        "user": user_coll_state,
-        "sys": sys_coll_state,
-    }
-    
-    return render_template('actions.html', collection=path,
-        name=coll_name, archival_state=archival_state, state_metadata=state_metadata,
-        processes=processes, processid=processid, processrequest=processrequest,
-        processgroups=processgroups, processgroupid=processgroupid,
-        admin=current_user.is_admin)
+    collection = request.args.get('path','/', type=str)
+    coll_state = CollectionState(collection)
+    return render_template('actions.html', coll_state=coll_state, collection=collection, admin=current_user.is_admin)
 
 @bp.route('_actions_sharing')
 def actions_sharing():
@@ -680,10 +761,21 @@ def _generate_graph(coll, maxlevels, graph_simplify):
         extra_colls |= set(related(coll, 'user::pipeline::input_collection_id', forward=False, byname=False))
         handle_neighbours(coll, extra_colls, dashed_edges, levels, inputs=True, relation_type='U')
 
+        # FIND EXTRA INPUTS OF REFERENCE_DATA
+        reference_data_colls = set()
+        for i in range(1000): #just an arbitrary but large number
+           temp = set(related(coll, f'sys::pipeline::refdata::{i}::reference_version_dataset_id', forward=False, byname=False))
+           if temp == set():
+               #we couldnt find any more reference_version
+               break
+           reference_data_colls |= temp
+        handle_neighbours(coll, reference_data_colls, dashed_edges, levels, inputs=True, relation_type='S')
+
         # FIND EXTRA OUTPUTS
         ref_colls = set(related(coll, 'user::pipeline::input_collection', forward=True, byname=True))
         ref_colls |= set(related(coll, 'user::pipeline::input_collection_id', forward=True, byname=False))
         handle_neighbours(coll, ref_colls, dashed_edges, levels, inputs=False, relation_type='U')
+
 
     traverse(coll, levels=maxlevels)
 

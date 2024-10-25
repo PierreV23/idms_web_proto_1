@@ -129,7 +129,6 @@ def update_reference_settings():
 @login_required
 def versions_table():
     reference_id = request.args.get('id', '', type=str)
-    #reference_name = request.args.get('name', '', type=str)
     project_name = request.args.get('project', '', type=str)
     #in bio_rest we need to fix the api from reference_id to reference.id! 
     response, result = rest_call('GET', f'reference/{reference_id}/versions' )
@@ -142,9 +141,9 @@ def versions_table():
     db_versions = [
                  {
                     'version': v['version'],
-                    'creation_date': v['creation_date'],   #datafield( 'creation_date', v['creation_date'], 'timestamp').htmlstring,
-                    'location': None,
-                    'version_name': None
+                    'creation_date': v['creation_date'],   
+                    'dataset_id': v['dataset_id'],
+                    'version_name': v['version_name']
                  }
                  for v in response ]
 
