@@ -36,8 +36,15 @@ from . import constants
 
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
 
+# This is the maximum collectio name length that is not 
+# abbreviated to ...<last part of name>
 NAME_LENGTH = 20
+# This is exactly what it suggests
 DEFAULT_GRAPH_LEVELS = 3
+# This is the maximum number of subcollections we will show 
+# in the treeview. If there are more, we will indicate that
+# by ... above/below the list
+MAX_TREEVIEW_COLLS = 50
 
 ATTR_DATASETID = 'sys::dataset_id'
 ATTR_PROJECTID = 'projectID'
@@ -849,34 +856,62 @@ def subitems(path):
 
 @cache.memoize(timeout=60, make_name=dep_zone)
 def add_items(path, level, active):
-
     result = ''
     parts = active.split('/')
     colls = [ c[Collection.name] for c in iqry.qcollchildren(path)]
+    
+    #
+    # Handle very long list of collections
+    #
+    colls_length = len(colls)
+    if colls_length > MAX_TREEVIEW_COLLS:
+        # Find the index of the active path in colls
+        active_index_list = [ i for i, c in enumerate(colls) if active.startswith(c) ]
+        if active_index_list == []: ## This is not a path to the active path
+            colls = colls[:MAX_TREEVIEW_COLLS]
+            if colls_length > MAX_TREEVIEW_COLLS:
+                colls = colls + ['...']
+        elif len(active_index_list) == 1: 
+            # This is a path to the active collection
+            # For example: active coll could be /rivmZone/projects/s-mrsa/241004_VH01799_133_AAG5MWVM5_0008
+            # while this node is /rivmZone/projects/s-mrsa
+            # make sure it is in the list
+            lower = max(active_index_list[0] - MAX_TREEVIEW_COLLS // 2, 0)
+            colls = colls[lower:lower+MAX_TREEVIEW_COLLS]
+            if lower > 0:
+                colls = ['...'] + colls
+            if lower + MAX_TREEVIEW_COLLS < colls_length:
+                colls = colls + ['...']
+        elif len(active_index_list) > 1:
+            # This cannot happen!
+            colls = [ 'ERROR' ]
     for collpath in colls:
         collname = collpath.split('/')[-1]
         if collname:
-            c1=' path-active' if collpath == active else '';
-            link='<span class="tree-label path-change{}" data-path="{}">{}</span>'.format(c1, collpath, collname)
-            subtree=''
-            dummy=0
-            if len(parts)>level:
-                # Not the whole tree is expanded yet
-                if parts[level] == collname:
-                    # active path
-                    subtree = add_items(os.path.join(path, collname), level + 1, active)
-                else:
-                    dummy = subitems(os.path.join(path, collname))
-            if len(parts)==level:
-                dummy = subitems(os.path.join(path, collname))
-            if subtree:
-                result = '{0}<li><span class="caret caret-down list-open" data-path="{1}" id="TT{1}">{2}</span></li>'.format(result, collpath, link)
-            elif dummy:
-                result = '{0}<li><span class="caret list-close" data-path="{1}" id="TT{1}">{2}</span></li>'.format(result, collpath, link)
+            if collpath == '...':
+                result = '{0}<li><span class="caret-nosub">...</span></li>'.format(result)
             else:
-                result = '{}<li><span class="caret-nosub">{}</span></li>'.format(result, link)
-            if subtree:
-                result = '{}<ul id="{}">{}</ul>'.format(result, collpath, subtree)
+                c1=' path-active' if collpath == active else '';
+                link='<span class="tree-label path-change{}" data-path="{}">{}</span>'.format(c1, collpath, collname)
+                subtree=''
+                dummy=0
+                if len(parts)>level:
+                    # Not the whole tree is expanded yet
+                    if parts[level] == collname:
+                        # active path
+                        subtree = add_items(os.path.join(path, collname), level + 1, active)
+                    else:
+                        dummy = subitems(os.path.join(path, collname))
+                if len(parts)==level:
+                    dummy = subitems(os.path.join(path, collname))
+                if subtree:
+                    result = '{0}<li><span class="caret caret-down list-open" data-path="{1}" id="TT{1}">{2}</span></li>'.format(result, collpath, link)
+                elif dummy:
+                    result = '{0}<li><span class="caret list-close" data-path="{1}" id="TT{1}">{2}</span></li>'.format(result, collpath, link)
+                else:
+                    result = '{}<li><span class="caret-nosub">{}</span></li>'.format(result, link)
+                if subtree:
+                    result = '{}<ul id="{}">{}</ul>'.format(result, collpath, subtree)
     return(result)
 
 

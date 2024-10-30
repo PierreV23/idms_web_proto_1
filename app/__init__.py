@@ -3,11 +3,14 @@ import json
 import os
 import requests
 import dateutil.parser
+import redis
 from datetime import datetime
 from requests.auth import HTTPBasicAuth
 from flask import Flask, flash, jsonify, redirect, render_template, request, url_for, current_app
 from flask_login import current_user, LoginManager, login_required, logout_user
 from flask_migrate import Migrate
+from flask_session import Session
+from cachelib.file import FileSystemCache
 from app.webuser import WebUser, AuthException
 from app.auth import auth_endpoint
 import logging.config
@@ -23,6 +26,8 @@ from .ngsruns import db as ngsruns_db, NGSRunsDBUnavailableException
 from .jobs import db as jobs_db, JobsDBUnavailableException
 from .flaskcache import cache, dep_zone
 from .irodssessions import irods_manager
+
+#from app.stats import statstore
 
 # This is the default log config. It can (and should) be overruled by
 # setting LOGCONFIG in config.py
@@ -52,6 +57,15 @@ def init_dbs():
     ngsruns_db.init_app(app)
     jobs_db.init_app(app)
     irods_manager.init_app(app)
+
+# Setup session storage
+if app.config.get('CACHE_TYPE') == 'RedisCache':
+    app.config['SESSION_TYPE'] = 'redis'
+    app.config['SESSION_REDIS'] = redis.Redis.from_url('redis://127.0.0.1:6379')
+else:
+    app.config['SESSION_TYPE'] = 'cachelib'
+    app.config['SESSION_CACHELIB'] = FileSystemCache(cache_dir='flask_session', threshold=500)
+Session(app)
 
 # When running under uwsgi, the postfork decorator is required
 # for the database connections
@@ -206,27 +220,34 @@ def inject_header_message():
 
 # @app.teardown_request
 # def teardown(x):
+#     statstore.report()
 #     try:
 #         current_user.irods_session.cleanup()
 #     except:
 #         pass
 
 @app.errorhandler(irods.exception.PAM_AUTH_PASSWORD_FAILED)
-def invalid_session1(e):
+def invalid_session0(e):
     """Session may be stale. Destroy it and redirect to login page."""
-    app.logger.info(f"Invalid session: user {current_user.username} on {current_user.environment} environment")
+    app.logger.info(f"Invalid session")
     return auth.logout()
 
-@app.errorhandler(irods.exception.NetworkException)
-def invalid_session2(e):
+@app.errorhandler(irods.exception.CAT_INVALID_AUTHENTICATION)
+def invalid_session1(e):
     """Session may be stale. Destroy it and redirect to login page."""
-    app.logger.info(f"Invalid session: user {current_user.username} on {current_user.environment} environment")
+    app.logger.info(f"Invalid session")
     return auth.logout()
+
+# @app.errorhandler(irods.exception.NetworkException)
+# def invalid_session2(e):
+#     """Session may be stale. Destroy it and redirect to login page."""
+#     app.logger.info(f"Invalid session")
+#     return auth.logout()
 
 @app.errorhandler(AuthException)
 def auth_failed(e):
     """Destroy session and redirect to login page."""
-    app.logger.info(f"Auth Error: user {current_user.username} on {current_user.environment} environment")
+    app.logger.info(f"Auth Exception")
     return auth.logout()
 
 @app.errorhandler(NGSRunsDBUnavailableException)

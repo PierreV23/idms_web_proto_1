@@ -26,6 +26,7 @@ from fs_irods import fs_irods
 from . import flaskcache
 from . import iqry
 from app.irodssessions import irods_manager, create_session
+from app.iconnect import Connection2
 
 ATTR_DISPLAYNAME = 'sys::ad::displayName'
 
@@ -79,9 +80,78 @@ class IRSettings:
 
 class WebUser(UserMixin):
 
+    def __init__(self, username=None, environment=None, encrypted_password="", encrypted_native_password=None,
+                 is_authenticated=None, is_admin=None, fullname=None, **kwargs):
+        """WebUser application user instance
+
+        These args are required.
+            username (_type_, optional): _description_. Defaults to None.
+            environment (_type_, optional): _description_. Defaults to None.
+            password (str, optional): _description_. Defaults to "".
+        
+        These args can be supplied to speed up the user creation, but they are optional.
+            native_password (_type_, optional): _description_. Defaults to None.
+            is_authenticated (bool, optional): _description_. Defaults to False.
+            is_admin (bool, optional): _description_. Defaults to False.
+            fullname (_type_, optional): _description_. Defaults to None.
+        """        
+        self.username = username
+        self.environment = environment
+        self._encrypted_password = encrypted_password
+        self._encrypted_native_password = encrypted_native_password
+        self._is_authenticated = is_authenticated
+        self._is_admin = is_admin
+        self._fullname = fullname
+
+        self._irods_env = {}
+
+        self.settings = IRSettings(self.username, prefix='ngsweb::')
+        
+    @classmethod
+    def from_login(cls, username=None, password=None, environment=None):
+        return cls(username=username, encrypted_password=encrypt(password), environment=environment)
+
+    def __repr__(self):
+        return f'WebUser({self.username})'
+
+# iRODS session properties
+    @property
+    def irods_env(self):
+        return current_app.config["IRODS_ENVS"].get(self.environment, None)
+    
+    @property
+    def irods_server(self):
+        return self.irods_env.get('host')
+    
+    @property
+    def irods_zone(self):
+        return self.irods_env.get('zone')
+    
+    @property
+    def features(self):
+        return self.irods_env.get('features', [])
+    
+    @property
+    def minilims_db(self):
+        self.minilims_db = irods_env.get('minilims_db', 'sqlite://')
+    
+# Authentication properties        
+
     @property
     def is_authenticated(self):
+        if self._is_authenticated is None:
+            self.validate_irods_session()
         return self._is_authenticated
+    
+    @property
+    def password(self):
+        return decrypt(self._encrypted_password)
+   
+    @property
+    def native_password(self):
+        if self._encrypted_native_password is None:
+            self.validate_irods_session()
+        return decrypt(self._encrypted_native_password)
 
     @property
     def is_admin(self):
@@ -99,39 +169,7 @@ class WebUser(UserMixin):
                     self._is_admin = None
                     return False
         return self._is_admin
-
-    def __init__(self, password=None, encrypted_password=None, **kwargs):
-        self.username = None
-        self.environment = None
-        self._is_authenticated = False
-        self._is_admin = None
-        self.irods_server = None
-        self.irods_zone = None
-        self.features = []
-        self._fullname = None
-
-        for k, v in kwargs.items():
-            if hasattr(self, k):
-                setattr(self, k, v)
-
-        if password:
-            self.password = encrypt(password)
-        elif encrypted_password:
-            self.password = encrypted_password
-        else:
-            raise AuthException
-
-        irods_env = current_app.config["IRODS_ENVS"].get(self.environment, None)
-        if irods_env:
-            self.irods_server = irods_env.get('host')
-            self.irods_zone = irods_env.get('zone')
-            self.features = irods_env.get('features', [])
-            self.minilims_db = irods_env.get('minilims_db', 'sqlite://')
-        self.settings = IRSettings(self.username, prefix='ngsweb::')
-
-    def __repr__(self):
-        return f'WebUser({self.username})'
-
+    
     @flaskcache.cache.memoize(timeout=3600, make_name=flaskcache.dep_userzone)
     def groups(self):
         with irods_manager.session() as session:
@@ -159,17 +197,9 @@ class WebUser(UserMixin):
 
     @property
     def ntlm_hash(self):
-        password = self.passwd
-        ntlm_hash = MD4.new(password.encode('utf-16le')).hexdigest()
+        ntlm_hash = MD4.new(self.password.encode('utf-16le')).hexdigest()
         lmntlm = '{}:{}'.format('0' * 32, ntlm_hash)
         return lmntlm
-
-    @property
-    def passwd(self):
-        try:
-            return decrypt(self.password)
-        except:
-            raise AuthException
 
     def store(self):
         """Store user in Flask session."""
@@ -177,11 +207,12 @@ class WebUser(UserMixin):
             session['user_data'] = {}
         info = {
             'username': self.username,
-            'encrypted_password': self.password,
             'environment': self.environment,
-            '_is_authenticated': self.is_authenticated,
-            '_is_admin': self.is_admin,
-            '_fullname': self.fullname
+            'encrypted_password': self._encrypted_password,
+            'encrypted_native_password': self._encrypted_native_password,
+            'is_authenticated': self.is_authenticated,
+            'is_admin': self.is_admin,
+            'fullname': self.fullname
         }
         session['user_data'][self.username] = info
 
@@ -203,6 +234,7 @@ class WebUser(UserMixin):
         """Delete user from Flask session."""
         if 'user_data' in session:
             del session['user_data']
+        irods_manager.remove(self)
 
 
     @property
@@ -213,9 +245,17 @@ class WebUser(UserMixin):
         try:
             # we cannot use the session in the sessionmanager, as it is identified by the username only
             # to check the credentials, we need to make a new session with the password of this webuser.
-            check_pw_session = create_session(current_app.config["IRODS_ENVS"].get(self.environment, None), self)
-            check_pw_session.collections.get("/")
+            
+            # Create iRODS session and verify if root collection can be retrieved
+            check_pw_session = create_session(current_app.config["IRODS_ENVS"].get(self.environment, None), self, use_pam=True)
+            # Get the temporary password from our custom Connection class
+            conn = Connection2(check_pw_session.pool, check_pw_session.pool.account)
+            # Store the temporary password
+            self._encrypted_native_password = encrypt(conn.native_password)
             self._is_authenticated = True
+            check_pw_session.cleanup()
+            # Remove old sessions
+            irods_manager.remove(self)
             return True
         except:
             logging.info(f"Authentication (session validation) failed for user {self.username} on {self.environment}")

@@ -21,7 +21,7 @@ bp = Blueprint('auth', __name__, url_prefix='/auth')
 def login():
     if request.method == 'POST':
         requestdata = request.form.to_dict()
-        user = WebUser(username=requestdata['username'],
+        user = WebUser.from_login(username=requestdata['username'],
                     password=requestdata['password'],
                     environment=requestdata['environment'])
         if not user.validate_irods_session():
@@ -31,9 +31,6 @@ def login():
         logging.info(f"User {user} logged in to {requestdata['environment']}")
         login_user(user, duration=timedelta(hours=24))
         user.store()
-        
-        # (re-)initialize ngsruns db connection, it's environment dependent.
-        #db.init_app(current_app, user)
 
         # Check for messages
         for message in messages.getmessages():
@@ -46,8 +43,9 @@ def login():
 
 @bp.route('/logout')
 def logout():
-    logging.info(f"User {current_user.username} logged out of {current_user.environment} environment")
-    current_user.delete()
+    if isinstance(current_user, WebUser):
+        logging.info(f"User {current_user.username} logged out of {current_user.environment} environment")
+        current_user.delete()
     # TODO Remie: remove iRODS sessions as well?
     logout_user()
     return redirect(url_for('auth.login'))

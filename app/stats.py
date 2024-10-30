@@ -14,7 +14,7 @@ class TD:
 
     def cp(self, label=''):
         t1 = time.time()
-        print(f'{self.name:10} ({self.instance:3}): {label:12} -> {t1-self.t0:2.5}')
+        print(f'>> ** {self.name:10} ({self.instance:3}): {label:12} -> {t1-self.t0:2.5}')
         self.t0 = t1 
 
 
