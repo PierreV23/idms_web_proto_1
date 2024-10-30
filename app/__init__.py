@@ -61,7 +61,8 @@ def init_dbs():
 # Setup session storage
 if app.config.get('CACHE_TYPE') == 'RedisCache':
     app.config['SESSION_TYPE'] = 'redis'
-    app.config['SESSION_REDIS'] = redis.Redis.from_url('redis://127.0.0.1:6379')
+    hostname = app.config.get('CACHE_REDIS_HOST', 'localhost')
+    app.config['SESSION_REDIS'] = redis.Redis.from_url(f'redis://{hostname}:6379')
 else:
     app.config['SESSION_TYPE'] = 'cachelib'
     app.config['SESSION_CACHELIB'] = FileSystemCache(cache_dir='flask_session', threshold=500)
