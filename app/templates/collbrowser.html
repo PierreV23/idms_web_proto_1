@@ -222,6 +222,12 @@ menuname='collectionbrowser'
       active: collection
     }, function (data) {
       $('#treeview').html(data)
+      // Move the active collection to the center of the view
+      if ($('.path-active').length !== 0) {
+        centertop = $('.path-active').offset().top
+      }
+      let top = centertop - $('#treediv').height() / 2 + $('#treediv').scrollTop()
+      $('#treediv').scrollTop(top)      
     });
   }
 
@@ -244,6 +250,7 @@ menuname='collectionbrowser'
   function set_path() {
     $('.collist').popover('dispose')
     load_list(true);
+    load_tree();
     load_graph();
     load_meta();
     build_title();
@@ -346,7 +353,7 @@ menuname='collectionbrowser'
     <div class="card-header">
       <div class="card-title"><b>Collection tree</b></div>
     </div>
-    <div class="card-body scrollbar-y small-font h-100">
+    <div class="card-body scrollbar-y small-font h-100" id="treediv" >
       <div id="treeview">
       </div>
     </div>

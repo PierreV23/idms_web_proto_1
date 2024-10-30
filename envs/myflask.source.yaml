@@ -22,6 +22,7 @@ dependencies:
   - flask-migrate
   - flask-sqlalchemy
   - flask-script
+  - flask-session
   - sqlalchemy<2.0.0
   - sqlite
   - psycopg2
@@ -30,7 +31,7 @@ dependencies:
   - pip:
     - markdown
     - randomname
-    - python-irodsclient
+    - python-irodsclient==2.2.0
     - redis
     - graphviz
     - jsonschema

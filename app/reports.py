@@ -9,7 +9,7 @@ Created on Mon Jun  8 11:01:32 2020
 import math
 import io
 import json
-from flask import Blueprint, render_template, url_for, send_file
+from flask import Blueprint, render_template, url_for, send_file, jsonify
 from flask_login import current_user, login_required
 from irods.models import Collection, CollectionMeta, Resource
 from irods.column import Criterion
@@ -44,6 +44,25 @@ def projectdata_in_resource(project, resource):
         usage += collection_size(coll[Collection.name], resource)
         
     return usage
+
+@bp.route('_irods_sessionreport')
+def irods_sessionreport():
+    return jsonify(irods_manager.reportdata())
+
+@bp.route('/irodssessions')
+def irodssessions():
+    """Create a report of active iRODS Sessions
+
+    Returns:
+        rendered template
+    """    
+    columns = [
+        { "field": "Environment", "title": "Environment", "sortable": True },
+        { "field": "User", "title": "User", "sortable": True },
+        { "field": "State", "title": "State", "sortable": True },
+        { "field": "Timestamp", "title": "Last use", "sortable": True },        
+    ]
+    return render_template('report_irodssessions.html', columns=columns)
 
 @bp.route('/_download')
 def download_report():

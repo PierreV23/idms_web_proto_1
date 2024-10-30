@@ -2,6 +2,7 @@ import ssl
 import sys
 import threading
 import time
+import datetime
 import logging
 
 from requests import session
@@ -16,8 +17,20 @@ def versiontuple(v):
 
 irodsclient_before_1_1_4 = versiontuple(__version__) < versiontuple('1.1.4')
 
-def create_session(envdata, user):
+def create_session(envdata, user, use_pam=False):
+    """Create an iRODS session for <user>
 
+    Args:
+        envdata (dict): dict from IRODS_ENVS in config.py
+        user (WebUser): user to create a session for
+        use_pam (bool, optional): Indicate wether to do a native or PAM login. Defaults to False.
+
+    Returns:
+        iRODSSession: iRODSSession object
+        
+    If use_pam is True, will login user with <user.username, user.password> 
+    If false, will use <user.username, user.native_password>
+    """    
     context = ssl._create_unverified_context(
         purpose=ssl.Purpose.SERVER_AUTH,
         cafile=None,
@@ -37,34 +50,28 @@ def create_session(envdata, user):
     }
 
     # Creating an iRODS does not imply a connection is set up.
-    # TODO: python-irodsclient should escape = tokens in password
-    # at least in version 1.1.3 it does not do that
-    # so, we do it here
-    if irodsclient_before_1_1_4:
-        password = user.passwd.replace('=', '\=')
+    if use_pam:
+        session_password = user.password
+        authentication_scheme = 'pam_password'
     else:
-        password = user.passwd
+        session_password = user.native_password
+        authentication_scheme = 'native'        
     return iRODSSession(
         host=envdata.get('host'),
         port=1247,
         user=user.username,
-        password=password,
+        password=session_password,
         zone=envdata.get('zone'),
-        authentication_scheme='pam',
-        refresh_time=240,
+        authentication_scheme=authentication_scheme,
+        refresh_time=300,
         **ssl_settings)
 
-class PoolObject():
-    def __init__(self, obj):
-        self.timestamp = time.time()
-        self.obj = obj
-
-    def update(self):
-        self.timestamp = time.time()
-
-    def __str__(self):
-        return f"{self.timestamp=} {self.obj=}"
-
+def objfromlist(l, a, v):
+    for i in l:
+        if getattr(i, a) == v:
+            return i
+    return None
+            
 class Session():
     def __init__(self, pool, irods_session):
         self._pool = pool
@@ -86,19 +93,25 @@ class Session():
 
     def __del__(self):
         self.release()
+             
+class PoolObject():
+    def __init__(self, obj):
+        self.timestamp = time.time()
+        self.obj = obj
 
+    def update(self):
+        self.timestamp = time.time()
 
-def objfromlist(l, a, v):
-    for i in l:
-        if getattr(i, a) == v:
-            return i
-    return None
-            
+    def __str__(self):
+        return f"{self.timestamp=} {self.obj=}"
+   
+    def reportdata(self):
+        return { 'Timestamp': datetime.datetime.fromtimestamp(self.timestamp) }
 
 class SessionPool():
     """Pool of irodsSessions for one user and irods environment
     """
-    def __init__(self, envdata, targetsize=0, idle_timeout=60, active_timeout=120):
+    def __init__(self, envdata, targetsize=0, idle_timeout=120, active_timeout=120):
         self.targetsize = targetsize
         self.idle_timeout = idle_timeout
         self.active_timeout = active_timeout
@@ -109,7 +122,7 @@ class SessionPool():
     
     def cleanup(self):
         """Remove unused sessions
-            Return number of active sessions
+            Return number of active + idle sessions
 
             The function uses an progressive timeout model to calculate which sessions to remove:
             max_idle_time = idle_timeout/idle_sessions
@@ -130,7 +143,7 @@ class SessionPool():
                 self._idle.sort(key=lambda s: s.timestamp)
                 index = len(self._idle)
                 for sess in self._idle:
-                    idle_remove_age = self.active_timeout // index
+                    idle_remove_age = self.idle_timeout // index
                     if time.time() - sess.timestamp > idle_remove_age:
                         removelist.append(sess)
                         index -= 1
@@ -170,6 +183,14 @@ class SessionPool():
                 self._active.remove(poolentry)
                 poolentry.update()
                 self._idle.append(poolentry)
+                
+    def reportdata(self):
+        data = []
+        for session in self._idle:
+            data.append(session.reportdata() | {'State': 'IDLE'})
+        for session in self._active:
+            data.append(session.reportdata() | {'State': 'ACTIVE'})
+        return data   
 
     def __del__(self):
         with self._lock:
@@ -203,11 +224,18 @@ class SessionPoolManager():
                 logging.debug(f"Cleaning sessions for user: {user}")
                 counter = self._pools[user].cleanup()
                 if counter == 0:
-                    logging.debug(f"Session pool for {user=} is now empty, removing {str(self._pools[user])}")
+                    logging.debug(f"Session pool for {user} is now empty, removing {str(self._pools[user])}")
                     empty_pools.append(user)
             for user in empty_pools:
                 del self._pools[user]
-
+                
+    def reportdata(self):
+        data = []
+        for user, pool in self._pools.items():
+            for record in pool.reportdata():
+                data.append( record | {'User': user})
+        return data
+    
     def remove(self, user):
         with self._lock:
             if user.username in self._pools:
@@ -245,9 +273,17 @@ class MultiSessionManager():
             for env, mgr in self._managers.items():
                 mgr.cleanup()
 
+    def reportdata(self):
+        data = []
+        for env, manager in self._managers.items():
+            for record in manager.reportdata():
+                data.append(record | { 'Environment': env } )
+        return data
+
     def remove(self, user):
         """Removes the session for user"""
         with self._lock:
-            self._managers[user.environment].remove(user)
+            if (manager := self._managers.get(user.environment)):
+                manager.remove(user)
 
 irods_manager = MultiSessionManager()
