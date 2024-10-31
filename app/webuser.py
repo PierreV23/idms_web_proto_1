@@ -121,12 +121,12 @@ class WebUser(UserMixin):
         else:
             raise AuthException
 
-        irods_env = current_app.config["IRODS_ENVS"].get(self.environment, None)
-        if irods_env:
-            self.irods_server = irods_env.get('host')
-            self.irods_zone = irods_env.get('zone')
-            self.features = irods_env.get('features', [])
-            self.minilims_db = irods_env.get('minilims_db', 'sqlite://')
+        self.irods_env = current_app.config["IRODS_ENVS"].get(self.environment, {})
+        if self.irods_env:
+            self.irods_server = self.irods_env.get('host')
+            self.irods_zone = self.irods_env.get('zone')
+            self.features = self.irods_env.get('features', [])
+            self.minilims_db = self.irods_env.get('minilims_db', 'sqlite://')
         self.settings = IRSettings(self.username, prefix='ngsweb::')
 
     def __repr__(self):

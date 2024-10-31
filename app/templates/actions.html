@@ -198,13 +198,6 @@ $('.nav-link#sharing-tab').on('shown.bs.tab', function(event){
         })
 });
 
-$('#addShareButton').on('click', function(){
-  $('#shareGroup').removeClass('hidden')
-  $('#newshare input').attr('readonly', false)
-  $('.results').addClass('hidden')  
-  $('#newshare').modal()
-})
-
 $( function() {
     $( ".datepicker" ).datepicker({
       weekStart: 1,
@@ -228,7 +221,7 @@ $('#shareButton').on('click', function(){
       console.log('SUCCES')
       $('#idResult').val('The collection share was created')
       $('#newshare').removeClass('pending')
-      $('#idURL').val('URL')
+      $('#idURL').val(data.url)
       $('#idTicket').val(data.access_string)
     }
   })

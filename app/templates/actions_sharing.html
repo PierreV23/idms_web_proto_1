@@ -1,3 +1,13 @@
+<script>
+
+    $('#addShareButton').on('click', function () {
+        $('#shareGroup').removeClass('hidden')
+        $('#newshare input').attr('readonly', false)
+        $('.results').addClass('hidden')
+        $('#newshare').modal()
+    })
+
+</script>
 <div>
     <button class="btn btn-outline-secondary" id="addShareButton">Add share</button>
 </div>

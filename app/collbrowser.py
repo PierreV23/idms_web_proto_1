@@ -375,12 +375,28 @@ class CollectionState():
     def sys_coll_state(self):
         return self._meta(ATTR_SYS_STATE, "")    
 
+def generate_external_url(dataset_id, ticket):
+    """Create URL to external data collection
+
+    Args:
+        dataset_id (str): UUID of the shared dataset
+        ticket (str): shared dataset access ticket
+
+    Returns:
+        str: External data URL
+    """
+    base = current_user.irods_env.get('external_url', '')
+    url = f'{base}/{dataset_id}-{ticket}'
+    return url
+    
+    
+
 @bp.route('_actions_tabs')
 def actions_tabs():
     collection = request.args.get('collection', type=str)
     tabname = request.args.get('tabname', type=str)
     coll_state = CollectionState(collection)
-    TABS = ['archive', 'storage', 'pipeline', 'validity']
+    TABS = ['archive', 'storage', 'pipeline', 'validity', 'sharing']
     if tabname in TABS:
         return render_template(f'actions_{tabname}.html', coll_state=coll_state)
     else:
@@ -398,6 +414,8 @@ def actions_sharing():
     coll_id = iqry.qcollproperty(collection, 'id')
 #    shares, status = rest_call2('GET', '0.0.0.0:7438', 'external', f'collections/{ coll_id }/shares')
     shares, status = rest_call('GET', f'collections/{ coll_id }/shares', prefix='/external', user=current_user.username, passwd=current_user.passwd)
+    if status != 200:
+        return {}
     data = []
     cancel_button = '<div class="overlay"><i class="fa-solid fa-trash"></i></div>'
     for share in shares:  
@@ -428,6 +446,7 @@ def actions_newshare():
     #                 f'collections/{coll_id}/shares', requestdata)
     data, result = rest_call('POST', f'collections/{coll_id}/shares', prefix='/external', data=requestdata, user=current_user.username, passwd=current_user.passwd)
     data['result'] = result
+    data['url'] = generate_external_url(data.get('dataset_id', ''), data.get('string', ''))
     data['access_string'] = f"{data.get('dataset_id', '')}:{data.get('string', '')}"
     return data
 
