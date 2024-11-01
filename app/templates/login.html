@@ -5,11 +5,11 @@
 {% endblock %}
 
 {% block content %}
-<div class="card card-body">
+<div id="content" class="card card-body">
 
-<H3>Login to NGSweb</H3>
+<H3 id="title">Login to NGSweb</H3>
 
-<form action="{{ url_for('auth.login') }}" method="post">
+<form id="loginform" action="{{ url_for('auth.login') }}" method="post">
   <input type="hidden" name="next" id="next" value="{{ next }}"></input>
 {% with messages = get_flashed_messages(category_filter=["login"]) %}
   {% if messages %}
@@ -38,12 +38,18 @@
     <label for="password">Password</label>
     <input type="password" class="form-control" name="password" id="password" placeholder="Password"  {% if debug %} value="12345" {% endif %}></input>
   </div>
-
   <button type="submit" class="btn btn-primary">Submit</button>
-  
 </form>
 
 </div>
+
+<script>
+
+$("#loginform").on("submit", function(){
+  $("#title").html('Login in progress ... please wait')
+})
+
+</script>
 
 {% endblock %}
 

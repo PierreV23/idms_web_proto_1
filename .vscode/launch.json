@@ -18,7 +18,8 @@
                 "run",
                 "--no-debugger",
                 "--no-reload",
-                "--port", "${input:flask-port-number}",
+                "--port",
+                "${input:flask-port-number}",
                 "--with-threads"
             ],
             "jinja": true,
