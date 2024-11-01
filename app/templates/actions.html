@@ -189,14 +189,6 @@ $('.nav-tabs').on('shown.bs.tab', function(event){
   })
 })
 
-$('.nav-link#sharing-tab').on('shown.bs.tab', function(event){
-  $('#sharetable').html(waiting)
-  $.get('{{ url_for('collbrowser.actions_sharing') }}', {
-          collection: '{{ collection }}'
-        }).done(function(data) {
-           $('#sharetable').html(data)
-        })
-});
 
 $( function() {
     $( ".datepicker" ).datepicker({
@@ -222,7 +214,6 @@ $('#shareButton').on('click', function(){
       $('#idResult').val('The collection share was created')
       $('#newshare').removeClass('pending')
       $('#idURL').val(data.url)
-      $('#idTicket').val(data.access_string)
     }
   })
 })
@@ -300,11 +291,10 @@ $('#shareButton').on('click', function(){
 
   <!-- New share form -->
   <div class="modal" id="newshare" role="dialog">
-    <div class="modal-dialog" role="document">
+    <div class="modal-dialog modal-dialog-centered" role="document">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="nsTitle">Share collection<p>{{ collection }}</h5>
-          <button type="button" class="btn btn-default btn-primary btn-sm" data-dismiss="modal">Close</button>
+          <h5 class="modal-title" id="nsTitle">Share collection</h5>
         </div>
         <div class="modal-body" id="nsBody">
           <form action="{{ url_for('collbrowser.actions_newshare')}}" id="newshareform" method="POST" enctype="multipart/form-data">
@@ -313,12 +303,12 @@ $('#shareButton').on('click', function(){
             </div>
             <div class="form-group">
               <label for="iddescription">Description</label>
-              <input type="text" class="form-control" name="description" id="iddescription"/>
+              <input type="text" class="form-control shareinput" name="description" id="iddescription"/>
               <small id="descHelp" class="form-text text-muted">Describe the purpose of this share</small>
             </div>
             <div class="form-group">
               <label for="idenddate">End Date</label>
-              <input type="text" class="form-control datepicker" name="enddate" id="idenddate"/>
+              <input type="text" class="form-control datepicker shareinput" name="enddate" id="idenddate"/>
               <small id="descEnddate" class="form-text text-muted">Share will only be valid up till this date</small>
             </div>
             <div class="form-group hidden results" id="shareresult">
@@ -326,14 +316,13 @@ $('#shareButton').on('click', function(){
               <input type="text" class="form-control" name="result" id="idResult" readonly></textarea>              
               <label for="idURL">URL</label>
               <input type="text" class="form-control" name="url" id="idURL" readonly></textarea>
-              <label for="idTicket">Access String</label>
-              <input type="text" class="form-control" name="ticket" id="idTicket" readonly></textarea>
             </div>
             <div class="form-group hidden results">
                 <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
             </div>                     
             <div class="form-group" id="shareGroup">
               <button type="button" id="shareButton" class="btn btn-primary">Share</button>
+              <button type="button" class="btn btn-primary" data-dismiss="modal">Cancel</button>
             </div>
           </form>
         </div>
