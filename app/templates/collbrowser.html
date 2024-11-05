@@ -269,7 +269,7 @@ menuname='collectionbrowser'
   };
 
   $(document).on('click', '.path-change', function () {
-    $('.flash_bar').remove()
+    $('.flash-error').remove()
     collection = (this.nodeName == "g" ? this.id : $(this).data('path'));
     history.pushState({ "coll": collection }, 'Browse ' + collection, '/collbrowser?path=' + collection);
     if (typeof collection == 'undefined') {
