@@ -72,7 +72,7 @@ menuname='pglist'
 
     <script>
 
-        openDetails = []
+        openDetails = new Set();
 
         $(function(){
                         
@@ -104,7 +104,7 @@ menuname='pglist'
 
 
             $('table#pgtable').on('expand-row.bs.table', function (e, index, row, $detail) {
-                openDetails.push(index)
+                openDetails.add(index)
                 $.get('{{ url_for("jobs.pgjobs") }}?processgroupid=' + row['_processgroupid'], function (data) {
                     $detail.html('<table></table>').find('table').bootstrapTable({
                         autoRefresh: true,
@@ -127,12 +127,11 @@ menuname='pglist'
 
 
             $('table#pgtable').on('page-change.bs.table', function () {
-                openDetails = []
+                openDetails = new Set();
             })
 
             $('table#pgtable').on('collapse-row.bs.table', function (e, index, row, $detail) {
-                const index_index = openDetails.indexOf(index);
-                openDetails.splice(index_index, 1)
+                openDetails.delete(index)
             })
 
             $('table#pgtable').on('load-success.bs.table', function (e, index, row, $data) {
