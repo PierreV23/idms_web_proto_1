@@ -397,7 +397,7 @@
     {% with messages = get_flashed_messages(category_filter=["error"]) %}
       {% if messages %}
         {% for message in messages %}
-          <div class="flash_bar bg-danger"><b>{{ message }}</b></div>
+          <div class="flash_bar bg-danger flash-error"><b>{{ message }}</b></div>
         {% endfor %}
       {% endif %}
     {% endwith %}
