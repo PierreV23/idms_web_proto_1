@@ -12,3 +12,4 @@ static/images/*
 .spyproject
 docker-compose.override.yml
 flask_session/
+metrics/
