@@ -20,7 +20,9 @@ deploy_test:
   script:
   - sudo cp -r ${CI_PROJECT_DIR}/. /opt/ngsweb
   - sudo /bin/systemctl restart ngsweb.service
-  when: manual
+  only:
+    refs:
+      - web
   tags:
     - test
 
