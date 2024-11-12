@@ -14,6 +14,7 @@ deploy_minilims:
 # There is currently no straightforward way to run a ci job on all registered runners
 # We use the 'parallel' option, but the number of servers in an environment has to be configured manually.
 
+
 deploy_test:
   stage: deploy
   script:
