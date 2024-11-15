@@ -31,3 +31,34 @@ def confirm():
     login_messages = read_messagefile()
     max_id = max([ m.get('id', 0) for m in login_messages.get('messages') ])
     current_user.settings[maxid_key()] =  max_id
+    
+def load_headermessages():
+    if not hasattr(current_user, 'irods_zone'):
+        return []
+    all_messages = []
+    messageobject = os.path.join('/', current_user.irods_zone, current_app.config.get("HEADER_MESSAGE_OBJECT","none"))
+    try:
+        if current_user.ifs.fileexists(messageobject):
+            obj = current_user.ifs.getfile(messageobject)
+            messages_json = obj.open('r').read().decode('utf-8')
+            all_messages = json.loads(messages_json).get('messages', [])
+    except Exception as ex:
+        # Do not break the website if the message file has an invalid format
+        pass
+    return all_messages
+
+def write_headermessages(all_messages):
+    if not hasattr(current_user, 'irods_zone'):
+        return []
+    messageobject = os.path.join('/', current_user.irods_zone, current_app.config.get("HEADER_MESSAGE_OBJECT","none"))
+    try:
+        if current_user.ifs.fileexists(messageobject):
+            messagestring = json.dumps({ 'messages' : all_messages}, indent=4)
+            obj = current_user.ifs.getfile(messageobject)
+            messages_json = obj.open('w').write(messagestring.encode())
+    except Exception as ex:
+        # Do not break the website if the message file has an invalid format
+        pass
+    return all_messages
+    
+    

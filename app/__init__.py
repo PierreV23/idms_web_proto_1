@@ -18,7 +18,7 @@ import irods.exception
 import subprocess
 from Crypto.PublicKey import RSA
 
-from . import auth, collbrowser, jobs, docviewer
+from . import auth, collbrowser, jobs, docviewer, msgapi
 from . import projects, cluster, admin, reports, userinfo, referencedatasets
 from . import ngsruns, upload, flaskcache
 from . import messages, oldjobs
@@ -114,6 +114,7 @@ app.register_blueprint(ngsruns.bp)
 app.register_blueprint(upload.bp)
 app.register_blueprint(userinfo.bp)
 app.register_blueprint(oldjobs.bp)
+app.register_blueprint(msgapi.bp)
 
 
 flaskcache.init(app)
@@ -202,10 +203,10 @@ def get_header_messages():
         valid_msg = True
         try:
             if (ts := msg.get("start")):
-                if dateutil.parser.isoparse(ts) > datetime.now():
+                if dateutil.parser.parse(ts) > datetime.now():
                     valid_msg = False
             if (ts := msg.get("end")):
-                if dateutil.parser.isoparse(ts) < datetime.now():
+                if dateutil.parser.parse(ts) < datetime.now():
                     valid_msg = False
             if valid_msg:
                 messages.append(msg)

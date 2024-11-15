@@ -1,0 +1,213 @@
+{% extends 'base2.html' %}
+
+{%block menuname %}
+menuname='messages'
+{% endblock %}
+
+{% block heading %}
+<h3>Messages</h3>
+{% endblock %}
+
+{% block content %}
+
+<link href="https://unpkg.com/bootstrap-table@1.20.2/dist/bootstrap-table.min.css" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/daterangepicker-bs3.css') }}" />
+
+<script src="https://unpkg.com/bootstrap-table@1.20.2/dist/bootstrap-table.min.js"></script>
+<script src="{{ url_for('static', filename='js/daterangepicker.js') }}"></script>
+<link rel="stylesheet" href="https://unpkg.com/jodit@4.0.1/es2021/jodit.min.css" />
+<script src="https://unpkg.com/jodit@4.0.1/es2021/jodit.min.js"></script>
+
+<div class="card h-100">
+  <div class="card-header" id="previewpane">
+
+  </div>
+  <div class="card-body scroll">
+    <form action="{{ url_for('messages.message_api' ) }}" method="POST" id="msgform">
+      <div class="form-row">
+        <div class="form-group col-md-3"><label>Period</label></div>
+        <div class="form-group col-md-5"><label>Message</label></div>
+        <div class="form-group col-md-2"><label>Class</label></div>
+        <div class="form-group col-md-2"><label>Action</label></div>
+      </div>
+      <div id="formcontents">
+
+      </div>
+  </div>
+  <div class="card-footer">
+    <button type="submit" class="btn btn-primary" id="formsubmit">Submit</button>
+    <INPUT type="button" class="btn btn-primary add-row" value="Add row">
+  </div>
+  </form>
+</div>
+
+</div>
+
+
+<script>
+
+  var messageindex = 0;
+
+  let previews = new Set([]);
+
+  let dateformat = "YYYY/MM/DD HH:mm"
+
+  var dt_format = {
+    "separator": " - ",
+    "timePicker": true,
+    "format": dateformat,
+    "timePicker12Hour": false,
+    "ranges": {
+      'Today': [moment(), moment().endOf('day')],
+      'Tomorrow': [moment().add(1, 'days').startOf('day'), moment().add(1, 'day').endOf('day')],
+      'This Week': [moment(), moment().endOf('week')],
+      'Next week': [moment().add(1, 'week').startOf('week'), moment().add(1, 'week').endOf('week')],
+      'This Month': [moment(), moment().endOf('month')]
+    }
+  }
+
+  var edit_format = {
+    "toolbarButtonSize": "small",
+    "showCharsCounter": false,
+    "showWordsCounter": false,
+    "showXPathInStatusbar": false,
+    "toolbarAdaptive": false,
+    "minHeight": 120,
+    "maxHeight": 120,
+    "buttons": "bold,italic,underline,strikethrough,font,fontsize,hr,left,center,right"
+  }
+
+  const messageclasses = [
+    "bg-primary",
+    "bg-secondary",
+    "bg-success",
+    "bg-danger",
+    "bg-warning",
+    "bg-info",
+    "bg-light",
+    "bg-dark"
+  ];
+
+  function post_data() {
+    var data = $("#msgform").serializeArray();
+    var dataString = $("#msgform").serialize();
+    $.ajax({
+      type: "POST",
+      url: "{{ url_for('messages.message_api' ) }}",
+      data: dataString,
+      success: function () {
+        $('#formcontents').html('')
+        load_form()
+      }
+    });
+  }
+
+  $("#msgform").on("submit", function (e) {
+    post_data();
+    e.preventDefault();
+  });
+
+
+  $('.add-row').on('click', function (e) {
+    s = moment().format(dateformat);
+    e = moment().endOf('day').format(dateformat)
+    $("#formcontents").append(message_form_row(messageindex, s, e, '', false))
+    $('.date').daterangepicker(dt_format);
+    Jodit.make($('textarea#'+messageindex+'_msg')[0], edit_format)
+  })
+
+  function isDateValid(dateStr) {
+    return !isNaN(new Date(dateStr));
+  }
+
+  function message_form_row(index, start, end, msg, bgclass, deletebutton) {
+    if (isDateValid(start) && isDateValid(end)) {
+      range = start + " - " + end
+    } else {
+      range = ""
+    }
+    id_time = index + '_time'
+    formrow = '<div class="form-row" id="row_' + index + '">'
+    formrow = formrow + '<div class="form-group col-md-3">' +
+      '<div class="input-group " id="' + id_time + '">' +
+      '<INPUT type="text" class="form-control date " id="' + id_time + '" name="' + id_time + '" VALUE="' + range + '">' +
+      '</div></div>'
+    formrow = formrow + '<div class="form-group col-md-5">' +
+      '<TEXTAREA class="form-control" id="' + index + '_msg" name="' + index + '_msg" data-index=' + index + '">' + msg + '</TEXTAREA></div>'
+    formrow = formrow + '<div class="form-group col-md-2">' +
+      '<SELECT class="form-control bgselect" data-index=' + index + ' name="' + index + '_class">'
+    messageclasses.forEach((messageclass) => {
+      formrow = formrow + '<OPTION CLASS="' + messageclass + '"'
+      if (messageclass == bgclass) {
+        formrow = formrow + ' SELECTED '
+      }
+      formrow = formrow + '>' + messageclass + '</OPTION>'
+    })
+    formrow = formrow + '</SELECT></DIV>'
+    formrow = formrow + '<div class="form-group col-md-1">'
+    formrow = formrow + '<div><BUTTON CLASS="button btn-secondary preview" data-index=' + index + '>Preview</BUTTON></div></div>'
+    formrow = formrow + '<div class="form-group col-md-1">'
+    if (deletebutton == true) {
+      formrow = formrow + '<div class="form-group col-md-1"><BUTTON CLASS="button btn-danger deleterow" data-index=' + index + '>Delete</BUTTON></div>'
+    }
+    formrow = formrow + '</DIV>'
+    return formrow
+  }
+
+
+  function load_form() {
+    $('.previewbar').remove()
+    $.get("{{ url_for('messages.message_api')}}", function (data) {
+      for (const [key, value] of Object.entries(data)) {
+        $("#formcontents").append(message_form_row(key, value.start, value.end, value.msg, value.class, true))
+        messageindex = Number(key)
+      }
+      $('textarea').each(function (index) {
+        console.log(this)
+        Jodit.make(this, edit_format)
+      })
+      messageindex += 1
+      $('.date').daterangepicker(dt_format);
+      $('.deleterow').on('click', function (e) {
+        e.preventDefault();
+        if (confirm('Are you sure?')) {
+          i = $(this).data('index')
+          $('#row_' + i).remove()
+          post_data();
+        }
+      })
+      $('.preview').on('click', function (e) {
+        e.preventDefault();
+        i = $(this).data('index')
+        if (previews.has(i)) {
+          remove_preview(i);
+        } else {
+          msgclass = $('select[name=' + i + '_class]').find(':selected').val();
+          $('#previewpane').append('<DIV id="preview' + i + '" class="flash_bar previewbar ' + msgclass + '">' + $('textarea#' + i + '_msg').val() + '</DIV>')
+          $(this).removeClass('btn-secondary').addClass('btn-success')
+          previews.add(i)
+        }
+      })
+      $('.datebutton').on('click', function () {
+        id = $(this).data('for')
+        $('#' + id).daterangepicker.toggle()
+      })
+      $('.form-control, select').on('change', function () {
+        i = $(this).data('index')
+        remove_preview(i)
+      })
+    });
+  }
+
+  function remove_preview(i) {
+    $('#preview' + i).remove()
+    $('button.preview[data-index=' + i + ']').removeClass('btn-success').addClass('btn-secondary')
+    previews.delete(i)
+  }
+
+  $(window).on('load', function () {
+    load_form();
+  });
+</script>
+
+{% endblock %}

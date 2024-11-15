@@ -21,6 +21,7 @@ from app.irodssessions import irods_manager
 from app.settings import RESOURCE_PROPS
 from app.auth import auth_endpoint
 from . import flaskcache
+from app.messages import load_headermessages
 from app.accounting_page import *
 
 ATTR_ARCHIVE_STATUS = "sys::archive::status"
@@ -152,6 +153,12 @@ def consistency_details():
 @login_required
 def issues():
     return render_template('issues.html')
+
+@bp.route('/messages')
+@login_required
+def messages():
+    return render_template('messages.html')
+
 
 @bp.route('/_aract', methods=['POST'])
 def archive_action():
