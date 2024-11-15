@@ -390,7 +390,7 @@ def actions_tabs():
     if tabname in TABS:
         return render_template(f'actions_{tabname}.html', coll_state=coll_state)
     else:
-        return 'ERROR'
+        return f'Unknown tab name {tabname}'
 
 @bp.route('_actions')
 def coll_actions():
