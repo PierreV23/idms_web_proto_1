@@ -20,11 +20,20 @@ deploy_test:
   - sudo cp -r ${CI_PROJECT_DIR}/. /opt/ngsweb
   - sudo /bin/systemctl restart ngsweb.service
   only:
-    - master
-  parallel: 2
+    refs:
+      - web
   tags:
     - test
-    - 0${CI_NODE_INDEX}
+
+deploy_acc:
+  stage: deploy
+  script:
+  - sudo cp -r ${CI_PROJECT_DIR}/. /opt/ngsweb
+  - sudo /bin/systemctl restart ngsweb.service
+  only:
+    - master
+  tags:
+    - acc
 
 deploy_production:
   stage: deploy

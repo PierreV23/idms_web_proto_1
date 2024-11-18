@@ -111,7 +111,7 @@ class PoolObject():
 class SessionPool():
     """Pool of irodsSessions for one user and irods environment
     """
-    def __init__(self, envdata, targetsize=0, idle_timeout=120, active_timeout=120):
+    def __init__(self, envdata, targetsize=0, idle_timeout=300, active_timeout=120):
         self.targetsize = targetsize
         self.idle_timeout = idle_timeout
         self.active_timeout = active_timeout
@@ -251,7 +251,7 @@ class MultiSessionManager():
 
     def init_app(self, app):
         self.scheduler = BackgroundScheduler(daemon=True)
-        self.scheduler.add_job(func=self.cleanup, trigger="interval", seconds=60, jitter=15)
+        self.scheduler.add_job(func=self.cleanup, trigger="interval", seconds=120, jitter=15)
         self.scheduler.start()
         with self._lock:
             for envname, envdata in app.config.get('IRODS_ENVS', {}).items():

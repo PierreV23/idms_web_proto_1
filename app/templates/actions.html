@@ -175,7 +175,7 @@
     }
 
 
-$('.nav-tabs').on('shown.bs.tab', function(event){
+$('.action-tabs').on('shown.bs.tab', function(event){
   activetab = event.target.getAttribute('href')
   $.get('{{ url_for("collbrowser.actions_tabs") }}', {
     collection: '{{ collection }}',
@@ -221,7 +221,7 @@ $('#shareButton').on('click', function(){
 </script>
 
     <div class="card-header myheader">
-      <ul class="nav nav-tabs">
+      <ul class="nav nav-tabs action-tabs">
         <li class="nav-item mx-2">
           <a class="nav-link
               {% if coll_state.is_offline is sameas true %} bg-danger {% endif %}

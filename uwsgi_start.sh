@@ -6,7 +6,9 @@ mamba env create  -f myflask.yaml -q
 source activate myflask
 fi
 
+mkdir -p metrics
+
 PORT=5${UID: -3}
 
-uwsgi --http :${PORT} --ini ngsweb.test.ini
+uwsgi --http :${PORT} --ini ngsweb.test.ini --metrics-dir metrics
 source deactivate
