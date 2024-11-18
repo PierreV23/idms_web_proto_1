@@ -2,7 +2,6 @@ from logging import FileHandler
 import json
 import os
 import requests
-import dateutil.parser
 import redis
 from datetime import datetime
 from requests.auth import HTTPBasicAuth
@@ -18,7 +17,7 @@ import irods.exception
 import subprocess
 from Crypto.PublicKey import RSA
 
-from . import auth, collbrowser, jobs, docviewer, msgapi
+from . import auth, collbrowser, jobs, docviewer, messages
 from . import projects, cluster, admin, reports, userinfo, referencedatasets
 from . import ngsruns, upload, flaskcache
 from . import messages, oldjobs
@@ -114,7 +113,7 @@ app.register_blueprint(ngsruns.bp)
 app.register_blueprint(upload.bp)
 app.register_blueprint(userinfo.bp)
 app.register_blueprint(oldjobs.bp)
-app.register_blueprint(msgapi.bp)
+app.register_blueprint(messages.bp)
 
 
 flaskcache.init(app)
@@ -132,7 +131,8 @@ def load_user(userid):
 @app.route('/')
 @login_required
 def home():
-    return render_template('home.html')
+    newsitems = messages.load_messages(category='home', only_current=True)
+    return render_template('home.html', newsitems=newsitems)
 
 @app.route('/api/msgconfirm', methods=['POST'])
 def msgconfirm():
@@ -184,40 +184,10 @@ def restcall(rest_endpoint):
         cache.delete_memoized(restcall)
     return jsonify(return_data), response.status_code    
 
-@cache.memoize(timeout=600, make_name=dep_zone)
-def get_header_messages():
-    if not hasattr(current_user, 'irods_zone'):
-        return ''
-    all_messages = []
-    messageobject = os.path.join('/', current_user.irods_zone, app.config.get("HEADER_MESSAGE_OBJECT","none"))
-    try:
-        if current_user.ifs.fileexists(messageobject):
-            obj = current_user.ifs.getfile(messageobject)
-            messages_json = obj.open('r').read().decode('utf-8')
-            all_messages = json.loads(messages_json).get('messages', [])
-    except Exception as ex:
-        # Do not break the website if the message file has an invalid format
-        pass
-    messages = []
-    for msg in all_messages:
-        valid_msg = True
-        try:
-            if (ts := msg.get("start")):
-                if dateutil.parser.parse(ts) > datetime.now():
-                    valid_msg = False
-            if (ts := msg.get("end")):
-                if dateutil.parser.parse(ts) < datetime.now():
-                    valid_msg = False
-            if valid_msg:
-                messages.append(msg)
-        except:
-            # skip message with invalid time fields
-            pass
-    return messages
 
 @app.context_processor
 def inject_header_message():
-    header_messages = get_header_messages()
+    header_messages = messages.load_messages(category='banner', only_current=True)
     return dict(header_messages=header_messages)
 
 # @app.teardown_request

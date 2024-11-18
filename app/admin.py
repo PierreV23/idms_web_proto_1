@@ -21,7 +21,6 @@ from app.irodssessions import irods_manager
 from app.settings import RESOURCE_PROPS
 from app.auth import auth_endpoint
 from . import flaskcache
-from app.messages import load_headermessages
 from app.accounting_page import *
 
 ATTR_ARCHIVE_STATUS = "sys::archive::status"
