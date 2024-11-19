@@ -30,24 +30,25 @@ menuname='upload_meta'
 <div class="card h-100">
   <div class="card-header">
     <H3>Select a metadata-schema for project <em>{{ project }}</em></H3>
-  </div>
-
-  <div class="card-body auto-scroll">
     <div id="schema-select-div" class="d-none">
       <label for="schema-select">Schema:</label>
       <select id="schema-select" class="form-control form-select"></select>
-    </div>
+    </div>    
+  </div>
+
+  <div class="card-body autoscroll">
     <div id="schema-select-alert" class="alert alert-warning d-none">
-      <strong>No schemata found!</strong> Your project doesnt have any metainformation schemata defined. 
+      <strong>No schemata found!</strong> Your project doesnt have any metainformation schemata defined.
       We advise to define at least a minimal set of attributes!
     </div>
     <hr>
     <div id="reactform"></div>
+  </div>
+  <div class="card-footer">
     <button class="btn btn-primary formsubmit" type="submit" name="save" form="metaForm">Save</button>
     <button class="btn btn-primary formsubmit" type="submit" name="continue" form="metaForm">Save & Continue</button>
   </div>
 </div>
-
 
 <script>
 
