@@ -210,6 +210,12 @@ def invalid_session1(e):
     app.logger.info(f"Invalid session")
     return auth.logout()
 
+@app.errorhandler(irods.exception.CAT_INVALID_USER)
+def invalid_user(e):
+    """Connection to iRODS failing. Redirect to login page"""
+    app.logger.info("Invalid user")
+    return auth.logout()
+
 # @app.errorhandler(irods.exception.NetworkException)
 # def invalid_session2(e):
 #     """Session may be stale. Destroy it and redirect to login page."""

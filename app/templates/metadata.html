@@ -1,13 +1,13 @@
 <script>
 
-$('.nav-tabs').on('shown.bs.tab', function(event){
+$('.meta-tabs').on('shown.bs.tab', function(event){
     activemetatab = event.target.getAttribute('href')
 });
 
 </script>
 
 <div class="card-header myheader">
-    <ul class="nav nav-tabs">
+    <ul class="nav nav-tabs meta-tabs">
         <li class="nav-item mx-2">
           <a class="nav-link {% if object_avu is none %} active {% endif %}" id="collmeta-tab"
             data-toggle="tab" href="#collmeta" role="tab"
