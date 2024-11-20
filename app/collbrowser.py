@@ -421,7 +421,13 @@ def sharetable():
     coll_id = iqry.qcollproperty(collection, 'id')
     shares, status = rest_call('GET', f'collections/{ coll_id }/shares', prefix='/external', user=current_user.username, passwd=current_user.password)
     if status != 200:
-        return {}  
+        return {}
+    # User-friendly endtime formatting:
+    for share in shares:
+        if share.get('endtime', 0) == 0:
+            share['endtime'] = 'Indefinite'
+        else:
+            share['endtime'] = datafield('endtime', share['endtime'], 'timestamp' ).htmlstring
     return jsonify(shares)
 
 @bp.route('_actions_newshare', methods=['POST'])
@@ -430,8 +436,12 @@ def actions_newshare():
     formdata = request.form.to_dict()
     coll_id = iqry.qcollproperty(formdata.get('collection'), 'id')
     requestdata = { k: v for k, v in formdata.items() if k in NEW_SHARE_FIELDS }
-    # data, result = rest_call2('POST', '0.0.0.0:7438', 'external',
-    #                 f'collections/{coll_id}/shares', requestdata)
+    if 'enddate' in formdata:
+        try:
+            requestdata['endtime'] = int(time.mktime(datetime.strptime(formdata['enddate'], '%d/%m/%Y').timetuple()))
+        except:
+            data['result'] = 'Invalid time value'
+            return data    
     data, result = rest_call('POST', f'collections/{coll_id}/shares', prefix='/external', data=requestdata, user=current_user.username, passwd=current_user.password)
     data['result'] = result
     data['url'] = generate_external_url(data.get('dataset_id', ''), data.get('string', ''))
