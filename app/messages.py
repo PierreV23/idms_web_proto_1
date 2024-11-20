@@ -22,7 +22,7 @@ def getmessages():
     login_messages = read_messagefile()
     max_id = current_user.settings.setdefault(maxid_key(), 0)
     if login_messages:
-        messagelist = sorted(login_messages.get('messages', []), key=lambda x: x['id'])
+        messagelist = sorted(login_messages.get('messages', []), key=lambda x: x.get('id', 0))
         return [ message.get('txt') for message in messagelist if message.get('id', 0) > max_id ]
     else:
         return []
