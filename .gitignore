@@ -2,6 +2,7 @@ __pycache__
 migrations
 instance/*
 !instance/config.py.sample
+!instance/constants.py.sample
 secret
 secret.acc
 secret.prod

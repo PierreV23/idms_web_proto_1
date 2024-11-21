@@ -33,7 +33,7 @@ def login():
         user.store()
 
         # Check for messages
-        for message in messages.getmessages():
+        for message in messages.get_my_login_messages():
             flash(message, "news")
         return redirect(requestdata['next'])
     else:

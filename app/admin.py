@@ -153,6 +153,12 @@ def consistency_details():
 def issues():
     return render_template('issues.html')
 
+@bp.route('/messages')
+@login_required
+def messages():
+    return render_template('messages.html')
+
+
 @bp.route('/_aract', methods=['POST'])
 def archive_action():
     requestdata = request.form.to_dict()

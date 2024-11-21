@@ -1182,6 +1182,7 @@ def search_result_query(object_type, filter_dict, search_dict):
     SEARCH_IN_OPTIONS = {
         "collection_metadata": CollectionMeta.value,
         "collection_name": Collection.name,
+        "dataobject_metadata": DataObjectMeta.value,
         "object_name": DataObject.name,
     }
     SEARCH_IN_DEFAULT = Collection.name
@@ -1195,6 +1196,13 @@ def search_result_query(object_type, filter_dict, search_dict):
                 CollectionMeta.name,
                 "%")
             )
+        if search_in_type == "dataobject_metadata":
+            # To reliably search for metadata values in all metadata fields, iRODS still needs the field to be 'specified'.
+            query = query.filter(Criterion(
+                "like",
+                DataObjectMeta.name,
+                "%")
+            )            
         query = query.filter(Criterion(
             SEARCH_OPTION,
             SEARCH_IN_OPTIONS.get(search_in_type, SEARCH_IN_DEFAULT),

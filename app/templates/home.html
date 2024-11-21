@@ -9,39 +9,49 @@
 {% block content %}
 
 <script>
-$(window).on('load', function() {
-  $.get('{{ url_for('projects.my_projectview') }}', { }, function(data) {
-    $('#myprojects').html(data)
+  $(window).on('load', function () {
+    $.get('{{ url_for('projects.my_projectview') }}', {}, function (data) {
+      $('#myprojects').html(data)
+    });
   });
-});
 </script>
-
-<div >
-  <div class="card border-primary mb-3" style="width: 25rem;">
-    <div class="card-header">
-      Quick Links
-    </div>
-    <div class="card-body">
-      <ul class="list-group list-group-flush">
-        <li class="list-group-item"><A href={{ url_for('collbrowser.collbrowser') + '?path=/' + current_user.irods_zone + '/home/' + current_user.username}}>Home collection</a></li>
-        <li class="list-group-item"><A href={{ url_for('collbrowser.collbrowser') + '?path=/' + current_user.irods_zone + '/projects' }}>Project Data</a></li>
-      </ul>
-    </div>
-  </div>
-
-  {% if 'PROJECTS' in current_user.features %}
-  <div class="card border-primary mb-3" style="width: 25rem;">
-    <div class="card-header">
-      My Projects
-    </div>
-    <div class="card-body" id="myprojects">
-      <div class="overlay">
-        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+<div class="row h-100">
+  <div class="col-4">
+    <div class="card border-primary ">
+      <div class="card-header">
+        Quick Links
+      </div>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item"><A href={{ url_for('collbrowser.collbrowser') + '?path=/' +
+              current_user.irods_zone + '/home/' + current_user.username}}>Home collection</a></li>
+          <li class="list-group-item"><A href={{ url_for('collbrowser.collbrowser') + '?path=/' +
+              current_user.irods_zone + '/projects' }}>Project Data</a></li>
+        </ul>
       </div>
     </div>
+
+    {% if 'PROJECTS' in current_user.features %}
+    <div class="card border-primary">
+      <div class="card-header">
+        My Projects
+      </div>
+      <div class="card-body" id="myprojects">
+        <div class="overlay">
+          <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+        </div>
+      </div>
+    </div>
+    {% endif %}
   </div>
-  {% endif %}
+  <div class="col-8 h-100 scroll">
+    {% for newsitem in newsitems %}
+    <div class="card">
+      <div class="card-body {{ newsitem.class }}">
+        {{ newsitem.msg | safe }}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
 </div>
-
 {% endblock %}
-
