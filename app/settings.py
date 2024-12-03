@@ -112,6 +112,13 @@ RESOURCE_PROPS = {
         'factor': 3600,
         'help': 'Data has to have this age before it will be removed from this resource'
     },
+    'age_before_trim': {
+        'label': 'Reference data retention (h)',
+        'meta': 'sys::resource::reference_data_retention',
+        'type': 'number',
+        'factor': 3600,
+        'help': 'Reference data versions will be kept on this resource for this period after last use'
+    },    
     'minfree': {
         'label': 'Minimum free space (GB)',
         'meta': 'sys::resource::spacelimit',
