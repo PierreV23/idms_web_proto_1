@@ -205,6 +205,15 @@ def setmeta():
         iqry.scollmetaval(collection, attr, value)
     return 'DONE', 200
 
+@bp.route('_rmmeta', methods=['GET'])
+def rmmeta():
+    attr = request.args.get('attr')
+    value = request.args.get('value')
+    collection = request.args.get('collection')
+    if attr and collection:
+        iqry.delcollmeta(collection, attr, value)
+    return 'DONE', 200
+
 
 @bp.route('_setoverride', methods=['GET'])
 def setoverride():
@@ -283,7 +292,7 @@ class CollectionState():
 
     @property
     def enabled(self):
-        return self._meta(ATTR_ARCHIVE_ENABLE, "false")
+        return self._meta(ATTR_ARCHIVE_ENABLE, "true")
 
     @property
     def failed_pg(self):
