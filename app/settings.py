@@ -112,7 +112,7 @@ RESOURCE_PROPS = {
         'factor': 3600,
         'help': 'Data has to have this age before it will be removed from this resource'
     },
-    'age_before_trim': {
+    'reference_data_retention': {
         'label': 'Reference data retention (h)',
         'meta': 'sys::resource::reference_data_retention',
         'type': 'number',
