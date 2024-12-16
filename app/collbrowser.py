@@ -44,7 +44,7 @@ DEFAULT_GRAPH_LEVELS = 3
 # This is the maximum number of subcollections we will show 
 # in the treeview. If there are more, we will indicate that
 # by ... above/below the list
-MAX_TREEVIEW_COLLS = 50
+MAX_TREEVIEW_COLLS = 150
 
 ATTR_DATASETID = 'sys::dataset_id'
 ATTR_PROJECTID = 'projectID'
