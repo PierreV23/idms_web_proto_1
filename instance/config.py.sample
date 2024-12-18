@@ -53,21 +53,8 @@ LOGCONFIG = {
     },
 }
 
-LABSURV_DB_CRED = {
-    'Acceptatie': { 
-        'host': r'rivm-sqldb-w04p.rivm.ssc-campus.nl\rivm01_acc',
-        'database': 'IDS_labsurv_covid_Acc',
-        'user': 'IDS_labsurv_user_acc',
-        'password': 'xxx'
-    },
-    'Test_01': {
-        'host': r'rivm-sqldb-w04p.rivm.ssc-campus.nl\rivm01_acc',
-        'database': 'IDS_labsurv_covid_Acc',
-        'user': 'IDS_labsurv_user_acc',
-        'password': 'xxx'        
-    }
-}
-
+# This is the max file upload size in MB
+MAX_FILE_UPLOAD_SIZE=20000
 
 IRODS_ENVS = {
     'Productie':   {
