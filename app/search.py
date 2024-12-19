@@ -33,16 +33,20 @@ class Const:
     NAME = 'name'
     VALUE = 'value'
     ATTRS = 'attrs'
-
-# class Tables:
-#     coll = 'r_coll_main'
-#     metamap = 'r_objt_metamap'
-#     meta = 'r_meta_main'
+    
+class TableFormat:
+    html = 'html'
+    plain = 'plain'    
 
 class Tables:
     coll = 'r_coll_main'
-    metamap = 'evw_objt_metamap'
-    meta = 'evw_metamap'
+    metamap = 'r_objt_metamap'
+    meta = 'r_meta_main'
+
+# class Tables:
+#     coll = 'r_coll_main'
+#     metamap = 'evw_objt_metamap'
+#     meta = 'evw_metamap'
 
 def search_dict(keywords, meta_attrs):
     return {
@@ -71,7 +75,12 @@ def searchtable():
         'field': 'collection',
         'title': 'Collection'
     }]
-    tabledata = [{ 'collection': datafield("collection", c, 'irods_collection').htmlstring } for c in colls ]
+    # We need different collection links depending on the data['format'] parameter
+    dataformat = data.get('format', TableFormat.html)
+    if dataformat == TableFormat.html:
+        tabledata = [{ 'collection': datafield("collection", c, 'irods_collection').htmlstring } for c in colls ]
+    elif dataformat == TableFormat.plain:
+        tabledata = [{ 'collection': c } for c in colls ]
     tabledef |= {'columns': columns, 'data': tabledata, 'attrs': attrs}
     return jsonify(tabledef), 200
 

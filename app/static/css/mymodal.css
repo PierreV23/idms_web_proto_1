@@ -687,3 +687,8 @@ ul {
 .header-right {
   font-size: 0.8rem;
 }
+
+.action-topbar {
+  margin-bottom: 2px;
+  overflow: auto;
+}

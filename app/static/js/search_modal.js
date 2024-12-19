@@ -4,7 +4,15 @@ function SearchModal(data) {
     this.api_available_attrs = data['api_available_attrs']
     this.api_attrvalues_for_search = data['api_attrvalues_for_search']
     this.api_searchtable = data['api_searchtable']
+    this.select_function = data['select_function']
+    this.context = data['context']
+    if ('format' in data) {
+      this.format = data['format']
+    } else {
+      this.format = 'plain'
+    }
     this.requestid = 0
+    modal = this
 
     this.filltable = function(update_attrs) {
         $('#searchtable').addClass('pending')
@@ -12,6 +20,7 @@ function SearchModal(data) {
         search_data = this.form_data()
         id = Date.now()
         search_data['id'] = id
+        search_data['format'] = this.format
         modal = this
         $.ajax({
             type: 'POST',
@@ -46,13 +55,25 @@ function SearchModal(data) {
             </div>`)
     }
 
+    this.select_wrapper = function(target, value, event) {
+      modal.select_function(modal, target, value, event)
+    }
+
+    this.close = function() {
+      $('#searchModal').modal('hide').modal('dispose').remove()
+    }
+
     this.show = function() {
         insert_search_modal()
         $('[data-toggle="tooltip"]').tooltip()
         $('#searchModal').modal('show')
-        $(document).off('click.search').off("select.search")
+        $(document).off('click.search').off("select.search").off("click-row.bs.table.search")
         $('select').selectpicker();
         modal=this
+
+        if (this.select_function) {
+          $(document).on('click-row.bs.table.search', '#searchtable', this.select_wrapper)
+        }
 
         $(document).on('changed.bs.select', '#meta-attr-select', function (e, clickedIndex, isSelected, previousValue) {
             // Set the selected attr on the button
@@ -159,12 +180,14 @@ function SearchModal(data) {
         $('#meta-value-select').attr('disabled', true)
         $('.meta-attr-option').remove()
         $('#meta-value-select').val('default_value').selectpicker('refresh')
+        $('#progress-bar').addClass('show-progress')
         if (this.current_attrs !== null) {
             this.current_attrs.forEach(function (value) {
                 $('#meta-attr-select').append(
                     `<option class="meta-attr-option">${value}</option>`
                 )
             })
+            $('#progress-bar').removeClass('show-progress')
             $('#meta-attr-select')
                 .attr('disabled', false)
                 .val("default_attr")
@@ -184,6 +207,7 @@ function SearchModal(data) {
                             `<option class="meta-attr-option">${value}</option>`
                         )
                     })
+                    $('#progress-bar').removeClass('show-progress')
                     $('#meta-attr-select')
                         .attr('disabled', false)
                         .val("default_attr")
