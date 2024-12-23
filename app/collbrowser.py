@@ -145,7 +145,7 @@ def _getmetatree(irods_coll, attr, base, default=None):
     if irods_coll != '/':
         parent = os.path.dirname(irods_coll)
         return _getmetatree(parent, attr, base, default=None)
-    return default, None, True
+    return default, None, False
 
 @bp.route('_meta')
 def coll_meta():
