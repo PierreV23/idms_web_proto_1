@@ -70,6 +70,8 @@ ATTR_PROCESSREQUEST = 'processrequest'
 ATTR_ARCHIVE_STATE = f'{ATTR_ARCHIVE_PREFIX}state'
 ATTR_ARCHIVE_MINCOPIES = f'{ATTR_ARCHIVE_PREFIX}min_copies'
 
+ATTR_RULES_OBJECTIDS = 'sys::rules::object_ids'
+
 
 COLL_KEY_MAP = {
     'displayname': Collection.name,
@@ -328,7 +330,11 @@ class CollectionState():
     @cached_property
     def min_copies(self):
         return getmetatree(self.collection, ATTR_ARCHIVE_MINCOPIES, 2)
-
+    
+    @cached_property
+    def object_ids(self):
+        return getmetatree(self.collection, ATTR_RULES_OBJECTIDS, 2)
+    
     @property
     def myprocessgroupguid(self):
         return self._meta(ATTR_RUNSHEET_PROCESSGROUPGUID, "")
@@ -395,7 +401,7 @@ def actions_tabs():
     collection = request.args.get('collection', type=str)
     tabname = request.args.get('tabname', type=str)
     coll_state = CollectionState(collection)
-    TABS = ['archive', 'storage', 'pipeline', 'validity']
+    TABS = ['archive', 'settings', 'pipeline', 'validity']
     if tabname in TABS:
         return render_template(f'actions_{tabname}.html', coll_state=coll_state)
     else:

@@ -213,10 +213,10 @@ $('.action-tabs').on('shown.bs.tab', function(event){
         </li>
         {% if admin is sameas True %}
         <li class="nav-item mx-2">
-          <a class="nav-link" id="storage-tab"
-            data-toggle="tab" href="#storage" role="tab"
-            aria-controls="storage" aria-selected="false">
-            Storage
+          <a class="nav-link" id="settings-tab"
+            data-toggle="tab" href="#settings" role="tab"
+            aria-controls="settings" aria-selected="false">
+            Settings
         </a>
         </li>
         {% endif %}
@@ -246,7 +246,7 @@ $('.action-tabs').on('shown.bs.tab', function(event){
         </li>
       </ul>
     </div>
-    <div class="card-body tab-content scrollbar-y h-100">
+    <div class="card-body tab-content h-100">
       {% with messages = get_flashed_messages(category_filter=["actions_panel"]) %}
       {% if messages %}
         {% for message in messages %}
@@ -255,7 +255,7 @@ $('.action-tabs').on('shown.bs.tab', function(event){
       {% endif %}
       {% endwith %}
         <div class="tab-pane" id="archive" role="tabpanel" aria-labelledby="archive-tab"></div>
-        <div class="tab-pane" id="storage" role="tabpanel" aria-labelledby="storage-tab"></div>
+        <div class="tab-pane h-100" id="settings" role="tabpanel" aria-labelledby="settings-tab"></div>
         <div class="tab-pane" id="pipeline" role="tabpanel" aria-labelledby="pipeline-tab"></div>
         <div class="tab-pane" id="validity" role="tabpanel" aria-labelledby="validity-tab"></div>
       </div>
@@ -264,7 +264,7 @@ $('.action-tabs').on('shown.bs.tab', function(event){
 <script>
 
 {% if not current_user.is_admin %}
-$('#storage').find('input').prop("disabled", true)
+$('#settings').find('input').prop("disabled", true)
 {% endif %}
 
 </script>

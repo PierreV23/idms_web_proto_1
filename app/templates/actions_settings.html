@@ -1,0 +1,157 @@
+<div class="container h-100">
+  <div class="row h-100">
+    <div class="col-3 h-100">
+      <ul class="nav flex-column">
+        <li class="nav-item">
+          <a class="nav-link active scrollme" aria-current="page" href="#archive_heading">Archive</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link scrollme" href="#location_heading">Location</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link scrollme" href="#online_heading">Online</a>
+        </li>        
+        <li class="nav-item">
+          <a class="nav-link scrollme" href="#copies_heading">Copies</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link scrollme" href="#rules_heading">Rules</a>
+        </li>
+      </ul>
+    </div>
+    <div class="col-9 scrollbar-y h-100" id="settings_content">
+
+
+      <form>
+        <h4 id="archive_heading">Archiving</h4>
+        <div class="form-group">
+          <div class="col-sm-4 custom-control custom-switch vertical-down">
+            <input type="checkbox" class="custom-control-input" onChange="enableArchive()" value="true"
+              id="enableArchiveSwitch" {% if coll_state.enabled=='true' %}checked{% endif %}>
+            <label class="custom-control-label" for="enableArchiveSwitch">Enable archiving</label>
+          </div>
+          <hr>
+          <h4 id="location_heading">Storage location</h4>
+          <div class="col-sm-4 custom-control custom-switch vertical-down">
+            <input type="checkbox" class="custom-control-input" onChange="keepDatasetLocal()" value="true"
+              id="keepLocalSwitch" {% if coll_state.keep_local[0]=='true' %}checked{% endif %} {% if
+              coll_state.keep_local[2]==False %}disabled{% endif %}>
+            <label class="custom-control-label" for="keepLocalSwitch">keep on local storage</label>
+          </div>
+
+          <div class="col-sm-4 custom-control custom-switch vertical-down">
+            <input type="checkbox" class="custom-control-input" onChange="overrideDatasetLocal()" value="true"
+              id="overrideLocalSwitch" {% if coll_state.keep_local[2]==True %}checked{% endif %}>
+            <label class="custom-control-label" for="overrideLocalSwitch">Override inheritance</label>
+          </div>
+          <label class="col-form-label">
+            {% if not coll_state.keep_local[2] %}
+            Set from: {{ coll_state.keep_local[1].htmlstring | safe }}
+            {% endif %}
+          </label>
+          <hr>
+          <h4 id="online_heading">Online copies</h4>
+          <div class="col-sm-4 custom-control custom-switch vertical-down">
+            <input type="checkbox" class="custom-control-input" onChange="keepDatasetOnline()" value="true"
+              id="keepOnlineSwitch" {% if coll_state.keep_online[0]=='true' %}checked{% endif %} {% if
+              coll_state.keep_online[2]==False %}disabled{% endif %}>
+            <label class="custom-control-label" for="keepOnlineSwitch">keep online</label>
+          </div>
+
+          <div class="col-sm-4 custom-control custom-switch vertical-down">
+            <input type="checkbox" class="custom-control-input" onChange="overrideDatasetOnline()" value="true"
+              id="overrideOnlineSwitch" {% if coll_state.keep_online[2]==True %}checked{% endif %}>
+            <label class="custom-control-label" for="overrideOnlineSwitch">Override inheritance</label>
+          </div>
+          <label class="col-form-label">
+            {% if not coll_state.keep_online[2] %}
+            Set from: {{ coll_state.keep_online[1].htmlstring | safe }}
+            {% endif %}
+          </label>
+        </div>
+      </form>
+      <hr>
+      <h4 id="copies_heading">Storage copies</h4>
+      <form>
+        <div class="form-group">
+          {% for i in range(1,5) %}
+          <div class="form-check form-check-inline">
+            <input class="form-check-input min-copies" type="radio" name="inlineRadioOptions" {% if
+              i==(coll_state.min_copies[0] | int) %} checked {% endif %} {% if coll_state.min_copies[2]==False %}
+              disabled {% endif %} id="inlineRadio1" value="{{ i }}" onChange="setMincopies({{ i }})">
+            <label class="form-check-label" for="inlineRadio1">{{ i }}</label>
+          </div>
+          {% endfor %}
+          <label class="col-form-label" for="inlineRadio4">copies to store</label>
+
+          <div class="col-sm-4 custom-control custom-switch vertical-down">
+            <input type="checkbox" class="custom-control-input" onChange="overrideMincopies()" value="true"
+              id="overrideMincopiesSwitch" {% if coll_state.min_copies[2]==True %}checked{% endif %}>
+            <label class="custom-control-label" for="overrideMincopiesSwitch">Override inheritance</label>
+          </div>
+          <label class="col-form-label">
+            {% if not coll_state.min_copies[2] %}
+            Set from: {{ coll_state.min_copies[1].htmlstring | safe }}
+            {% endif %}
+          </label>
+        </div>
+      </form>
+      <hr>
+      <h4 id="rules_heading">iRODS Rules</h4>
+
+      <form>
+        <div class="col-sm-4 custom-control custom-switch vertical-down">
+          <input type="checkbox" class="custom-control-input" onChange="setObjectIDS()" value="true"
+            id="setObjectIDSSwitch" {% if coll_state.object_ids[0]=='true' %}checked{% endif %} {% if
+            coll_state.object_ids[2]==False %}disabled{% endif %}>
+          <label class="custom-control-label" for="setObjectIDSSwitch">Generate sys::object_id</label>
+        </div>
+
+        <div class="col-sm-4 custom-control custom-switch vertical-down">
+          <input type="checkbox" class="custom-control-input" onChange="overrideSetObjectIDS()" value="true"
+            id="overrideObjectIDSSwitch" {% if coll_state.object_ids[2]==True %}checked{% endif %}>
+          <label class="custom-control-label" for="overrideObjectIDSSwitch">Override inheritance</label>
+        </div>
+        <label class="col-form-label">
+          {% if not coll_state.object_ids[2] %}
+          Set from: {{ coll_state.object_ids[1].htmlstring | safe }}
+          {% endif %}
+        </label>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  $('.scrollme').on('click', function () {
+    target = $(this).attr('href')
+    $('#settings_content').scrollTop($(target).offsetTop)
+  })
+
+  function setObjectIDS() {
+    var selected = $("#setObjectIDSSwitch").is(':checked')
+    $.get('{{ url_for('collbrowser.setmeta') }}', {
+      collection: collection,
+      attr: 'sys::rules::object_ids',
+      value: selected
+    }, function (data) {
+      load_meta()
+    });
+  }
+
+  function overrideSetObjectIDS() {
+    var selected = $("#setObjectIDSSwitch").is(':checked')
+    var override = $("#overrideObjectIDSSwitch").is(':checked')
+    $.get('{{ url_for('collbrowser.setoverride') }}', {
+      attr: 'sys::rules::object_ids',
+      collection: collection,
+      override: override,
+      value: selected
+    }, function (data) {
+      load_meta();
+      load_actions();
+    });
+  }
+
+</script>
