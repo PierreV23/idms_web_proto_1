@@ -51,80 +51,6 @@
       });
     }
 
-    function overrideDatasetLocal() {
-        var selected = $( "#keepLocalSwitch" ).is(':checked')
-        var override = $( "#overrideLocalSwitch" ).is(':checked')
-        $.get('{{ url_for('collbrowser.setoverride') }}', {
-          attr: 'sys::archive::local',
-          collection: '{{ collection }}',
-          override: override,
-          value: selected
-        }, function(data) {
-           load_meta();
-           load_actions();
-        });
-    }
-
-    function overrideDatasetOnline() {
-        var selected = $( "#keepOnlineSwitch" ).is(':checked')
-        var override = $( "#overrideOnlineSwitch" ).is(':checked')
-        $.get('{{ url_for('collbrowser.setoverride') }}', {
-          attr: 'sys::archive::keep_online',
-          collection: '{{ collection }}',
-          override: override,
-          value: selected
-        }, function(data) {
-           load_meta();
-           load_actions();
-        });
-    }
-
-    function setMincopies(i) {
-        $.get('{{ url_for('collbrowser.setmeta') }}', {
-          collection: '{{ collection }}',
-          attr: 'sys::archive::min_copies',
-          value: i
-        }, function(data) {
-           load_meta();
-        });
-    }
-
-    function overrideMincopies() {
-        var copies = $(".min-copies:checked").val()
-        var override = $( "#overrideMincopiesSwitch" ).is(':checked')
-        $.get('{{ url_for('collbrowser.setoverride') }}', {
-          collection: '{{ collection }}',
-          override: override,
-          attr: 'sys::archive::min_copies',
-          value: copies
-        }, function(data) {
-           load_meta();
-           load_actions();
-        });
-    }
-
-    function keepDatasetLocal() {
-        var selected = $( "#keepLocalSwitch" ).is(':checked')
-        $.get('{{ url_for('collbrowser.setmeta') }}', {
-          collection: '{{ collection }}',
-          attr: 'sys::archive::local',
-          value: selected
-        }, function(data) {
-           load_meta()
-        });
-    }
-
-    function keepDatasetOnline() {
-        var selected = $( "#keepOnlineSwitch" ).is(':checked')
-        $.get('{{ url_for('collbrowser.setmeta') }}', {
-          collection: '{{ collection }}',
-          attr: 'sys::archive::keep_online',
-          value: selected
-        }, function(data) {
-           load_meta()
-        });
-    }
-
     function setCollectionValidity() {
       var selected = $( "#overrideValidity" ).is(':checked')
       $.get('{{ url_for('collbrowser.setoverride') }}', {
@@ -171,6 +97,7 @@ $('.action-tabs').on('shown.bs.tab', function(event){
   })
   .done(function(data) {
     $(activetab).html(data)
+    $('a[href="' + activeSettingsTab + '"]').tab('show')
   })
   .fail(function(){
     $(activetab).html('<CENTER>Error retrieving content</CENTER>')

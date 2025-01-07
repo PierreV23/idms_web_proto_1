@@ -692,3 +692,15 @@ ul {
 .header-right {
   font-size: 0.8rem;
 }
+
+.green {
+  color: green;
+}
+
+.red {
+  color: red;
+}
+
+.narrow {
+  max-width: 75px;
+}
