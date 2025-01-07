@@ -1,6 +1,6 @@
 <div class="container h-100">
   <div class="row h-100">
-    <div class="col-3 h-100">
+    <div class="col-3 h-100 autoscroll-y">
       <ul class="nav flex-column">
         <li class="nav-item">
           <a class="nav-link active scrollme" aria-current="page" href="#archive_heading">Archive</a>
@@ -10,9 +10,12 @@
         </li>
         <li class="nav-item">
           <a class="nav-link scrollme" href="#online_heading">Online</a>
-        </li>        
+        </li>
         <li class="nav-item">
           <a class="nav-link scrollme" href="#copies_heading">Copies</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link scrollme" href="#retention_heading">Retention</a>
         </li>
         <li class="nav-item">
           <a class="nav-link scrollme" href="#rules_heading">Rules</a>
@@ -25,21 +28,21 @@
       <form>
         <h4 id="archive_heading">Archiving</h4>
         <div class="form-group">
-          <div class="col-sm-4 custom-control custom-switch vertical-down">
+          <div class="custom-control custom-switch vertical-down">
             <input type="checkbox" class="custom-control-input" onChange="enableArchive()" value="true"
               id="enableArchiveSwitch" {% if coll_state.enabled=='true' %}checked{% endif %}>
             <label class="custom-control-label" for="enableArchiveSwitch">Enable archiving</label>
           </div>
           <hr>
           <h4 id="location_heading">Storage location</h4>
-          <div class="col-sm-4 custom-control custom-switch vertical-down">
+          <div class="custom-control custom-switch vertical-down">
             <input type="checkbox" class="custom-control-input" onChange="keepDatasetLocal()" value="true"
               id="keepLocalSwitch" {% if coll_state.keep_local[0]=='true' %}checked{% endif %} {% if
               coll_state.keep_local[2]==False %}disabled{% endif %}>
-            <label class="custom-control-label" for="keepLocalSwitch">keep on local storage</label>
+            <label class="custom-control-label" for="keepLocalSwitch">Keep on local storage</label>
           </div>
 
-          <div class="col-sm-4 custom-control custom-switch vertical-down">
+          <div class="custom-control custom-switch vertical-down">
             <input type="checkbox" class="custom-control-input" onChange="overrideDatasetLocal()" value="true"
               id="overrideLocalSwitch" {% if coll_state.keep_local[2]==True %}checked{% endif %}>
             <label class="custom-control-label" for="overrideLocalSwitch">Override inheritance</label>
@@ -51,14 +54,14 @@
           </label>
           <hr>
           <h4 id="online_heading">Online copies</h4>
-          <div class="col-sm-4 custom-control custom-switch vertical-down">
+          <div class="custom-control custom-switch vertical-down">
             <input type="checkbox" class="custom-control-input" onChange="keepDatasetOnline()" value="true"
               id="keepOnlineSwitch" {% if coll_state.keep_online[0]=='true' %}checked{% endif %} {% if
               coll_state.keep_online[2]==False %}disabled{% endif %}>
-            <label class="custom-control-label" for="keepOnlineSwitch">keep online</label>
+            <label class="custom-control-label" for="keepOnlineSwitch">Keep online</label>
           </div>
 
-          <div class="col-sm-4 custom-control custom-switch vertical-down">
+          <div class="custom-control custom-switch vertical-down">
             <input type="checkbox" class="custom-control-input" onChange="overrideDatasetOnline()" value="true"
               id="overrideOnlineSwitch" {% if coll_state.keep_online[2]==True %}checked{% endif %}>
             <label class="custom-control-label" for="overrideOnlineSwitch">Override inheritance</label>
@@ -84,7 +87,7 @@
           {% endfor %}
           <label class="col-form-label" for="inlineRadio4">copies to store</label>
 
-          <div class="col-sm-4 custom-control custom-switch vertical-down">
+          <div class="custom-control custom-switch vertical-down">
             <input type="checkbox" class="custom-control-input" onChange="overrideMincopies()" value="true"
               id="overrideMincopiesSwitch" {% if coll_state.min_copies[2]==True %}checked{% endif %}>
             <label class="custom-control-label" for="overrideMincopiesSwitch">Override inheritance</label>
@@ -96,6 +99,28 @@
           </label>
         </div>
       </form>
+
+      <hr>
+      <h4 id="retention_heading">Retention times</h4>
+      <form>
+        <div>
+          <label class="custom-control-label" for="retentionCreate">Keep online after creation</label>
+          <input type="number" class="" onChange="setCreateRetention()"
+            id="retentionCreate" value="{{ coll_state.create_retention[0] | int }}"
+            {% if coll_state.create_retention[2]==False %}disabled{% endif %}>
+        </div>
+        <div class="col-sm-4 custom-control custom-switch vertical-down">
+          <input type="checkbox" class="custom-control-input" onChange="overrideretentionCreate()" value="true"
+            id="overrideCreateRetentionSwitch" {% if coll_state.create_retention[2]==True %}checked{% endif %}>
+          <label class="custom-control-label" for="overrideCreateRetentionSwitch">Override inheritance</label>
+        </div>
+        <label class="col-form-label">
+          {% if not coll_state.create_retention[2] %}
+          Set from: {{ coll_state.create_retention[1].htmlstring | safe }}
+          {% endif %}
+        </label>
+      </form>
+
       <hr>
       <h4 id="rules_heading">iRODS Rules</h4>
 
@@ -136,22 +161,71 @@
       attr: 'sys::rules::object_ids',
       value: selected
     }, function (data) {
-      load_meta()
+      load_meta();
+      load_actions();
     });
   }
 
   function overrideSetObjectIDS() {
-    var selected = $("#setObjectIDSSwitch").is(':checked')
+    var selected = $("#retentionCreate").is(':checked')
     var override = $("#overrideObjectIDSSwitch").is(':checked')
     $.get('{{ url_for('collbrowser.setoverride') }}', {
       attr: 'sys::rules::object_ids',
       collection: collection,
       override: override,
-      value: selected
+      value: selected,
+      succes: function (data) {
+        load_meta();
+      },
+      failure: function (data) {
+        load_actions();
+      }
+    });
+  }
+
+  function setCreateRetention() {
+    var retention = $("#retentionCreate").val()
+    $.get('{{ url_for('collbrowser.setmeta') }}', {
+      collection: collection,
+      attr: 'sys::archive::create_retention',
+      value: retention
+    }, function (data) {
+      load_meta()
+    });
+  }
+
+  function overrideretentionCreate() {
+    var retention = $("#retentionCreate").val()
+    var override = $("#overrideCreateRetentionSwitch").is(':checked')
+    $.get('{{ url_for('collbrowser.setoverride') }}', {
+      attr: 'sys::archive::create_retention',
+      collection: collection,
+      override: override,
+      value: retention
     }, function (data) {
       load_meta();
       load_actions();
     });
   }
+
+  function enableArchive() {
+      var selected = $( "#enableArchiveSwitch" ).is(':checked')
+      if (selected == true) {
+        $.get('{{ url_for("collbrowser.rmmeta") }}', {
+          collection: collection,
+          attr: "sys::archive::enable"
+        }, function(data) {
+            load_meta()
+        });
+      } else {
+        $.get('{{ url_for("collbrowser.setmeta") }}', {
+          collection: collection,
+          attr: "sys::archive::enable",
+          value: selected
+        }, function(data) {
+            load_meta()
+        });
+      }
+    }
 
 </script>

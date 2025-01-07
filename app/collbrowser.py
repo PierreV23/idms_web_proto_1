@@ -69,6 +69,7 @@ ATTR_ARCHIVE_LOCAL = f'{ATTR_ARCHIVE_PREFIX}local'
 ATTR_PROCESSREQUEST = 'processrequest'
 ATTR_ARCHIVE_STATE = f'{ATTR_ARCHIVE_PREFIX}state'
 ATTR_ARCHIVE_MINCOPIES = f'{ATTR_ARCHIVE_PREFIX}min_copies'
+ATTR_ARCHIVE_CREATERETENTION = f'{ATTR_ARCHIVE_PREFIX}create_retention'
 
 ATTR_RULES_OBJECTIDS = 'sys::rules::object_ids'
 
@@ -332,9 +333,13 @@ class CollectionState():
         return getmetatree(self.collection, ATTR_ARCHIVE_MINCOPIES, 2)
     
     @cached_property
-    def object_ids(self):
-        return getmetatree(self.collection, ATTR_RULES_OBJECTIDS, 2)
+    def create_retention(self):
+        return getmetatree(self.collection, ATTR_ARCHIVE_CREATERETENTION, 24)        
     
+    @cached_property
+    def object_ids(self):
+        return getmetatree(self.collection, ATTR_RULES_OBJECTIDS, False)
+
     @property
     def myprocessgroupguid(self):
         return self._meta(ATTR_RUNSHEET_PROCESSGROUPGUID, "")

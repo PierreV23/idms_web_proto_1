@@ -125,26 +125,6 @@
         });
     }
 
-    function enableArchive() {
-      var selected = $( "#enableArchiveSwitch" ).is(':checked')
-      if (selected == true) {
-        $.get('{{ url_for("collbrowser.rmmeta") }}', {
-          collection: '{{ collection }}',
-          attr: "sys::archive::enable"
-        }, function(data) {
-            load_meta()
-        });
-      } else {
-        $.get('{{ url_for("collbrowser.setmeta") }}', {
-          collection: '{{ collection }}',
-          attr: "sys::archive::enable",
-          value: selected
-        }, function(data) {
-            load_meta()
-        });
-      }
-    }
-
     function setCollectionValidity() {
       var selected = $( "#overrideValidity" ).is(':checked')
       $.get('{{ url_for('collbrowser.setoverride') }}', {

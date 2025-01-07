@@ -314,6 +314,11 @@ ul {
   overflow-y: auto;
 }
 
+.autoscroll-y {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
 .graph-height {
   min-height: 27vh;
   max-height: 27vh;
