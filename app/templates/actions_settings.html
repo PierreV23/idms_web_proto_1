@@ -30,44 +30,44 @@
 <td>{{ data[1].htmlshort | safe }}</td>
 {% endif %}
 {% endmacro %}
-
-<table class="table table-sm">
-  <thead>
+<div class="scrollbar-y">
+  <table class="table table-sm">
+    <thead>
+      <tr>
+        <th>Setting</th>
+        <th>Value</th>
+        <th>Inherit</th>
+        <th>From</th>
+      </tr>
+    </thead>
     <tr>
-      <th>Setting</th>
-      <th>Value</th>
-      <th>Inherit</th>
-      <th>From</th>
+      <th>Archiving</th>
+      <td class="archive-enable" data-value={{ coll_state.enabled }}>{% if coll_state.enabled=='true' %}<i
+          class="fa-solid fa-check green"></i>{% else %}<i class="fa-solid fa-xmark red"></i>{% endif %}</td>
+      <td>N.A.</td>
     </tr>
-  </thead>
-  <tr>
-    <th>Archiving</th>
-    <td class="archive-enable" data-value={{ coll_state.enabled }}>{% if coll_state.enabled=='true' %}<i
-        class="fa-solid fa-check green"></i>{% else %}<i class="fa-solid fa-xmark red"></i>{% endif %}</td>
-    <td>N.A.</td>
-  </tr>
-  <tr>
-    <th>Store locally</th>
-    {{ override_checkbox(coll_state.keep_local, "sys::archive::local") }}
-  </tr>
-  <tr>
-    <th>Keep online</th>
-    {{ override_checkbox(coll_state.keep_online, "sys::archive::keep_online") }}
-  </tr>
-  <tr>
-    <th>Copies stored</th>
-    {{ override_number("min_copies", coll_state.min_copies, "sys::archive::min_copies") }}
-  </tr>
-  <tr>
-    <th>Retention period</th>
-    {{ override_number("create_retention", coll_state.create_retention, "sys::archive::create_retention") }}
-  </tr>
-  <tr>
-    <th>Generate object_ids</th>
-    {{ override_checkbox(coll_state.object_ids, "sys::rules::object_ids") }}
-  </tr>
-</table>
-
+    <tr>
+      <th>Store locally</th>
+      {{ override_checkbox(coll_state.keep_local, "sys::archive::local") }}
+    </tr>
+    <tr>
+      <th>Keep online</th>
+      {{ override_checkbox(coll_state.keep_online, "sys::archive::keep_online") }}
+    </tr>
+    <tr>
+      <th>Copies stored</th>
+      {{ override_number("min_copies", coll_state.min_copies, "sys::archive::min_copies") }}
+    </tr>
+    <tr>
+      <th>Retention period</th>
+      {{ override_number("create_retention", coll_state.create_retention, "sys::archive::create_retention") }}
+    </tr>
+    <tr>
+      <th>Generate object_ids</th>
+      {{ override_checkbox(coll_state.object_ids, "sys::rules::object_ids") }}
+    </tr>
+  </table>
+</div>
 <script>
 
   $('a[data-toggle="tab"]').on('click', function (event) {
