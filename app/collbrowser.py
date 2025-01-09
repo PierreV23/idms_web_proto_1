@@ -148,6 +148,17 @@ def _getmetatree(irods_coll, attr, base, default=None):
         return _getmetatree(parent, attr, base, default=None)
     return default, None, False
 
+@bp.route('_metatree')
+def metatree():
+    attr = request.args.get('attr')
+    collection = request.args.get('collection')
+    value, source, override = getmetatree(collection, attr)
+    if source:
+        source = source.htmlshort
+    else:
+        source = ''
+    return { 'value': value, 'source': source, 'override': override}, 200    
+
 @bp.route('_meta')
 def coll_meta():
     path = request.args.get('path','/', type=str)
@@ -206,7 +217,8 @@ def setmeta():
     collection = request.args.get('collection')
     if attr and value and collection:
         iqry.scollmetaval(collection, attr, value)
-    return 'DONE', 200
+    value = iqry.qcollmetaval(collection, attr)
+    return { 'value': value, 'result': 'DONE'}, 200
 
 @bp.route('_rmmeta', methods=['GET'])
 def rmmeta():
@@ -234,10 +246,12 @@ def setoverride():
             else:
                 iqry.scollmetaval(collection, attr, value)
         except CAT_NO_ACCESS_PERMISSION:
-            return 'ACCESS DENIED', 401
+            value = iqry.qcollmetaval(collection, attr)
+            return { 'value': value , 'result': 'ACCESS DENIED'}, 401
     # Invalidate the cache for the next call to the graph function
     collections_changed(path=collection)
-    return 'DONE', 200
+    value = iqry.qcollmetaval(collection, attr)
+    return { 'value': value , 'result': 'DONE'}, 200
 
 @cache.memoize(timeout=3600, make_name=dep_zone)
 def tiers():

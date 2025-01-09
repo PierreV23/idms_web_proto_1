@@ -1,34 +1,34 @@
-{% macro override_checkbox(data, attr) %}
-{% if data[2]==False %}
-<td>{% if data[0]=='true' %}<i class="fa-solid fa-check"></i>{% else %}<i class="fa-solid fa-xmark"></i>{%
-  endif %}</td>
-{% else %}
-<td class="data-toggle" data-attr="{{ attr }}" data-value={{ data[0] }}>{% if data[0]=='true'
-  %}<i class="fa-solid fa-check green"></i>{% else %}<i class="fa-solid fa-xmark red"></i>{% endif %}</td>
-{% endif %}
-<td class="data-override" data-attr="{{ attr }}" data-value={{ data[0] }} data-override={{ data[2] }}>{% if
-  data[2]==False
-  %}<i class="fa-solid fa-check"></i>{% endif %}</td>
-{% if data[2]==False %}
-<td>{{ data[1].htmlshort | safe }}</td>
-{% endif %}
+{% macro override_checkbox(name, data, attr) %}
+<td>
+  <div class="custom-control custom-switch">
+    <input class="data-toggle custom-control-input" id="{{ name }}" type="checkbox" data-attr="{{ attr }}" {% if
+      data[0]=='true' %}checked{% endif %} {% if data[2]==False %}disabled{% endif %}>
+    <label class="custom-control-label" for="{{ name }}"></label>
+  </div>
+</td>
+<td>
+  <div class="custom-control custom-switch">
+    <input class="data-override-toggle custom-control-input" id="override_{{ name }}" type="checkbox"
+      data-attr="{{ attr }}" data-setting="{{ name }}" {% if data[2]==True %}checked{% endif %}>
+    <label class="custom-control-label" for="override_{{ name }}"></label>
+  </div>
+</td>
+<td id="base_{{ name }}">{% if data[2] == False %}{{ data[1].htmlshort | safe }}{% endif %}</td>
 {% endmacro %}
 
 {% macro override_number(name, data, attr) %}
-{% if data[2]==False %}
-<td>{{ data[0] }}</td>
-{% else %}
-<td class="data-number" data-attr="{{ attr }}">
-  <input id="{{ name }}" class="form-control narrow" type="number" value="{{ data[0] }}">
+<td>
+  <input id="{{ name }}" class="form-control narrow data-number" type="number" data-attr="{{ attr }}"
+    value="{{ data[0] }}" {% if data[2]==False %} disabled {% endif %}>
 </td>
-{% endif %}
-<td class="data-override" data-attr="{{ attr }}" data-field={{ name }} data-override={{ data[2] }}
-  data-value="{{ data[0] }}">{% if
-  data[2]==False
-  %}<i class="fa-solid fa-check"></i>{% endif %}</td>
-{% if data[2]==False %}
-<td>{{ data[1].htmlshort | safe }}</td>
-{% endif %}
+<td>
+  <div class="custom-control custom-switch">
+    <input class="data-override-number custom-control-input" id="override_{{ name }}" type="checkbox"
+      data-attr="{{ attr }}" data-setting="{{ name }}" {% if data[2]==True %}checked{% endif %}>
+    <label class="custom-control-label" for="override_{{ name }}"></label>
+  </div>
+</td>
+<td id="base_{{ name }}">{% if data[2] == False %}{{ data[1].htmlshort | safe }}{% endif %}</td>
 {% endmacro %}
 <div class="scrollbar-y">
   <table class="table table-sm">
@@ -36,7 +36,7 @@
       <tr>
         <th>Setting</th>
         <th>Value</th>
-        <th>Inherit</th>
+        <th>Override</th>
         <th>From</th>
       </tr>
     </thead>
@@ -48,11 +48,11 @@
     </tr>
     <tr>
       <th>Store locally</th>
-      {{ override_checkbox(coll_state.keep_local, "sys::archive::local") }}
+      {{ override_checkbox("keep_local", coll_state.keep_local, "sys::archive::local") }}
     </tr>
     <tr>
       <th>Keep online</th>
-      {{ override_checkbox(coll_state.keep_online, "sys::archive::keep_online") }}
+      {{ override_checkbox("keep_online", coll_state.keep_online, "sys::archive::keep_online") }}
     </tr>
     <tr>
       <th>Copies stored</th>
@@ -64,58 +64,103 @@
     </tr>
     <tr>
       <th>Generate object_ids</th>
-      {{ override_checkbox(coll_state.object_ids, "sys::rules::object_ids") }}
+      {{ override_checkbox("object_ids", coll_state.object_ids, "sys::rules::object_ids") }}
     </tr>
   </table>
 </div>
 <script>
 
+  function set_switch(switch_id) {
+    $.get('{{ url_for("collbrowser.metatree") }}', {
+      collection: collection,
+      attr: $('#' + switch_id).data('attr')
+    }, function (data) {
+      $('#override_' + switch_id).prop('checked', data.override);
+      $('#' + switch_id).prop('disabled', !data.override);
+      $('#' + switch_id).prop('checked', data.value == 'true');
+      $('#base_' + switch_id).html(data.override ? '' : data.source)
+    })
+  }
+
+  function set_number(switch_id) {
+    $.get('{{ url_for("collbrowser.metatree") }}', {
+      collection: collection,
+      attr: $('#' + switch_id).data('attr')
+    }, function (data) {
+      $('#override_' + switch_id).prop('checked', data.override);
+      $('#' + switch_id).prop('disabled', !data.override);
+      $('#' + switch_id).val(data.value ?? 0);
+      $('#base_' + switch_id).html(data.override ? '' : data.source)
+    })
+  }
+
   $('a[data-toggle="tab"]').on('click', function (event) {
     activeSettingsTab = event.target.getAttribute('href')
   })
 
-  $('td.data-toggle').on('click', function () {
+  $('input.data-toggle').on('change', function () {
     attr = $(this).data('attr')
-    val = $(this).data('value') == 'true'
-    $.get("{{ url_for('collbrowser.setmeta') }}", {
-      attr: attr,
-      collection: collection,
-      value: !val
-    }, function () {
-      load_meta();
-      load_actions();
-    })
-  })
-
-  $('td.data-number').on('change', function () {
-    attr = $(this).data('attr')
-    val = $(this).find('input').val()
-    console.log(val)
+    val = $(this).is(':checked') ? 'true' : 'false'
+    switch_id = $(this).attr('id')
     $.get("{{ url_for('collbrowser.setmeta') }}", {
       attr: attr,
       collection: collection,
       value: val
     }, function () {
       load_meta();
-      load_actions();
+      set_switch(switch_id)
+    })
+  })
+
+  $('input.data-override-toggle').on('change', function () {
+    attr = $(this).data('attr')
+    override = $(this).is(':checked') ? 'true' : 'false'
+    value_selector = $(this).data('setting')
+    val = $('#' + value_selector).is(':checked') ? 'true' : 'false'
+    $.get("{{ url_for('collbrowser.setoverride') }}", {
+      attr: attr,
+      collection: collection,
+      override: override,
+      value: val
+    }, function () {
+      load_meta();
+      set_switch(value_selector)
+    })
+  })
+
+  $('input.data-number').on('change', function () {
+    attr = $(this).data('attr')
+    val = $(this).val()
+    switch_id = $(this).attr('id')
+    $.get("{{ url_for('collbrowser.setmeta') }}", {
+      attr: attr,
+      collection: collection,
+      value: val
+    }, function () {
+      load_meta();
+      set_number(switch_id);
     })
   })
 
 
-  $('td.data-override').on('click', function () {
+  $('input.data-override-number').on('change', function () {
     attr = $(this).data('attr')
-    override = $(this).data('override') == 'True'
-    value = $(this).data('value') == 'true'
+    override = $(this).is(':checked') ? 'true' : 'false'
+    value_selector = $(this).data('setting')
+    val = $('#' + value_selector).val() ?? 1
+    if (val == '') {
+      val = 1
+    }
     $.get("{{ url_for('collbrowser.setoverride') }}", {
       attr: attr,
       collection: collection,
-      override: !override,
-      value: value
-    }, function (data) {
+      override: override,
+      value: val
+    }, function () {
       load_meta();
-      load_actions();
+      set_number(value_selector)
     })
-  });
+  })
 
 
   $('.archive-enable').on('click', function () {
