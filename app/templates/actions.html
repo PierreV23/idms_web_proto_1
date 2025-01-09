@@ -91,13 +91,13 @@
 
 $('.action-tabs').on('shown.bs.tab', function(event){
   activetab = event.target.getAttribute('href')
+  localStorage.setItem('activetab', activetab)
   $.get('{{ url_for("collbrowser.actions_tabs") }}', {
     collection: '{{ collection }}',
     tabname: activetab.substring(1)
   })
   .done(function(data) {
     $(activetab).html(data)
-    $('a[href="' + activeSettingsTab + '"]').tab('show')
   })
   .fail(function(){
     $(activetab).html('<CENTER>Error retrieving content</CENTER>')

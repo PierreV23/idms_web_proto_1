@@ -28,9 +28,11 @@ menuname='collectionbrowser'
   var graph_simplify = "{{ graph_simplify }}"
   var sortkey = "";
   var reverse = "";
-  var activetab = "#archive";
   var selected_object = "";
   var waiting = '<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>'
+  activetab = localStorage.getItem('activetab')
+  activetab ??= "#archive"
+  
 
   var myDefaultWhiteList = $.fn.tooltip.Constructor.Default.whiteList
   $(function() {
