@@ -70,6 +70,7 @@ ATTR_PROCESSREQUEST = 'processrequest'
 ATTR_ARCHIVE_STATE = f'{ATTR_ARCHIVE_PREFIX}state'
 ATTR_ARCHIVE_MINCOPIES = f'{ATTR_ARCHIVE_PREFIX}min_copies'
 ATTR_ARCHIVE_CREATERETENTION = f'{ATTR_ARCHIVE_PREFIX}create_retention'
+ATTR_ARCHIVE_LASTUSERETENTION = f'{ATTR_ARCHIVE_PREFIX}lastuse_retention'
 
 ATTR_RULES_OBJECTIDS = 'sys::rules::object_ids'
 
@@ -349,7 +350,11 @@ class CollectionState():
     @cached_property
     def create_retention(self):
         return getmetatree(self.collection, ATTR_ARCHIVE_CREATERETENTION, 24)        
-    
+
+    @cached_property
+    def lastuse_retention(self):
+        return getmetatree(self.collection, ATTR_ARCHIVE_LASTUSERETENTION, 24)     
+
     @cached_property
     def object_ids(self):
         return getmetatree(self.collection, ATTR_RULES_OBJECTIDS, False)

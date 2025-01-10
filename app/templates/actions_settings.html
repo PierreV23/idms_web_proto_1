@@ -30,7 +30,7 @@
 </td>
 <td id="base_{{ name }}">{% if data[2] == False %}{{ data[1].htmlshort | safe }}{% endif %}</td>
 {% endmacro %}
-<div class="scrollbar-y">
+<div class="scrollbar-y h-100">
   <table class="table table-sm">
     <thead>
       <tr>
@@ -55,17 +55,21 @@
       {{ override_checkbox("keep_online", coll_state.keep_online, "sys::archive::keep_online") }}
     </tr>
     <tr>
+      <th>Generate object_ids</th>
+      {{ override_checkbox("object_ids", coll_state.object_ids, "sys::rules::object_ids") }}
+    </tr>
+    <tr>
       <th>Copies stored</th>
       {{ override_number("min_copies", coll_state.min_copies, "sys::archive::min_copies") }}
     </tr>
     <tr>
-      <th>Retention period</th>
+      <th>Create retention (d)</th>
       {{ override_number("create_retention", coll_state.create_retention, "sys::archive::create_retention") }}
     </tr>
     <tr>
-      <th>Generate object_ids</th>
-      {{ override_checkbox("object_ids", coll_state.object_ids, "sys::rules::object_ids") }}
-    </tr>
+      <th>Last use retention (d)</th>
+      {{ override_number("lastuse_retention", coll_state.lastuse_retention, "sys::archive::lastuse_retention") }}
+    </tr>    
   </table>
 </div>
 <script>
