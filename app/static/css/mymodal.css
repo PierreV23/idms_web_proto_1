@@ -323,7 +323,7 @@ ul {
 .h30 {
   min-height: 28vh;
   max-height: 28vh;
-  overflow-y: sroll;
+  overflow-y: scroll;
 }
 
 /* .coll-meta {
