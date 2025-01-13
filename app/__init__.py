@@ -147,6 +147,11 @@ def about():
         irods_version = '.'.join(map(str, session.server_version))
     return render_template('about.html', irods_version=irods_version, ngsweb_version=ngsweb_version, ngsweb_branch=ngsweb_branch)
 
+
+@app.route('/settings')
+def settings():
+    return render_template('settings.html')
+
 REQUESTS_METHODS = {
     'GET':   requests.get,
     'PUT':   requests.put,

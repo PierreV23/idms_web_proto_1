@@ -157,7 +157,8 @@ def coll_meta():
         name = coll_metadata[CollectionMeta.name]
         value = coll_metadata[CollectionMeta.value]
         units = coll_metadata[CollectionMeta.units]
-        coll_avu.append(AVU2data(name, value, units))
+        if current_user.settings.get('sysmeta', 'true') == "true" or not name.startswith('sys::'):
+            coll_avu.append(AVU2data(name, value, units))
 
 # Query for object metadata
     object_avu = None
@@ -173,7 +174,8 @@ def coll_meta():
                 name = object_metadata[DataObjectMeta.name]
                 value = object_metadata[DataObjectMeta.value]
                 units = object_metadata[DataObjectMeta.units]
-                object_avu.append(AVU2data(name, value, units))
+                if current_user.settings.get('sysmeta', 'true') == "true" or not name.startswith('sys::'):        
+                    object_avu.append(AVU2data(name, value, units))
     return render_template('metadata.html', coll_avu=coll_avu, object_avu=object_avu)
 
 @bp.route('_setKeepOnlineUntil', methods=['GET'])

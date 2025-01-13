@@ -115,7 +115,7 @@
 
     <!-- Sidebar -->
 
-    <div class="sidebar" style="height:calc(100% - (11.5rem + 2px))"><!--height adjusted for sidebar-bottom-->
+    <div class="sidebar" style="height:calc(100% - (14.5rem + 2px))"><!--height adjusted for sidebar-bottom-->
       <!-- Sidebar user panel (optional) -->
       <div class="user-panel mt-3 pb-3 mb-3 d-flex">
         <!-- <div class="image">
@@ -377,6 +377,12 @@
               <p>Home</p>
             </a>
           </li>
+          <li class="nav-item">
+            <a href="{{ url_for('settings') }}" data-menuname="settings" class="nav-link">
+              <i class="fas fa-gear nav-icon"></i>
+              <p>Settings</p>
+            </a>
+          </li>          
           <li class="nav-item">
             <a href="{{ url_for('about') }}" data-menuname="about" class="nav-link">
               <i class="fas fa-info-circle nav-icon"></i>
