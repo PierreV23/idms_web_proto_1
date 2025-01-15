@@ -25,11 +25,12 @@
 
     </table>
     <HR>
+    {% if can_modify | default(true) %}
     <input id="{{ usertype }}-username-input" type="text">
     <button class="user-add btn-primary">Add user</button>
     <HR>
     <button class="user-delete btn-danger" disabled>Delete Selected</button>
-
+    {% endif %}
     <script>
 
         $('.userTable').bootstrapTable({
