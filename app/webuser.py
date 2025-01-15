@@ -160,11 +160,8 @@ class WebUser(UserMixin):
             if self._is_authenticated:
                 try:
                     with irods_manager.session() as session:
-                        groups = session.query(UserGroup).filter(
-                            Criterion('=', User.name, self.username)).filter(
-                                Criterion('=', UserGroup.name, 'rodsadmin'))
-                        for q in groups:
-                            self._is_admin = True
+                        user = session.users.get(self.username)
+                        self._is_admin = user.type == 'rodsadmin'
                 except:
                     self._is_admin = None
                     return False
