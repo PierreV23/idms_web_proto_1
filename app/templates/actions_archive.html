@@ -1,3 +1,5 @@
+<div class="flash_bar bg-warning" id="notify-resource" hidden><b>Some resources are unavailable:</b><div id="resource-list"></div></div>
+
 <h4>
     {% if coll_state.status == 'OFFLINE' %}
     <span class="badge badge-danger">OFFLINE</span>
@@ -47,3 +49,20 @@
 Dataset will be {% if coll_state.is_offline %}brought{% else %}kept{% endif %} online until {{
 coll_state.keep_online_till }}
 {% endif %}
+
+<script>
+
+$.get('{{ url_for("admin.resource_data_cached") }}', function(data) {
+    unavailable_resources = []
+    for (const [key, value] of Object.entries(data)) {
+        if (value.group && (value.available != "true" || value.enabled != "true")) {
+            unavailable_resources.push(key)
+        }
+    }
+    if (unavailable_resources.length > 0) {
+        $('#notify-resource').attr('hidden', false)
+        $('#resource-list').html(unavailable_resources.join(','))
+    }
+})
+
+</script>
