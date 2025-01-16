@@ -195,6 +195,51 @@ def setKeepOnlineUntil():
     iqry.scollmetaval(collection, ATTR_ARCHIVE_KEEP_ONLINE_TILL, str(int(datetime.timestamp(keepOnlineUntil))), 'timestamp')
     return('DONE')
 
+@bp.route('_upstream', methods=['GET'])
+def upstream():
+    types = {
+        'system': 'sys::pipeline::',
+        'user': 'user::pipeline::'
+    }
+    collection = request.args.get('collection')
+    parents = []
+    for kind, prefix in types.items():
+        inputs = iqry.qcollmetavals(collection, f'{prefix}input_collection')
+        for i in inputs:
+            parents.append({
+                'collection': i[CollectionMeta.value],
+                'colllink': datafield('collection', i[CollectionMeta.value], 'irods_collection').htmlshort,
+                    'meta': {
+                        'attr': f'{prefix}input_collection',
+                        'value': i[CollectionMeta.value]
+                    },                
+                'type': kind
+            })
+    for kind, prefix in types.items():
+        inputs = iqry.qcollmetavals(collection, f'{prefix}input_collection_id')
+        for i in inputs:
+            c = iqry.qcollbymeta('sys::dataset_id', i[CollectionMeta.value])
+            if len(c) == 1:
+                parents.append({
+                    'collection': c[0][Collection.name],
+                    'colllink': datafield('collection', c[0][Collection.name], 'irods_collection').htmlshort,
+                    'meta': {
+                        'attr': f'{prefix}input_collection_id',
+                        'value': i[CollectionMeta.value]
+                    },
+                    'type': kind
+                })
+    return jsonify(parents)
+
+@bp.route('_addmeta', methods=['GET'])
+def addmeta():
+    attr = request.args.get('attr')
+    value = request.args.get('value')
+    collection = request.args.get('collection')
+    if attr and value and collection:
+        iqry.addcollmetaval(collection, attr, value)
+    collections_changed()    
+    return 'DONE', 200
 
 @bp.route('_setmeta', methods=['GET'])
 def setmeta():
@@ -203,6 +248,7 @@ def setmeta():
     collection = request.args.get('collection')
     if attr and value and collection:
         iqry.scollmetaval(collection, attr, value)
+    collections_changed()      
     return 'DONE', 200
 
 @bp.route('_rmmeta', methods=['GET'])
@@ -212,6 +258,7 @@ def rmmeta():
     collection = request.args.get('collection')
     if attr and collection:
         iqry.delcollmeta(collection, attr, value)
+    collections_changed() 
     return 'DONE', 200
 
 
@@ -395,7 +442,7 @@ def actions_tabs():
     collection = request.args.get('collection', type=str)
     tabname = request.args.get('tabname', type=str)
     coll_state = CollectionState(collection)
-    TABS = ['archive', 'storage', 'pipeline', 'validity']
+    TABS = ['archive', 'storage', 'pipeline', 'validity', 'provenance']
     if tabname in TABS:
         return render_template(f'actions_{tabname}.html', coll_state=coll_state)
     else:
