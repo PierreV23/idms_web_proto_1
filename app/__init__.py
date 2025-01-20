@@ -19,7 +19,7 @@ from Crypto.PublicKey import RSA
 
 from . import auth, collbrowser, jobs, docviewer, messages
 from . import projects, cluster, admin, reports, userinfo, referencedatasets
-from . import ngsruns, upload, flaskcache
+from . import ngsruns, upload, flaskcache, search
 from . import messages, oldjobs
 from .ngsruns import db as ngsruns_db, NGSRunsDBUnavailableException
 from .jobs import db as jobs_db, JobsDBUnavailableException
@@ -114,6 +114,7 @@ app.register_blueprint(upload.bp)
 app.register_blueprint(userinfo.bp)
 app.register_blueprint(oldjobs.bp)
 app.register_blueprint(messages.bp)
+app.register_blueprint(search.bp)
 
 
 flaskcache.init(app)
@@ -146,6 +147,11 @@ def about():
     with irods_manager.session() as session:
         irods_version = '.'.join(map(str, session.server_version))
     return render_template('about.html', irods_version=irods_version, ngsweb_version=ngsweb_version, ngsweb_branch=ngsweb_branch)
+
+
+@app.route('/settings')
+def settings():
+    return render_template('settings.html')
 
 REQUESTS_METHODS = {
     'GET':   requests.get,

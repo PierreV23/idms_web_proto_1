@@ -72,7 +72,7 @@ IRODS_ENVS = {
         ]
     },
     'Acceptatie':   {
-        'host': 'rivm-bioir-l01a.rivm.ssc-campus.nl',
+        'host': 'rivm-bioir-l05a.rivm.ssc-campus.nl',
         'zone': 'rivmZone_acc_01',
         'default': False,
         'ngsruns_db': 'postgresql://<user>:<pass>@<host>/ICAT',
@@ -86,7 +86,7 @@ IRODS_ENVS = {
         ]
     },
     'Test_01':   {
-        'host': 'rivm-bioir-l01t.rivm.ssc-campus.nl',
+        'host': 'rivm-bioir-l04t.rivm.ssc-campus.nl',
         'zone': 'rivmZone_test_01',
         'default': False,
         'ngsruns_db': 'postgresql://<user>:<pass>@<host>/ICAT',
@@ -104,7 +104,7 @@ IRODS_ENVS = {
         'zone': 'milZone',
         'default': False,
         'features': [
-            
+
         ]
     }
 }

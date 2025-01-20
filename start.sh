@@ -10,4 +10,4 @@ export FLASK_APP=app
 PORT=5${UID: -3}
 echo RUN on $PORT
 flask --debug run --host=0.0.0.0 --port=$PORT --with-threads
-source deactivate
+conda deactivate
