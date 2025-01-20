@@ -1,0 +1,36 @@
+{% extends 'base2.html' %}
+
+{% block heading %}
+<H2>User settings</H2>
+{% endblock %}
+
+{%block menuname %}
+menuname='settings'
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <H3>Collection browser</H3>
+        <div class="form-group">
+            <div class="custom-control custom-switch form-check-inline">
+                <input class="custom-control-input usersetting" data-attr="sysmeta" type="checkbox" id="sysMeta"
+                    {% if current_user.settings.get("sysmeta", "true") == "true" %} checked {% endif %}>
+                <label class="custom-control-label col-form-label" for="sysMeta">Show sys metadata</label>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $('.usersetting').on('change', function () {
+        attr = $(this).data('attr')
+        value = $(this).is(':checked') ? 'true' : 'false'
+        $.post('{{ url_for("userinfo.usersetting") }}', {
+            attr: attr,
+            value: value
+        })
+    })
+
+</script>
+{% endblock %}
