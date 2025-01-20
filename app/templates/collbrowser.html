@@ -341,8 +341,10 @@ menuname='collectionbrowser'
 
 
   window.onpopstate = function (event) {
-    collection = event.state.coll;
-    set_path();
+    if (event.state && 'coll' in event.state) {
+      collection = event.state.coll;
+      set_path();
+    }
   }
 
 </script>

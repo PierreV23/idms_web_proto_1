@@ -328,7 +328,7 @@ ul {
 .h30 {
   min-height: 28vh;
   max-height: 28vh;
-  overflow-y: sroll;
+  overflow-y: scroll;
 }
 
 /* .coll-meta {
@@ -370,6 +370,19 @@ ul {
   padding-left: 1rem;
   margin: 0.5rem;
   margin-bottom: 0.5rem;
+}
+
+.small-bar {
+  /* border-style: solid; */
+  border-radius: 0.2rem;
+  box-shadow: 0 0 1px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.25);
+  /* 15 rgba(0, 0, 0, 0.137), 0 1px 3px rgba(0, 0, 0, 0.205) */
+  /* width: 100%; */
+  padding: 0.1rem;
+  padding-left: 0.2rem;
+  margin: 0rem;
+  margin-bottom: 0.5rem;
+  margin-right: 0;
 }
 
 .seqlist {
@@ -468,7 +481,7 @@ ul {
 .sidebar-bottom {
   position: absolute;
   bottom: 0px;
-  height: calc(8rem + 1px);
+  height: calc(11rem + 1px);
 }
 
 .nav-header {
@@ -703,4 +716,8 @@ ul {
 
 .narrow {
   max-width: 75px;
+
+.action-topbar {
+  margin-bottom: 2px;
+  overflow: auto;
 }

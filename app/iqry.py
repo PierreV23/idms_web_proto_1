@@ -73,6 +73,15 @@ def scollmetaval(coll, attr, value, unit=None):
         except CAT_NO_ACCESS_PERMISSION:
             u.metadata[attr] = new_avu
     flaskcache.cache.delete_memoized(qcollmeta, coll)
+    
+def addcollmetaval(coll, attr, value, unit=None):
+    if qcollmetaval(coll, attr) == value:
+        return
+    with irods_manager.session() as session:
+        u = session.collections.get(coll)
+        new_avu = iRODSMeta(attr, value, unit)
+        u.metadata.add(new_avu)
+    flaskcache.cache.delete_memoized(qcollmeta, coll)    
 
 def rmallcollmetaattr(coll, attr):
     with irods_manager.session() as session:
