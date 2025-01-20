@@ -354,17 +354,17 @@
       </nav>
       <div class="separator"></div>
       <nav>
+        <ul class="nav nav-pills nav-btns nav-sidebar nav-child-indent flex-column float-down" data-widget="treeview" role="menu"
+        data-accordion="false"  id="context_dependant_menu_list2">
+          {% block menubuttons %}
+          {% endblock %}
+        </ul>
+      </nav>      
+      <nav>
         <!-- CONTEXT_DEPENDANT MENU -->
         <ul class="nav nav-pills nav-sidebar nav-child-indent flex-column" data-widget="treeview" role="menu"
           data-accordion="false" id="context_dependant_menu_list1">
           {% block menuitems %}
-          {% endblock %}
-        </ul>
-      </nav>
-      <nav>
-        <ul class="nav nav-pills nav-btns nav-sidebar nav-child-indent flex-column float-down" data-widget="treeview"
-          role="menu" data-accordion="false" id="context_dependant_menu_list2">
-          {% block menubuttons %}
           {% endblock %}
         </ul>
       </nav>
