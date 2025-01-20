@@ -69,6 +69,10 @@ ATTR_ARCHIVE_LOCAL = f'{ATTR_ARCHIVE_PREFIX}local'
 ATTR_PROCESSREQUEST = 'processrequest'
 ATTR_ARCHIVE_STATE = f'{ATTR_ARCHIVE_PREFIX}state'
 ATTR_ARCHIVE_MINCOPIES = f'{ATTR_ARCHIVE_PREFIX}min_copies'
+ATTR_ARCHIVE_CREATERETENTION = f'{ATTR_ARCHIVE_PREFIX}create_retention'
+ATTR_ARCHIVE_LASTUSERETENTION = f'{ATTR_ARCHIVE_PREFIX}lastuse_retention'
+
+ATTR_RULES_OBJECTIDS = 'sys::rules::object_ids'
 
 
 COLL_KEY_MAP = {
@@ -143,7 +147,18 @@ def _getmetatree(irods_coll, attr, base, default=None):
     if irods_coll != '/':
         parent = os.path.dirname(irods_coll)
         return _getmetatree(parent, attr, base, default=None)
-    return default, None, True
+    return default, None, False
+
+@bp.route('_metatree')
+def metatree():
+    attr = request.args.get('attr')
+    collection = request.args.get('collection')
+    value, source, override = getmetatree(collection, attr)
+    if source:
+        source = source.htmlshort
+    else:
+        source = ''
+    return { 'value': value, 'source': source, 'override': override}, 200    
 
 @bp.route('_meta')
 def coll_meta():
@@ -250,8 +265,9 @@ def setmeta():
     collection = request.args.get('collection')
     if attr and value and collection:
         iqry.scollmetaval(collection, attr, value)
+    value = iqry.qcollmetaval(collection, attr)
     collections_changed()      
-    return 'DONE', 200
+    return { 'value': value, 'result': 'DONE'}, 200
 
 @bp.route('_rmmeta', methods=['GET'])
 def rmmeta():
@@ -280,10 +296,12 @@ def setoverride():
             else:
                 iqry.scollmetaval(collection, attr, value)
         except CAT_NO_ACCESS_PERMISSION:
-            return 'ACCESS DENIED', 401
+            value = iqry.qcollmetaval(collection, attr)
+            return { 'value': value , 'result': 'ACCESS DENIED'}, 401
     # Invalidate the cache for the next call to the graph function
     collections_changed(path=collection)
-    return 'DONE', 200
+    value = iqry.qcollmetaval(collection, attr)
+    return { 'value': value , 'result': 'DONE'}, 200
 
 @cache.memoize(timeout=3600, make_name=dep_zone)
 def tiers():
@@ -377,6 +395,18 @@ class CollectionState():
     @cached_property
     def min_copies(self):
         return getmetatree(self.collection, ATTR_ARCHIVE_MINCOPIES, 2)
+    
+    @cached_property
+    def create_retention(self):
+        return getmetatree(self.collection, ATTR_ARCHIVE_CREATERETENTION, 24)        
+
+    @cached_property
+    def lastuse_retention(self):
+        return getmetatree(self.collection, ATTR_ARCHIVE_LASTUSERETENTION, 24)     
+
+    @cached_property
+    def object_ids(self):
+        return getmetatree(self.collection, ATTR_RULES_OBJECTIDS, False)
 
     @property
     def myprocessgroupguid(self):
@@ -444,7 +474,7 @@ def actions_tabs():
     collection = request.args.get('collection', type=str)
     tabname = request.args.get('tabname', type=str)
     coll_state = CollectionState(collection)
-    TABS = ['archive', 'storage', 'pipeline', 'validity', 'provenance']
+    TABS = ['archive', 'settings', 'pipeline', 'validity', 'provenance']
     if tabname in TABS:
         return render_template(f'actions_{tabname}.html', coll_state=coll_state)
     else:
