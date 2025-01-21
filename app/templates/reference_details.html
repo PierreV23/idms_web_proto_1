@@ -43,6 +43,28 @@
       <label for="reference_synchronize_command_{{RD.name}}">Synchronize command (bash command)</label>
       <input type="text" class="form-control" name="synchronize_command" id="synchronize_command_{RD.name}}" placeholder="echo 'new data\n' >> ./new/dataset/data_file.txt" value="{{ RD.synchronize_command }}">
     </div>
+
+
+    <div class="form-group">
+      <label for="reference_activate_{{RD.name}}">activate/Deactivate {{RD.is_active}}</label>
+      <div>
+        {% if RD.is_active %}
+        <div class="btn-group">
+            <label class="btn btn-success">Enabled</label>
+            <label class="btn btn-secondary">
+                <a href="{{url_for('reference.deactivate_reference')}}?reference={{RD.name}}">Disable</a>
+            </label>
+        </div>
+        {% else %}
+        <div class="btn-group">
+            <label class="btn btn-secondary">
+                <a href="{{url_for('reference.activate_reference')}}?reference={{RD.name}}">Enable</a>
+            </label>
+            <label class="btn btn-danger">Disabled</label>
+        </div>
+        {% endif %}
+      </div>
+    </div>
   
     <button type="submit" class="btn btn-primary">Submit</button>
     <button type="button" class="btn btn-primary" data-href="/remove_reference?name={{RD.name}}" data-toggle="modal" data-target="#confirm-delete">
@@ -52,8 +74,8 @@
 </div>
 
 <!-- Versions -->
-<div class="tab-pane" id="versions" role="tabpanel" aria-labelledby="versions-tab">
-  <div id="versions-table"></div>
+<div class="tab-pane fullheight" id="versions" role="tabpanel" aria-labelledby="versions-tab">
+  <div class="h100" id="versions-table"></div>
 </div>
 
 <!-- ImportState -->
