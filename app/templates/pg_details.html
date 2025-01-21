@@ -265,9 +265,16 @@ function build_line( p_ref_data, default_version, versions, selected_version ) {
     if( default_version ) {
         defaultversionstr = default_version.version
     }
-    html = '<tr id="refdata-row-'+id +'"><th scope="row"></th><th>' + p_ref_data.referencedata.name + '<br>'
-    html += 'default:' + defaultversionstr
-    html += '</th>'
+    //alert(JSON.stringify(p_ref_data.label))
+    //alert(JSON.stringify(p_ref_data.referencedata))  // This are reference-data-entries, e.g. "ïs_active", we actually need 'slots'
+                                                       // as defined for the process 
+    //html = '<tr id="refdata-row-'+id +'"><th scope="row"></th><th>' + p_ref_data.referencedata.name + '<br>']
+    html = '<tr id="refdata-row-'+id +'"><th colspan=2>' + p_ref_data.label + '</th></tr>'
+    html += '<tr><td colspan=2>' + p_ref_data.referencedata.name + '</td></tr>'
+
+    html += '<tr><td>'
+    html += 'default:&nbsp;' + defaultversionstr
+    html += '</td>'
     html += '<td><select class="form-control form-control-sm" id="refDataSetVersion-' + id + '">'
     html += '    <option value="-2" '+ selOption1 +'>Default of process</option>'
     html += '    <option value="-1" '+ selOption2 +'>Latest (dynamic)</option>'
@@ -276,11 +283,10 @@ function build_line( p_ref_data, default_version, versions, selected_version ) {
         if (v.id == versionid ) {
            selected="selected"
         } 
-        optional_name = ""
-        if( v.name ) {
-            optional_name = ' ('+ v.name +')'
-        }
-        html += '<option value="'+ v.id +'"' + selected + '>'+ v.version + optional_name +'</option>'
+        display_version = v.version + ': ' + v.version_name + ' (' + v.creation_date.substring(0,10) + ')'
+        if( v.version_name == '' )
+            display_version = v.version + ' (' + v.creation_date.substring(0,10) + ')'
+        html += '<option value="'+ v.id +'"' + selected + '>'+ display_version +'</option>'
     }
     html += '</select></td>'
     html += '</tr>'

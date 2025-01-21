@@ -128,12 +128,16 @@ class WebUser(UserMixin):
         return self.irods_env.get('zone')
     
     @property
+    def refdata_coll(self):
+        return self.irods_env.get('refdata_collection', None)
+    
+    @property
     def features(self):
         return self.irods_env.get('features', [])
     
     @property
     def minilims_db(self):
-        self.minilims_db = irods_env.get('minilims_db', 'sqlite://')
+        self.minilims_db = self.irods_env.get('minilims_db', 'sqlite://')
     
 # Authentication properties        
 
