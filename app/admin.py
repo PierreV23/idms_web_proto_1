@@ -242,10 +242,13 @@ def admin():
         queues[q] = {'enabled': enabled, 'count': count}
     return render_template('queues.html', queues=queues)
 
-@bp.route('/resources')
-@login_required
-def resources():
-    resources =  {}
+@bp.route('/resource_data')
+@flaskcache.cache.memoize(timeout=300, make_name=flaskcache.dep_zone)
+def resource_data_cached():
+    return resource_data()
+    
+def resource_data():
+    resources =  {}    
     session = irods_manager.session()
     q = session.query(Resource.name)
     for r in q:
@@ -267,6 +270,13 @@ def resources():
                         resources[r[Resource.name]][property] = float(value) / factor
                     else:
                         resources[r[Resource.name]][property] = value
+    return resources
+    
+
+@bp.route('/resources')
+@login_required
+def resources():
+    resources =  resource_data()
     return render_template('resources.html', columns=RESOURCE_PROPS, resources=resources)
 
 @bp.route('/_update_resources', methods=['POST'])
