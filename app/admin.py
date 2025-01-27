@@ -9,7 +9,7 @@ import json
 import os
 import irods.exception
 from datetime import date, timedelta
-from flask import Blueprint, render_template, redirect, jsonify, request, url_for
+from flask import Blueprint, render_template, redirect, jsonify, request, url_for, current_app
 from flask_login import current_user, login_required
 from irods.meta import iRODSMeta
 from irods.models import Collection, CollectionMeta, DataObject, Resource, ResourceMeta, DataObjectMeta, RuleExec
@@ -399,11 +399,11 @@ def active_tiering_ops():
 
 @bp.route('/accounting', methods = ["GET"])
 def accounting():
-    api = AccountingAPI()
-    accoutning_data = api.get_request()
-    departments = list_departments(accoutning_data)
-    all_department_overview = total_usage_perDepartment(accoutning_data)
-    per_department_overview = total_userusage_perDeparment(accoutning_data)
+    api = AccountingAPI(current_app, current_user)
+    accounting_data = api.get_request()
+    departments = list_departments(accounting_data)
+    all_department_overview = total_usage_perDepartment(accounting_data)
+    per_department_overview = total_userusage_perDeparment(accounting_data)
     return render_template(
         'accounting.html',
         title = "Accounting page",

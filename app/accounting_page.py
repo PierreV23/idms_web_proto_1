@@ -1,5 +1,6 @@
 import requests
 from dataclasses import dataclass
+from urllib.parse import urljoin
 
 
 @dataclass
@@ -31,12 +32,11 @@ class AccSetting:
 
 
 class AccountingAPI:
-    def __init__(self):
-        # rivm-biofl-l01t.rivm.ssc-campus.nl
-        # rivm-biofl-l01p.rivm.ssc-campus.nl
-        # rivm-bioir-l02a.rivm.ssc-campus.nl
-        # rivm-bioir-l05t.rivm.ssc-campus.nl
-        self.base_url = "http://rivm-biofl-l01t.rivm.ssc-campus.nl:8081/"
+    def __init__(self, app, user):
+        if hasattr(user, 'environment'):
+            self.base_url = app.config.get('IRODS_ENVS', {}).get(user.environment, {}).get('accounting_api_url', '')
+        else:
+            self.base_url = ''
 
     def get_request(self, endpoint="report", params=None):
         """
@@ -47,8 +47,8 @@ class AccountingAPI:
         Returns:
             JSON response from the API.
         """
-        url = self.base_url + endpoint
-        response = requests.get(url, params=params)
+        url = urljoin(self.base_url, endpoint)
+        response = requests.get(url, params=params, verify=False)
 
         if params:
             for para in params:
