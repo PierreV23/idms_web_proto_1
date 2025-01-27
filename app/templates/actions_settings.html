@@ -41,11 +41,10 @@
       </tr>
     </thead>
     <tr>
-      <th>Archiving</th>
-      <td class="archive-enable" data-value={{ coll_state.enabled }}>{% if coll_state.enabled=='true' %}<i
-          class="fa-solid fa-check green"></i>{% else %}<i class="fa-solid fa-xmark red"></i>{% endif %}</td>
-      <td>N.A.</td>
-    </tr>
+      <tr>
+        <th>Enable archiving</th>
+        {{ override_checkbox("enable_archive", coll_state.enabled, "sys::archive::enable") }}
+      </tr>
     <tr>
       <th>Store locally</th>
       {{ override_checkbox("keep_local", coll_state.keep_local, "sys::archive::local") }}
@@ -166,27 +165,5 @@
     })
   })
 
-
-  $('.archive-enable').on('click', function () {
-    var value = $(this).data('value')
-    if (value == false) {
-      $.get('{{ url_for("collbrowser.rmmeta") }}', {
-        collection: collection,
-        attr: "sys::archive::enable"
-      }, function (data) {
-        load_meta();
-        load_actions();
-      });
-    } else {
-      $.get('{{ url_for("collbrowser.setmeta") }}', {
-        collection: collection,
-        attr: "sys::archive::enable",
-        value: "false"
-      }, function (data) {
-        load_meta();
-        load_actions();
-      });
-    }
-  });
 
 </script>
