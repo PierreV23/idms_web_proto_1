@@ -359,7 +359,7 @@ class CollectionState():
 
     @property
     def enabled(self):
-        return self._meta(ATTR_ARCHIVE_ENABLE, "true")
+        return getmetatree(self.collection, ATTR_ARCHIVE_ENABLE, "false")
 
     @property
     def failed_pg(self):
