@@ -103,6 +103,7 @@ $(window).on('load', function() {
     <div class="flex-fill">
     </div>
     <form class="p-2 flex-fill" action="{{ url_for('projects.update_projectsettings') }}" method="POST">
+      {% if project_permissions.users %}
       <div class="form-group row">
         <label class="col-sm-4" for="groupselect">New process group</label>
         <INPUT TYPE="text" class="form-control col-sm-4" id="new_groupname" name="name">
@@ -111,6 +112,7 @@ $(window).on('load', function() {
       <input type="hidden" name="action" value="add_processgroup">
       <BUTTON class="btn btn-primary col-sm-2" type="SUBMIT" id="add_group_button">ADD</BUTTON>
         </div>
+        {% endif %}
     </form>
   </div>
   <hr>

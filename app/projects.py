@@ -21,6 +21,19 @@ from .projectdb_api import EPOCH, iso2dt, search, rest_call, add_checkbox
 
 BP = Blueprint('projects', __name__, url_prefix='/projects')
 
+def project_permissions(project):
+    """Return True if current_user is manager of project
+    """
+    result = {}
+    for usertype in ('users', 'managers'):
+        pl, exitcode = rest_call('GET', f'projects/{project}/{usertype}')
+        result[usertype] = current_user.username in [ m.get('username', '__INVALID_RECORD__') for m in pl ]
+    return result
+
+def process_permissions(process):
+    pl, exitcode = rest_call('GET', f'processes/{process}/managers')
+    return {'managers': current_user.username in [ m.get('username', '__INVALID_RECORD__') for m in pl ] }
+
 def get_projectlist():
     pl, result = rest_call('GET', 'projects')
     projectlist = { p['name']: p for p in pl }
@@ -178,7 +191,7 @@ def show_projectdetails():
     # Retrieve collections associated with project
     processing = iso2dt(pl.get('last_updated', EPOCH)) > iso2dt(pl.get('last_verified', EPOCH))
     return render_template('projectdetails.html', PD=projectdetails, all_projects = all_projects, processing=processing,
-                           processnaam=processnaam, processgroup=processgroup)
+                           processnaam=processnaam, processgroup=processgroup, project_permissions=project_permissions(projectnaam))
 
 @BP.route('_projectcolls')
 def projectcolls():
@@ -634,7 +647,7 @@ def pg_details():
         selected_tags = selected_tags, selected_process=selected_process,
         dependencies=dependency_names, 
         all_reference_datasets=all_reference_datasets, connected_reference_datasets=connected_reference_datasets , 
-        message=message)
+        message=message, project_permissions=project_permissions(project))
 
 @BP.route('processgroups', methods=['GET'])
 def processgroups():
@@ -644,8 +657,7 @@ def processgroups():
     # find all groups
     pl, result = rest_call('GET', f'projects/{project}/processgroups')
     groups = [ g.get('name') for g in pl ]
-
-    return render_template('processgroups.html', project=project, processgroup=processgroup, processgroups=groups)
+    return render_template('processgroups.html', project=project, processgroup=processgroup, processgroups=groups, project_permissions=project_permissions(project))
 
 
 @BP.route('usermanager', methods=['GET'])
@@ -653,8 +665,15 @@ def usermanager():
     objectname = request.args.get('object')
     objecttype = request.args.get('objecttype')
     usertype = request.args.get('usertype')
-    #                             object: '{{ details['name'] }}',      objecttype: 'processes',     usertype: 'managers'
-    return render_template('usermanager.html', object=objectname, objecttype=objecttype, usertype=usertype)
+    # can_modify will be used to hide/show the add/delete buttons
+    # if we are not sure, set it to true
+    # the rest service will enforce permissions anyway
+    can_modify = True
+    if objecttype == 'projects':
+        can_modify = project_permissions(objectname).get('managers', True)
+    elif objecttype == 'processes':
+        can_modify = process_permissions(objectname).get('managers', True)
+    return render_template('usermanager.html', object=objectname, objecttype=objecttype, usertype=usertype, can_modify=can_modify)
 
 @BP.route('processusage', methods=['GET'])
 def processusage():
