@@ -23,7 +23,8 @@ from os import path
 
 BP = Blueprint('reference', __name__, url_prefix='/reference')
 
-reference_change_allowed = ['name', 'synchronize_command', 'update_frequency', 'synchronization_frequency', 'owner']
+reference_change_allowed = ['name', 'synchronize_command', 'update_frequency', 'synchronization_frequency', 'owner', 'is_active']
+
 
 def get_referencelist():
     referencelist_raw, status_code = rest_call('GET', 'reference')
@@ -42,6 +43,10 @@ def show_reference_datasets():
         reference_dataset: switch to reference_datasets page and show <reference_dataset>
         process: swicth to processes page and show <processid> 
     """
+    refdata_coll = current_user.refdata_coll 
+    if not refdata_coll:
+        flash('Reference data collection is not configured. Contact your administrator', 'error')
+            
     reference_dataset = request.args.get('reference_dataset', '')
     reference_dataset_list = get_referencelist()
     return render_template('referencedatasets.html', referencedatasets=reference_dataset_list, reference_dataset=reference_dataset)
@@ -59,7 +64,7 @@ def show_reference_details():
 
     reference_details_raw, result = rest_call('GET', 'reference/{}'.format(reference_id))
     reference_details = {}
-    for attr in ['name', 'creation_date', 'id', 'owner', 'creation_date', 'synchronization_frequency', 'synchronize_command', 'update_frequency']:
+    for attr in ['name', 'creation_date', 'id', 'owner', 'creation_date', 'synchronization_frequency', 'synchronize_command', 'update_frequency', 'is_active']:
         reference_details[attr] = reference_details_raw.get(attr, '')
 
     reference_versions = [] #, result = rest_call('GET', 'reference/{}/versions'.format(6))
@@ -87,6 +92,37 @@ def show_reference_details():
                            all_references=all_references, 
                            reference_versions=reference_versions, 
                            import_state=import_state)
+
+
+@BP.route('/activate_reference', methods=['GET', 'POST'])
+@login_required
+def activate_reference():
+    requestdata = request.args.to_dict()
+    reference = requestdata.get('reference')
+    data = { 'is_active': 1 }
+    response, result = rest_call('PUT', 'reference/{}'.format(reference), data=data)
+    if result != 200:
+        flash(response.get('message', f'Error: {result}'), 'error')
+        location=f'reference_dataset={reference}'
+    else:
+        location = f'reference_dataset={reference}'
+
+    return redirect(f'{url_for("reference.show_reference_datasets")}?{location}')
+
+@BP.route('/deactivate_reference', methods=['GET', 'POST'])
+@login_required
+def deactivate_reference():
+    requestdata = request.args.to_dict()
+    reference = requestdata.get('reference')
+    data = { 'is_active': 0 }
+    response, result = rest_call('PUT', 'reference/{}'.format(reference), data=data)
+    if result != 200:
+        flash(response.get('message', f'Error: {result}'), 'error')
+        location=f'reference_dataset={reference}'
+    else:
+        location = f'reference_dataset={reference}'
+
+    return redirect(f'{url_for("reference.show_reference_datasets")}?{location}')
 
 
 @BP.route('/update_reference', methods=['GET', 'POST'])
@@ -129,7 +165,7 @@ def update_reference_settings():
 @login_required
 def versions_table():
     reference_id = request.args.get('id', '', type=str)
-    project_name = request.args.get('project', '', type=str)
+    refdb_name = request.args.get('project', '', type=str)
     #in bio_rest we need to fix the api from reference_id to reference.id! 
     response, result = rest_call('GET', f'reference/{reference_id}/versions' )
 
@@ -147,9 +183,10 @@ def versions_table():
                  }
                  for v in response ]
 
-
     #additionally get the collections
-    q1 = iqry.qcollchildren( f"/{current_user.irods_zone}/projects/refdata/{project_name}")
+    refdata_coll = current_user.refdata_coll 
+
+    q1 = iqry.qcollchildren( f"/{current_user.irods_zone}/{refdata_coll}/{refdb_name}")
     version_colls = { path.basename(c[Collection.name]): 
                         {
                             "irods_path": c[Collection.name],
@@ -158,6 +195,7 @@ def versions_table():
                             'irods_owner_name': c[Collection.owner_name]
                         } 
                     for c in q1 }
+    
     #and their metadata
     for key, items in version_colls.items():
         q2 = iqry.qcollmeta(items["irods_path"])

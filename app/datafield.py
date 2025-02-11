@@ -39,7 +39,10 @@ KNOWN_ATTRIBUTES = {
     'sys::runsheet::id': 'runsheet',
     'sys::runsheet::input_collection': 'irods_collection',
     'sys::runsheet::projectID': 'projectid',
-    'sys::runsheet::repo': 'url'
+    'sys::runsheet::repo': 'url',
+    'reference_dataset::synchronization_time': 'timestamp',
+    'reference_dataset::import_time': 'timestamp',
+    'reference_dataset::repository': 'url'
 }
 
 KNOWN_ATTRIBUTE_TEMPLATES = {
@@ -49,7 +52,8 @@ KNOWN_ATTRIBUTE_TEMPLATES = {
     'sys::lock::.*::time::.*::valid_till': 'timestamp',
     'sys::lock::.*::time::.*::runtime': 'timedelta',
     'sys::lock::.*::time::.*::timeout': 'timedelta',
-    'sys::consistency::.*::timestamp': 'timestamp'
+    'sys::consistency::.*::timestamp': 'timestamp',
+    'sys::external::.*::endtime': 'timestamp'
 }
 
 MAXLEN = 45

@@ -53,91 +53,6 @@
       });
     }
 
-    function overrideDatasetLocal() {
-        var selected = $( "#keepLocalSwitch" ).is(':checked')
-        var override = $( "#overrideLocalSwitch" ).is(':checked')
-        $.get('{{ url_for('collbrowser.setoverride') }}', {
-          attr: 'sys::archive::local',
-          collection: '{{ collection }}',
-          override: override,
-          value: selected
-        }, function(data) {
-           load_meta();
-           load_actions();
-        });
-    }
-
-    function overrideDatasetOnline() {
-        var selected = $( "#keepOnlineSwitch" ).is(':checked')
-        var override = $( "#overrideOnlineSwitch" ).is(':checked')
-        $.get('{{ url_for('collbrowser.setoverride') }}', {
-          attr: 'sys::archive::keep_online',
-          collection: '{{ collection }}',
-          override: override,
-          value: selected
-        }, function(data) {
-           load_meta();
-           load_actions();
-        });
-    }
-
-    function setMincopies(i) {
-        $.get('{{ url_for('collbrowser.setmeta') }}', {
-          collection: '{{ collection }}',
-          attr: 'sys::archive::min_copies',
-          value: i
-        }, function(data) {
-           load_meta();
-        });
-    }
-
-    function overrideMincopies() {
-        var copies = $(".min-copies:checked").val()
-        var override = $( "#overrideMincopiesSwitch" ).is(':checked')
-        $.get('{{ url_for('collbrowser.setoverride') }}', {
-          collection: '{{ collection }}',
-          override: override,
-          attr: 'sys::archive::min_copies',
-          value: copies
-        }, function(data) {
-           load_meta();
-           load_actions();
-        });
-    }
-
-    function keepDatasetLocal() {
-        var selected = $( "#keepLocalSwitch" ).is(':checked')
-        $.get('{{ url_for('collbrowser.setmeta') }}', {
-          collection: '{{ collection }}',
-          attr: 'sys::archive::local',
-          value: selected
-        }, function(data) {
-           load_meta()
-        });
-    }
-
-    function keepDatasetOnline() {
-        var selected = $( "#keepOnlineSwitch" ).is(':checked')
-        $.get('{{ url_for('collbrowser.setmeta') }}', {
-          collection: '{{ collection }}',
-          attr: 'sys::archive::keep_online',
-          value: selected
-        }, function(data) {
-           load_meta()
-        });
-    }
-
-    function enableArchive() {
-      var selected = $( "#enableArchiveSwitch" ).is(':checked')
-      $.get('{{ url_for('collbrowser.setmeta') }}', {
-        collection: '{{ collection }}',
-        attr: "sys::archive::enable",
-        value: selected
-      }, function(data) {
-          load_meta()
-      });
-    }
-
     function setCollectionValidity() {
       var selected = $( "#overrideValidity" ).is(':checked')
       $.get('{{ url_for('collbrowser.setoverride') }}', {
@@ -177,6 +92,7 @@
 
 $('.action-tabs').on('shown.bs.tab', function(event){
   activetab = event.target.getAttribute('href')
+  localStorage.setItem('activetab', activetab)
   $.get('{{ url_for("collbrowser.actions_tabs") }}', {
     collection: '{{ collection }}',
     tabname: activetab.substring(1)
@@ -233,10 +149,10 @@ $('#shareButton').on('click', function(){
         </li>
         {% if admin is sameas True %}
         <li class="nav-item mx-2">
-          <a class="nav-link" id="storage-tab"
-            data-toggle="tab" href="#storage" role="tab"
-            aria-controls="storage" aria-selected="false">
-            Storage
+          <a class="nav-link" id="settings-tab"
+            data-toggle="tab" href="#settings" role="tab"
+            aria-controls="settings" aria-selected="false">
+            Settings
         </a>
         </li>
         {% endif %}
@@ -265,15 +181,24 @@ $('#shareButton').on('click', function(){
         </a>
         </li>
         <li class="nav-item mx-2">
+          <a class="nav-link" id="provenance-tab"
+            data-toggle="tab" href="#provenance" role="tab"
+            aria-controls="provenance" aria-selected="false">
+            Provenance
+        </a>
+        </li>
+        {% if 'SHARING' in current_user.features %}
+        <li class="nav-item mx-2">
           <a class="nav-link" id="sharing-tab"
             data-toggle="tab" href="#sharing" role="tab"
             aria-controls="sharing" aria-selected="false">
             Sharing
         </a>
         </li>        
+        {% endif %}
       </ul>
     </div>
-    <div class="card-body tab-content scrollbar-y h-100">
+    <div class="card-body tab-content h-100">
       {% with messages = get_flashed_messages(category_filter=["actions_panel"]) %}
       {% if messages %}
         {% for message in messages %}
@@ -282,9 +207,10 @@ $('#shareButton').on('click', function(){
       {% endif %}
       {% endwith %}
         <div class="tab-pane" id="archive" role="tabpanel" aria-labelledby="archive-tab"></div>
-        <div class="tab-pane" id="storage" role="tabpanel" aria-labelledby="storage-tab"></div>
+        <div class="tab-pane h-100" id="settings" role="tabpanel" aria-labelledby="settings-tab"></div>
         <div class="tab-pane" id="pipeline" role="tabpanel" aria-labelledby="pipeline-tab"></div>
         <div class="tab-pane" id="validity" role="tabpanel" aria-labelledby="validity-tab"></div>
+        <div class="tab-pane" id="provenance" role="tabpanel" aria-labelledby="provenance-tab"></div>
         <div class="tab-pane" id="sharing" role="tabpanel" aria-labelledby="sharing-tab"></div>
       </div>
 </div>
@@ -334,7 +260,7 @@ $('#shareButton').on('click', function(){
 <script>
 
 {% if not current_user.is_admin %}
-$('#storage').find('input').prop("disabled", true)
+$('#settings').find('input').prop("disabled", true)
 {% endif %}
 
 </script>

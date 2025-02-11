@@ -33,16 +33,23 @@ menuname='upload_data'
 <script src="https://unpkg.com/@rjsf/core/dist/react-jsonschema-form.js"></script> -->
 
 <div class="card h-100">
-    <div class="card-header">
-        <h3>Upload methods:</h3>
-        <ul class="list-group">
-            <li class="list-group-item">Use the drop zone below</li>
-            <li class="list-group-item">Use the scientific workplace and the command <b>iput [-v] [filename] {{ coll }}</b> or <b>irsync -r [-v] [dirname] {{ coll }}</b> </li>            
-            <!-- <li class="list-group-item">Use the Campus workplace and drop your files in X:\{{ '\\'.join(coll.split('/')[2:]) }}</li> -->
-        </ul>
+    <h3 class="card-header">Data upload methods:</h3>
+    <div class="card-body">
+        <dl>
+            <dt>Use the drop zone below</dt>
+            <dd>Drag and drop files into the drop zone. You can also click in the drop zone to select your upload files.
+                The maximum file size is {{ (config.get("MAX_FILE_UPLOAD_SIZE", 20000) / 1000) | round(1) }} GB. If you need to upload larger files, use the command line based method
+                below to upload your files.</dd>
 
-    </div>
-    <div class="card-body Xh-100">
+            <dt>Use the command line upload</dt>
+            <dd>You can use this method in the scientific workplace. Use one of the commands below:
+                <pre>
+    <b>iput [-v] [filename] {{ coll }}</b>
+or
+    <b>irsync -r [-v] [dirname] {{ coll }}</b></pre>
+                Don't forget to finalize your upload in the web interface after uploading.
+            </dd>
+        </dl>
         <form action="{{ url_for('upload.upload_data') }}" class="dropzone Xh-100" id="data-upload">
             <input type="hidden" name="coll" value="{{ coll }}">
             <div class="dropzone-previews"></div>
@@ -59,11 +66,11 @@ menuname='upload_data'
     })
 
     Dropzone.options.dataUpload = {
-        maxFilesize: 2000,
+        maxFilesize: {{ config.get("MAX_FILE_UPLOAD_SIZE", 20000) }},
         parallelUploads: 8,
         createImageThumbnails: false,
         previewsContainer: ".dropzone-previews",
-        timeout: 120000,
+        timeout: 360000,
         dictDefaultMessage: 'Drag files here or click to select',
         init: function() {
             this.on("success", function(file, response) {

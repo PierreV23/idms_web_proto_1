@@ -45,7 +45,7 @@ DEFAULT_GRAPH_LEVELS = 3
 # This is the maximum number of subcollections we will show 
 # in the treeview. If there are more, we will indicate that
 # by ... above/below the list
-MAX_TREEVIEW_COLLS = 50
+MAX_TREEVIEW_COLLS = 150
 
 ATTR_DATASETID = 'sys::dataset_id'
 ATTR_PROJECTID = 'projectID'
@@ -70,6 +70,10 @@ ATTR_ARCHIVE_LOCAL = f'{ATTR_ARCHIVE_PREFIX}local'
 ATTR_PROCESSREQUEST = 'processrequest'
 ATTR_ARCHIVE_STATE = f'{ATTR_ARCHIVE_PREFIX}state'
 ATTR_ARCHIVE_MINCOPIES = f'{ATTR_ARCHIVE_PREFIX}min_copies'
+ATTR_ARCHIVE_CREATERETENTION = f'{ATTR_ARCHIVE_PREFIX}create_retention'
+ATTR_ARCHIVE_LASTUSERETENTION = f'{ATTR_ARCHIVE_PREFIX}lastuse_retention'
+
+ATTR_RULES_OBJECTIDS = 'sys::rules::object_ids'
 
 
 COLL_KEY_MAP = {
@@ -144,7 +148,18 @@ def _getmetatree(irods_coll, attr, base, default=None):
     if irods_coll != '/':
         parent = os.path.dirname(irods_coll)
         return _getmetatree(parent, attr, base, default=None)
-    return default, None, True
+    return default, None, False
+
+@bp.route('_metatree')
+def metatree():
+    attr = request.args.get('attr')
+    collection = request.args.get('collection')
+    value, source, override = getmetatree(collection, attr)
+    if source:
+        source = source.htmlshort
+    else:
+        source = ''
+    return { 'value': value, 'source': source, 'override': override}, 200    
 
 @bp.route('_meta')
 def coll_meta():
@@ -158,7 +173,8 @@ def coll_meta():
         name = coll_metadata[CollectionMeta.name]
         value = coll_metadata[CollectionMeta.value]
         units = coll_metadata[CollectionMeta.units]
-        coll_avu.append(AVU2data(name, value, units))
+        if current_user.settings.get('sysmeta', 'true') == "true" or not name.startswith('sys::'):
+            coll_avu.append(AVU2data(name, value, units))
 
 # Query for object metadata
     object_avu = None
@@ -174,7 +190,8 @@ def coll_meta():
                 name = object_metadata[DataObjectMeta.name]
                 value = object_metadata[DataObjectMeta.value]
                 units = object_metadata[DataObjectMeta.units]
-                object_avu.append(AVU2data(name, value, units))
+                if current_user.settings.get('sysmeta', 'true') == "true" or not name.startswith('sys::'):        
+                    object_avu.append(AVU2data(name, value, units))
     return render_template('metadata.html', coll_avu=coll_avu, object_avu=object_avu)
 
 @bp.route('_setKeepOnlineUntil', methods=['GET'])
@@ -196,6 +213,51 @@ def setKeepOnlineUntil():
     iqry.scollmetaval(collection, ATTR_ARCHIVE_KEEP_ONLINE_TILL, str(int(datetime.timestamp(keepOnlineUntil))), 'timestamp')
     return('DONE')
 
+@bp.route('_upstream', methods=['GET'])
+def upstream():
+    types = {
+        'system': 'sys::pipeline::',
+        'user': 'user::pipeline::'
+    }
+    collection = request.args.get('collection')
+    parents = []
+    for kind, prefix in types.items():
+        inputs = iqry.qcollmetavals(collection, f'{prefix}input_collection')
+        for i in inputs:
+            parents.append({
+                'collection': i[CollectionMeta.value],
+                'colllink': datafield('collection', i[CollectionMeta.value], 'irods_collection').htmlshort,
+                    'meta': {
+                        'attr': f'{prefix}input_collection',
+                        'value': i[CollectionMeta.value]
+                    },                
+                'type': kind
+            })
+    for kind, prefix in types.items():
+        inputs = iqry.qcollmetavals(collection, f'{prefix}input_collection_id')
+        for i in inputs:
+            c = iqry.qcollbymeta('sys::dataset_id', i[CollectionMeta.value])
+            if len(c) == 1:
+                parents.append({
+                    'collection': c[0][Collection.name],
+                    'colllink': datafield('collection', c[0][Collection.name], 'irods_collection').htmlshort,
+                    'meta': {
+                        'attr': f'{prefix}input_collection_id',
+                        'value': i[CollectionMeta.value]
+                    },
+                    'type': kind
+                })
+    return jsonify(parents)
+
+@bp.route('_addmeta', methods=['GET'])
+def addmeta():
+    attr = request.args.get('attr')
+    value = request.args.get('value')
+    collection = request.args.get('collection')
+    if attr and value and collection:
+        iqry.addcollmetaval(collection, attr, value)
+    collections_changed()    
+    return 'DONE', 200
 
 @bp.route('_setmeta', methods=['GET'])
 def setmeta():
@@ -204,6 +266,18 @@ def setmeta():
     collection = request.args.get('collection')
     if attr and value and collection:
         iqry.scollmetaval(collection, attr, value)
+    value = iqry.qcollmetaval(collection, attr)
+    collections_changed()      
+    return { 'value': value, 'result': 'DONE'}, 200
+
+@bp.route('_rmmeta', methods=['GET'])
+def rmmeta():
+    attr = request.args.get('attr')
+    value = request.args.get('value')
+    collection = request.args.get('collection')
+    if attr and collection:
+        iqry.delcollmeta(collection, attr, value)
+    collections_changed() 
     return 'DONE', 200
 
 
@@ -223,10 +297,12 @@ def setoverride():
             else:
                 iqry.scollmetaval(collection, attr, value)
         except CAT_NO_ACCESS_PERMISSION:
-            return 'ACCESS DENIED', 401
+            value = iqry.qcollmetaval(collection, attr)
+            return { 'value': value , 'result': 'ACCESS DENIED'}, 401
     # Invalidate the cache for the next call to the graph function
     collections_changed(path=collection)
-    return 'DONE', 200
+    value = iqry.qcollmetaval(collection, attr)
+    return { 'value': value , 'result': 'DONE'}, 200
 
 @cache.memoize(timeout=3600, make_name=dep_zone)
 def tiers():
@@ -284,7 +360,7 @@ class CollectionState():
 
     @property
     def enabled(self):
-        return self._meta(ATTR_ARCHIVE_ENABLE, "false")
+        return getmetatree(self.collection, ATTR_ARCHIVE_ENABLE, "false")
 
     @property
     def failed_pg(self):
@@ -320,6 +396,18 @@ class CollectionState():
     @cached_property
     def min_copies(self):
         return getmetatree(self.collection, ATTR_ARCHIVE_MINCOPIES, 2)
+    
+    @cached_property
+    def create_retention(self):
+        return getmetatree(self.collection, ATTR_ARCHIVE_CREATERETENTION, 24)        
+
+    @cached_property
+    def lastuse_retention(self):
+        return getmetatree(self.collection, ATTR_ARCHIVE_LASTUSERETENTION, 24)     
+
+    @cached_property
+    def object_ids(self):
+        return getmetatree(self.collection, ATTR_RULES_OBJECTIDS, False)
 
     @property
     def myprocessgroupguid(self):
@@ -403,7 +491,7 @@ def actions_tabs():
     collection = request.args.get('collection', type=str)
     tabname = request.args.get('tabname', type=str)
     coll_state = CollectionState(collection)
-    TABS = ['archive', 'storage', 'pipeline', 'validity', 'sharing']
+    TABS = ['archive', 'settings', 'pipeline', 'validity', 'provenance', 'sharing']
     if tabname in TABS:
         return render_template(f'actions_{tabname}.html', coll_state=coll_state)
     else:

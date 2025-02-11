@@ -266,11 +266,12 @@ function createContactRow( contact ) {
           <label for="project_svc_{{PD.name}}">Service Account</label>
           <input type="text" class="form-control" name="service_account" id="service_account_{PD.name}}" placeholder="Service Account" value="{{ PD.service_account }}">
         </div>
-     
+        {% if project_permissions.managers%}
         <button type="submit" class="btn btn-primary">Submit</button>
-        <button type="button" class="btn btn-primary" data-href="/remove_project?name={{PD.name}}" data-toggle="modal" data-target="#confirm-delete">
+        {% endif %}
+        <!-- <button type="button" class="btn btn-primary" data-href="/remove_project?name={{PD.name}}" data-toggle="modal" data-target="#confirm-delete">
           Remove project
-        </button>
+        </button> -->
       </form>
     </div>
 
@@ -295,6 +296,7 @@ function createContactRow( contact ) {
           </tr>
         </thead>
         <tbody id="contact-table">
+          {% if project_permissions.users or project_permissions.managers %}
           <tr>
           <td><input type="text" class="form-control" id="new_contact_name" value=""></td>
           <td><input type="text" class="form-control" id="new_contact_email" value=""></td>
@@ -330,6 +332,7 @@ function createContactRow( contact ) {
           </td>            
           <td><Button class="btn btn-secondary" onClick="saveNewContact()">save</Button></td>
           </tr>
+          {% endif %}
         </tbody>
       </table>
     

@@ -70,11 +70,10 @@ function build_line( ref_data, versions ) {
         if (v.id == selected_versionid ) {
            selected="selected"
         }
-        optional_name = ""
-        if( v.name ) {
-            optional_name = ' ('+ v.name +')'
-        }
-        html += '    <option value="'+ v.id +'"' + selected + '>'+ v.version + optional_name +' </option>'
+        display_version = v.version + ': ' + v.version_name + ' (' + v.creation_date.substring(0,10) + ')'
+        if( v.version_name == '' )
+            display_version = v.version + ' (' + v.creation_date.substring(0,10) + ')'
+        html += '    <option value="'+ v.id +'"' + selected + '>'+ display_version +' </option>'
      }
      html += '      </select></td>'
      html += '  <td><button class="btn-danger" id="btn-delete-'+ ref_data.id +'"><i class="fas fa-trash"></i></button></td>'
@@ -97,7 +96,7 @@ $('document').ready(function(){
     reference_datas_for_process = {{reference_data_for_process|tojson}}
     ref_versions = {{ref_versions|tojson}}
     for( ref of reference_data_sets ) {
-        $('#refDataSetSelect').append( new Option(ref.name + '('+ref.id+')', ref.id ) ) 
+        $('#refDataSetSelect').append( new Option(ref.name, ref.id ) ) 
     };
 
     build_reference_data_table(reference_datas_for_process, ref_versions)
@@ -135,17 +134,21 @@ $('document').ready(function(){
     }) 
 
     $('#refDataSetSelect').on('change', function() {
+        $('#refDataSetVersionSelect').empty()
         $('#refDataSetVersionSelect').removeClass('invisible')
     
         $.get('{{ url_for("projects.referencedataversions") }}', { 
             referencedataid: this.value
         }, function(data) {
-            o = new Option( " -- select a version id -- ", null, true, true )
+            o = new Option( " -- select a version -- ", null, true, true )
             o.setAttribute("disabled", "disabled")
             $('#refDataSetVersionSelect').append( o )
             $('#refDataSetVersionSelect').append( new Option( "Latest (dynamic)", -1 ))
         for( version of data ) {
-                $('#refDataSetVersionSelect').append( new Option(version.name + '('+version.id+')', version.id ) ) 
+               display_version = version.version + ': ' + version.version_name + ' (' + version.creation_date.substring(0,10) + ')'
+               if( version.version_name == '' )
+                  display_version = version.version + ' (' + version.creation_date.substring(0,10) + ')'
+               $('#refDataSetVersionSelect').append( new Option(display_version, version.id ) ) 
             };
         })
         

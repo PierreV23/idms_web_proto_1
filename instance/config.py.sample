@@ -53,21 +53,8 @@ LOGCONFIG = {
     },
 }
 
-LABSURV_DB_CRED = {
-    'Acceptatie': { 
-        'host': r'rivm-sqldb-w04p.rivm.ssc-campus.nl\rivm01_acc',
-        'database': 'IDS_labsurv_covid_Acc',
-        'user': 'IDS_labsurv_user_acc',
-        'password': 'xxx'
-    },
-    'Test_01': {
-        'host': r'rivm-sqldb-w04p.rivm.ssc-campus.nl\rivm01_acc',
-        'database': 'IDS_labsurv_covid_Acc',
-        'user': 'IDS_labsurv_user_acc',
-        'password': 'xxx'        
-    }
-}
-
+# This is the max file upload size in MB
+MAX_FILE_UPLOAD_SIZE=20000
 
 IRODS_ENVS = {
     'Productie':   {
@@ -76,7 +63,11 @@ IRODS_ENVS = {
         'default': True,
         'ngsruns_db': 'postgresql://<user>:<pass>@<host>/ICAT',
         'jobs_db': 'postgresql://<user>:<pass>@<host>/ICAT',
+<<<<<<< HEAD
         'external_url': 'https://irodsdata.rivm.nl/browser',
+=======
+        'refdata_collection': 'reference_dbs',
+>>>>>>> master
         'features': [
             'JOBS',
             'MINILIMS',
@@ -86,12 +77,16 @@ IRODS_ENVS = {
         ]
     },
     'Acceptatie':   {
-        'host': 'rivm-bioir-l01a.rivm.ssc-campus.nl',
+        'host': 'rivm-bioir-l05a.rivm.ssc-campus.nl',
         'zone': 'rivmZone_acc_01',
         'default': False,
         'ngsruns_db': 'postgresql://<user>:<pass>@<host>/ICAT',
         'jobs_db': 'postgresql://<user>:<pass>@<host>/ICAT',
+<<<<<<< HEAD
         'external_url': 'http://rivm-biofl-l02a.rivm.ssc-campus.nl/browser',
+=======
+        'refdata_collection': 'reference_dbs',
+>>>>>>> master
         'features': [
             'JOBS',
             'MINILIMS',
@@ -101,11 +96,12 @@ IRODS_ENVS = {
         ]
     },
     'Test_01':   {
-        'host': 'rivm-bioir-l01t.rivm.ssc-campus.nl',
+        'host': 'rivm-bioir-l04t.rivm.ssc-campus.nl',
         'zone': 'rivmZone_test_01',
         'default': False,
         'ngsruns_db': 'postgresql://<user>:<pass>@<host>/ICAT',
         'jobs_db': 'postgresql://<user>:<pass>@<host>/ICAT',
+        'refdata_collection': 'reference_dbs',
         'features': [
             'JOBS',
             'MINILIMS',
@@ -119,7 +115,7 @@ IRODS_ENVS = {
         'zone': 'milZone',
         'default': False,
         'features': [
-            
+
         ]
     }
 }

@@ -128,12 +128,16 @@ class WebUser(UserMixin):
         return self.irods_env.get('zone')
     
     @property
+    def refdata_coll(self):
+        return self.irods_env.get('refdata_collection', None)
+    
+    @property
     def features(self):
         return self.irods_env.get('features', [])
     
     @property
     def minilims_db(self):
-        self.minilims_db = irods_env.get('minilims_db', 'sqlite://')
+        self.minilims_db = self.irods_env.get('minilims_db', 'sqlite://')
     
 # Authentication properties        
 
@@ -160,11 +164,8 @@ class WebUser(UserMixin):
             if self._is_authenticated:
                 try:
                     with irods_manager.session() as session:
-                        groups = session.query(UserGroup).filter(
-                            Criterion('=', User.name, self.username)).filter(
-                                Criterion('=', UserGroup.name, 'rodsadmin'))
-                        for q in groups:
-                            self._is_admin = True
+                        user = session.users.get(self.username)
+                        self._is_admin = user.type == 'rodsadmin'
                 except:
                     self._is_admin = None
                     return False
