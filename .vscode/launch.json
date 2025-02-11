@@ -22,7 +22,8 @@
                 "${input:flask-port-number}",
                 "--with-threads"
             ],
-            "jinja": true
+            "jinja": true,
+            "justMyCode": false
         }
     ],
     "inputs": [

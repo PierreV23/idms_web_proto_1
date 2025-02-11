@@ -1,5 +1,7 @@
 <script>
 
+    var waiting = '<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>'
+
     function updateUntilDate() {
         var selected = $( "#inputSelectDate" ).val()
         var now = moment()
@@ -88,7 +90,6 @@
     }
 
 
-
 $('.action-tabs').on('shown.bs.tab', function(event){
   activetab = event.target.getAttribute('href')
   localStorage.setItem('activetab', activetab)
@@ -104,6 +105,34 @@ $('.action-tabs').on('shown.bs.tab', function(event){
   })
 })
 
+
+$( function() {
+    $( ".datepicker" ).datepicker({
+      weekStart: 1,
+      daysOfWeekHighlighted: "6,0",
+      format: "dd/mm/yyyy",
+      autoclose: true
+    })
+} );
+
+$('#shareButton').on('click', function(){
+  $('#shareGroup').addClass('hidden')
+  $('#newshare input').attr('readonly', true)
+  $('.results').removeClass('hidden')
+  $('#newshare').addClass('pending')
+  $.post("{{ url_for('collbrowser.actions_newshare')}}", $('#newshareform').serialize(), function(data) {
+    console.log(data);
+    if (data.result != 200 ) {
+      console.log('FAILED')
+      $('#idResult').val('FAILED')
+    } else {
+      console.log('SUCCES')
+      $('#idResult').val('The collection share was created')
+      $('#newshare').removeClass('pending')
+      $('#idURL').val(data.url)
+    }
+  })
+})
 
 </script>
 
@@ -158,6 +187,15 @@ $('.action-tabs').on('shown.bs.tab', function(event){
             Provenance
         </a>
         </li>
+        {% if 'SHARING' in current_user.features %}
+        <li class="nav-item mx-2">
+          <a class="nav-link" id="sharing-tab"
+            data-toggle="tab" href="#sharing" role="tab"
+            aria-controls="sharing" aria-selected="false">
+            Sharing
+        </a>
+        </li>        
+        {% endif %}
       </ul>
     </div>
     <div class="card-body tab-content h-100">
@@ -173,8 +211,51 @@ $('.action-tabs').on('shown.bs.tab', function(event){
         <div class="tab-pane" id="pipeline" role="tabpanel" aria-labelledby="pipeline-tab"></div>
         <div class="tab-pane" id="validity" role="tabpanel" aria-labelledby="validity-tab"></div>
         <div class="tab-pane" id="provenance" role="tabpanel" aria-labelledby="provenance-tab"></div>
+        <div class="tab-pane" id="sharing" role="tabpanel" aria-labelledby="sharing-tab"></div>
       </div>
 </div>
+
+  <!-- New share form -->
+  <div class="modal" id="newshare" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="nsTitle">Share collection</h5>
+        </div>
+        <div class="modal-body" id="nsBody">
+          <form action="{{ url_for('collbrowser.actions_newshare')}}" id="newshareform" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+              <input type="hidden" id="collection" name="collection" value="{{ collection }}">
+            </div>
+            <div class="form-group">
+              <label for="iddescription">Description</label>
+              <input type="text" class="form-control shareinput" name="description" id="iddescription"/>
+              <small id="descHelp" class="form-text text-muted">Describe the purpose of this share</small>
+            </div>
+            <div class="form-group">
+              <label for="idenddate">End Date</label>
+              <input type="text" class="form-control datepicker shareinput" name="enddate" id="idenddate"/>
+              <small id="descEnddate" class="form-text text-muted">Share will only be valid up till this date</small>
+            </div>
+            <div class="form-group hidden results" id="shareresult">
+              <label for="idResult">Result</label>
+              <input type="text" class="form-control" name="result" id="idResult" readonly></textarea>              
+              <label for="idURL">URL</label>
+              <input type="text" class="form-control" name="url" id="idURL" readonly></textarea>
+            </div>
+            <div class="form-group hidden results">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+            </div>                     
+            <div class="form-group" id="shareGroup">
+              <button type="button" id="shareButton" class="btn btn-primary">Share</button>
+              <button type="button" class="btn btn-primary" data-dismiss="modal">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> <!-- content -->
 
 <script>
 

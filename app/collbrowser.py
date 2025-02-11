@@ -33,6 +33,7 @@ import json
 from app.constants import COLL_KEY_MAP, DATA_KEY_MAP, ATTR_RESOURCE_ONLINE
 from app.auth import auth_endpoint
 from . import constants
+from .projectdb_api import rest_call
 
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
 
@@ -469,12 +470,28 @@ class CollectionState():
     def sys_coll_state(self):
         return self._meta(ATTR_SYS_STATE, "")    
 
+def generate_external_url(dataset_id, ticket):
+    """Create URL to external data collection
+
+    Args:
+        dataset_id (str): UUID of the shared dataset
+        ticket (str): shared dataset access ticket
+
+    Returns:
+        str: External data URL
+    """
+    base = current_user.irods_env.get('external_url', '')
+    url = f'{base}/{dataset_id}-{ticket}'
+    return url
+    
+    
+
 @bp.route('_actions_tabs')
 def actions_tabs():
     collection = request.args.get('collection', type=str)
     tabname = request.args.get('tabname', type=str)
     coll_state = CollectionState(collection)
-    TABS = ['archive', 'settings', 'pipeline', 'validity', 'provenance']
+    TABS = ['archive', 'settings', 'pipeline', 'validity', 'provenance', 'sharing']
     if tabname in TABS:
         return render_template(f'actions_{tabname}.html', coll_state=coll_state)
     else:
@@ -486,6 +503,63 @@ def coll_actions():
     coll_state = CollectionState(collection)
     return render_template('actions.html', coll_state=coll_state, collection=collection, admin=current_user.is_admin)
 
+@bp.route('_sharetable')
+def sharetable():
+    collection = request.args.get('collection')
+    coll_id = iqry.qcollproperty(collection, 'id')
+    shares, status = rest_call('GET', f'collections/{ coll_id }/shares', prefix='/external', user=current_user.username, passwd=current_user.password)
+    if status != 200:
+        return {}
+    # User-friendly endtime formatting:
+    for share in shares:
+        if share.get('endtime', 0) == 0:
+            share['endtime'] = 'Indefinite'
+        else:
+            share['endtime'] = datafield('endtime', share['endtime'], 'timestamp' ).htmlstring
+    return jsonify(shares)
+
+@bp.route('_actions_newshare', methods=['POST'])
+def actions_newshare():
+    NEW_SHARE_FIELDS = [ 'description', 'endtime' ]
+    formdata = request.form.to_dict()
+    coll_id = iqry.qcollproperty(formdata.get('collection'), 'id')
+    requestdata = { k: v for k, v in formdata.items() if k in NEW_SHARE_FIELDS }
+    if 'enddate' in formdata:
+        try:
+            requestdata['endtime'] = int(time.mktime(datetime.strptime(formdata['enddate'], '%d/%m/%Y').timetuple()))
+        except:
+            data['result'] = 'Invalid time value'
+            return data    
+    data, result = rest_call('POST', f'collections/{coll_id}/shares', prefix='/external', data=requestdata, user=current_user.username, passwd=current_user.password)
+    data['result'] = result
+    data['url'] = generate_external_url(data.get('dataset_id', ''), data.get('string', ''))
+    return data
+
+@bp.route('_actions_deleteshare', methods=['POST'])
+def actions_deleteshare():
+    data = request.form.to_dict()
+    collection_id = data.get('collection_id')
+    ticket_id = data.get('ticket_id')
+    data, result = rest_call('DELETE', f'collections/{collection_id}/shares/{ticket_id}', prefix='/external', user=current_user.username, passwd=current_user.password)
+    return data, result
+
+@bp.route('shared')
+def shared_collections():
+    return render_template('shared.html')
+
+@bp.route('_shared_colls')
+def shared_collections_table():
+    colls, result = rest_call('GET', 'collections', prefix='/external', user=current_user.username, passwd=current_user.password)
+    data = [ {'collection': datafield('collection', r.get('path'), 'irods_collection').htmlstring} for r in colls ]
+    columns = [
+        { "field": "collection", "title": "Collection", "sortable": True }
+    ]    
+    tabledata = {
+        'columnsJSON': json.dumps(columns),
+        'dataJSON': json.dumps(data),
+        'id': 'shared_colls'
+    }    
+    return render_template('bootstraptable.html', data=tabledata)
 
 @bp.route('_startprocess')
 def startprocess():

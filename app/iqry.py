@@ -200,3 +200,9 @@ def qcollmetaval(collection, attr, default=None):
 def qcollmetavalstatic(collection, attr, default=None):
     m = qcollmetadict(collection)
     return m.get(attr, default)
+
+@flaskcache.cache.memoize(timeout=86400, make_name=flaskcache.dep_zone)
+def qcollproperty(collection, property):
+    with irods_manager.session() as session:
+        c = session.collections.get(collection)
+    return getattr(c, property)

@@ -63,7 +63,11 @@ IRODS_ENVS = {
         'default': True,
         'ngsruns_db': 'postgresql://<user>:<pass>@<host>/ICAT',
         'jobs_db': 'postgresql://<user>:<pass>@<host>/ICAT',
+<<<<<<< HEAD
+        'external_url': 'https://irodsdata.rivm.nl/browser',
+=======
         'refdata_collection': 'reference_dbs',
+>>>>>>> master
         'features': [
             'JOBS',
             'MINILIMS',
@@ -78,7 +82,11 @@ IRODS_ENVS = {
         'default': False,
         'ngsruns_db': 'postgresql://<user>:<pass>@<host>/ICAT',
         'jobs_db': 'postgresql://<user>:<pass>@<host>/ICAT',
+<<<<<<< HEAD
+        'external_url': 'http://rivm-biofl-l02a.rivm.ssc-campus.nl/browser',
+=======
         'refdata_collection': 'reference_dbs',
+>>>>>>> master
         'features': [
             'JOBS',
             'MINILIMS',
