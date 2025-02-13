@@ -41,12 +41,15 @@ def search(l, f, v):
         matches = None
     return matches
 
-@cache.memoize(timeout=30, make_name=dep_userzone)
-def rest_call(request_type, endpoint, data={}):
-    if (hostname := current_app.config.get('API_HOST')) is None:
-        hostname = current_user.irods_server
-    url = 'http://{}/api/1.0/{}'.format(hostname, endpoint)
-    auth = HTTPBasicAuth(current_user.username, current_user.password)
+# @cache.memoize(timeout=30, make_name=dep_userzone)
+def rest_call(request_type, endpoint, data={}, hostname=None, user=None, passwd=None, prefix='/api/1.0'):
+    if hostname is None:
+        if (hostname := current_app.config.get('API_HOST')) is None:
+            hostname = current_user.irods_server
+    url = 'http://{}{}/{}'.format(hostname, prefix, endpoint)
+    username = current_user.username if user is None else user
+    password = current_user.password if passwd is None else passwd
+    auth = HTTPBasicAuth(username, password)
     return_data = {}
     if request_type in REQUESTS_METHODS:
         response = REQUESTS_METHODS[request_type](url, auth=auth, json=data)
