@@ -68,7 +68,11 @@ def AVU2data(attr, value, unit):
             if re.match(pattern, attr):
                 my_unit = KNOWN_ATTRIBUTE_TEMPLATES[pattern]
                 break
-    return datafield(attr, value, my_unit)
+    try:
+        df = datafield(attr, value, my_unit)
+    except:
+        df = datafield(attr, value, 'base')
+    return df
 
 def datafield(name, value, datatype):
     return factory.create(datatype, name=name, value=value, datatype=datatype)
