@@ -10,6 +10,7 @@ import json
 from flask import abort, flash, Blueprint, render_template, redirect, request, url_for
 from flask_login import current_user, login_required
 from flask import jsonify
+from .flaskcache import cache, key_zone, key_userzone, dep_zone, dep_userzone
 from irods.models import Collection, CollectionMeta, User, UserMeta
 from irods.column import Criterion
 from app.datafield import datafield
@@ -21,6 +22,7 @@ from .projectdb_api import EPOCH, iso2dt, search, rest_call, add_checkbox
 
 BP = Blueprint('projects', __name__, url_prefix='/projects')
 
+@cache.memoize(timeout=600, make_name=dep_userzone)
 def project_permissions(project):
     """Return True if current_user is manager of project
     """
