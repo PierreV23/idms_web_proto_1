@@ -237,6 +237,13 @@ function createContactRow( contact ) {
         data-toggle="tab" href="#groups" role="tab" 
         aria-controls="groups" aria-selected="false">Groups</A>
       </li>
+      {% if current_user.is_admin %}
+      <li class="nav-item mx-2">
+        <A class="nav-link" id="info-tab" 
+        data-toggle="tab" href="#info" role="tab" 
+        aria-controls="info" aria-selected="false">System Info</A>
+      </li>
+      {% endif %}  
     </ul>
   </div>
 <div class="card-body tab-content h-100">
@@ -376,6 +383,42 @@ function createContactRow( contact ) {
     <!-- Users -->
     <div class="tab-pane" id="users" role="tabpanel" aria-labelledby="users-tab">
     </div>
+
+    <!-- Users -->
+    {% if current_user.is_admin %}
+    <div class="tab-pane h-100 scrollbar-y" id="info" role="tabpanel" aria-labelledby="info-tab">
+      <h2>Project system info</h2>
+      <h3>Project permissions info</h3>
+      <TABLE class="table">
+        <TR><TH>Attr</TH><TH>Value</TH></TR>
+      {% for k, v in project_permissions.items() %}
+        <TR><TD>{{ k }}</TD><TD>{{ v }}</TD></TR>
+      {% endfor %}
+      </TABLE>
+      <h3>Project details</h3>
+      <TABLE class="table">
+        <TR><TH>Attr</TH><TH>Value</TH></TR>
+      {% for k, v in PD.items() %}
+        <TR><TD>{{ k }}</TD><TD>{{ v }}</TD></TR>
+      {% endfor %}
+      </TABLE>
+      <h3>Current User info</h3>
+      <TABLE class="table">
+        <TR><TH>Attr</TH><TH>Value</TH></TR>
+        <TR><TD>environment</TD><TD>{{ current_user.environment }}</TD></TR>
+        <TR><TD>features</TD><TD>{{ current_user.features }}</TD></TR>
+        <TR><TD>fullname</TD><TD>{{ current_user.fullname }}</TD></TR>
+        <TR><TD>groups</TD><TD>{{ current_user.groups() }}</TD></TR>
+        <TR><TD>irods_env</TD><TD>{{ current_user.irods_env }}</TD></TR>
+        <TR><TD>irods_server</TD><TD>{{ current_user.irods_server }}</TD></TR>
+        <TR><TD>irods_zone</TD><TD>{{ current_user.irods_zone }}</TD></TR>
+        <TR><TD>is_active</TD><TD>{{ current_user.is_active }}</TD></TR>
+        <TR><TD>is_admin</TD><TD>{{ current_user.is_admin }}</TD></TR>
+        <TR><TD>projects</TD><TD>{{ current_user.projects() }}</TD></TR>
+        <TR><TD>username</TD><TD>{{ current_user.username }}</TD></TR>
+        </TABLE>      
+    </div>
+    {% endif %}  
 
 <!-- PROJECT DELETE CONFIMATION DIALOG -->
 
