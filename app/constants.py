@@ -138,7 +138,7 @@ LAYOUT = {
         COLOR2: '#c3e6cb',
         TABLECLASS : 'table-done'
     },
-    'notrun':  {
+    'NOTRUN':  {
         SHAPE1 : 'box3d',
         SHAPE2 : 'cds',
         COLOR1: '#ebd9c6',
