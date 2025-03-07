@@ -234,6 +234,12 @@ def auth_failed(e):
     app.logger.info(f"Auth Exception")
     return auth.logout()
 
+@app.errorhandler(AttributeError)
+def auth_failed(e):
+    """Destroy session and redirect to login page."""
+    app.logger.info(f"AttributeError")
+    return auth.logout()    
+
 @app.errorhandler(NGSRunsDBUnavailableException)
 def handle_bad_ngsruns_request(e):
     flash('NGSRuns Database Unavailable', 'error')
