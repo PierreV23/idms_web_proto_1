@@ -1,4 +1,12 @@
 
+<!-- Bootstrap editable -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap-editable.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='font-awesome-3.2.1/css/font-awesome.min.css') }}">
+<script src="{{ url_for('static', filename='js/bootstrap-editable.js') }}"></script>
+<script src="{{ url_for('static', filename='js/bootstrap-table-editable.min.js') }}"></script>
+
+
+
 <table id="version-table" class="table" 
     data-toggle="table" 
     data-striped="true" 
@@ -15,19 +23,37 @@
     data-search="false" 
     data-unique-id="id" 
     data-buttons-prefix="btn-sm btn"
-    data-side-pagination="client">
+    data-editable="true" 
+    data-side-pagination="client"
+    data-row-style="rowStyleFunction">
     <thead>
         <tr>
-            <th data-field="version" data-align="left" data-sortable="true" data-filter-control="input">Version</th>
+            <th data-field="irods_display_path" data-align="left" data-sortable="true" data-filter-control="input">Collection</th>
             <th data-field="creation_date" data-align="" data-sortable="true">Creation Date</th>
-            <th data-field="version_name" data-align="" data-sortable="true">Version Name</th>
-            <th data-field="dataset_id" data-align="left" data-sortable="false">Dataset Id</th-->
-            <th data-field="irods_display_path" data-align="" data-sortable="false">Path</th>
+            <th data-field="version_name" data-align="" data-sortable="true" data-title="Version Name"
+                data-editable="true" data-editable-type="text" data-editable-mode="inline" >Version Name</th>
+            <th data-field="dataset_id" data-align="left" data-sortable="false">Dataset Id</th>
+            <th data-field="is_valid" data-align="left" data-sortable="false">Usable</th>
+            <!--th data-field="version" data-align="" data-sortable="false">Version Number</th-->
         </tr>
     </thead>
 </table>
 
 <script>
+  
+function rowStyleFunction( row, index) {
+  alert( JSON.stringify(row))
+  if( row['is_valid'] == 0 ) {
+    return {
+      css: {
+        'background-color': 'red'
+      }
+    }
+  }
+  return {}
+}
+
+
 
 function detailFormatter(index, row) {
     var html = []
@@ -38,8 +64,24 @@ function detailFormatter(index, row) {
     return html.join('')
   }
 
+
   $('#version-table').bootstrapTable({
     data: {{data|safe}}
+  }).on('editable-save.bs.table', function(e, field, row, rowIndex, oldValue, $el) {
+    //alert( JSON.stringify(row))
+    newValue = row[field]
+    reference_id = row['reference_id']
+    version_id = row['version_id']
+    version = row['version']
+    if( oldValue != newValue) {
+      //send newValue to flask function
+      $.post('{{ url_for("reference.change_version_name") }}', {
+        reference_id: reference_id,
+        version_id: version_id,
+        new_name: newValue
+      }).fail(function(){ alert("Error")})
+    }
+
   });
 
 

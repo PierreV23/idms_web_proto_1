@@ -23,7 +23,7 @@ from os import path
 
 BP = Blueprint('reference', __name__, url_prefix='/reference')
 
-reference_change_allowed = ['name', 'synchronize_command', 'update_frequency', 'synchronization_frequency', 'owner', 'is_active']
+reference_change_allowed = [ 'synchronize_command', 'synchronization_frequency', 'repository', 'tag', 'is_active']
 
 
 def get_referencelist():
@@ -64,10 +64,18 @@ def show_reference_details():
 
     reference_details_raw, result = rest_call('GET', 'reference/{}'.format(reference_id))
     reference_details = {}
-    for attr in ['name', 'creation_date', 'id', 'owner', 'creation_date', 'synchronization_frequency', 'synchronize_command', 'update_frequency', 'is_active']:
-        reference_details[attr] = reference_details_raw.get(attr, '')
+    for attr in ['id', 'name', 'creation_date',  'owner',  'synchronize_command', 'repository', 'tag', 'is_active']:
+        val = reference_details_raw.get(attr, '')
+        if val == None:
+            val = ''
+        reference_details[attr] = val
+    for attr in ['synchronization_frequency']:
+        val = reference_details_raw.get(attr, 0)
+        if val == None:
+            val = 0
+        reference_details[attr] = val
 
-    reference_versions = [] #, result = rest_call('GET', 'reference/{}/versions'.format(6))
+    reference_versions = [] 
 
     import_state_raw, result = rest_call('GET', 'reference/{}/importer_state'.format(reference_id))
     import_state = {}
@@ -81,7 +89,6 @@ def show_reference_details():
     else:
         import_state[ 'last_update_iso' ] = "---"
 
-    print(import_state)
     if import_state['last_synchronize'] != 0:
        import_state[ 'last_synchronize_iso' ] =  datetime.fromtimestamp(import_state['last_synchronize']).strftime("%d-%m-%Y %H:%M:%S")
     else:
@@ -145,12 +152,15 @@ def update_reference_settings():
             if attr in requestdata:
                 data[attr] = requestdata[attr]
         response, result = rest_call('PUT', 'reference/{}'.format(reference), data=data)
-        if result != 405:
+        if result != 200:
             flash(response.get('message', f'Unknown error: {result}'), 'error')
+        else:
+            flash( 'update successful', 'info')
         location=f'reference_dataset={reference}'
     elif action == 'add_reference':
-        response, result = rest_call('POST', 'reference'.format(reference), data={'name': reference})
+        response, result = rest_call('POST', 'reference', data={'name': reference})
         if result == 201:
+            flash( 'creation successful', 'info')
             location = f'reference_dataset={reference}'
         else:            
             flash(response.get('message', 'Unknown error'), 'error')
@@ -160,6 +170,18 @@ def update_reference_settings():
         location='page=reference'
 
     return redirect(f'{url_for("reference.show_reference_datasets")}?{location}')
+
+
+@BP.route('/changeVersionName', methods=['GET', 'POST'])
+@login_required
+def change_version_name():
+    requestdata = request.values.to_dict()
+    reference_id = requestdata.get( 'reference_id')
+    version_id = requestdata.get( 'version_id' )
+    new_name = requestdata.get( 'new_name')
+    response, result = rest_call('PUT', f'reference/{reference_id}/versions/{version_id}', data={'version_name': new_name})
+    return (response, result)
+
 
 @BP.route('/versions')
 @login_required
@@ -176,6 +198,9 @@ def versions_table():
     #format more nicely
     db_versions = [
                  {
+                    'reference_id': reference_id,
+                    'version_id': v['id'],
+                    'is_valid': v['is_valid'],
                     'version': v['version'],
                     'creation_date': v['creation_date'],   
                     'dataset_id': v['dataset_id'],

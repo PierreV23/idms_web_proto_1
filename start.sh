@@ -7,7 +7,7 @@ source activate myflask
 fi
 
 export FLASK_APP=app
-PORT=5${UID: -3}
+PORT=55${UID: -3}
 echo RUN on $PORT
 flask --debug run --host=0.0.0.0 --port=$PORT --with-threads
 conda deactivate

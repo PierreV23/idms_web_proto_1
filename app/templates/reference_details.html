@@ -31,22 +31,49 @@
     <input type="hidden" id="reference" name="reference" value="{{RD.name}}">
     <div class="form-group">
       <label for="reference_synchronization_frequency_{{RD.name}}">Synchronization frequency (seconds)</label>
-      <input type="number" min="0" class="form-control" name="synchronization_frequency" id="reference_synchronization_frequency_{RD.name}}" placeholder="86400" value="{{ RD.synchronization_frequency }}">
+      <input type="number" min="0" class="form-control" name="synchronization_frequency" id="reference_synchronization_frequency_{{RD.name}}" 
+             placeholder="86400" value="{{ RD.synchronization_frequency }}">
+      <small id="frequencyHelp" class="form-text text-muted">
+          Current Value: <span id="frequencyDays_{{RD.name}}">-</span> days, 
+                         <span id="frequencyHours_{{RD.name}}">-</span> hours, 
+                         <span id="frequencyMins_{{RD.name}}">-</span> min, 
+                         <span id="frequencySecs_{{RD.name}}">-</span> sec <br>
+          Examples:<br>
+          &emsp;&emsp;daily: 86400 <br>
+          &emsp;&emsp;weekly: 604800 <br>
+          &emsp;&emsp;monthly: 2592000 <br>
+      </small>
     </div>
   
-    <div class="form-group">
+    <!-- update frequency is actually not used anymore-->
+    <!--div class="form-group">
       <label for="reference_update_frequency_{{RD.name}}">Update frequency (seconds)</label>
       <input type="number" min="0" class="form-control" name="update_frequency" id="reference_update_frequency_{RD.name}}" placeholder="86400" value="{{ RD.update_frequency }}">
-    </div>
+    </div-->
   
     <div class="form-group">
       <label for="reference_synchronize_command_{{RD.name}}">Synchronize command (bash command)</label>
-      <input type="text" class="form-control" name="synchronize_command" id="synchronize_command_{RD.name}}" placeholder="echo 'new data\n' >> ./new/dataset/data_file.txt" value="{{ RD.synchronize_command }}">
+      <input type="text" class="form-control" name="synchronize_command" id="synchronize_command_{{RD.name}}" 
+             placeholder="echo 'new data\n' >> ./new/dataset/data_file.txt" value="{{ RD.synchronize_command }}">
+    </div>
+
+    <hr>
+
+    <div class="form-group">
+      <label for="reference_synchronize_repository_{{RD.name}}">Repository</label>
+      <input type="text" class="form-control" name="repository" id="reference_synchronize_repository_{{RD.name}}" 
+             placeholder="https://gitlab.rivm.nl/bioinformatics/refdata_version_check.git" value="{{ RD.repository }}">
+    </div>
+
+    <div class="form-group">
+      <label for="reference_synchronize_repository_tag_{{RD.name}}">Tag</label>
+      <input type="text" class="form-control" name="tag" id="reference_synchronize_repository_tag_{{RD.name}}" 
+             placeholder="v1.1" value="{{ RD.tag }}">
     </div>
 
 
     <div class="form-group">
-      <label for="reference_activate_{{RD.name}}">activate/Deactivate {{RD.is_active}}</label>
+      <label for="reference_activate_{{RD.name}}">activate/Deactivate</label>
       <div>
         {% if RD.is_active %}
         <div class="btn-group">
@@ -116,6 +143,24 @@
 </div>
 
 <script>
+
+
+$('#reference_synchronization_frequency_{{RD.name}}').on('input', function(){
+    seconds = +$('#reference_synchronization_frequency_{{RD.name}}').val()
+    if( !isNaN(seconds) ) {
+      days  = Math.floor(seconds / 86400)
+      seconds = seconds - (days * 86400)
+      hours = Math.floor(seconds / 3600)
+      seconds = seconds - (hours * 3600)
+      mins  = Math.floor(seconds / 60)
+      seconds = seconds - (mins * 60)
+      secs  = seconds
+      $('#frequencyDays_{{RD.name}}').text(days)
+      $('#frequencyHours_{{RD.name}}').text(hours)
+      $('#frequencyMins_{{RD.name}}').text(mins)
+      $('#frequencySecs_{{RD.name}}').text(secs)
+    }
+});
 
 $('.nav2').on('shown.bs.tab', function(event){
   target = event.target.getAttribute('href')
