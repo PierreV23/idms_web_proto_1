@@ -232,7 +232,13 @@ def invalid_user(e):
 def auth_failed(e):
     """Destroy session and redirect to login page."""
     app.logger.info(f"Auth Exception")
-    return auth.logout()
+    return redirect(url_for('auth.login', next=request.full_path))
+
+@app.errorhandler(AttributeError)
+def auth_failed(e):
+    """Destroy session and redirect to login page."""
+    app.logger.info(f"AttributeError")
+    return redirect(url_for('auth.login', next=request.full_path))  
 
 @app.errorhandler(NGSRunsDBUnavailableException)
 def handle_bad_ngsruns_request(e):
