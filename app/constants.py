@@ -90,6 +90,13 @@ LAYOUT = {
         COLOR2: '#B0C4DE',
         TABLECLASS : 'table-stage'    
     },
+    'spacecheck': {
+        SHAPE1 : 'underline',
+        SHAPE2 : 'cds',
+        COLOR1: '#D4B3F5',
+        COLOR2: '#D4B3F5',
+        TABLECLASS : 'table-spacecheck'    
+    },    
     'download': {
         SHAPE1 : 'underline',
         SHAPE2 : 'cds',

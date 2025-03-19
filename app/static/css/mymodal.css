@@ -601,6 +601,12 @@ ul {
   background-color: #B0C4DE;
 }
 
+.table-spacecheck,
+.table-spacecheck>td,
+.table-spacecheck>th {
+  background-color: #D4B3F5;
+}
+
 .table-download,
 .table-download>td,
 .table-download>th {
