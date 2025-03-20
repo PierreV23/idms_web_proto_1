@@ -291,9 +291,13 @@ class data_collection_id(data_base):
 class data_runsheet(data_base):
 
     @property
+    def htmlshort(self):
+        display_runsheet_id = re.sub('-runsheet.yaml', '', self.value)[:8]
+        return '<a href="{0}" data-toggle="tooltip" title="{1}">{2}</a>'.format(self.url, self.value, display_runsheet_id)
+
+    @property
     def htmlstring(self):
-        runsheet_id = re.sub('-runsheet.yaml', '', self.value)
-        return '<a href="{0}" data-toggle="tooltip" title="{1}">{2}</a>'.format(self.url, self.value, runsheet_id)
+        return '<a href="{0}" data-toggle="tooltip" title="{1}">{1}</a>'.format(self.url, self.value)
 
     @property
     def url(self):
