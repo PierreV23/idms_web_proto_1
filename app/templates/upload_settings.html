@@ -32,8 +32,8 @@ menuname='upload_settings'
             {% endif %}
             {% endfor %}
             <div class="form-group float-right">
-                <button type="button" id="button-save" class="formsubmit btn btn-primary" value="save" disabled>Save</button>
-                <button type="button" id="button-save-continue" class="formsubmit btn btn-primary" value="next" disabled>Save & Continue</button>
+                <button type="button" id="button-save" class="formsubmit btn btn-primary" value="save">Save</button>
+                <button type="button" id="button-save-continue" class="formsubmit btn btn-primary" value="next">Save & Continue</button>
                 <input type="hidden" id="submitbutton" name="submitbutton" value="save">
             </div>
         </form>
@@ -92,9 +92,6 @@ $("#save-changes-button").on("click", function () {
     submitForm();
 });
 
-$('input, select').on('change', function() {
-    $('.formsubmit').prop("disabled", false);
-})
 
 </script>
 
