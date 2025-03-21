@@ -27,13 +27,15 @@ from irods.exception import CollectionDoesNotExist
 from app.irodssessions import irods_manager
 from ast import literal_eval
 
-
+ATTR_PROJECTID = 'projectID'
 ATTR_UPLOAD = 'user::upload'
 ATTR_UPLOADNAME = f'{ATTR_UPLOAD}::name'
+ATTR_UPLOADPARENT = f'{ATTR_UPLOAD}::parent'
 ATTR_DATASETID = 'sys::dataset_id'
 ATTR_UPLOADSETTINGS = 'user::upload::settings::'
 ATTR_UPLOADMETA = 'user::upload::meta::'
 ATTR_UPLOADMETASCHEMA = 'user::upload::schemafile'
+META_SUFFIX = 'SYS::suffixlength'
 
 # remove spacial characters, but there is no need to only allow [a-zA-Z_], quotes, paranthesis, "@" are all valid characters
 # for AVU keys a stronger sanitazition might be desired, allowing only [0-9a-Z_:-]
@@ -53,6 +55,21 @@ class UploadType:
     Done = 'done'
 
 bp = Blueprint('upload', __name__, url_prefix='/upload')
+
+def collection_basename(coll):
+    """Return the basename of a colletion without the path, and without the numeric suffix
+    
+    So /rivmZone_acc_01/projects/ngslab/output/230911_NB502001_0032_AHTFHKAFX3_0000
+    returns 230911_NB502001_0032_AHTFHKAFX3
+    assuming sys::suffixlength == 4
+    """
+
+    name = os.path.basename(coll)
+    sl = iqry.qcollmetaval(coll, META_SUFFIX)
+    if sl:
+        name = name[:-int(sl)-1]
+    return name
+
 
 def unique_coll(base_coll, prefix=None, use_date=False):
     """Create a collection with a unique collection name
@@ -321,6 +338,14 @@ def new_upload():
         get_or_set_uid(collobj)
         iqry.scollmetaval(coll, ATTR_UPLOADNAME, name)
         iqry.scollmetaval(coll, ATTR_UPLOAD, UploadType.Pending)
+        if not (parent := request.args.get('parent')) is None:
+            iqry.scollmetaval(coll, ATTR_UPLOADPARENT, parent)
+            projectID = iqry.qcollmetaval(parent, ATTR_PROJECTID)
+            if projectID:
+                iqry.scollmetaval(coll, f'{ATTR_UPLOADSETTINGS}projectID', projectID)
+                suggested_name = collection_basename(parent)
+                if suggested_name:
+                    iqry.scollmetaval(coll, f'{ATTR_UPLOADSETTINGS}collection', suggested_name)
 
     return redirect(url_for('upload.upload_settings', coll=coll ))
 

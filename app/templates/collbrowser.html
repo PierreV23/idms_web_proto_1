@@ -19,6 +19,17 @@
 menuname='collectionbrowser'
 {% endblock %}
 
+{% block menuitems %}
+<li class="nav-header">ACTIONS</li>
+<li class="nav-item">
+  <a href="#" class="nav-link" onClick="uploadDownstream()">
+    <i class="fas fa-plus nav-icon"></i>
+    Upload downstream data
+  </a>
+</li>
+
+{% endblock %}
+
 {% block content %}
 
 <script>
@@ -53,6 +64,10 @@ menuname='collectionbrowser'
     link.click();
     document.body.removeChild(link);
     delete link;
+  }
+
+  function uploadDownstream() {
+    window.location.href = "{{ url_for('upload.new_upload')}}?parent=" + encodeURIComponent(collection)
   }
 
   function download_wrapper(path) {
