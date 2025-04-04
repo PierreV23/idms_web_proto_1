@@ -76,7 +76,7 @@ def serve_object():
         obj = fs_irods(session=session).getfile(path)
         objectfile = obj.open('r')
         mimetype = ''
-        if file_extension in [".csv"]:
+        if file_extension in [".csv", ".tsv"]:
             output = csvconvert(objectfile)
             return output
         if file_extension in [".md"]:
