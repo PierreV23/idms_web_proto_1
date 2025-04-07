@@ -31,7 +31,7 @@
       </div>
     </div>
 
-    {% if 'PROJECTS' in current_user.features %}
+    {% if current_user.feature('projects') %}
     <div class="card border-primary">
       <div class="card-header">
         My Projects

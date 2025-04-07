@@ -14,7 +14,7 @@
         <a class="nav-link" id="usage-tab" data-toggle="tab" href="#usage-content" role="tab"
           aria-controls="usage-content" aria-selected="false">Usage</a>
       </li>
-      {% if 'REFERENCE' in current_user.features %}      
+      {% if current_user.feature('reference') %}
       <li class="nav-item mx-2">
         <a class="nav-link" id="refdata-tab" data-toggle="tab" href="#refdata-content" role="tab"
           aria-controls="refdata-content" aria-selected="false">ReferenceData</a>

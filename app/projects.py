@@ -335,15 +335,21 @@ def get_process():
     processlist = get_processlist(data['project'])
     return jsonify(processlist)
 
-
-@BP.route('_myprojectview', methods=['GET'])
-def my_projectview():
+@BP.route('_myprojects', methods=['GET'])
+def my_projects():
     projectlist = current_user.projects()
     projectdetails = {}
     pl, result = rest_call('GET', 'projects')
     if result == 200:
         projectdetails = { project['name'] : project['default_collection'] for project in pl if project['name'] in projectlist }
-    columns = min(4, 1 + len(projectdetails) // 20)
+    return projectdetails    
+
+@BP.route('_myprojectview', methods=['GET'])
+def my_projectview():
+    columns = request.args.get('columns')
+    projectdetails = my_projects()
+    if columns is None:
+        columns = min(4, 1 + len(projectdetails) // 20)
     return render_template('_myprojects.html', projectdetails=projectdetails, columns=columns )
 
 

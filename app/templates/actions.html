@@ -156,6 +156,7 @@ $('#shareButton').on('click', function(){
         </a>
         </li>
         {% endif %}
+        {% if current_user.feature('jobs') %}
         {% if coll_state.is_dataset is sameas true %}
         <li class="nav-item mx-2">
           {% if coll_state.active_pg %}
@@ -187,7 +188,8 @@ $('#shareButton').on('click', function(){
             Provenance
         </a>
         </li>
-        {% if 'SHARING' in current_user.features %}
+        {% endif %}
+        {% if current_user.feature('sharing') %}
         <li class="nav-item mx-2">
           <a class="nav-link" id="sharing-tab"
             data-toggle="tab" href="#sharing" role="tab"
@@ -257,10 +259,3 @@ $('#shareButton').on('click', function(){
   </div>
 </div> <!-- content -->
 
-<script>
-
-{% if not current_user.is_admin %}
-$('#settings').find('input').prop("disabled", true)
-{% endif %}
-
-</script>

@@ -20,7 +20,7 @@ SITES_AND_CLUSTERS = {'RIVM': {'primary': True, 'clusters': {'RIVM-LSF-PRD': {'t
 JOBENGINE_WORKDIR = 'mount'
 JOBENGINE_CLUSTER_NAME = 'RIVM-LSF-PRD'
 
-ACTIVE_RUNSHEET_STATES = [ 'incoming', 'prepare', 'stage', 'download', 'queued', 'startup', 'active', 'finishing', 'postprocessing' ]
+ACTIVE_RUNSHEET_STATES = [ 'incoming', 'prepare', 'stage', 'spacecheck', 'download', 'queued', 'startup', 'active', 'finishing', 'postprocessing' ]
 
 ATTR_SYS_PREFIX = 'sys::'
 ATTR_USR_PREFIX = 'user::'

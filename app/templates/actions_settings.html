@@ -165,5 +165,8 @@
     })
   })
 
+{% if not current_user.is_admin or not current_user.feature('admin') %}
+$('#settings').find('input').prop("disabled", true)
+{% endif %}
 
 </script>

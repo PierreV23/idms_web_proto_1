@@ -131,9 +131,9 @@ class WebUser(UserMixin):
     def refdata_coll(self):
         return self.irods_env.get('refdata_collection', None)
     
-    @property
-    def features(self):
-        return self.irods_env.get('features', [])
+    @flaskcache.cache.memoize(timeout=5, make_name=flaskcache.dep_userzone)
+    def feature(self, name):
+        return self.settings.get(f'feature::{name}', 'false') == 'true'
     
     @property
     def minilims_db(self):

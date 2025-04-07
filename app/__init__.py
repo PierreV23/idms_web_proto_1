@@ -25,6 +25,7 @@ from .ngsruns import db as ngsruns_db, NGSRunsDBUnavailableException
 from .jobs import db as jobs_db, JobsDBUnavailableException
 from .flaskcache import cache, dep_zone
 from .irodssessions import irods_manager
+from .constants import FEATURES
 
 #from app.stats import statstore
 
@@ -151,7 +152,15 @@ def about():
 
 @app.route('/settings')
 def settings():
-    return render_template('settings.html')
+    features = []
+    for feature, description in FEATURES.items():
+        features.append({
+            'label': feature,
+            'description': description,
+            'value': current_user.feature(feature)
+        })
+
+    return render_template('settings.html', features=features)
 
 REQUESTS_METHODS = {
     'GET':   requests.get,
