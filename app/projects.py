@@ -290,6 +290,19 @@ def update_projectsettings():
             data = {'name' : name }
             response, result = rest_call('POST', f'projects/{project}/processgroups', data=data)
         location=f'project={project}&pp=processgroups&processgroup={name}'
+    elif action == 'rename_processgroup':
+        oldname = requestdata.get('oldname')
+        newname = requestdata.get('name')
+        if project and oldname and newname:
+            data = {'name' : newname }
+            response, result = rest_call('PUT', f'projects/{project}/processgroups/{oldname}', data=data)
+        location=f'project={project}&pp=processgroups&processgroup={newname}'
+    elif action == 'remove_processgroup':
+        name = requestdata.get('name')
+        if project and name:
+            data = {'name' : name }
+            response, result = rest_call('DELETE', f'projects/{project}/processgroups/{name}', data=data)
+        location=f'project={project}&pp=processgroups'               
     elif action == 'update_project':
         data = {}
         for attr in ['description', 'default_collection', 'service_account']:

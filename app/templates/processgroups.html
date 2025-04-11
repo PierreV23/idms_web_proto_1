@@ -88,33 +88,31 @@ $(window).on('load', function() {
 </script>
 
 
-<div class="d-flex flex-column">
-  <div class="d-flex flex-row align-items-top justify-content-between">
-    <form class="p-2 flex-fill">
-      <div class="form-group row flex-fill">
-        <label class="col-sm-4" for="groupselect">Process group</label>
-        <SELECT class="form-control col-sm-8" id="groupselect">
+<div>
+  <form>
+    <div class="form-row">
+      <div class="col-2 p-2">
+        <label for="groupselect">Processgroup</label>
+      </div>
+      <div class="col-4">
+        <SELECT class="form-control" id="groupselect">
           {% for pg in processgroups %}
           <OPTION {% if processgroup == pg %}SELECTED{% endif %}>{{ pg }}</OPTION>
           {% endfor %}
-        </SELECT>
+        </SELECT>        
       </div>
-    </form>
-    <div class="flex-fill">
+      <div class="col-2">
+        <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          Select action
+        </button>
+        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+          <a class="dropdown-item pgedit" data-action="add_processgroup" href="#">Add new group</a>
+          <a class="dropdown-item pgedit" data-action="remove_processgroup" href="#">Remove group</a>
+          <a class="dropdown-item pgedit" data-action="rename_processgroup" href="#">Rename group</a>
+        </div>        
+      </div>
     </div>
-    <form class="p-2 flex-fill" action="{{ url_for('projects.update_projectsettings') }}" method="POST">
-      {% if project_permissions.users %}
-      <div class="form-group row">
-        <label class="col-sm-4" for="groupselect">New process group</label>
-        <INPUT TYPE="text" class="form-control col-sm-4" id="new_groupname" name="name">
-      
-      <input type="hidden" name="project" id="projectname" value="">
-      <input type="hidden" name="action" value="add_processgroup">
-      <BUTTON class="btn btn-primary col-sm-2" type="SUBMIT" id="add_group_button">ADD</BUTTON>
-        </div>
-        {% endif %}
-    </form>
-  </div>
+  </form>
   <hr>
   <div class="h30">
       <CENTER id="pg_graph">Loading process group graph ...</CENTER>
@@ -124,7 +122,87 @@ $(window).on('load', function() {
       <CENTER >Loading process group details ...</CENTER>
   </div>
 </div>
+
+<div class="modal" tabindex="-1" role="dialog" id="pgmodal">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit processgroup</h5>
+      </div>
+      <form id="modify-pg-form" action="{{ url_for('projects.update_projectsettings')}}" method="POST">
+        <div class="modal-body">
+          <input type="text" class="form-control" id="name" name="name" value="<Processgroup name>">
+          <input type="hidden" id="action" name="action">
+          <input type="hidden" id="oldname" name="oldname">
+          <input type="hidden" name="project" id="projectname" value="">    
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Submit</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="confirm-delete" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Delete processgroup</h5>
+        </div>
+          <div class="modal-body">
+            <center>
+              Are you sure you want to remove:
+              <B class="groupname"></B>
+            </center>
+          </div>
+          <div class="modal-footer">
+            <form id="delete-pg-form" action="{{ url_for('projects.update_projectsettings')}}" method="POST">
+              <input type="hidden" id="name" name="name" value="">
+              <input type="hidden" id="action" name="action" value="remove_processgroup">
+              <input type="hidden" name="project" id="projectname" value="">
+              <button type="submit" class="btn btn-danger">Delete</button>
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+            </form>
+          </div>
+      </div>
+  </div>
+</div>
+
 <script>
+
+$(document).ready(function() {
+  $('.pgedit').off()
+  $('.pgedit').on('click', function() {
+    action = $(this).data('action')
+    group = $('#groupselect option:selected').text()
+    $('#pgmodal').find('#action').val(action)
+    $('#pgmodal').find('#oldname').val(group)
+    $('#pgmodal').find('#projectname').val(project)
+    switch(action)
+    {
+      case "add_processgroup":
+        $('#pgmodal').find('.modal-title').html('Add new processgroup')
+        $('#pgmodal').find('#name').val('<Processgroup Name>')
+        $('#pgmodal').modal('show').find('#name').focus().select()
+        break
+      case "rename_processgroup":
+        $('#pgmodal').find('.modal-title').html('Rename processgroup')
+        $('#pgmodal').find('#name').val(group)
+        $('#pgmodal').modal('show').find('#name').focus().select()
+        break
+      case "remove_processgroup":
+        $('#confirm-delete').find('#name').val(group)
+        $('#confirm-delete').find('#projectname').val(project)             
+        $('#confirm-delete').find('.groupname').html(group)
+        $('#confirm-delete').modal('show')
+        break
+    }
+  })
+})
+
+
 $('#groupselect').on('change', function() {
     load_pgpage();
 })
