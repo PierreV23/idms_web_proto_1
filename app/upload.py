@@ -199,7 +199,7 @@ def upload_settings():
             unset_upload_meta(coll)
         for k, v in data.items():
             if k in FIELDS and v:
-                iqry.scollmetaval(coll, f'{ATTR_UPLOADSETTINGS}{k}', str(v) )
+                iqry.scollmetaval(coll, f'{ATTR_UPLOADSETTINGS}{k}', str(v).strip() )
         if data.get('submitbutton', 'save') == 'next':
             return redirect(url_for('upload.upload_meta', coll=coll))
         else:
