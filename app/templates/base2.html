@@ -5,9 +5,15 @@
   <!-- Required meta tags -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <title>iDMS</title>
+
   {% block meta %}
 
   {% endblock %}
+
+  <!-- favicon -->
+  <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
   <!-- Bootstrap CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/mymodal.css') }}">
@@ -23,8 +29,6 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/my-custom-formatting.css') }}">
 
 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.7.1/css/bootstrap-datepicker.min.css" rel="stylesheet"/>
-
-  <title>iRODS</title>
 
   <script src="{{ url_for('static', filename='js/moment.min.js') }}"></script>
 
