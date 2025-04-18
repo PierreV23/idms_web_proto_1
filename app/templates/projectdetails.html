@@ -394,27 +394,47 @@ function createContactRow( contact ) {
       {% for k, v in project_permissions.items() %}
         <TR><TD>{{ k }}</TD><TD>{{ v }}</TD></TR>
       {% endfor %}
+      {% macro formatvar(value) -%}
+        {% if value is mapping %}
+          <table>
+            <tbody>
+              {% for key, val in value.items() %}
+                <tr>
+                  <td>{{ key }}</td>
+                  <td>{{ formatvar(val) }}</td>
+                </tr>
+          {% endfor %}
+            </tbody>
+          </table>
+        {% elif value is iterable and value is not string %}
+          {% for item in value %}
+          {{ item }}{% if not loop.last %},{% endif %}
+          {% endfor %}
+        {% else %}
+          {{ value }}
+        {% endif %}
+      {%- endmacro %}
       </TABLE>
       <h3>Project details</h3>
       <TABLE class="table">
         <TR><TH>Attr</TH><TH>Value</TH></TR>
       {% for k, v in PD.items() %}
-        <TR><TD>{{ k }}</TD><TD>{{ v }}</TD></TR>
+        <TR><TD>{{ k }}</TD><TD>{{ formatvar(v) }}</TD></TR>
       {% endfor %}
       </TABLE>
       <h3>Current User info</h3>
       <TABLE class="table">
         <TR><TH>Attr</TH><TH>Value</TH></TR>
         <TR><TD>environment</TD><TD>{{ current_user.environment }}</TD></TR>
-        <TR><TD>features</TD><TD>{{ current_user.features }}</TD></TR>
+        <TR><TD>features</TD><TD>{{ formatvar(current_user.features) }}</TD></TR>
         <TR><TD>fullname</TD><TD>{{ current_user.fullname }}</TD></TR>
-        <TR><TD>groups</TD><TD>{{ current_user.groups() }}</TD></TR>
-        <TR><TD>irods_env</TD><TD>{{ current_user.irods_env }}</TD></TR>
+        <TR><TD>groups</TD><TD>{{ formatvar(current_user.groups()) }}</TD></TR>
+        <TR><TD>irods_env</TD><TD>{{ formatvar(current_user.irods_env) }}</TD></TR>
         <TR><TD>irods_server</TD><TD>{{ current_user.irods_server }}</TD></TR>
         <TR><TD>irods_zone</TD><TD>{{ current_user.irods_zone }}</TD></TR>
         <TR><TD>is_active</TD><TD>{{ current_user.is_active }}</TD></TR>
         <TR><TD>is_admin</TD><TD>{{ current_user.is_admin }}</TD></TR>
-        <TR><TD>projects</TD><TD>{{ current_user.projects() }}</TD></TR>
+        <TR><TD>projects</TD><TD>{{ formatvar(current_user.projects()) }}</TD></TR>
         <TR><TD>username</TD><TD>{{ current_user.username }}</TD></TR>
         </TABLE>      
     </div>

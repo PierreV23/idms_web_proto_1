@@ -167,8 +167,7 @@ def show_projectdetails():
         groups = [u[User.name] for u in query]
     projectdetails['groups'] = groups
     # Retrieve general project settings
-    for attr in ['description', 'default_collection', 'service_account', 'modify_in_place',
-                 'distribution', 'restartable', 'omit_staging', 'omit_bringonline']:
+    for attr in ['description', 'default_collection', 'service_account']:
         projectdetails[attr] = pl.get(attr, '')
 
     processes, result = rest_call('GET', '/projects/{}/processes'.format(projectnaam))
