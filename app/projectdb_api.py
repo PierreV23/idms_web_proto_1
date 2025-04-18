@@ -47,8 +47,8 @@ def rest_call(request_type, endpoint, data={}, hostname=None, user=None, passwd=
         if (hostname := current_app.config.get('API_HOST')) is None:
             hostname = current_user.irods_server
     url = 'http://{}{}/{}'.format(hostname, prefix, endpoint)
-    username = 'alt\\{}'.format(current_user.username) if user is None else user
-    password = current_user.ntlm_hash if passwd is None else passwd
+    username = current_user.username if user is None else user
+    password = current_user.password if passwd is None else passwd
     auth = HTTPBasicAuth(username, password)
     return_data = {}
     if request_type in REQUESTS_METHODS:

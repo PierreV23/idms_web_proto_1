@@ -223,7 +223,7 @@ def rest_call(request_type, endpoint, data={}):
     url = 'http://{}/api/1.0/{}'.format(current_user.irods_server, endpoint)
     #TODO: remove this testing line:
     #url = 'http://{}/api/1.0/{}'.format('0.0.0.0:5000', endpoint)
-    auth = HTTPBasicAuth('alt\\{}'.format(current_user.username), current_user.ntlm_hash)
+    auth = HTTPBasicAuth(current_user.username, current_user.password)
     return_data = {}
     if request_type in REQUESTS_METHODS:
         response = REQUESTS_METHODS[request_type](url, auth=auth, json=data)
