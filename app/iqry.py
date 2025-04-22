@@ -58,20 +58,26 @@ def qcollmeta(collection):
     return result
 
 def scollmetaval(coll, attr, value, unit=None):
+    if value == '':
+        raise ValueError( 'Empty-string not allowed as value of AVU!') 
     if qcollmetaval(coll, attr) == value:
         return
     with irods_manager.session() as session:
         u = session.collections.get(coll)
         old_avus = [ m for m in u.metadata.items() if m.name == attr ]
         new_avu = iRODSMeta(attr, value, unit)
+
         # The atomic metadata operations are preferred, but require a higher permission level
         try:
-            u.metadata.apply_atomic_operations(
+            u.metadata.apply_atomic_operations( 
                 *[AVUOperation(operation='remove', avu=i) for i in old_avus],
                 AVUOperation(operation='add', avu=new_avu)
             )
         except CAT_NO_ACCESS_PERMISSION:
+            for oa in old_avus:
+                u.metadata.remove(oa)
             u.metadata[attr] = new_avu
+
     flaskcache.cache.delete_memoized(qcollmeta, coll)
     
 def addcollmetaval(coll, attr, value, unit=None):
