@@ -262,7 +262,11 @@ def upload_meta():
         for k, v in record.get('data', {}).items():
             key = sanitize(k, True)
             type_name = type(v).__name__  # gives us just int,str, etc, which we can search in builtins
-            iqry.scollmetaval(collection, f'{ATTR_UPLOADMETA}{key}', sanitize(str(v)), type_name )    
+            value = sanitize(str(v))    
+            if not value:
+                #AVUs without value will not be set
+                continue
+            iqry.scollmetaval(collection, f'{ATTR_UPLOADMETA}{key}', value, type_name )    
         selectedSchema = record.get('selectedSchema')
         iqry.scollmetaval(collection, f'{ATTR_UPLOADMETASCHEMA}', selectedSchema)              
         return jsonify({'status': 'OK' }), 200
