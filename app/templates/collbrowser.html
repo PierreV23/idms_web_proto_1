@@ -21,12 +21,14 @@ menuname='collectionbrowser'
 
 {% block menuitems %}
 <li class="nav-header">ACTIONS</li>
+{% if current_user.feature('provenance') %}
 <li class="nav-item">
   <a href="#" class="nav-link" onClick="uploadDownstream()">
     <i class="fas fa-plus nav-icon"></i>
     Upload downstream data
   </a>
 </li>
+{% endif %}
 
 {% endblock %}
 
@@ -35,6 +37,8 @@ menuname='collectionbrowser'
 <script>
 
   var collection = "{{ path }}";
+  var selected_project = "{{ project }}"
+  var selected_projectpath = ""
   var graph_levels = "{{ graph_levels }}";
   var graph_simplify = "{{ graph_simplify }}"
   var sortkey = "";
@@ -43,9 +47,8 @@ menuname='collectionbrowser'
   var waiting = '<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>'
   activetab = localStorage.getItem('activetab')
   activetab ??= "#archive"
-  
 
-  // var myDefaultWhiteList = $.fn.tooltip.Constructor.Default.whiteList
+      // var myDefaultWhiteList = $.fn.tooltip.Constructor.Default.whiteList
   $(function() {
     $.fn.popover.Constructor.Default.whiteList.table = [];
     $.fn.popover.Constructor.Default.whiteList.tr = [];
@@ -191,6 +194,7 @@ menuname='collectionbrowser'
   }
 
   function load_graph() {
+    {% if current_user.feature('provenance') %}
     $('#graphimg').html(waiting);
     $.get('{{ url_for('collbrowser.generate_graph') }}', {
       path: collection,
@@ -200,6 +204,7 @@ menuname='collectionbrowser'
       $('#graphimg').html(data);
       size_graph();
     })
+    {% endif %}
   }
 
   function size_graph() {
@@ -233,6 +238,32 @@ menuname='collectionbrowser'
     });
   }
 
+  function load_leftpane() {
+    {% if current_user.feature('treeview') %}    
+    load_tree()
+    {% else %}
+    load_projects()
+    {% endif %}    
+  }
+
+  function load_projects() {
+    $.get('{{ url_for('projects.my_projects') }}', 
+      function (data) {
+        $('#treeview').empty()
+        for (const [project, path] of Object.entries(data)) {
+          const classname = selected_project == project ? "projectselect" : "projectlabel"
+          selected_projectpath = selected_project == project ? path : selected_projectpath
+          if (selected_projectpath != "") {
+            $('#project-home-button').attr('hidden', false)
+          }
+          $('#project-home-button').data('path', selected_projectpath)
+          $('#treeview').append(
+            `<div class="path-change ${classname}" data-path="${path}" data-project="${project}">${project}</div>`
+          )
+        };
+      }
+    )
+  }
 
   function load_tree() {
     $.get('{{ url_for('collbrowser.colltree') }}', {
@@ -267,7 +298,7 @@ menuname='collectionbrowser'
   function set_path() {
     $('.collist').popover('dispose')
     load_list(true);
-    load_tree();
+    load_leftpane();
     load_graph();
     load_meta();
     build_title();
@@ -288,6 +319,8 @@ menuname='collectionbrowser'
   $(document).on('click', '.path-change', function () {
     $('.flash-error').remove()
     collection = (this.nodeName == "g" ? this.id : $(this).data('path'));
+    selected_project = $(this).data('project') || selected_project;
+    console.log(selected_project)
     history.pushState({ "coll": collection }, 'Browse ' + collection, '/collbrowser?path=' + collection);
     if (typeof collection == 'undefined') {
       collection = $(this).attr('id')
@@ -320,7 +353,7 @@ menuname='collectionbrowser'
 
   $(window).on('load', function () {
     set_path();
-    load_tree();
+    load_leftpane();
   });
 
 
@@ -366,18 +399,18 @@ menuname='collectionbrowser'
 
 <div id="data_map"></div>
 
-<div class="browsergrid h100">
+<div class=browsergrid h100" id="main-window"> 
 
   <div class="card border-primary browser-sidebar">
     <div class="card-header">
-      <div class="card-title"><b>Collection tree</b></div>
+      <div class="card-title"><b>{% if current_user.feature('treeview') %}Collection tree{% else %}Project List{% endif %}</b></div>
     </div>
     <div class="card-body scrollbar-y small-font h-100" id="treediv" >
       <div id="treeview">
       </div>
     </div>
   </div>
-
+{% if current_user.feature('provenance') %}
   <div class="card browser-graph h100">
     <div class="card-header">
       <div class="card-title">Data graph</div>
@@ -400,20 +433,26 @@ menuname='collectionbrowser'
       <div id="graphimg"></div>
     </div>
   </div>
+{% endif %}  
 
-  <div class="card browser-contents h-100" id="collapse-contents">
-      <div class="overlay">
-        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
-      </div>
+  <div class="card browser-contents h-100">
+    {% if current_user.feature('graph') is sameas false %}
+    <div class="card-header">
+      <div class="card-title"><b>Collection Contents</b></div>
+      <button class="button btn-secondary float-right path-change" id="project-home-button" hidden>Project Home</button>
+    </div>
+    {% endif %}
+    <div class="card-body" id="collapse-contents">
+    </div>
   </div>
-
+{% if current_user.feature('actions') %}
   <div id="collapse-actions" class="card card-tabs browser-actions h-100">
     <div class="overlay">
       <i class="fas fa-2x fa-sync-alt fa-spin"></i>
     </div>
   </div>
-
-  <div class="card browser-meta" id="meta-card">
+{% endif %}
+  <div class="card browser-meta h-100" id="meta-card">
 
   </div>
 
@@ -527,6 +566,23 @@ menuname='collectionbrowser'
 </div> <!-- content -->
 
 <script>
+
+console.log('{{ current_user.feature('actions') }}')
+
+{% if current_user.feature('actions') %}
+grid_top_right = "actions"
+{% else %}
+grid_top_right = "metadata"
+{% endif %}
+
+{% if current_user.feature('provenance') %}
+grid_top_mid = "graph"
+{% else %}
+grid_top_mid = "contents"
+{% endif %}
+
+// console.log('"sidebar ' + grid_top_mid + ' ' + grid_top_right + '" "sidebar contents metadata"')
+$('#main-window').css('grid-template-areas', '"sidebar ' + grid_top_mid + ' ' + grid_top_right + '" "sidebar contents metadata"')
 
 var graph_width = 0;
 

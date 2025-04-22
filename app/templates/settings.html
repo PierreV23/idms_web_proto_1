@@ -9,9 +9,47 @@ menuname='settings'
 {% endblock %}
 
 {% block content %}
+
+{% if current_user.is_admin %}
 <div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Admin Features</h3>
+    </div>
     <div class="card-body">
-        <H3>Collection browser</H3>
+        <div class="form-group">
+            <div class="custom-control custom-switch form-check-inline">
+                <input class="custom-control-input usersetting" data-attr="feature::admin" type="checkbox" id="featuresadmin"
+                    {% if current_user.feature('admin') %} checked {% endif %}>
+                <label class="custom-control-label col-form-label" for="featuresadmin">Enable administrative actions</label>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Web Application Features</h3>
+    </div>
+    <div class="card-body">
+        <div class="form-group">
+            {% for feature in features  %}
+            <div class="custom-control custom-switch form-check-inline">
+                <input class="custom-control-input usersetting" data-attr="feature::{{ feature.label }}" type="checkbox" id="features{{ feature.label }}"
+                    {% if feature.value %} checked {% endif %}>
+                <label class="custom-control-label col-form-label" for="features{{ feature.label }}">{{ feature.description }}</label>
+            </div>
+            {% endfor %}            
+        </div>
+    </div>
+</div>
+
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Collection browser settings</h3>
+    </div>    
+    <div class="card-body">
         <div class="form-group">
             <div class="custom-control custom-switch form-check-inline">
                 <input class="custom-control-input usersetting" data-attr="sysmeta" type="checkbox" id="sysMeta"

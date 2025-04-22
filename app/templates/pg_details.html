@@ -79,7 +79,7 @@
             </ul>
             {% endif %}           
         </div>
-        {% if 'REFERENCE' in current_user.features %}        
+        {% if current_user.feature('reference') %}
         <div class="col col-mb-3">
             {% if selected_details %}
             <h5>Reference-Data</h5>

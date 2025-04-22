@@ -207,6 +207,7 @@ function createContactRow( contact ) {
         data-toggle="tab" href="#settings" role="tab" 
         aria-controls="settings" aria-selected="false">Settings</A>
       </li>
+      {% if current_user.feature('jobs') %}
       <li class="nav-item mx-2">
         <A class="nav-link" id="contacts-tab" 
         data-toggle="tab" href="#contacts" role="tab" 
@@ -217,6 +218,7 @@ function createContactRow( contact ) {
         data-toggle="tab" href="#processgroups" role="tab" 
         aria-controls="processgroups" aria-selected="false">Processgroups</A>
       </li>
+      {% endif %}
       <li class="nav-item mx-2">
         <A class="nav-link" id="collections-tab" 
         data-toggle="tab" href="#collections" role="tab" 

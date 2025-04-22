@@ -7,6 +7,17 @@ ATTR_RESOURCE_AVAILABLE = 'sys::resource::available'
 ATTR_RESOURCE_TAR = 'sys::resource::tar'
 ATTR_RESOURCE_ONLINE = 'sys::resource::online'
 
+FEATURES = {
+    'actions': 'Show actions pane',
+    'jobs': 'Show process configuration and job status page',
+    'projects': 'Show project configuration pages',
+    'provenance': 'Show and manage data provenance',
+    'reference': 'Show reference data configuration',
+    'sharing': 'Configure datasets that need to be shared externally',
+    'minilims': 'Show ONT samplesheet configuration interface',
+    'treeview': 'Use treeview in collection browser instead of project list'
+}
+
 COLL_KEY_MAP = {
     'name': Collection.name,
     'create_time': Collection.create_time,
