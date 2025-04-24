@@ -3,7 +3,7 @@
 processgroup = '{{ processgroup }}'
 
 function load_pg() {
-  $.get('{{ url_for('projects.processgroups') }}', {
+  $.get("{{ url_for('projects.processgroups') }}", {
     project: "{{ PD.name }}",
     group: processgroup
   }, function(data) {
@@ -14,7 +14,7 @@ function load_pg() {
 }
 
 function load_colls() {
-  $.get('{{ url_for('projects.projectcolltable') }}', {
+  $.get( "{{ url_for('projects.projectcolltable') }}", {
     project: "{{ PD.name }}"
   }, function(data) {
      $('#collections').html(data);
@@ -207,7 +207,7 @@ function createContactRow( contact ) {
         data-toggle="tab" href="#settings" role="tab" 
         aria-controls="settings" aria-selected="false">Settings</A>
       </li>
-      {% if current_user.feature('jobs') %}
+      {% if current_user.feature('jobs') and PD.pipelines %}
       <li class="nav-item mx-2">
         <A class="nav-link" id="contacts-tab" 
         data-toggle="tab" href="#contacts" role="tab" 
@@ -263,18 +263,28 @@ function createContactRow( contact ) {
         <input type="hidden" id="project" name="project" value="{{PD.name}}">
         <div class="form-group">
           <label for="project_desc_{{PD.name}}">Description</label>
-          <input type="text" class="form-control" name="description" id="project_desc_{PD.name}}" placeholder="Description" value="{{ PD.description }}">
+          <input type="text" class="form-control" name="description" id="project_desc_{{PD.name}}" placeholder="Description" value="{{ PD.description }}">
         </div>
       
         <div class="form-group">
-          <label for="project_coll_{{PD.name}}">Default Collection</label>
-          <input type="text" class="form-control" name="default_collection" id="default_collection_{PD.name}}" placeholder="Default collection" value="{{ PD.default_collection }}">
+          <label for="default_collection_{{PD.name}}">Default Collection</label>
+          <input type="text" class="form-control" name="default_collection" id="default_collection_{{PD.name}}" placeholder="Default collection" value="{{ PD.default_collection }}">
         </div>
       
-        <div class="form-group">
-          <label for="project_svc_{{PD.name}}">Service Account</label>
-          <input type="text" class="form-control" name="service_account" id="service_account_{PD.name}}" placeholder="Service Account" value="{{ PD.service_account }}">
+        <div class="form-check">
+          <input type="checkbox" class="form-check-input" name="public" id="public_{{PD.name}}" placeholder="Public Data" value="1" {% if PD.public %}checked {% endif %}>
+          <label for="public_{{PD.name}}">Public Data</label>
         </div>
+        <div class="form-check">
+          <input type="checkbox" class="form-check-input" data-enable="input-svc" name="pipelines" id="pipelines_{{PD.name}}" placeholder="Use pipelines" value="1" {% if PD.pipelines %}checked {% endif %}>
+          <label for="pipelines_{{PD.name}}">Use Pipelines</label>
+        </div>        
+
+        <div class="form-group input-svc" {% if not PD.pipelines %} hidden {% endif %}>
+          <label for="service_account_{{PD.name}}">Service Account</label>
+          <input type="text" class="form-control" name="service_account" id="service_account_{{PD.name}}" placeholder="Service Account" value="{{ PD.service_account }}">
+        </div>        
+<hr>
         {% if project_permissions.managers%}
         <button type="submit" class="btn btn-primary">Submit</button>
         {% endif %}
@@ -298,8 +308,10 @@ function createContactRow( contact ) {
             <th scope="col">Email</th>
             <th scope="col">Primary</th>
             <th scope="col">New data</th>
+            {% if PD.pipelines %}
             <th scope="col">Pipeline results</th>
             <th scope="col">Pipeline errors</th>
+            {% endif %}
             <th scope="col">Config changes</th>
             <th scope="col"></th>
           </tr>
@@ -321,6 +333,7 @@ function createContactRow( contact ) {
               <label class="custom-control-label" for="new_contact_notify_data">&nbsp;</label>
             </div>
           </td>
+          {% if PD.pipelines %}
           <td>            
             <div class="custom-control custom-switch">
               <input type="checkbox" class="custom-control-input new-contact" id="new_contact_notify_pipeline" >
@@ -333,6 +346,7 @@ function createContactRow( contact ) {
               <label class="custom-control-label" for="new_contact_notify_errors">&nbsp;</label>
             </div>
           </td>
+          {% endif %}
           <td>            
             <div class="custom-control custom-switch">
               <input type="checkbox" class="custom-control-input new-contact" id="new_contact_notify_config_changes" >
@@ -547,7 +561,15 @@ function createContactRow( contact ) {
   }
 
   $('input[name="do_bringonline"]').on('click', omit_check );
-  $('document').ready( omit_check )
+
+  $('document').ready( function() {
+    $('.form-check-input').on('change', function() {
+      classname = $(this).data('enable')
+      $('.' + classname).attr('hidden', !$(this).prop('checked'))
+    })
+    omit_check()
+  })
+
 
 
 </script>
