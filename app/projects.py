@@ -153,11 +153,8 @@ def show_projectdetails():
     projectlist, result = rest_call('GET', 'projects')
     all_projects = [ project['name'] for project in projectlist]
     
+    projectdetails, result = rest_call('GET', 'projects/{}'.format(projectnaam))
 
-    pl, result = rest_call('GET', 'projects/{}'.format(projectnaam))
-    projectdetails = {}
-
-    projectdetails['name'] = projectnaam
     # Retrieve groups associated with project
     with irods_manager.session() as session:
         query = session.query(User.name).filter(
@@ -166,9 +163,6 @@ def show_projectdetails():
                     Criterion('=', UserMeta.value, projectnaam)).order_by(User.name)
         groups = [u[User.name] for u in query]
     projectdetails['groups'] = groups
-    # Retrieve general project settings
-    for attr in ['description', 'default_collection', 'service_account']:
-        projectdetails[attr] = pl.get(attr, '')
 
     processes, result = rest_call('GET', '/projects/{}/processes'.format(projectnaam))
     projectdetails['processes'] = {}
@@ -190,7 +184,7 @@ def show_projectdetails():
     projectdetails['contacts'] = contacts
 
     # Retrieve collections associated with project
-    processing = iso2dt(pl.get('last_updated', EPOCH)) > iso2dt(pl.get('last_verified', EPOCH))
+    processing = iso2dt(projectdetails.get('last_updated', EPOCH)) > iso2dt(projectdetails.get('last_verified', EPOCH))
     return render_template('projectdetails.html', PD=projectdetails, all_projects = all_projects, processing=processing,
                            processnaam=processnaam, processgroup=processgroup, project_permissions=project_permissions(projectnaam))
 
@@ -305,8 +299,8 @@ def update_projectsettings():
             response, result = rest_call('DELETE', f'projects/{project}/processgroups/{name}', data=data)
         location=f'project={project}&pp=processgroups'               
     elif action == 'update_project':
-        data = {}
-        for attr in ['description', 'default_collection', 'service_account']:
+        data = { 'pipelines': '0', 'public': '0' }
+        for attr in ['description', 'default_collection', 'service_account', 'pipelines', 'public']:
             if attr in requestdata:
                 data[attr] = requestdata[attr]
         rest_call('PUT', 'projects/{}'.format(project), data=data)
