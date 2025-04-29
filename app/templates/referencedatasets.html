@@ -92,13 +92,30 @@ $(document).on('click', '#select_input_button', function(){
 
   <div class="card selectlist">
     <div class="card-body nopadding scroll">
-      <UL class="list-group">
-        {% for reference in referencedatasets | sort %}
-          <li class="list-group-item referencename" data-referencename="{{ reference  }}" >
-            {{ reference  }} <!-- {% if referencedatasets[reference]['processing'] %} <i class="fas fa-cogs "></i> {% endif %}-->
+      <ul class="list-group">
+        {% for reference in referencedatasets | sort  %}
+        {%   set ref_data = referencedatasets[reference] %}
+        {%   set days_since_update_str = ref_data["days_since_update_str"] %}
+        {%   set style = "list-group-item referencename" %}
+        {%   if ref_data["is_active"] != 1 %}
+        {%       set style = style + " list-group-item-secondary" %}
+        {%   else %}
+        {%      if ref_data["status"] == "WARNING" %}
+        {%          set style = style + " list-group-item-warning" %}
+        {%      endif %}
+        {%      if ref_data["status"] == "ERROR" %}
+        {%          set style = style + " list-group-item-danger" %}
+        {%      endif %}
+        {%   endif %}
+          <li class="{{ style }}" data-referencename="{{ reference  }}" >
+            <div class="d-flex w-100 justify-content-between">
+               <h5 class="mb-1">{{ reference  }}</h5> <!-- {% if referencedatasets[reference]['processing'] %} <i class="fas fa-cogs "></i> {% endif %}-->
+               <span class="badge badge-secondary badge-light">{{ ref_data["number_of_valid_versions"] }}</span>
+            </div>
+            <small>{{ days_since_update_str }}</small>
           </li>
         {% endfor %}
-      </UL>      
+        </ul>      
     </div>
   </div>
 
