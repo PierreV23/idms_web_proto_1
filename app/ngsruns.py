@@ -381,7 +381,23 @@ def run_form():
     else:
         projectlist = current_user.projects()
     data = { barcode : None for barcode in barcodes }
-    return render_template('ngsrun.html', data=data, projects=projectlist, barcodes=barcodes, id=-1, default_project=current_user.settings.get('default_project', ''))
+    selected_id = int(request.args.get('id', -1))
+    if selected_id > 0:    
+        authorized, unauthorized_projects = minilims_authorized_for_projects(projects_in_run(selected_id))
+        if not authorized:
+            flash(f'You are not authorized to edit a sample sheet for project(s) {",".join(project)}', 'error')
+            return redirect(url_for('ngsruns.run_list', idrequest=selected_id))
+        run = db.session().query(NGSRun).filter(NGSRun.id == selected_id).one_or_none()
+        if run is None:
+            flash(f'Run {selected_id} does not exist', 'error')
+            return redirect(url_for('ngsruns.run_list', idrequest=selected_id))                       
+        # Copy run properties
+        for attr in ['name', 'flowcell', 'description', 'owner']:
+            data[attr] = getattr(run, attr)
+        barcode_obj = db.session().query(NGSBarcode).filter(NGSBarcode.ngsrun == selected_id).all()
+        for f in barcode_obj:
+            data[f.barcode] = f        
+    return render_template('ngsrun.html', data=data, projects=projectlist, barcodes=barcodes, id=selected_id, default_project=current_user.settings.get('default_project', ''))
 
 @bp.route('delete', methods=['GET'])
 def delete_ngs_run():
@@ -398,10 +414,18 @@ def delete_ngs_run():
 @bp.route('new', methods=['POST'])
 def run_update():
     f = request.form.to_dict()
-    new_run = NGSRun(f.get('flowcell', ''))
-    new_run.name = f.get('name', '')
-    new_run.owner = current_user.username
-    new_run.description = f.get('description', '')
+    if ( run_id := int(f.get('id', -1))) > 0:
+        # Update existing run
+        modify_run = db.session().query(NGSRun).filter(NGSRun.id == run_id).one_or_none()
+        if not modify_run:
+            flash(f'Runsheet {run_id} does not exist', 'error')
+            return redirect(url_for('ngsruns.run_list'))
+        modify_run.flowcell = f.get('flowcell', '')
+    else:
+        modify_run = NGSRun(f.get('flowcell', ''))
+    modify_run.name = f.get('name', '')
+    modify_run.owner = current_user.username
+    modify_run.description = f.get('description', '')
 
     # Check if user is authorized
     # either the user is in MINILIMS_AUTHORS_GROUP
@@ -412,11 +436,15 @@ def run_update():
         flash(f'You are not authorized to create a sample sheet for projects {",".join(invalid_projects)}', 'error')
         return redirect(url_for('ngsruns.run_list'))
 
-    db.session().add(new_run)
+    db.session().add(modify_run)
     db.session().commit()
+    # If this is a modify, delete all barcodes
+    # They will be recreated
+    if run_id > 0:
+        db.session().query(NGSBarcode).filter(NGSBarcode.ngsrun==run_id).delete()
     for barcode in barcodes:
         if f.get('sampleid_{}'.format(barcode)):
-            new_barcode = NGSBarcode(new_run.id, barcode)
+            new_barcode = NGSBarcode(modify_run.id, barcode)
             new_barcode.sampleid = f.get('sampleid_{}'.format(barcode)).replace(" ","")
             new_barcode.virus_target = f.get('target_{}'.format(barcode))
             new_barcode.primer_set = f.get('primer_{}'.format(barcode))
@@ -426,7 +454,7 @@ def run_update():
     db.session().commit()
     if len(projects) == 1:
         current_user.settings['default_project'] = projects.pop()
-    return redirect(url_for('ngsruns.run_list', idrequest=new_run.id))
+    return redirect(url_for('ngsruns.run_list', idrequest=modify_run.id))
 
 # MiniLIMS API GET
 
