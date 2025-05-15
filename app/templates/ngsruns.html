@@ -62,6 +62,7 @@ menuname='runlist'
             <span class="projectname"></span> (<span class="flowcellname"></span><span class="rundescription"></span>)
          </h2>
          <button type="button" class="btn btn-danger alignright" id="delete1" data-toggle="modal" data-target="#confirm-delete">Delete</button>
+         <button type="button" class="btn btn-primary alignright" id="edit1">Edit</button>
        </div>
        <div class="scroll card-body" id="barcodepane">
 
@@ -101,6 +102,9 @@ function resize_tables() {
 }
 
 $('document').ready(function(){
+   $('#edit1').on('click', function(e) {
+      window.location.href = '{{ url_for("ngsruns.run_form") }}?id=' + selected_id;
+   })
    $('#runtable').on('click-row.bs.table', function(e, row) {
       selected_id = row.id
       $('#barcode-title').removeClass('d-none')
@@ -109,6 +113,7 @@ $('document').ready(function(){
       } else {
          $('#delete1').prop('disabled', true);
       }
+      $('#edit1').prop('disabled', (row.datacoll != '') )
       $('.runname').html(row.name);
       $('.flowcellname').html(row.flowcell);
       var row_display = ''
