@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Kiemsurveilance data upload interface voor NGSweb
+"""Data upload interface voor iDMS
 """
 
 import csv

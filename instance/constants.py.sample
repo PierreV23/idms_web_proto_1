@@ -263,7 +263,7 @@ NGSSYNC_IMPORT_THREADS = 4
 
 NOTIFY_SENDER_EMAIL = 'noreply@rivm.nl'
 
-##### NGSWEB CONSTANTS ####
+##### iDMS CONSTANTS ####
 
 HEADER_MESSAGE_OBJECT = 'system/ngsweb/header_messages.json'
 MESSAGES_OBJECT = 'system/ngsweb/messages.json'

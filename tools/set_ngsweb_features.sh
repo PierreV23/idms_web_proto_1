@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This script is meant to be used to turn on all features for current ngsweb users
+# This script is meant to be used to turn on all features for current iDMS users
 # so they have the same user experience when moving to user-configureable web app features
 
 

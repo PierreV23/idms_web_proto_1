@@ -308,8 +308,8 @@ def runs():
 def deprecated_message(menuname):
     text = """
 <h3>
-This version of biorods does not support version 1 of the MiniLIMS database.<p>
-<p>Try accessing the MiniLIMS through <A HREF="https://biorods.rivm.nl">BioRODS production</A>.
+This version of iDMS does not support version 1 of the MiniLIMS database.<p>
+<p>Try accessing the MiniLIMS through <A HREF="https://biorods.rivm.nl">iDMS production</A>.
 <p>If that does not work, contact support through the <A HREF="{contacts}">contacts</A> page.
 </h3>
 """.format(contacts=url_for('about'))
