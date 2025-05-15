@@ -385,7 +385,7 @@ def run_form():
     if selected_id > 0:    
         authorized, unauthorized_projects = minilims_authorized_for_projects(projects_in_run(selected_id))
         if not authorized:
-            flash(f'You are not authorized to edit a sample sheet for project(s) {",".join(project)}', 'error')
+            flash(f'You are not authorized to edit a sample sheet for project(s) {",".join(unauthorized_projects)}', 'error')
             return redirect(url_for('ngsruns.run_list', idrequest=selected_id))
         run = db.session().query(NGSRun).filter(NGSRun.id == selected_id).one_or_none()
         if run is None:
@@ -404,7 +404,7 @@ def delete_ngs_run():
     if id := request.args.get('id', type=int):
         authorized, unauthorized_projects = minilims_authorized_for_projects(projects_in_run(id))
         if not authorized:
-            flash(f'You are not authorized to remove a sample sheet for project(s) {",".join(project)}', 'error')
+            flash(f'You are not authorized to remove a sample sheet for project(s) {",".join(unauthorized_projects)}', 'error')
             return redirect(url_for('ngsruns.run_list', idrequest=id))
         db.session().query(NGSBarcode).filter(NGSBarcode.ngsrun==id).delete()
         db.session().query(NGSRun).filter(NGSRun.id == id).delete()
