@@ -1,4 +1,4 @@
-# ngsweb
+# iDMS
 
 Test webapplicatie voor toegang tot irods en het lsf rekencluster
 
@@ -51,7 +51,7 @@ docker rm $(docker ps -aq)
 ```
 
 ### open ports
-To view the ngsweb app in the browser, you will need to use an open port to runs on.
+To view the iDMS app in the browser, you will need to use an open port to runs on.
 On rivm-biofl-l01t, the ports 2048-2148 are open for testing.
 
 If you need to turn off the firewall, you can disable puppet temporarily by setting
