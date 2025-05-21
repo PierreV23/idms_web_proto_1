@@ -1,7 +1,3 @@
 {
-    "python.pythonPath": "/mnt/scratch_dir/lobners/conda/envs/myflask/bin/python",
-    "editor.tokenColorCustomizations": {
-        "comments": "",
-        "textMateRules": []
-    }
+    "python.pythonPath": "/mnt/scratch_dir/wierinve/conda/envs/myflask/bin/python"
 }
