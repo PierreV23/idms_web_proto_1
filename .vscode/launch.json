@@ -24,7 +24,6 @@
             ],
             "jinja": true,
             "justMyCode": false,
-            "python": "/mnt/scratch_dir/lobners/conda/envs/myflask/bin/python",
         }
     ],
     "inputs": [
