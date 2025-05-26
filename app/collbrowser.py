@@ -37,12 +37,12 @@ from .projectdb_api import rest_call
 
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
 
-# This is the maximum collectio name length that is not 
+# This is the maximum collection name length that is not
 # abbreviated to ...<last part of name>
 NAME_LENGTH = 20
 # This is exactly what it suggests
 DEFAULT_GRAPH_LEVELS = 3
-# This is the maximum number of subcollections we will show 
+# This is the maximum number of subcollections we will show
 # in the treeview. If there are more, we will indicate that
 # by ... above/below the list
 MAX_TREEVIEW_COLLS = 150
@@ -159,7 +159,7 @@ def metatree():
         source = source.htmlshort
     else:
         source = ''
-    return { 'value': value, 'source': source, 'override': override}, 200    
+    return { 'value': value, 'source': source, 'override': override}, 200
 
 @bp.route('_meta')
 def coll_meta():
@@ -190,7 +190,7 @@ def coll_meta():
                 name = object_metadata[DataObjectMeta.name]
                 value = object_metadata[DataObjectMeta.value]
                 units = object_metadata[DataObjectMeta.units]
-                if current_user.settings.get('sysmeta', 'true') == "true" or not name.startswith('sys::'):        
+                if current_user.settings.get('sysmeta', 'true') == "true" or not name.startswith('sys::'):
                     object_avu.append(AVU2data(name, value, units))
     return render_template('metadata.html', coll_avu=coll_avu, object_avu=object_avu)
 
@@ -230,7 +230,7 @@ def upstream():
                     'meta': {
                         'attr': f'{prefix}input_collection',
                         'value': i[CollectionMeta.value]
-                    },                
+                    },
                 'type': kind
             })
     for kind, prefix in types.items():
@@ -256,7 +256,7 @@ def addmeta():
     collection = request.args.get('collection')
     if attr and value and collection:
         iqry.addcollmetaval(collection, attr, value)
-    collections_changed()    
+    collections_changed()
     return 'DONE', 200
 
 @bp.route('_setmeta', methods=['GET'])
@@ -267,7 +267,7 @@ def setmeta():
     if attr and value and collection:
         iqry.scollmetaval(collection, attr, value)
     value = iqry.qcollmetaval(collection, attr)
-    collections_changed()      
+    collections_changed()
     return { 'value': value, 'result': 'DONE'}, 200
 
 @bp.route('_rmmeta', methods=['GET'])
@@ -277,7 +277,7 @@ def rmmeta():
     collection = request.args.get('collection')
     if attr and collection:
         iqry.delcollmeta(collection, attr, value)
-    collections_changed() 
+    collections_changed()
     return 'DONE', 200
 
 
@@ -350,7 +350,7 @@ class CollectionState():
     def available_processgroups(self):
         return projects.get_processgrouplist(self.projectid)
 
-    @property             
+    @property
     def complete(self):
         return self._meta("complete", "false")
 
@@ -365,7 +365,7 @@ class CollectionState():
     @property
     def failed_pg(self):
         return self.active_or_failed_pg[1]
-    
+
     @property
     def is_dataset(self):
         return self._meta(ATTR_DATASETID, "") != ""
@@ -396,14 +396,14 @@ class CollectionState():
     @cached_property
     def min_copies(self):
         return getmetatree(self.collection, ATTR_ARCHIVE_MINCOPIES, 2)
-    
+
     @cached_property
     def create_retention(self):
-        return getmetatree(self.collection, ATTR_ARCHIVE_CREATERETENTION, 24)        
+        return getmetatree(self.collection, ATTR_ARCHIVE_CREATERETENTION, 24)
 
     @cached_property
     def lastuse_retention(self):
-        return getmetatree(self.collection, ATTR_ARCHIVE_LASTUSERETENTION, 24)     
+        return getmetatree(self.collection, ATTR_ARCHIVE_LASTUSERETENTION, 24)
 
     @cached_property
     def object_ids(self):
@@ -468,7 +468,7 @@ class CollectionState():
 
     @property
     def sys_coll_state(self):
-        return self._meta(ATTR_SYS_STATE, "")    
+        return self._meta(ATTR_SYS_STATE, "")
 
 def generate_external_url(dataset_id, ticket):
     """Create URL to external data collection
@@ -483,8 +483,8 @@ def generate_external_url(dataset_id, ticket):
     base = current_user.irods_env.get('external_url', '')
     url = f'{base}/{dataset_id}-{ticket}'
     return url
-    
-    
+
+
 
 @bp.route('_actions_tabs')
 def actions_tabs():
@@ -529,7 +529,7 @@ def actions_newshare():
             requestdata['endtime'] = int(time.mktime(datetime.strptime(formdata['enddate'], '%d/%m/%Y').timetuple()))
         except:
             data['result'] = 'Invalid time value'
-            return data    
+            return data
     data, result = rest_call('POST', f'collections/{coll_id}/shares', prefix='/external', data=requestdata, user=current_user.username, passwd=current_user.password)
     data['result'] = result
     data['url'] = generate_external_url(data.get('dataset_id', ''), data.get('string', ''))
@@ -553,12 +553,12 @@ def shared_collections_table():
     data = [ {'collection': datafield('collection', r.get('path'), 'irods_collection').htmlstring} for r in colls ]
     columns = [
         { "field": "collection", "title": "Collection", "sortable": True }
-    ]    
+    ]
     tabledata = {
         'columnsJSON': json.dumps(columns),
         'dataJSON': json.dumps(data),
         'id': 'shared_colls'
-    }    
+    }
     return render_template('bootstraptable.html', data=tabledata)
 
 @bp.route('_startprocess')
@@ -654,8 +654,8 @@ def _collcontents(path, offset, limit, filterstr, key, order):
     max_data = min(max(offset + limit - coll_count, 0), data_count)
 
     results = { 'total': coll_count + data_count , 'rows': []}
+    
 # Query for collection subcollections
-
     if min_coll < max_coll:
         q1 = irods_session.query(Collection)
         for qc_filter in qc_filters:
@@ -719,8 +719,8 @@ def coll_shape(coll_type):
     return layout[constants.SHAPE1], layout[constants.COLOR1]
 
 class Dictlist(dict):
-    """ Custom dict class that allos storing multiple values under one key
-    get method will return fisrt value, so can be used as in-place dict replacement
+    """ Custom dict class that allows storing multiple values under one key
+    get method will return first value, so can be used as in-place dict replacement
     get_all returns a list of all values
     """
     def __setitem__(self, key, value):
@@ -860,7 +860,7 @@ def _generate_graph(coll, maxlevels, graph_simplify):
         input_colls = related(coll, 'sys::pipeline::input_collection_id', forward=False, byname=False)
         handle_neighbours(coll, input_colls, edges, levels, inputs=True)
 
-        # FIND  OUTPUTS
+        # FIND OUTPUTS
         output_colls = related(coll, 'sys::pipeline::input_collection_id', forward=True, byname=False)
         handle_neighbours(coll, output_colls, edges, levels, inputs=False)
 
@@ -874,7 +874,7 @@ def _generate_graph(coll, maxlevels, graph_simplify):
         for i in range(1000): #just an arbitrary but large number
            temp = set(related(coll, f'sys::pipeline::refdata::{i}::reference_version_dataset_id', forward=False, byname=False))
            if temp == set():
-               #we couldnt find any more reference_version
+               #we couldn't find any more reference_version
                break
            reference_data_colls |= temp
         handle_neighbours(coll, reference_data_colls, dashed_edges, levels, inputs=True, relation_type='S')
@@ -946,7 +946,7 @@ def _generate_graph(coll, maxlevels, graph_simplify):
             link = repo_url._replace(path='{}/tree/{}'.format(repo_url.path.replace('.git', ''), githash))
             processid = f"{collmeta.get('sys::runsheet::processID', '')}\n{git.split('/')[-1]}"
             git_node = f'G-{node}'
-            graph.node(git_node, processid, shape=PROCESS_SHAPE, URL=link.geturl(), fontsize='8')
+            graph.node(git_node, processid, shape=PROCESS_SHAPE, URL=link.geturl(), target="_blank", fontsize='8')
             graph.edge(git_node, node)
             processes.add(node)
         coll_type = collmeta.get('sys::runsheet::state', 'unknown')
@@ -1021,7 +1021,7 @@ def add_items(path, level, active):
     result = ''
     parts = active.split('/')
     colls = [ c[Collection.name] for c in iqry.qcollchildren(path)]
-    
+
     #
     # Handle very long list of collections
     #
@@ -1033,7 +1033,7 @@ def add_items(path, level, active):
             colls = colls[:MAX_TREEVIEW_COLLS]
             if colls_length > MAX_TREEVIEW_COLLS:
                 colls = colls + ['...']
-        elif len(active_index_list) == 1: 
+        elif len(active_index_list) == 1:
             # This is a path to the active collection
             # For example: active coll could be /rivmZone/projects/s-mrsa/241004_VH01799_133_AAG5MWVM5_0008
             # while this node is /rivmZone/projects/s-mrsa
@@ -1290,7 +1290,7 @@ def search_result_query(object_type, filter_dict, search_dict):
                 "like",
                 DataObjectMeta.name,
                 "%")
-            )            
+            )
         query = query.filter(Criterion(
             SEARCH_OPTION,
             SEARCH_IN_OPTIONS.get(search_in_type, SEARCH_IN_DEFAULT),
