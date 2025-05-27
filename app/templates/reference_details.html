@@ -144,10 +144,8 @@
 
 <script>
 
-
-$('#reference_synchronization_frequency_{{RD.name}}').on('input', function(){
-    seconds = +$('#reference_synchronization_frequency_{{RD.name}}').val()
-    if( !isNaN(seconds) ) {
+function displayFrequencyForHumans( seconds ) {
+  if( !isNaN(seconds) ) {
       days  = Math.floor(seconds / 86400)
       seconds = seconds - (days * 86400)
       hours = Math.floor(seconds / 3600)
@@ -159,8 +157,21 @@ $('#reference_synchronization_frequency_{{RD.name}}').on('input', function(){
       $('#frequencyHours_{{RD.name}}').text(hours)
       $('#frequencyMins_{{RD.name}}').text(mins)
       $('#frequencySecs_{{RD.name}}').text(secs)
-    }
+  }
+  else {
+      $('#frequencyDays_{{RD.name}}').text("-")
+      $('#frequencyHours_{{RD.name}}').text("-")
+      $('#frequencyMins_{{RD.name}}').text("-")
+      $('#frequencySecs_{{RD.name}}').text("-")
+  }
+}
+
+
+$('#reference_synchronization_frequency_{{RD.name}}').on('input', function(){
+    seconds = +$('#reference_synchronization_frequency_{{RD.name}}').val()
+    displayFrequencyForHumans( seconds )
 });
+
 
 $('.nav2').on('shown.bs.tab', function(event){
   target = event.target.getAttribute('href')
@@ -168,7 +179,6 @@ $('.nav2').on('shown.bs.tab', function(event){
   if (target == "#versions") {
     load_versions();
   }
-  console.log(target)
 })
 
 
@@ -179,6 +189,10 @@ function load_versions() {
      $('#versions-table').html(data);
   });
 }
+
+
+seconds = +"{{ RD.synchronization_frequency }}"
+displayFrequencyForHumans( seconds )
 
 
 </script>

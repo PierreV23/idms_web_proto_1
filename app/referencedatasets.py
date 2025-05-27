@@ -31,19 +31,24 @@ def get_referencelist():
     referencelist = {}
     if status_code == 200:
         for reference in referencelist_raw:
-            ts_last_update = reference["importer_state"]["last_update"]
-            ts_now = datetime.now().timestamp()
-            delta_last_update = ts_now - ts_last_update
-            reference["status"] = "OK"
-            if delta_last_update > (2* reference["synchronization_frequency"]):
-                reference["status"] = "WARNING"
-            # potentially in the future we should check if the importer_state contains an error_code
-            #reference["status"] = "ERROR"
-            days_since_update = int(delta_last_update / (24*60*60))
-            reference["days_since_update"] = days_since_update
-            reference["days_since_update_str"] = "< 1 day"
-            if days_since_update > 0:
-                reference["days_since_update_str"] = f"{days_since_update} days"
+            reference["status"] = "WARNING"  #default state
+            reference["days_since_update_str"] = "N/A"
+            if reference["importer_state"]:
+                ts_last_update = reference["importer_state"]["last_update"]
+                print(f"last update: {ts_last_update}")
+                ts_now = datetime.now().timestamp()
+                if ts_last_update > 0:
+                    delta_last_update = ts_now - ts_last_update
+                    reference["status"] = "OK"
+                    if delta_last_update > (2* reference["synchronization_frequency"]):
+                        reference["status"] = "WARNING"
+                    # potentially in the future we should check if the importer_state contains an error_code
+                    #reference["status"] = "ERROR"
+                    days_since_update = int(delta_last_update / (24*60*60))
+                    reference["days_since_update"] = days_since_update
+                    reference["days_since_update_str"] = "< 1 day"
+                    if days_since_update > 0:
+                        reference["days_since_update_str"] = f"{days_since_update} days"
 
             referencelist[ reference['name'] ] = reference 
     return referencelist
