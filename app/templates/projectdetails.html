@@ -199,7 +199,7 @@ function createContactRow( contact ) {
 <br>
 
 <!-- PROJECT SETTINGS -->
-<div class="card h-100">
+<div id="project-tabs" class="card h-100">
   <div class="card-header">
     <ul class="nav nav-tabs nav2" id="projecttabs">
       <li class="nav-item mx-2">
@@ -258,31 +258,31 @@ function createContactRow( contact ) {
         <center>Changes to project configuration are still being processed</center>
       </div>
       {% endif %}
-      <form action="update_project" method="post">
+      <form id="project-settings-form" action="update_project" method="post">
         <input type="hidden" id="action" name="action" value="update_project">
         <input type="hidden" id="project" name="project" value="{{PD.name}}">
         <div class="form-group">
           <label for="project_desc_{{PD.name}}">Description</label>
-          <input type="text" class="form-control" name="description" id="project_desc_{{PD.name}}" placeholder="Description" value="{{ PD.description }}">
+          <input type="text" class="form-control" name="description" id="project_desc_{{PD.name}}" placeholder="Description" value="{{ PD.description }}" {% if not project_permissions.managers %}disabled{% endif %}>
         </div>
       
         <div class="form-group">
           <label for="default_collection_{{PD.name}}">Default Collection</label>
-          <input type="text" class="form-control" name="default_collection" id="default_collection_{{PD.name}}" placeholder="Default collection" value="{{ PD.default_collection }}">
+          <input type="text" class="form-control" name="default_collection" id="default_collection_{{PD.name}}" placeholder="Default collection" value="{{ PD.default_collection }}" {% if not project_permissions.managers %}disabled{% endif %}>
         </div>
       
         <div class="form-check">
-          <input type="checkbox" class="form-check-input" name="public" id="public_{{PD.name}}" placeholder="Public Data" value="1" {% if PD.public %}checked {% endif %}>
+          <input type="checkbox" class="form-check-input" name="public" id="public_{{PD.name}}" placeholder="Public Data" value="1" {% if PD.public %}checked {% endif %} {% if not project_permissions.managers %}disabled{% endif %}>
           <label for="public_{{PD.name}}">Public Data</label>
         </div>
         <div class="form-check">
-          <input type="checkbox" class="form-check-input" data-enable="input-svc" name="pipelines" id="pipelines_{{PD.name}}" placeholder="Use pipelines" value="1" {% if PD.pipelines %}checked {% endif %}>
+          <input type="checkbox" class="form-check-input" data-enable="input-svc" name="pipelines" id="pipelines_{{PD.name}}" placeholder="Use pipelines" value="1" {% if PD.pipelines %}checked {% endif %} {% if not project_permissions.managers %}disabled{% endif %}>
           <label for="pipelines_{{PD.name}}">Use Pipelines</label>
         </div>        
 
         <div class="form-group input-svc" {% if not PD.pipelines %} hidden {% endif %}>
-          <label for="service_account_{{PD.name}}">Service Account</label>
-          <input type="text" class="form-control" name="service_account" id="service_account_{{PD.name}}" placeholder="Service Account" value="{{ PD.service_account }}">
+          <label for="service_account_{{PD.name}}">Service Account (generated automatically)</label>
+          <input type="text" class="form-control" name="service_account" id="service_account_{{PD.name}}" placeholder="Service Account" value="{{ PD.service_account }}" disabled>
         </div>        
 <hr>
         {% if project_permissions.managers%}
@@ -491,6 +491,10 @@ function createContactRow( contact ) {
       $('#' + usertype).html(data);
     });
   }
+
+  $('#project-settings-form').on('submit', function (event) {
+    $('#settings').addClass('pending')
+  })
 
   $('.usermanager').on('shown.bs.tab', function (event) {
     load_users();
