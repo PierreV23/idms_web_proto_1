@@ -654,7 +654,7 @@ def _collcontents(path, offset, limit, filterstr, key, order):
     max_data = min(max(offset + limit - coll_count, 0), data_count)
 
     results = { 'total': coll_count + data_count , 'rows': []}
-    
+
 # Query for collection subcollections
     if min_coll < max_coll:
         q1 = irods_session.query(Collection)
@@ -1116,8 +1116,9 @@ def collbrowser():
 
     graph_levels = current_user.settings.setdefault('graph_levels', DEFAULT_GRAPH_LEVELS)
     graph_simplify = current_user.settings.setdefault('graph_simplify', 1)
+    zoomlevel = current_user.settings.setdefault('zoomlevel', 50)
 
-    return render_template('collbrowser.html',  path=path, graph_levels=graph_levels, graph_simplify=graph_simplify)
+    return render_template('collbrowser.html',  path=path, graph_levels=graph_levels, graph_simplify=graph_simplify, zoomlevel=zoomlevel)
 
 
 @bp.route('upload_file', methods=['GET', 'POST'])

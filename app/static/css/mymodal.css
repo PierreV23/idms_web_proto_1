@@ -468,6 +468,10 @@ ul {
   background-image: url(/static/img/loading.gif);
 }
 
+.pending2 {
+  opacity: 0.5;
+}
+
 .wrap {
   height: 88vh;
 }
@@ -763,4 +767,11 @@ ul {
   padding: 2px;
   margin: 2px;
   border-radius: 3px;
+}
+
+svg text{
+   -webkit-user-select: none;
+   -moz-user-select: none;
+   -ms-user-select: none;
+   user-select: none;
 }

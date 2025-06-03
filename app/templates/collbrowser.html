@@ -35,7 +35,6 @@ menuname='collectionbrowser'
 {% block content %}
 
 <script>
-
   var collection = "{{ path }}";
   var selected_project = "{{ project }}"
   var selected_projectpath = ""
@@ -47,15 +46,17 @@ menuname='collectionbrowser'
   var waiting = '<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>'
   activetab = localStorage.getItem('activetab')
   activetab ??= "#archive"
+// Event to trigger the  function that centers the graph on the selected element
+  const graph_loaded_event = new Event("graph_loaded");
 
-      // var myDefaultWhiteList = $.fn.tooltip.Constructor.Default.whiteList
+  // var myDefaultWhiteList = $.fn.tooltip.Constructor.Default.whiteList
   $(function() {
     $.fn.popover.Constructor.Default.whiteList.table = [];
     $.fn.popover.Constructor.Default.whiteList.tr = [];
     $.fn.popover.Constructor.Default.whiteList.td = [];
     $.fn.popover.Constructor.Default.whiteList.div = [];
     $.fn.popover.Constructor.Default.whiteList.tbody = [];
-    $.fn.popover.Constructor.Default.whiteList.thead = [];  
+    $.fn.popover.Constructor.Default.whiteList.thead = [];
   })
   // myDefaultWhiteList.span = ['data-path']
 
@@ -78,7 +79,7 @@ menuname='collectionbrowser'
       if (result["access"] == "GRANTED" ) {
         source = "{{ url_for('docviewer.download_object') }}?path=" + encodeURIComponent(path)
         filename = path.replace(/^.*[\\\/]/, '')
-        downloadURI(source, filename)  
+        downloadURI(source, filename)
       } else {
         $('#alertTitle').html('Access Denied')
         $('#alertBody').html("<center>You don't have permissions to access " + decodeURIComponent(path) + "</center>")
@@ -102,8 +103,6 @@ menuname='collectionbrowser'
       }
     })
   }
-  
-
 
   function avu_table() {
     if ( $("#metatoggle").is(':checked') ) {
@@ -138,20 +137,20 @@ menuname='collectionbrowser'
     path_elem.shift()
     var path_without_zone = path_elem.join(seperator)
     var path = protocolPrefix + "rivm-bioir-l03p.rivm.ssc-campus.nl"
-    if( add_ssl ) path += "@SSL" 
+    if( add_ssl ) path += "@SSL"
     path += seperator + path_without_zone;
     console.log(path)
     return path
   }
 
-  // solution for copy to clipboard for unsecure pages: 
+  // solution for copy to clipboard for unsecure pages:
   // https://stackoverflow.com/questions/71873824/copy-text-to-clipboard-cannot-read-properties-of-undefined-reading-writetext
-  function unsecuredCopyToClipboard(text) { 
-    const textArea = document.createElement("textarea"); 
-    textArea.value=text; 
-    document.body.appendChild(textArea); 
+  function unsecuredCopyToClipboard(text) {
+    const textArea = document.createElement("textarea");
+    textArea.value=text;
+    document.body.appendChild(textArea);
     textArea.focus();
-    textArea.select(); 
+    textArea.select();
     textArea.setSelectionRange(0, 99999);
     try{
       document.execCommand('copy')
@@ -195,34 +194,18 @@ menuname='collectionbrowser'
 
   function load_graph() {
     {% if current_user.feature('provenance') %}
-    $('#graphimg').html(waiting);
+    // pending2 class makes this element semi-transparent to show it is being updated
+    $('#graphdiv').addClass('pending2'); 
     $.get('{{ url_for('collbrowser.generate_graph') }}', {
       path: collection,
       levels: graph_levels,
       graph_simplify: graph_simplify
     }, function (data) {
       $('#graphimg').html(data);
-      size_graph();
+      $('#graphdiv').removeClass('pending2');
+      document.querySelector('#graphdiv').dispatchEvent(graph_loaded_event)
     })
     {% endif %}
-  }
-
-  function size_graph() {
-    let w = $("#graphimg").width().toString() + 'px';
-      $('svg').width(w);
-      centertop = 0
-      if ($('.center-coll').length !== 0) {
-        centertop = $('.center-coll').offset().top
-      }
-      let top = centertop + $('#graphdiv').scrollTop() - $('#graphdiv').offset().top - $('#graphdiv').height() / 2
-      $('#graphdiv').scrollTop(top)
-      if (top<0) {
-        if ($('#graphimg').height()<$('#graphdiv').height()) {
-          $('svg').addClass('vertical-center');
-        }
-      } else {
-        $('#graphdiv').scrollTop(top);
-      }
   }
 
   function load_list(new_path) {
@@ -239,15 +222,15 @@ menuname='collectionbrowser'
   }
 
   function load_leftpane() {
-    {% if current_user.feature('treeview') %}    
+    {% if current_user.feature('treeview') %}
     load_tree()
     {% else %}
     load_projects()
-    {% endif %}    
+    {% endif %}
   }
 
   function load_projects() {
-    $.get('{{ url_for('projects.my_projects') }}', 
+    $.get('{{ url_for('projects.my_projects') }}',
       function (data) {
         $('#treeview').empty()
         for (const [project, path] of Object.entries(data)) {
@@ -275,7 +258,7 @@ menuname='collectionbrowser'
         centertop = $('.path-active').offset().top
       }
       let top = centertop - $('#treediv').height() / 2 + $('#treediv').scrollTop()
-      $('#treediv').scrollTop(top)      
+      $('#treediv').scrollTop(top)
     });
   }
 
@@ -318,9 +301,9 @@ menuname='collectionbrowser'
 
   $(document).on('click', '.path-change', function () {
     $('.flash-error').remove()
+    selected_object = ''; // reset previously selected object 
     collection = (this.nodeName == "g" ? this.id : $(this).data('path'));
     selected_project = $(this).data('project') || selected_project;
-    console.log(selected_project)
     history.pushState({ "coll": collection }, 'Browse ' + collection, '/collbrowser?path=' + collection);
     if (typeof collection == 'undefined') {
       collection = $(this).attr('id')
@@ -329,7 +312,7 @@ menuname='collectionbrowser'
     $.post('{{ url_for("userinfo.usersetting") }}', {
       attr: 'path',
       value: collection
-    })    
+    })
   });
 
   $(document).on('change', '#graph_simplify', function () {
@@ -342,7 +325,7 @@ menuname='collectionbrowser'
     load_graph()
   })
 
-  $(document).on('change', '#graphlevels', function () {
+  $(document).on('change', '#graph_levels', function () {
     graph_levels = $(this).val();
     $.post('{{ url_for("userinfo.usersetting") }}', {
       attr: 'graph_levels',
@@ -399,8 +382,7 @@ menuname='collectionbrowser'
 
 <div id="data_map"></div>
 
-<div class=browsergrid h100" id="main-window"> 
-
+<div class="browsergrid h100" id="main-window">
   <div class="card border-primary browser-sidebar">
     <div class="card-header">
       <div class="card-title"><b>{% if current_user.feature('treeview') %}Collection tree{% else %}Project List{% endif %}</b></div>
@@ -411,29 +393,207 @@ menuname='collectionbrowser'
     </div>
   </div>
 {% if current_user.feature('provenance') %}
-  <div class="card browser-graph h100">
-    <div class="card-header">
-      <div class="card-title">Data graph</div>
-      <form class="form-inline float-right">
-        <div class="form-group" style="gap:4px">
-          <label for="graph_simplify">Simplify</label>
-          <INPUT class="hspace" type="checkbox" id="graph_simplify" {% if graph_simplify == "1" %}checked{% endif %}>
-          <label for="graphlevels">Graph Levels</label>
-          <INPUT type="number" class="form-control" min="0" max="10" name="graphlevels" id="graphlevels"
-            value="{{ graph_levels }}">
-        </div>
-        <div class="card-tools inline float-right">
-          <button type="button" class="btn btn-tool" data-card-widget="maximize"><i class="fas fa-expand"></i></button>
-          <!-- This will cause the card to collapse when clicked -->
-          <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i></button>
-        </div>
-      </form>
-    </div>
-    <div class="card-body scroll h-100 nopadding" id="graphdiv">
-      <div id="graphimg"></div>
+<div class="card browser-graph h100">
+  <!-- Tabs and Shared Controls Header -->
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-tabs" id="graphTabs" role="tablist" style="flex-grow: 1;">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="graph_coll_tab" data-bs-toggle="tab" data-bs-target="#graph_coll" type="button"
+          role="tab" aria-controls="graph_coll" aria-selected="true">Collection Graph</button>
+      </li>
+    </ul>
+
+    <!-- Shared Controls Section -->
+    <div class="form-inline d-flex align-items-center" style="gap: 10px;">
+      <!-- Simplify Toggle -->
+      <div class="form-group d-flex align-items-center" style="gap: 8px;">
+        <label for="graph_simplify">Simplify</label>
+        <input class="hspace" type="checkbox" id="graph_simplify" {% if graph_simplify == "1" %}checked{% endif %}>
+      </div>
+
+      <!-- Graph Levels -->
+      <div class="form-group d-flex align-items-center" style="gap: 8px;">
+        <label for="graph_levels">Graph Levels</label>
+        <input type="number" class="form-control" min="0" max="10" name="graph_levels" id="graph_levels" value="{{ graph_levels }}">
+      </div>
+
+      <!-- Card Tools -->
+      <div class="card-tools" style="display: inline-flex; gap: 5px;">
+        <!-- Maximize Button -->
+        <button type="button" id="maximizeBtn" class="btn btn-tool" data-card-widget="maximize">
+          <i class="fas fa-expand"></i>
+        </button>
+      </div>
+
+      <!-- Zoom Controls -->
+      <div class="form-group d-flex align-items-center" style="gap: 10px;">
+        <label for="zoomLevel" class="form-label">Zoom</label>
+        <input type="range" id="zoomLevel" class="form-range zoom-slider" min="10" max="150" value="{{ zoomlevel }}" style="width: 120px;">
+        <span id="zoomDisplay" style="width: 50px;">100%</span>
+      </div>
+
+      <!-- Fit Graph to Window Button -->
+      <div class="form-group">
+        <button id="fitGraph" class="btn btn-primary">Fit Graph</button>
+      </div>
     </div>
   </div>
-{% endif %}  
+
+  <!-- Tab Content -->
+  <div class="card-body h-100 nopadding">
+    <div class="tab-content h-100">
+      <!-- Collection Graph Tab -->
+      <div class="tab-pane fade show active h-100 nopadding" id="graph_coll" role="tabpanel"
+        aria-labelledby="graph_coll_tab">
+        <!-- Collection Graph Content -->
+        <div id="graphdiv" style="height: inherit; width: inherit; overflow: hidden; position: relative; display: flex; justify-content: center; align-items: center;">
+          <div id="graphimg" style="transition: transform 0.3s ease, transform-origin 0.3s ease;">
+            <!-- Actual Graph Content -->
+            <h3>Collection Graph</h3>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- This part of the code is for handling the graph interaction -->
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    // Initialize variables
+    const graphImg = document.querySelector("#graphimg"); // The zoomable graph element
+    const graphDiv = document.querySelector("#graphdiv"); // The bounding box for the graph container
+    const zoomSlider = document.querySelector("#zoomLevel"); // Zoom slider input
+    const zoomDisplay = document.querySelector("#zoomDisplay"); // Display the zoom percentage
+    const fitGraphBtn = document.querySelector("#fitGraph"); // Fit Graph button
+
+    // zoomlevel retrieved from usersettings
+    let zoomLevel = "{{ zoomlevel }}"; // Default zoom level in percentage (as a variable)
+    let zoomSettingId = 0; // Timeout Request for storing zoom level 
+    let isDragging = false, // Track whether the user is currently dragging
+      dragStart = { x: 0, y: 0 }, // Store the starting mouse position during the drag operation
+      currentTranslate = { x: 0, y: 0 }; // Current translation offset for the graph
+
+    // Move the graph so the center coll is in the center
+    const centerGraph = () => {
+      currentTranslate.x += $('#graphdiv').width()/2  - $('.center-coll').position().left + $('#graphdiv').offset().left - 35
+      currentTranslate.y += $('#graphdiv').height()/2 - $('.center-coll').position().top  + $('#graphdiv').offset().top - 8
+      updateTransform()
+    }
+
+    // Update the transformation (translate + scale)
+    const updateTransform = () => {
+      const scale = zoomLevel / 100; // Scale value based on zoom level
+      graphImg.style.transform = `translate(${currentTranslate.x}px, ${currentTranslate.y}px) scale(${scale})`;
+    };
+
+    // Reset the transformation (translate x and y to 0)
+    const resetTransform = () => {
+      const scale = zoomLevel / 100; // Scale value based on zoom level
+      currentTranslate.x = 0; // Reset x
+      currentTranslate.y = 0; // Reset y
+      graphImg.style.transform = `translate(${currentTranslate.x}px, ${currentTranslate.y}px) scale(${scale})`;
+    };
+
+    // store zoomlevel in usersettings
+    const storeZoomLevel = () => {
+      $.post('{{ url_for("userinfo.usersetting") }}', {
+        attr: 'zoomlevel',
+        value: zoomLevel
+      })      
+    }
+
+    // Update zoom level dynamically
+    const updateZoom = (newZoomLevel) => {
+      zoomLevel = newZoomLevel; // Update the global zoom level
+      zoomDisplay.textContent = `${zoomLevel}%`; // Update the zoom display
+      updateTransform(); // Apply the zoom level
+      // store zoomlevel after 1 second to prevent a lot of request
+      if (zoomSettingId != 0) {
+          clearTimeout(zoomSettingId)
+      }
+      zoomSettingId = setTimeout(function () {
+          storeZoomLevel();
+      }, 1000)      
+    };
+
+    // Fit the graph within the card window
+    const fitGraph = () => {
+      const graphBounds = graphImg.getBoundingClientRect(); // Get the size of the graph content
+      const containerBounds = graphDiv.getBoundingClientRect(); // Get the size of the card container
+
+      // Calculate the scaling factor needed to fit the graph content into the container
+      const scaleWidth = containerBounds.width / graphBounds.width * zoomLevel / 100;
+      const scaleHeight = containerBounds.height / graphBounds.height * zoomLevel / 100;
+
+      // Choose the smaller scaling factor to ensure it fits both dimensions
+      const fitScale = Math.min(scaleWidth, scaleHeight);
+
+      // Convert scale to a percentage for zoom adjustment
+      zoomLevel = Math.min(Math.max(Math.floor(fitScale * 100), 10), 150);
+      updateZoom(zoomLevel); // Apply the calculated zoom level
+      zoomSlider.value = zoomLevel; // Sync slider value
+      resetTransform(); // Reset the dragging offset to 0
+    };
+
+    // Dragging functionality
+    const startDragging = (event) => {
+      isDragging = true; // Enable dragging mode
+      dragStart = { x: event.clientX, y: event.clientY }; // Store the starting mouse position
+      graphDiv.style.cursor = "grabbing"; // Change cursor to indicate dragging
+    };
+
+    const onDragging = (event) => {
+      if (!isDragging) return; // Only operate if dragging is active
+      const deltaX = event.clientX - dragStart.x; // Calculate how far the mouse moved on X
+      const deltaY = event.clientY - dragStart.y; // Calculate how far the mouse moved on Y
+      dragStart = { x: event.clientX, y: event.clientY }; // Update the new starting point
+
+      // Update the current translation offsets
+      currentTranslate.x += deltaX;
+      currentTranslate.y += deltaY;
+
+      updateTransform(); // Apply the new translation offsets
+    };
+
+    const stopDragging = () => {
+      isDragging = false; // Disable dragging mode
+      graphDiv.style.cursor = "default"; // Reset cursor style
+    };
+
+    // Handle zoom slider changes
+    zoomSlider.addEventListener("input", (event) => {
+      const newZoomLevel = parseInt(event.target.value, 10); // Update zoom value from the slider
+      updateZoom(newZoomLevel);
+    });
+
+    // Handle middle mouse scroll wheel zoom
+    graphDiv.addEventListener("wheel", (event) => {
+      event.preventDefault(); // Prevent default scrolling behavior
+      const zoomStep = 5; // Define how much to zoom in/out per scroll
+      const delta = Math.sign(event.deltaY); // Negative = zoom in, Positive = zoom out
+
+      // Update zoom level, keeping it within the range (10 - 150)
+      zoomLevel = Math.min(Math.max(zoomLevel - delta * zoomStep, 10), 150); // Clamp between 20 and 300
+      updateZoom(zoomLevel); // Apply the new zoom level
+      zoomSlider.value = zoomLevel; // Sync slider value
+    });
+
+    // Attach mouse event listeners for dragging
+    graphDiv.addEventListener("graph_loaded", centerGraph); // Center graph on active object
+    graphDiv.addEventListener("mousedown", startDragging); // Start dragging when mouse is pressed
+    window.addEventListener("mousemove", onDragging); // Move the graph as the mouse moves
+    window.addEventListener("mouseup", stopDragging); // Stop dragging when mouse is released
+
+    // Attach event listeners to button
+    fitGraphBtn.addEventListener("click", fitGraph); // Fit graph button
+
+    // Initialize graph state
+    updateZoom(zoomLevel); // Set the initial zoom level and transformations
+  });
+</script>
+{% endif %}
 
   <div class="card browser-contents h-100">
     {% if current_user.feature('graph') is sameas false %}
@@ -583,18 +743,6 @@ grid_top_mid = "contents"
 
 // console.log('"sidebar ' + grid_top_mid + ' ' + grid_top_right + '" "sidebar contents metadata"')
 $('#main-window').css('grid-template-areas', '"sidebar ' + grid_top_mid + ' ' + grid_top_right + '" "sidebar contents metadata"')
-
-var graph_width = 0;
-
-var ro = new ResizeObserver( entries => {
-  w = $("#graphimg").width();
-  if (w != graph_width) {
-    graph_width = w;
-    size_graph();
-  }
-});
-
-ro.observe(document.querySelector("#graphimg"));
 
 </script>
 
