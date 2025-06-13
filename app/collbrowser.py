@@ -247,6 +247,21 @@ def upstream():
                     },
                     'type': kind
                 })
+    #add reference datasets used, there can be several
+    kind, prefix = ('refdata', 'sys::pipeline::refdata::[0]::')  
+    inputs = iqry.qcollmetavals_with_placeholder(collection, f'{prefix}reference_version_dataset_id')
+    for i in inputs:
+        c = iqry.qcollbymeta('sys::dataset_id', i[CollectionMeta.value])
+        if len(c) == 1:
+            parents.append({
+                'collection': c[0][Collection.name],
+                'colllink': datafield('collection', c[0][Collection.name], 'irods_collection').htmlshort,
+                'meta': {
+                    'attr': f'{prefix}reference_version_dataset_id',
+                    'value': i[CollectionMeta.value]
+                },
+                'type': kind
+            })
     return jsonify(parents)
 
 @bp.route('_addmeta', methods=['GET'])
