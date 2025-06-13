@@ -15,6 +15,11 @@
         aria-controls="versions" aria-selected="false">Versions</button>
       </li>
       <li class="nav-item mx-2">
+        <button class="btn btn-outline-primary" id="usage-tab" 
+        data-toggle="tab" href="#usage" role="tab" 
+        aria-controls="usage" aria-selected="false">Usage</button>
+      </li>
+      <li class="nav-item mx-2">
         <button class="btn btn-outline-primary" id="importstate-tab" 
         data-toggle="tab" href="#importstate" role="tab" 
         aria-controls="importstate" aria-selected="false">importing status</button>
@@ -29,6 +34,12 @@
   <form action="update_reference" method="post">
     <input type="hidden" id="action" name="action" value="update_reference">
     <input type="hidden" id="reference" name="reference" value="{{RD.name}}">
+
+    <div class="form-group">
+      <label for="reference_description_{{RD.name}}">Description</label>
+      <textarea rows="5" class="form-control" name="description" id="reference_description_{{RD.name}}">{{ RD.description }}</textarea>
+    </div>
+
     <div class="form-group">
       <label for="reference_synchronization_frequency_{{RD.name}}">Synchronization frequency (seconds)</label>
       <input type="number" min="0" class="form-control" name="synchronization_frequency" id="reference_synchronization_frequency_{{RD.name}}" 
