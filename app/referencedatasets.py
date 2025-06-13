@@ -23,7 +23,7 @@ from os import path
 
 BP = Blueprint('reference', __name__, url_prefix='/reference')
 
-reference_change_allowed = [ 'synchronize_command', 'synchronization_frequency', 'repository', 'tag', 'is_active']
+reference_change_allowed = [ 'description', 'synchronize_command', 'synchronization_frequency', 'repository', 'tag', 'is_active']
 
 
 def get_referencelist():
@@ -84,7 +84,7 @@ def show_reference_details():
 
     reference_details_raw, result = rest_call('GET', 'reference/{}'.format(reference_id))
     reference_details = {}
-    for attr in ['id', 'name', 'creation_date',  'owner',  'synchronize_command', 'repository', 'tag', 'is_active']:
+    for attr in ['description', 'id', 'name', 'creation_date',  'owner',  'synchronize_command', 'repository', 'tag', 'is_active']:
         val = reference_details_raw.get(attr, '')
         if val == None:
             val = ''
@@ -171,6 +171,7 @@ def update_reference_settings():
         for attr in reference_change_allowed:
             if attr in requestdata:
                 data[attr] = requestdata[attr]
+
         response, result = rest_call('PUT', 'reference/{}'.format(reference), data=data)
         if result != 200:
             flash(response.get('message', f'Unknown error: {result}'), 'error')
