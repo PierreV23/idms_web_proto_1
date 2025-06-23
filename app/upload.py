@@ -266,7 +266,7 @@ def upload_meta():
             if not value:
                 #AVUs without value will not be set
                 continue
-            iqry.scollmetaval(collection, f'{ATTR_UPLOADMETA}{key}', value, type_name )    
+            iqry.scollmetaval_typed(collection, f'{ATTR_UPLOADMETA}{key}', value, type_name )    
         selectedSchema = record.get('selectedSchema')
         iqry.scollmetaval(collection, f'{ATTR_UPLOADMETASCHEMA}', selectedSchema)              
         return jsonify({'status': 'OK' }), 200

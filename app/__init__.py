@@ -200,7 +200,7 @@ def restcall(rest_endpoint):
     return jsonify(return_data), response.status_code    
 
 
-@app.context_processor
+# @app.context_processor
 def inject_header_message():
     header_messages = messages.load_messages(category='banner', only_current=True)
     return dict(header_messages=header_messages)

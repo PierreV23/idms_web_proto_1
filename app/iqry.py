@@ -1,3 +1,4 @@
+import json
 import sys
 import time
 from flask_login import current_user, login_required
@@ -109,6 +110,9 @@ def delcollmeta(coll, attr, value=None, unit=None):
 def restore_type( str_value, type_name=None ):
     if type_name:
         try:
+            if type_name == 'list':         
+                return json.loads(str_value)
+            
             # https://stackoverflow.com/questions/11775460/lexical-cast-from-string-to-type
             #t = getattr(__builtins__, type_name)
             t = __builtins__[type_name]
@@ -127,8 +131,17 @@ def qcollmetadict(collection):
 
 def qcollmetadict_typed(collection):
     q = qcollmeta(collection)
-    return {r[CollectionMeta.name]: restore_type(r[CollectionMeta.value], r[CollectionMeta.units]) for r in q}
+    result = {}
+    for r in q:
+        try:
+            v = json.loads(r[CollectionMeta.value])
+        except:
+            v = restore_type(r[CollectionMeta.value], r[CollectionMeta.units])
+        result[r[CollectionMeta.name]] = v
+    return result
 
+def scollmetaval_typed(coll, attr, value, unit=None):
+    scollmetaval(coll, attr, json.dumps(value), unit)
 
 @flaskcache.cache.memoize(timeout=300, make_name=flaskcache.dep_zone)
 def qcollchildren(collection):
