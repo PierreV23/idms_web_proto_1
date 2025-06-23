@@ -66,4 +66,54 @@ and disable the firewall fully with:
 sudo iptables -F
 ```
 
+### Page template structure
+
+The pages in biorods use various jinja template blocks to integrate in the interface. They are described below.
+
+block name|required|example|description
+-|-|-|-
+meta|no|{% block meta %}<p><meta http-equiv="refresh" content="30"\><p>{% endblock %}|will be rendered in the **head** section, and can contain meta tags, like auto refresh settings
+heading|yes|{% block heading}<H2\>Resource settings</H2\>{% endblock %}|Formatted page heading, that show on top of the content page
+menuname|yes|{% block menuname %}<p>menuname="jobspage"<p>{% endblock %}|links the page to its menu option. Should contain javascript menuname assignment, corresponding to **data-menuname** in base2.html menu entry
+menuitems|no|{% block menuitems %}<p><li class="nav-item"\>Processes</li\><p>{% endblock %}|Used to insert submenu items in the action list
+helptitle|no|{% block helptitle %} jobs {% endblock}|Page title will be used in help text viewer
+helptext|no|{% block helptext}Help on this page{% endblock %}|Text going into the help text viewer
+content|yes|{% block content %}List of jobs ... {% endblock %}|Actual page content goes here
+
+#### Example page
+```
+{% extends 'base2.html' %}
+
+{% block meta %}
+<meta http-equiv="refresh" content="30">
+{% endblock %}
+
+{% block heading %}
+<h3>
+    <div class="inline">Processgroup overview</div>
+    <div class="float-right header-right">
+        Last refresh: <div class="refresh-time">... loading ...</div>
+    </div>
+</h3>
+{% endblock %}
+
+{%block menuname %}
+menuname='pglist'
+{% endblock %}
+
+{% block helptitle %}
+processgroups
+{% endblock %}
+
+{% block helptext %}
+This page shows an overview of <emp>processgroups</emp>. Processgroups are groups of pipelines that act on a specific collection
+or the output of a previous pipeline. For each project, one ore more processgroups can be configured using the processgroup tab in the 
+<A HREF="/projects">project configuration</A>
+{% endblock %}
+
+{% block content %}
+
+{% endblock %}
+```
+
 

@@ -8,6 +8,35 @@
 menuname='newrun'
 {% endblock %}
 
+{% block helptitle %}
+the New NGS Run form
+{% endblock %}
+
+{% block helptext %}
+This page allows you to create a samplesheet for ONT sequencers, like the MinION or the GridION.
+<p>
+The <b>flowcell</b> field should match the flowcell ID being used.
+
+Description of columsn in the barcode list:
+<table>
+    <TR>
+        <th>Column</th><th>Description</th>
+    </tr>
+    <tr><td>Checkboxes</td><td>The checkboxes can be used to edit multiple entries at once. Shift-click or Ctrl-click can also be used here</td></tr>
+    <tr><td>ID></td><td>Contains the sample ID. The <b>ID List</b> button can be used to paste a list of IDs from another document.</td>
+    <tr><td>Virus Target</td><td>Fill in the Virus Target. Usage depends on your downstream pipeline</td>
+    <tr><td>Primer Set</td><td>Fill in the Primer Set. Usage depends on your downstream pipeline</td></tr>
+    <tr><td>Description</td><td>Optional description. Usage depends on your downstream pipeline</td></tr>
+    <tr><td>Project</td><td>Select the iRODS project the sample data should be forwarded to</td>
+</table>
+
+    <br>
+Note: In the <b>Project</b> field, you can only select projects you are a member of, 
+unless you are in a special authorization group that allows creation of sample sheets for all project.
+If you think you should be in this group, please contact the <b>Onderzoeks- en Dataloket</b> (onderzoeksendataloket@rivm.nl)
+
+{% endblock %}
+
 {% block content %}
 
 <script>

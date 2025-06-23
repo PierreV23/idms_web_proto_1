@@ -503,7 +503,7 @@ ul {
 .sidebar-bottom {
   position: absolute;
   bottom: 0px;
-  height: calc(11rem + 1px);
+  height: calc(13rem + 1px);
 }
 
 .nav-header {
