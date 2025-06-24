@@ -8,6 +8,53 @@
 menuname='newrun'
 {% endblock %}
 
+{% block helptitle %}
+the New NGS Run form
+{% endblock %}
+
+{% block helptext %}
+This page allows you to create a samplesheet for ONT sequencers, like the MinION or the GridION.
+<p>
+The <b>flowcell</b> field should match the flowcell ID being used.
+</p>
+<p>
+Description of the columns in the barcode list:
+<style>
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th, td {
+    border: 1px solid #ccc;
+    padding: 4px;
+    text-align: left;
+}
+
+th {
+    background-color: #f4f4f4;
+    font-weight: bold;
+}
+</style>
+<table>
+    <TR>
+        <th>Column</th><th>Description</th>
+    </tr>
+    <tr><td>Checkboxes</td><td>The checkboxes can be used to edit multiple entries at once. Shift-click or Ctrl-click can also be used here.</td></tr>
+    <tr><td>ID</td><td>Contains the sample ID. The <b>ID List</b> button can be used to paste a list of IDs from another document.</td>
+    <tr><td>Virus Target</td><td>Fill in the Virus Target. Usage depends on your downstream pipeline. Use <b>Copy down</b> to fill the first field and copy the value to the whole column. </B></td>
+    <tr><td>Primer Set</td><td>Fill in the Primer Set. Usage depends on your downstream pipeline.</td></tr>
+    <tr><td>Description</td><td>Optional description. Usage depends on your downstream pipeline.</td></tr>
+    <tr><td>Project</td><td>Select the iRODS project the sample data should be forwarded to.</td>
+</table>
+
+    <br>
+Note: In the <b>Project</b> field, you can only select projects you are a member of, 
+unless you are in a special authorization group that allows creation of sample sheets for all projects.
+If you think you should be added to this group, please contact the <b>Onderzoeks- en Dataloket</b> (onderzoeksendataloket@rivm.nl)
+
+{% endblock %}
+
 {% block content %}
 
 <script>
@@ -40,7 +87,7 @@ Note: The project selection has been moved to the individual barcodes. You can u
                 <label class="col-sm-2 col-form-label">Virus Target</label>
                 <label class="col-sm-2 col-form-label">Primer Set</label>
                 <label class="col-sm-2 col-form-label">Description</label>
-                <label class="col-sm-1 col-form-label">Project</label>
+                <label class="col-sm-1 col-form-label" title="Select a project from the available project list.&#013 If you are not a member of a project you can request access (See ? Help).">Project</label>
             </div>
             <div class="form-group row">
                 <div class="col-sm-1" data-barcode="ALL">
@@ -80,7 +127,9 @@ Note: The project selection has been moved to the individual barcodes. You can u
                 <input type="text" class="form-control col-sm-2" tabxindex={{ loop.index + 72 }} autocomplete="off"
                     name="description_{{ barcode }}" id="description_{{ barcode }}" placeholder="Description"
                     value="{{ data[barcode].description }}">
-                <select class="custom-select col-sm-1 projectfield" name="project_{{ barcode }}" id="project_{{ barcode }}" data-barcode="{{ barcode }}">
+                <select class="custom-select col-sm-1 projectfield" 
+                        title="Select a project from the available project list.&#013If you are not a member of a project you can request access (See ? Help)."
+                        name="project_{{ barcode }}" id="project_{{ barcode }}" data-barcode="{{ barcode }}">
                     {% for project in projects|sort %}
                     <option {% if project==default_project %} selected {% endif %}>{{ project }}</option>
                     {% endfor %}
