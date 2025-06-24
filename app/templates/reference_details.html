@@ -41,6 +41,18 @@
     </div>
 
     <div class="form-group">
+      <label for="reference_synchronize_repository_{{RD.name}}">Repository</label>
+      <input type="text" class="form-control" name="repository" id="reference_synchronize_repository_{{RD.name}}" 
+             placeholder="https://gitlab.rivm.nl/bioinformatics/refdata_version_check.git" value="{{ RD.repository }}">
+    </div>
+
+    <div class="form-group">
+      <label for="reference_synchronize_repository_tag_{{RD.name}}">Tag</label>
+      <input type="text" class="form-control" name="tag" id="reference_synchronize_repository_tag_{{RD.name}}" 
+             placeholder="v1.1" value="{{ RD.tag }}">
+    </div>
+
+    <div class="form-group">
       <label for="reference_synchronization_frequency_{{RD.name}}">Synchronization frequency (seconds)</label>
       <input type="number" min="0" class="form-control" name="synchronization_frequency" id="reference_synchronization_frequency_{{RD.name}}" 
              placeholder="86400" value="{{ RD.synchronization_frequency }}">
@@ -61,25 +73,36 @@
       <label for="reference_update_frequency_{{RD.name}}">Update frequency (seconds)</label>
       <input type="number" min="0" class="form-control" name="update_frequency" id="reference_update_frequency_{RD.name}}" placeholder="86400" value="{{ RD.update_frequency }}">
     </div-->
-  
+    <div class="form-group">
+      <label for="reference_precheck_command_{{RD.name}}">Precheck command (bash command)</label>
+      <input type="text" class="form-control" name="precheck_command" id="precheck_command_{{RD.name}}" 
+             placeholder="precheck_changes.sh" value="{{ RD.precheck_command }}">
+              <small class="form-text text-muted">
+                command  &lt;FLAGDIR&gt; &lt;WORKDIR&gt; &lt;LATESTVERSIONDIR&gt;<br>
+                <dl>
+                  <dt>FLAGDIR</dt><dd>base directory, where the flag files precheck_finished__no_changes.txt / precheck_finished__found_changes.txt need to be stored.</dd>
+                  <dt>WORKDIR</dt><dd>working directory (usually "new"), place logfiles here.</dd>
+                  <dt>LATESTVERSIONDIR</dt><dd>directory containing the current version, check for changes against this content</dd>
+                </ul>
+              </small>
+    </div>
     <div class="form-group">
       <label for="reference_synchronize_command_{{RD.name}}">Synchronize command (bash command)</label>
       <input type="text" class="form-control" name="synchronize_command" id="synchronize_command_{{RD.name}}" 
-             placeholder="echo 'new data\n' >> ./new/dataset/data_file.txt" value="{{ RD.synchronize_command }}">
+             placeholder="download_dataset.sh" value="{{ RD.synchronize_command }}">
+             <small class="form-text text-muted">
+                command  &lt;WORKDIR&gt; <br>
+                <dl>
+                  <dt>WORKDIR</dt><dd>working directory (usually "new"), create a DATASET directory here.</dd>
+                  </ul>
+              </small>
     </div>
-
-    <hr>
-
     <div class="form-group">
-      <label for="reference_synchronize_repository_{{RD.name}}">Repository</label>
-      <input type="text" class="form-control" name="repository" id="reference_synchronize_repository_{{RD.name}}" 
-             placeholder="https://gitlab.rivm.nl/bioinformatics/refdata_version_check.git" value="{{ RD.repository }}">
-    </div>
-
-    <div class="form-group">
-      <label for="reference_synchronize_repository_tag_{{RD.name}}">Tag</label>
-      <input type="text" class="form-control" name="tag" id="reference_synchronize_repository_tag_{{RD.name}}" 
-             placeholder="v1.1" value="{{ RD.tag }}">
+      <label for="execution_environment_{{RD.name}}">execution environment</label>
+      <select class="form-control" name="execution_environment" id="execution_environment_{{RD.name}}" >
+             <option value="pid">local</option>
+             <option value="lsf">LSF</option>
+        </select>
     </div>
 
 
@@ -121,13 +144,40 @@
   <div class="form-group">
     <label for="import_state_{{import_state.id}}_current_version">current version</label>
     <input type="number" class="form-control" name="import_state_current_version" id="import_state_{{import_state.id}}_current_version" value="{{import_state.current_version}}" readonly>
-    <label for="import_state_{{import_state.id}}_last_synchronize">last synchronized</label>
-    <input type="text" class="form-control" name="import_state_last_synchronize" id="import_state_{{import_state.id}}_last_synchronize" value="{{import_state.last_synchronize}} ({{import_state.last_synchronize_iso}})" readonly>
-    <label for="import_state_{{import_state.id}}_last_update">last updated</label>
-    <input type="text" class="form-control" name="import_state_last_update" id="import_state_{{import_state.id}}_last_update" value="{{import_state.last_update}} ({{import_state.last_update_iso}})" readonly>
-    <label for="import_state_{{import_state.id}}_last_task_pid">last task PID</label>
+
+    <label for="import_state_{{import_state.id}}_last_prechecked">last prechecked</label>
+    <input type="text" class="form-control" name="import_state_last_prechecked" id="import_state_{{import_state.id}}_last_prechecked" value="{{import_state.last_prechecked_iso}}" readonly>
+    
+    <label for="import_state_{{import_state.id}}_last_synchronized">last synchronized</label>
+    <input type="text" class="form-control" name="import_state_last_synchronized" id="import_state_{{import_state.id}}_last_synchronized" value="{{import_state.last_synchronized_iso}}" readonly>
+    
+    <label for="import_state_{{import_state.id}}_last_updated">last updated</label>
+    <input type="text" class="form-control" name="import_state_last_updated" id="import_state_{{import_state.id}}_last_updated" value="{{import_state.last_updated_iso}}" readonly>
+    
+    <hr>
+    <h3>Last processing task</h3>
+
+    <label for="import_state_{{import_state.id}}_last_task_changed">last task change</label>
+    <input type="text" class="form-control" name="import_state_last_task_changed" id="import_state_{{import_state.id}}_last_task_changed" value="{{import_state.last_task_changed_iso}}" readonly>
+  
+    
+    <label for="import_state_{{import_state.id}}_last_task_pid">last task PID/JOBID</label>
     <input type="number" class="form-control" name="import_state_last_task_pid" id="import_state_{{import_state.id}}_last_task_pid" value="{{import_state.last_task_pid}}" readonly>
-  </div>
+  
+     
+      <label for="import_state_{{import_state.id}}_last_task_message">last task message</label>
+      <textarea rows="5" class="form-control" name="last_task-message" id="import_state_{{import_state.id}}_last_task_message" readonly>{{import_state.last_task_message }}</textarea>
+       
+     <label for="import_state_{{import_state.id}}_error_count">error count</label>
+     <input type="text" class="form-control" name="import_state_error_count" id="import_state_{{import_state.id}}_error_count" value="{{import_state.error_count}}" readonly>
+    
+      <hr>
+
+    <label for="import_state_{{import_state.id}}_dataset_id">last updated</label>
+    <input type="text" class="form-control" name="import_state_dataset_id" id="import_state_{{import_state.id}}_dataset_id" value="{{import_state.dataset_id}}" readonly>
+    
+
+    </div>
 </div>
 
 <!-- PROJECT DELETE CONFIMATION DIALOG -->
