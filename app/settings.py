@@ -55,6 +55,7 @@ BARCODE_FIELDS = {
     'sampleid': {'title': 'ID', 'field': 'sampleid', 'sortable': 'true'},
     'virus_target': {'title': 'Virus Target', 'field': 'virus_target', 'sortable': 'true'},
     'primer_set': {'title': 'Primer Set', 'field': 'primer_set', 'sortable': 'true'},
+    'kit': {'title': 'Kit', 'field': 'kit', 'sortable': 'true'},
     'description': {'title': 'Description', 'field': 'description', 'sortable': 'true'},
     'project': {'title': 'Project', 'format': 'projectid', 'field': 'project', 'sortable': 'true', 'filtercontrol': 'select'}
 }

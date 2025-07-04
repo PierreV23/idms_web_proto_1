@@ -186,7 +186,7 @@ class WebUser(UserMixin):
             grps = self.groups()
             usr_groups = [ r for r in q if r[UserGroup.name] in grps ]
 
-            my_projects = [ r[UserMeta.value] for r in usr_groups ]
+            my_projects = list(set([ r[UserMeta.value] for r in usr_groups ]))
 
         return my_projects
         
