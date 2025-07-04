@@ -19,6 +19,32 @@ The <b>flowcell</b> field should match the flowcell ID being used.
 </p>
 <p>
 Description of the columns in the barcode list:
+<table>
+    <TR>
+        <th>Column</th><th>Description</th>
+    </tr>
+    <tr><td>Checkboxes</td><td>The checkboxes can be used to edit multiple entries at once. Shift-click or Ctrl-click can also be used here.</td></tr>
+    <tr><td>ID</td><td>Contains the sample ID. The <b>ID List</b> button can be used to paste a list of IDs from another document.</td>
+    <tr><td>Virus Target</td><td>Fill in the Virus Target. Usage depends on your downstream pipeline. Use <b>Copy down</b> to fill the first field and copy the value to the whole column. </B></td>
+    <tr><td>Primer Set</td><td>Fill in the Primer Set. Usage depends on your downstream pipeline.</td></tr>
+    <tr><td>Kit</td><td>Fill in the Kit. Usage depends on your downstream pipeline. There is a dropdown available for kits. If your value is not in the list you can add it to the field manually, and it will be added to the list for future selectivity.</td></tr>
+    <tr><td>Description</td><td>Optional description. Usage depends on your downstream pipeline.</td></tr>
+    <tr><td>Project</td><td>Select the iRODS project the sample data should be forwarded to.</td>
+</table>
+
+    <br>
+Note: In the <b>Project</b> field, you can only select projects you are a member of,
+unless you are in a special authorization group that allows creation of sample sheets for all projects.
+If you think you should be added to this group, please contact the <b>Onderzoeks- en Dataloket</b> (onderzoeksendataloket@rivm.nl)
+
+{% endblock %}
+
+{% block content %}
+
+<script>
+    var barcodes = {{ barcodes | safe}}
+</script>
+
 <style>
 table {
     border-collapse: collapse;
@@ -35,33 +61,15 @@ th {
     background-color: #f4f4f4;
     font-weight: bold;
 }
+
+/* lighter coloured placeholders */
+#new_run input::placeholder {
+    color: #d4d2d2;
+    opacity: 1;
+}
 </style>
-<table>
-    <TR>
-        <th>Column</th><th>Description</th>
-    </tr>
-    <tr><td>Checkboxes</td><td>The checkboxes can be used to edit multiple entries at once. Shift-click or Ctrl-click can also be used here.</td></tr>
-    <tr><td>ID</td><td>Contains the sample ID. The <b>ID List</b> button can be used to paste a list of IDs from another document.</td>
-    <tr><td>Virus Target</td><td>Fill in the Virus Target. Usage depends on your downstream pipeline. Use <b>Copy down</b> to fill the first field and copy the value to the whole column. </B></td>
-    <tr><td>Primer Set</td><td>Fill in the Primer Set. Usage depends on your downstream pipeline.</td></tr>
-    <tr><td>Description</td><td>Optional description. Usage depends on your downstream pipeline.</td></tr>
-    <tr><td>Project</td><td>Select the iRODS project the sample data should be forwarded to.</td>
-</table>
 
-    <br>
-Note: In the <b>Project</b> field, you can only select projects you are a member of, 
-unless you are in a special authorization group that allows creation of sample sheets for all projects.
-If you think you should be added to this group, please contact the <b>Onderzoeks- en Dataloket</b> (onderzoeksendataloket@rivm.nl)
-
-{% endblock %}
-
-{% block content %}
-
-<script>
-    var barcodes = {{ barcodes | safe}}
-</script>
-
-<form action="new" method="post" class="h-100">
+<form action="new" method="post" class="h-100" id="new_run">
     <div class="card h-100">
         <div class="card-header">
             <input type="hidden" id="id" name="id" value="{{ id }}">
@@ -75,7 +83,6 @@ Note: The project selection has been moved to the individual barcodes. You can u
                 <label for="ngs_flowcell" class="col-sm-1 col-form-label">Flowcell:</label>
                 <input type="text" class="form-control col-sm-1" autocomplete="off" name="flowcell" id="ngs_flowcell"
                     placeholder="Flowcell" value="{{ data.flowcell }}">
-
                 <label for="ngs_description" class="col-sm-1 col-form-label">Description:</label>
                 <input type="text" class="form-control col-sm-3" autocomplete="off" name="description"
                     id="ngs_description" placeholder="Description" value="{{ data.description }}">
@@ -86,6 +93,7 @@ Note: The project selection has been moved to the individual barcodes. You can u
                 <label class="col-sm-1 col-form-label">ID</label>
                 <label class="col-sm-2 col-form-label">Virus Target</label>
                 <label class="col-sm-2 col-form-label">Primer Set</label>
+                <label class="col-sm-2 col-form-label">Kit</label>
                 <label class="col-sm-2 col-form-label">Description</label>
                 <label class="col-sm-1 col-form-label" title="Select a project from the available project list.&#013 If you are not a member of a project you can request access (See ? Help).">Project</label>
             </div>
@@ -103,37 +111,74 @@ Note: The project selection has been moved to the individual barcodes. You can u
                         id="targetbutton">Copy down</button></label>
                 <label class="col-sm-2 col-form-label"><button type="button" class="btn btn-secondary"
                         id="primerbutton">Copy down</button></label>
-                <label class="col-sm-2 col-form-label"></label>
                 <label class="col-sm-2 col-form-label"><button type="button" class="btn btn-secondary"
+                        id="kitbutton">Copy down</button></label>
+                <label class="col-sm-2 col-form-label"></label>
+                <label class="col-sm-1 col-form-label"><button type="button" class="btn btn-secondary"
                     id="projectbutton">Copy down</button></label>
             </div>
         </div>
         <div class="card-body scroll h-100">
             {% for barcode in barcodes %}
-            <div class="form-group form-row">
-                <div class="col-sm-1 barbox" data-barcode="{{ barcode }}"><input type="checkbox" tabindex=-1 class="checkbox barselect"
-                    id="check_{{ barcode }}" data-barcode="{{ barcode }}"></div>
-                <input readonly type="text" tabindex=-1 class="form-control col-sm-1" name="bar_{{ barcode }}"
-                    id="bar_{{ barcode }}" value="{{ barcode }}" >
-                <input type="text" class="form-control col-sm-1" tabxindex={{ loop.index }} autocomplete="off"
-                    name="sampleid_{{ barcode }}" id="sampleid_{{ barcode }}" placeholder="ID"
-                    value="{{ data[barcode].sampleid }}">
-                <input type="text" class="form-control col-sm-2 targetAutocomplete targetfield" tabxindex={{ loop.index +
-                    24 }} autocomplete="on" name="target_{{ barcode }}" id="target_{{ barcode }}"
-                    placeholder="Virus Target" value="{{ data[barcode].virus_target }}" data-barcode="{{ barcode }}"">
-                <input type="text" class="form-control col-sm-2 primerAutocomplete primerfield" tabxindex={{ loop.index +
-                    48 }} autocomplete="off" name="primer_{{ barcode }}" id="primer_{{ barcode }}"
-                    placeholder="Primer Set" value="{{ data[barcode].primer_set }}" data-barcode="{{ barcode }}"">
-                <input type="text" class="form-control col-sm-2" tabxindex={{ loop.index + 72 }} autocomplete="off"
-                    name="description_{{ barcode }}" id="description_{{ barcode }}" placeholder="Description"
-                    value="{{ data[barcode].description }}">
-                <select class="custom-select col-sm-1 projectfield" 
-                        title="Select a project from the available project list.&#013If you are not a member of a project you can request access (See ? Help)."
-                        name="project_{{ barcode }}" id="project_{{ barcode }}" data-barcode="{{ barcode }}">
-                    {% for project in projects|sort %}
-                    <option {% if project==default_project %} selected {% endif %}>{{ project }}</option>
-                    {% endfor %}
-                </select>
+            <div class="form-group form-row align-items-center">
+                <!-- Checkbox -->
+                <div class="col-sm-1 barbox" data-barcode="{{ barcode }}">
+                    <input type="checkbox" class="checkbox barselect" id="check_{{ barcode }}" data-barcode="{{ barcode }}" tabindex="-1">
+                </div>
+
+                <!-- Barcode (readonly) -->
+                <div class="col-sm-1">
+                    <input type="text" class="form-control" name="bar_{{ barcode }}" id="bar_{{ barcode }}" value="{{ barcode }}" readonly tabindex="-1">
+                </div>
+
+                <!-- Sample ID -->
+                <div class="col-sm-1">
+                    <input type="text" class="form-control" name="sampleid_{{ barcode }}" id="sampleid_{{ barcode }}"
+                        placeholder="ID" value="{{ data[barcode].sampleid }}" autocomplete="off" tabindex="{{ loop.index }}">
+                </div>
+
+                <!-- Virus Target -->
+                <div class="col-sm-2">
+                    <input type="text" class="form-control targetAutocomplete targetfield" name="target_{{ barcode }}"
+                        id="target_{{ barcode }}" placeholder="Virus Target" value="{{ data[barcode].virus_target }}"
+                        data-barcode="{{ barcode }}" autocomplete="on" tabindex="{{ loop.index + 24 }}">
+                </div>
+
+                <!-- Primer Set -->
+                <div class="col-sm-2">
+                    <input type="text" class="form-control primerAutocomplete primerfield" name="primer_{{ barcode }}"
+                        id="primer_{{ barcode }}" placeholder="Primer Set" value="{{ data[barcode].primer_set }}"
+                        data-barcode="{{ barcode }}" autocomplete="off" tabindex="{{ loop.index + 48 }}">
+                </div>
+
+                <!-- Kit Datalist-->
+                <div class="col-sm-2">
+                    <input type="text" class="form-control kitfield" name="kit_{{ barcode }}" id="kit_{{ barcode }}"
+                        list="kit_list_{{ barcode }}" placeholder="Kit" value="{{ data[barcode].kit }}"
+                        data-barcode="{{ barcode }}" tabindex="{{ loop.index + 72 }}">
+                    <datalist id="kit_list_{{ barcode }}">
+                        {% for kit in kits %}
+                        <option value="{{ kit }}"></option>
+                        {% endfor %}
+                    </datalist>
+                </div>
+
+                <!-- Description -->
+                <div class="col-sm-2">
+                    <input type="text" class="form-control" name="description_{{ barcode }}" id="description_{{ barcode }}"
+                        placeholder="Description" value="{{ data[barcode].description }}" autocomplete="off" tabindex="{{ loop.index + 96 }}">
+                </div>
+
+                <!-- Project Dropdown -->
+                <div class="col-sm-1">
+                    <select class="custom-select projectfield" name="project_{{ barcode }}" id="project_{{ barcode }}"
+                            title="Select a project from the available project list.&#013If you are not a member of a project you can request access (See ? Help)."
+                            data-barcode="{{ barcode }}">
+                        {% for project in projects|sort %}
+                        <option {% if project == default_project %} selected {% endif %}>{{ project }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
             {% endfor %}
         </div>
@@ -147,12 +192,12 @@ Note: The project selection has been moved to the individual barcodes. You can u
 <script>
     $('.selectall').click(function(){
         $('.barselect').prop('checked', true)
-        $('.barbox, .targetfield, .primerfield, .projectfield').addClass('bg-light').addClass('selected')
+        $('.barbox, .targetfield, .primerfield, .kitfield, .projectfield').addClass('bg-light').addClass('selected')
     })
 
     $('.selectnone').click(function(){
         $('.barselect').prop('checked', false)
-        $('.barbox, .targetfield, .primerfield, .projectfield').removeClass('bg-light').removeClass('selected')
+        $('.barbox, .targetfield, .primerfield, .kitfield, .projectfield').removeClass('bg-light').removeClass('selected')
         $('.selected').removeClass('selected')
     })
 
@@ -216,6 +261,7 @@ Note: The project selection has been moved to the individual barcodes. You can u
 
     $('#targetbutton').click(function(){copy_down("target")})
     $('#primerbutton').click(function (){copy_down("primer")})
+    $('#kitbutton').click(function (){copy_down("kit")})
     $('#projectbutton').click(function (){copy_down("project")})
 
     $('.targetfield').on("input", function(){
@@ -237,6 +283,12 @@ Note: The project selection has been moved to the individual barcodes. You can u
         }
     })
 
+    $('.kitfield').on("input", function(){
+        if ($(".barselect:checkbox:checked").length > 0) {
+            $(".kitfield.selected").val($(this).val())
+        }
+    })
+
     $('.projectfield').change(function(){
         if ($(".barselect:checkbox:checked").length > 0) {
             $(".projectfield.selected").val($(this).val())
@@ -252,6 +304,12 @@ Note: The project selection has been moved to the individual barcodes. You can u
     $('.primerAutocomplete').autoComplete({
         resolverSettings: {
             url: 'complete/primer_set'
+        }
+    });
+
+    $('.kitAutocomplete').autoComplete({
+        resolverSettings: {
+            url: 'complete/kit'
         }
     });
 

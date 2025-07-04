@@ -12,6 +12,7 @@ from flask_login import current_user, login_required
 from flask import jsonify
 from .flaskcache import cache, key_zone, key_userzone, dep_zone, dep_userzone
 from irods.models import Collection, CollectionMeta, User, UserMeta
+from irods.exception import CAT_NO_ROWS_FOUND
 from irods.column import Criterion
 from app.datafield import datafield
 from graphviz import Digraph
@@ -335,7 +336,7 @@ def update_process():
     rest_call('PUT', f'processes/{procid}', data=data)
     return redirect(f'{ url_for("projects.show_projects") }?page=processes&process={process}')
 
-@BP.route('/get_process', methods=['GET','POST'])
+@BP.route('/get_process', methods=['GET', 'POST'])
 def get_process():
     data = request.form.to_dict()
     if not 'project' in data:
