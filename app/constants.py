@@ -296,6 +296,30 @@ LAYOUT = {
         STYLE: 'filled, rounded',
         TABLECLASS : 'table-data'
     },
+    'collection': {
+        SHAPE1: 'box3d',
+        SHAPE2: 'cds',
+        COLOR1: '#c3e6cb',
+        COLOR2: '#c3e6cb',
+        STYLE: 'filled',
+        TABLECLASS : 'table-done'
+    },    
+    'database': {
+        SHAPE1: 'cylinder',
+        SHAPE2: 'cylinder',
+        COLOR1: "#eb9494",
+        COLOR2: "#eb9494",
+        STYLE: 'filled',
+        TABLECLASS : 'table-data'
+    },
+    'not_file': {
+        SHAPE1: 'rect',
+        SHAPE2: 'rect',
+        COLOR1: "#ffffff",
+        COLOR2: "#ffffff",
+        STYLE: 'filled',
+        TABLECLASS : 'table-data'
+    },
     'entity': {
         SHAPE1: 'rect',
         SHAPE2: 'rect',

@@ -716,6 +716,7 @@ def _collcontents(path, offset, limit, filterstr, key, order):
             pass
     return jsonify(results)
 
+# helper functions used for labeling, and layout
 def shortname(name, l):
     s = name
     if len(name)>l:
@@ -728,6 +729,12 @@ def node_shape(node_type):
     '''
     layout = constants.LAYOUT.get(node_type, constants.DEFAULT_SHAPE)
     return layout[constants.SHAPE1], layout[constants.COLOR1], layout[constants.STYLE]
+def graph_shape(graph_type):
+    '''
+    depending the graph_type determine the fillcolor and style of the node
+    '''
+    layout = constants.LAYOUT.get(graph_type, constants.DEFAULT_SHAPE)
+    return layout[constants.COLOR1], layout[constants.STYLE]
 
 class Dictlist(dict):
     """ Custom dict class that allows storing multiple values under one key
@@ -847,7 +854,7 @@ def _generate_graph_coll(coll, maxlevels, graph_simplify, provenance_labels, sho
         # Determine if destination node is a collection node,
         # or the associated process node
         if node in processes:
-            return f'G-{node}'
+            return f'GITNODE-{node}'
         else:
             return node
 
@@ -857,7 +864,7 @@ def _generate_graph_coll(coll, maxlevels, graph_simplify, provenance_labels, sho
         '''
         if provenance_labels == 1:
             # check for destination = git
-            if d[:2] == 'G-':
+            if d[:8] == 'GITNODE-':
                 label = 'used'
             return label
         else:
@@ -1004,7 +1011,7 @@ def _generate_graph_coll(coll, maxlevels, graph_simplify, provenance_labels, sho
         code_nodes = [collmeta.get(a) for a in activity_attrs if collmeta.get(a)]
 
         for cn in code_nodes:
-            code_node = f'G-{node}'
+            code_node = f'GITNODE-{node}'
             shape, shape_color, shape_style = node_shape('activity')
             graph.node(code_node, cn, shape=shape, fillcolor = shape_color, style = shape_style, tooltip = cn, target = "_blank", fontsize = '8')
             graph.edge(code_node, node, prov('wasGeneratedBy'))
@@ -1020,7 +1027,7 @@ def _generate_graph_coll(coll, maxlevels, graph_simplify, provenance_labels, sho
             repo_url = repo_url._replace(netloc=repo_url.hostname)
             link = repo_url._replace(path='{}/tree/{}'.format(repo_url.path.replace('.git', ''), githash))
             label = f"{collmeta.get('sys::runsheet::processID', '')}  \n{git.split('/')[-1]}  " #2 spaces to avoid overlap label text and node border
-            git_node = f'G-{node}'
+            git_node = f'GITNODE-{node}'
             graph.node(git_node, label, shape=shape, fillcolor = shape_color, style = shape_style, URL=link.geturl(), target = "_blank", fontsize='8')
             graph.edge(git_node, node, prov('wasGeneratedBy'))
             processes.add(node)
@@ -1056,8 +1063,10 @@ def _generate_graph_coll(coll, maxlevels, graph_simplify, provenance_labels, sho
         if obj_type != 'path':
             shape, shape_color, shape_style = node_shape('file')
             # make label (show filename in separate line, and maximized path length accordingly)
-            filename = node.split('/')[-1]
-            filepath = node[:len(node) - len(filename)]
+            split_parts = node.split("/")
+            filename = split_parts[-1]
+            project_path = os.path.join(*split_parts[:4])
+            filepath = node[len(project_path) + 1:len(node) - len(filename)]
             label = shortname(filepath, max(NAME_LENGTH_COLL, len(filename) + 2)) + '\n' + filename
         else:
             label = projectid + shortname(node, NAME_LENGTH_COLL)
@@ -1180,7 +1189,7 @@ def related_dataobj(dataobj, attr, forward=True, byname=True):
     # In case forward=False
     #   Search for data objects that have a name equal to the value of <attr> on <dataobj>
 
-    # Find metadata of <coll>
+    # Find metadata of <dataobj>
     dataobjmeta = Dictlist()
     q = iqry.qdataobjmeta(dataobj)
     for m in q:
@@ -1209,24 +1218,24 @@ def generate_graph_dataobj():
     graph_simplify = request.args.get('graph_simplify_obj', 0, type=int)
     provenance_labels = request.args.get('provenance_labels_obj', 0, type=int)
     include_all_from_coll = request.args.get('include_all_from_coll', 0, type=int)
+    show_collections = request.args.get('show_collections', 0, type=int)
     show_upstream = request.args.get('show_upstream_obj', 0, type=int)
     show_downstream = request.args.get('show_downstream_obj', 0, type=int)
-    return _generate_graph_dataobj(coll, dataobj, maxlevels, graph_simplify, provenance_labels, include_all_from_coll, show_upstream, show_downstream)
+    graph_direction_tb = request.args.get('graph_direction_tb_obj', 0, type=int)
+    return _generate_graph_dataobj(coll, dataobj, maxlevels, graph_simplify, provenance_labels, include_all_from_coll, show_collections, show_upstream, show_downstream, graph_direction_tb)
 
 @cache.memoize(timeout=60, make_name=dep_userzone)
-def _generate_graph_dataobj(coll, dataobj, maxlevels, graph_simplify, provenance_labels, include_all_from_coll, show_upstream, show_downstream):
+def _generate_graph_dataobj(coll, dataobj, maxlevels, graph_simplify, provenance_labels, include_all_from_coll, show_collections, show_upstream, show_downstream, graph_direction_tb):
 
-    multinodes = []
     nodes = set()
     processes = set()
     edges = set()
     dashed_edges = set()
-    multi_edges = set()
 
     def destnode(node):
         # Determine if destination node is a collection node or the associated process node
         if node in processes:
-            return f'G-{node}'
+            return f'GITNODE-{node}'
         else:
             return node
 
@@ -1234,7 +1243,7 @@ def _generate_graph_dataobj(coll, dataobj, maxlevels, graph_simplify, provenance
         # Toggle the labels for provenance
         if provenance_labels == 1:
             # check for destination = git
-            if d[:2] == 'G-':
+            if d[:8] == 'GITNODE-':
                 label = 'used'
             return label
         else:
@@ -1245,41 +1254,34 @@ def _generate_graph_dataobj(coll, dataobj, maxlevels, graph_simplify, provenance
         '''
         if dataobj in nodes:
             return
-
+                
+        # if dataobj is not a path, but plain text (contains blanks or no initial '/')
+        if ' ' in dataobj or dataobj[:1] != '/':
+            return
+        
         nodes.add(dataobj)
-
+        
         MAX_INPUTS = current_app.config.get('GRAPH_MAX_INPUTS', 3)
         MAX_OUTPUTS = current_app.config.get('GRAPH_MAX_OUTPUTS', 11)
 
-        def handle_neighbours(node, neighbours, edgelist, levels, inputs=True, relation_type='S'):
-            multi = False
-            if graph_simplify:
-                max_nodes = MAX_INPUTS if inputs else MAX_OUTPUTS
-                max_nodes -= (maxlevels - levels) * 1
-                prefix = 'I' if inputs else 'O'
-                if len(neighbours) > max_nodes and len(neighbours) > 1:
-                    multi = True
-                    label = f'{prefix}{relation_type}-{node}'
-                    multinodes.append((label, node, neighbours))
-                    if inputs:
-                        multi_edges.add((label, node, 'wasDerivedFrom'))
-                    else:
-                        multi_edges.add((node, label, 'wasDerivedFrom'))
+        def handle_neighbours(node, neighbours, edgelist, levels, inputs=True):
 
             for neighbour in neighbours:
+                # if neighbour is not a path, but plain text (contains blanks or no initial '/')
+                if ' ' in neighbour or neighbour[:1] != '/':
+                    break
+                
                 if inputs:
                     vect = (neighbour, node, 'wasDerivedFrom')
                 else:
                     vect = (node, neighbour, 'wasDerivedFrom')
-                if not multi:
-                    if levels:
-                        traverse(neighbour, levels=levels-1)
-                        edgelist.add(vect)
-                    else:
-                        dashed_edges.add(vect)
-                elif neighbour in nodes:
+                    
+                if levels:
+                    traverse(neighbour, levels=levels-1)
                     edgelist.add(vect)
-
+                else:
+                    dashed_edges.add(vect)
+                        
         # FIND INPUTS
         if show_upstream == 1:
             input_dataobjects = related_dataobj(dataobj, 'prov:wasDerivedFrom', forward=False, byname=True)
@@ -1304,46 +1306,16 @@ def _generate_graph_dataobj(coll, dataobj, maxlevels, graph_simplify, provenance
         else:
             return
 
-    # Remove multinodes when all items in multinode are in the graph
-    # and combine equal multinodes
-    for n, (multinode, related_node, neighbours) in reversed(list(enumerate(multinodes))):
-        input_node = multinode[0] == 'I'
-        if set(neighbours).issubset(nodes):
-            # Remove the multinode and the edge
-            if input_node:
-                vect = (multinode, related_node, 'wasDerivedFrom')
-            else:
-                vect = (related_node, multinode, 'wasDerivedFrom')
-            for neighbour in neighbours:
-                if input_node:
-                    edges.add((neighbour, related_node, 'wasDerivedFrom'))
-                else:
-                    edges.add((related_node, neighbour, 'wasDerivedFrom'))
-            # Remove the multinode and the edge
-            multi_edges.remove(vect)
-            del multinodes[n]
-        else:
-            # Combine equal multinodes:
-            for other_multinode, _ , other_neighbours in multinodes[:n]:
-                if other_neighbours == neighbours:
-                    # Move the edges:
-                    if input_node:
-                        vect = (multinode, related_node, 'wasDerivedFrom')
-                        new_vect = (other_multinode, related_node, 'wasDerivedFrom')
-                    else:
-                        vect = (related_node, multinode,  'wasDerivedFrom')
-                        new_vect = (related_node, other_multinode,  'wasDerivedFrom')
-                    multi_edges.remove(vect)
-                    multi_edges.add(new_vect)
-                    del multinodes[n]
-                    break
-
     #######################################
     # Draw the Data Object graph
 
     graph = Digraph('Data Objects')
-    graph.graph_attr['rankdir'] = 'LR'
+    graph.graph_attr['rankdir'] = 'LR' if graph_direction_tb == 0 else 'TB' # Graph direction
     graph.graph_attr['fontsize'] = '15'
+    graph.attr(compound='true') # allow edges between collections
+    
+    # longer path_names in top_bottom representation
+    NAME_LENGTH_OBJ = 40 if graph_direction_tb == 0 else 100
 
     # Start with all the nodes
     for node in sorted(nodes):
@@ -1357,51 +1329,82 @@ def _generate_graph_dataobj(coll, dataobj, maxlevels, graph_simplify, provenance
         
         # combine activity metadata (avoid None in list)
         code_nodes = [dataobjmeta.get(a) for a in activity_attrs if dataobjmeta.get(a)]
-
-        for cn in code_nodes:
-            code_node = f'G-{node}'
-            shape, shape_color, shape_style = node_shape('activity')
-            graph.node(code_node, cn, shape=shape, fillcolor = shape_color, style = shape_style, tooltip = cn, target = "_blank", fontsize = '8')
-            graph.edge(code_node, node, prov('wasGeneratedBy'))
-            processes.add(node)
-
-        # #code to add git information if provided
-        # git = dataobjmeta.get('sys::pipeline::gitrepo')
-        # githash = dataobjmeta.get('sys::pipeline::githash')
-        # if git:
-        #     repo_url = urlparse(git)
-        #     # Strip credentials from repo url and add commit hash.
-        #     repo_url = repo_url._replace(netloc=repo_url.hostname)
-        #     link = repo_url._replace(path='{}/tree/{}'.format(repo_url.path.replace('.git', ''), githash))
-        #     processid = f"{dataobjmeta.get('prov:wasGeneratedBy', '')}  \n{git.split('/')[-1]}  " #2 spaces to avoid overlap label text and node border
-        #     git_node = f'G-{node}'
-        #     graph.node(git_node, processid, shape=PROCESS_SHAPE, URL=link.geturl(), target = "_blank", fontsize='8')
-        #     graph.edge(git_node, node)
-        #     processes.add(node)
-
+       
+        # TODO check if node is Collection (https://gitlab.rivm.nl/bioinformatics/ngsweb/-/issues/145)
+        
+        # set class to enable clicking in graph
+        clss = { 'class' : 'dataobject-change' }
+        # default node_shape is file
+        shape, shape_color, shape_style = node_shape('file')         
+        
+        # if include all files make all files in the collection bold
         if node == dataobj:
+            penwidth = '4'
+            fontsize = '10'
+            clss['class'] += ' center-obj' # class to centralize object
+            sub = True if include_all_from_coll == 1 else False
+        elif include_all_from_coll == 1 and node[:len(node) - len(node.split('/')[-1])] == dataobj[:len(dataobj) - len(dataobj.split('/')[-1])]:
             penwidth = '3'
-            clss = { 'class' : 'dataobject-change center-obj'}
+            fontsize = '10'
+            sub = True
         else:
             penwidth = '1'
-            clss = { 'class' : 'dataobject-change' }
-
-        shape, shape_color, shape_style = node_shape('file')
+            fontsize = '8'
+            sub = False
 
         # make label (show complete filename, and path length accordingly 3x...)
-        filename = node.split('/')[-1]
-        filepath = node[:len(node) - len(filename)]
-        label = shortname(filepath, max(len(filename) + 2, NAME_LENGTH_OBJ)) + '\n' + filename
+        split_parts = node.split("/")
+        filename = split_parts[-1]
+        project_path = os.path.join(*split_parts[:2])
+        filepath = node[len(project_path)+1:len(node) - len(filename)]
+        # show only filename in node, if collections are shown
+        label = filename if show_collections == 1 else shortname(filepath, max(len(filename) + 2, NAME_LENGTH_OBJ)) + '\n' + filename 
+    
+        if sub:
+            # generate 1 subgraph, styled as collection for selected collection
+            with graph.subgraph(name=f'cluster_{coll}') as c:
+                graph_color, graph_style = graph_shape('collection')
+                c.attr(style=graph_style, color=graph_color, tooltip=f'Collection: {coll}', label=coll)
+                c.node(node, label, shape=shape, fillcolor=shape_color, style=shape_style, penwidth=penwidth,
+                    fontsize=fontsize, setting='extra', **clss, id=node)
+        elif show_collections == 1:
+            # generate subgraphs, styled as collections for all collections
+            with graph.subgraph(name=f'cluster_{filepath}') as c:
+                graph_color, graph_style = graph_shape('collection')
+                c.attr(style=graph_style, color=graph_color, tooltip=f'Collection: {filepath}', label=filepath)
+                c.node(node, label, shape=shape, fillcolor=shape_color, style=shape_style, penwidth=penwidth,
+                    fontsize=fontsize, setting='extra', **clss, id=node)  
+        else:
+            # no subgraphs
+            graph.node(node, label, shape=shape, fillcolor=shape_color, style=shape_style, penwidth=penwidth,
+                    fontsize=fontsize, setting='extra', **clss, id=node)
+                    
+        # list of activity attribute labels to check for:
+        activity_attrs = [item['attr'] for item in PROVATTR if item['type'] == 'activity']
+        
+        # combine activity metadata (avoid None in list)
+        code_nodes = [dataobjmeta.get(a) for a in activity_attrs if dataobjmeta.get(a)]
 
-        graph.node(node, label, shape=shape, fillcolor=shape_color, style=shape_style, penwidth=penwidth,
-            fontsize='8', setting='extra', **clss, id=node)
+        for cn in code_nodes:
+            code_node = f'GITNODE-{node}'
+            shape, shape_color, shape_style = node_shape('activity')
+            if sub:
+                # add nodes and edge to the selected collection subgraph
+                with graph.subgraph(name=f'cluster_{coll}') as c:
+                    c.node(code_node, cn, shape=shape, fillcolor = shape_color, style = shape_style, tooltip = cn, target = "_blank", fontsize = '8')
+                    c.edge(code_node, node, prov('wasGeneratedBy'))
+            elif show_collections == 1:
+                # add nodes and edge to all the subgraphs
+                with graph.subgraph(name=f'cluster_{filepath}') as c:
+                    c.node(code_node, cn, shape=shape, fillcolor = shape_color, style = shape_style, tooltip = cn, target = "_blank", fontsize = '8')
+                    c.edge(code_node, node, prov('wasGeneratedBy'))
+            else:
+                graph.node(code_node, cn, shape=shape, fillcolor = shape_color, style = shape_style, tooltip = cn, target = "_blank", fontsize = '8')
+                graph.edge(code_node, node, prov('wasGeneratedBy'))
+            processes.add(node)
 
-    # multi-nodes
-    for multinode, related_node, neighbours in multinodes:
-        clss = { 'class' : 'collist' }
-        graph.node(multinode, '.. multiple ..', shape="rarrow", style='filled', setting='extra', **clss, id=multinode)
+    # draw the solid lines ( destnode determines GITNODES)
 
-    # draw the solid lines
     for s, d, label in edges:
         graph.edge(s, destnode(d), prov(label, destnode(d)))
 
@@ -1411,13 +1414,11 @@ def _generate_graph_dataobj(coll, dataobj, maxlevels, graph_simplify, provenance
         vect = list(vt)
         for i, v in enumerate(vect):
             if not v in nodes:
+                # create a blank node, to point to
                 vect[i] = f'NODE{dash_counter}'
                 dash_counter += 1
                 graph.node(vect[i], '', shape='none', width='0', height='0')
         graph.edge(vect[0], destnode(vect[1]), prov(label, destnode(vect[1])), style='dashed')
-
-    for s, d, label in multi_edges:
-        graph.edge(s, destnode(d), prov(label, destnode(d)), style='dotted')
 
     return graph.pipe(format='svg').decode('utf-8')
 
@@ -1456,18 +1457,23 @@ def collbrowser():
     provenance_labels_obj = current_user.settings.setdefault('provenance_labels_obj', 0)
     zoomlevel_obj = current_user.settings.setdefault('zoomlevel_obj', 50)
     include_all_from_coll=current_user.settings.setdefault('include_all_from_coll', 0)
+    show_collections=current_user.settings.setdefault('show_collections', "0")
     show_upstream_obj=current_user.settings.setdefault('show_upstream_obj', "1")
     show_upstream_coll=current_user.settings.setdefault('show_upstream_coll', "1")
     show_downstream_obj=current_user.settings.setdefault('show_downstream_obj', "1")
     show_downstream_coll=current_user.settings.setdefault('show_downstream_coll', "1")
+    graph_direction_tb_obj=current_user.settings.setdefault('graph_direction_tb_obj', "0")
+
     return render_template('collbrowser.html', path=path, selected_object=selected_object,
                            graph_levels_coll=graph_levels_coll, graph_levels_obj=graph_levels_obj,
                            graph_simplify_coll=graph_simplify_coll, graph_simplify_obj=graph_simplify_obj,
                            zoomlevel_coll=zoomlevel_coll, zoomlevel_obj=zoomlevel_obj,
                            provenance_labels_coll=provenance_labels_coll, provenance_labels_obj=provenance_labels_obj,
-                           include_all_from_coll=include_all_from_coll,
+                           include_all_from_coll=include_all_from_coll, show_collections=show_collections,
                            show_upstream_obj=show_upstream_obj, show_upstream_coll=show_upstream_coll,
-                           show_downstream_obj=show_downstream_obj, show_downstream_coll=show_downstream_coll)
+                           show_downstream_obj=show_downstream_obj, show_downstream_coll=show_downstream_coll,
+                           graph_direction_tb_obj=graph_direction_tb_obj)
+
 
 @bp.route('upload_file', methods=['GET', 'POST'])
 def upload_file():
