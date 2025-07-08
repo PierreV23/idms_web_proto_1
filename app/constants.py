@@ -15,7 +15,8 @@ FEATURES = {
     'reference': 'Show reference data configuration',
     'sharing': 'Configure datasets that need to be shared externally',
     'minilims': 'Show ONT samplesheet configuration interface',
-    'treeview': 'Use treeview in collection browser instead of project list'
+    'treeview': 'Use treeview in collection browser instead of project list',
+    'swappanes': 'Show content pane on top, graph on bottom'
 }
 
 COLL_KEY_MAP = {
@@ -53,15 +54,17 @@ SHAPE2 = 'shape2'
 COLOR1 = 'color1'
 COLOR2 = 'color2'
 TABLECLASS = 'tableclass'
+STYLE = 'style'
 
 SYS_INVALID_COLOR = '#FF3333'
-USER_INVALID_COLOR = 'darkred'
+USER_INVALID_COLOR = "#B51C1C"
 
 DEFAULT_SHAPE = {
         SHAPE1 : 'box',
         SHAPE2 : 'circle',
         COLOR1: 'white',
         COLOR2: '#FFFFFF',
+        STYLE: 'filled',
         TABLECLASS : 'table-white'
 }
 
@@ -71,89 +74,102 @@ LAYOUT = {
         SHAPE2: 'cds',
         COLOR1: '#e0ebeb',
         COLOR2: '#e0ebeb',
-        TABLECLASS : 'table-depends'        
+        STYLE: 'filled',
+        TABLECLASS : 'table-depends'
     },
     'incoming': {
         SHAPE1 : 'box3d',
         SHAPE2: 'cds',
         COLOR1: '#c3e6cb',
         COLOR2: '#c3e6cb',
-        TABLECLASS : 'table-done'        
+        STYLE: 'filled',
+        TABLECLASS : 'table-done'
     },
     'choose': {
         SHAPE1 : 'underline',
         SHAPE2 : 'cds',
         COLOR1: '#bee5eb',
         COLOR2: '#bee5eb',
-        TABLECLASS : 'table-choose'    
-    },    
+        STYLE: 'filled',
+        TABLECLASS : 'table-choose'
+    },
     'prepare': {
         SHAPE1 : 'underline',
         SHAPE2 : 'cds',
         COLOR1: '#B0E0E6',
         COLOR2: '#B0E0E6',
-        TABLECLASS : 'table-prepare'        
+        STYLE: 'filled',
+        TABLECLASS : 'table-prepare'
     },
     'stage': {
         SHAPE1 : 'underline',
         SHAPE2 : 'cds',
         COLOR1: '#B0C4DE',
         COLOR2: '#B0C4DE',
-        TABLECLASS : 'table-stage'    
+        STYLE: 'filled',
+        TABLECLASS : 'table-stage'
     },
     'spacecheck': {
         SHAPE1 : 'underline',
         SHAPE2 : 'cds',
         COLOR1: '#D4B3F5',
         COLOR2: '#D4B3F5',
-        TABLECLASS : 'table-spacecheck'    
-    },    
+        STYLE: 'filled',
+        TABLECLASS : 'table-spacecheck'
+    },
     'download': {
         SHAPE1 : 'underline',
         SHAPE2 : 'cds',
         COLOR1: '#dcccde',
         COLOR2: '#dcccde',
-        TABLECLASS : 'table-download'    
+        STYLE: 'filled',
+        TABLECLASS : 'table-download'
     },
     'queued': {
         SHAPE1 : 'underline',
         SHAPE2 : 'cds',
         COLOR1: '#bdbdbd',
         COLOR2: '#bdbdbd',
-        TABLECLASS : 'table-queued'    
+        STYLE: 'filled',
+        TABLECLASS : 'table-queued'
     },
     'active': {
         SHAPE1 : 'underline',
         SHAPE2 : 'cds',
         COLOR1: '#99caff',
         COLOR2: '#99caff',
-        TABLECLASS : 'table-jobactive' 
+        STYLE: 'filled',
+        TABLECLASS : 'table-jobactive'
     },
     'finishing': {
         SHAPE1 : 'underline',
         SHAPE2 : 'cds',
         COLOR1: '#33cccc',
         COLOR2: '#33cccc',
-        TABLECLASS : 'table-finishing' 
+        STYLE: 'filled',
+        TABLECLASS : 'table-finishing'
     },
     'postprocessing': {
         SHAPE1 : 'underline',
         SHAPE2 : 'cds',
         COLOR1: '#99ffcc',
         COLOR2: '#99ffcc',
-        TABLECLASS : 'table-postprocessing' 
+        STYLE: 'filled',
+        TABLECLASS : 'table-postprocessing'
     },
     'notify': {
         SHAPE1 : 'underline',
         SHAPE2 : 'cds',
         COLOR1: '#c9d3cb',
         COLOR2: '#c9d3cb',
-        TABLECLASS : 'table-notify' 
+        STYLE: 'filled',
+        TABLECLASS : 'table-notify'
     },
     'done':  {
         SHAPE1 : 'box3d',
         COLOR1: '#c3e6cb',
         COLOR2: '#c3e6cb',
+        STYLE: 'filled',
         TABLECLASS : 'table-done'
     },
     'NOTRUN':  {
@@ -161,45 +177,52 @@ LAYOUT = {
         SHAPE2 : 'cds',
         COLOR1: '#ebd9c6',
         COLOR2: '#ebd9c6',
+        STYLE: 'filled',
         TABLECLASS : 'table-notrun'
     },
     'distributed': {
         SHAPE1 : 'box3d',
         COLOR1: '#c3e6cb:gray',
         COLOR2: '#c3e6cb',
+        STYLE: 'filled',
         TABLECLASS : 'table-distributed'
     },
     'imported': {
         SHAPE1: 'cylinder',
         COLOR1: 'skyblue1',
         COLOR2: '#87CEFF',
-        TABLECLASS : 'table-imported'       
+        STYLE: 'filled',
+        TABLECLASS : 'table-imported'
     },
     'temporary': {
         SHAPE1 : 'note',
         COLOR1: 'gold2',
         COLOR2: '#EEC900',
-        TABLECLASS : 'table-temporary'  
+        STYLE: 'filled',
+        TABLECLASS : 'table-temporary'
     },
     'error': {
         SHAPE1: 'box3d',
         SHAPE2: 'cds',
         COLOR1: '#ff9980',
         COLOR2: '#ff9980',
-        TABLECLASS : 'table-error'  
+        STYLE: 'filled',
+        TABLECLASS : 'table-error'
     },
     'unknown': {
         SHAPE1: 'box',
         SHAPE2: 'cds',
         COLOR1: '#ffffff',
         COLOR2: '#ffffff',
-        TABLECLASS : 'table-white'  
+        STYLE: 'filled',
+        TABLECLASS : 'table-white'
     },
     'OK': {
         SHAPE1: 'cds',
         SHAPE2: 'cds',
         COLOR1: 'palegreen2',
         COLOR2: '#90EE90',
+        STYLE: 'filled',
         TABLECLASS : 'table-done'
     },
     'FAILED': {
@@ -207,6 +230,7 @@ LAYOUT = {
         SHAPE2: 'cds',
         COLOR1: 'tomato',
         COLOR2: '#FF6347',
+        STYLE: 'filled',
         TABLECLASS : 'table-error'
     },
     'source': {
@@ -214,6 +238,7 @@ LAYOUT = {
         SHAPE2: 'box3d',
         COLOR1: 'white',
         COLOR2: '#FFFFFF',
+        STYLE: 'filled',
         TABLECLASS: 'table-white'
     },
     'qc_report': {
@@ -221,6 +246,7 @@ LAYOUT = {
         SHAPE2: 'box3d',
         COLOR1: 'yellow',
         COLOR2: '#FFFF00',
+        STYLE: 'filled',
         TABLECLASS: 'table-white'
     },
     'refsamp_report': {
@@ -228,12 +254,14 @@ LAYOUT = {
         SHAPE2: 'box3d',
         COLOR1: 'yellow',
         COLOR2: '#FFFF00',
+        STYLE: 'filled',
         TABLECLASS: 'table-white'
     },
     'data': {
         SHAPE1: 'box3d',
         COLOR1: '#c3e6cb',
         COLOR2: '#c3e6cb',
+        STYLE: 'filled',
         TABLECLASS : 'table-data'
     },
     'uploaded': {
@@ -241,6 +269,7 @@ LAYOUT = {
         SHAPE2: 'folder',
         COLOR1: 'skyblue1',
         COLOR2: '#87CEFF',
+        STYLE: 'filled',
         TABLECLASS : 'table-data'
     },
     'invalid': {
@@ -248,12 +277,64 @@ LAYOUT = {
         SHAPE2: 'cds',
         COLOR1: 'tomato',
         COLOR2: '#FF6347',
+        STYLE: 'filled',
         TABLECLASS : 'table-error'
     },
     'reference_data': {
         SHAPE1: 'folder',
         COLOR1: '#fdaa48',
+        STYLE: 'filled',
         COLOR2: '#fdaa48',
+        TABLECLASS : 'table-data'
+    },
+    # shapes and colours like https://www.w3.org/TR/prov-o/diagrams/starting-points.svg
+    'file': {
+        SHAPE1: 'rect',
+        SHAPE2: 'rect',
+        COLOR1: "#fffedf",
+        COLOR2: "#fffedf",
+        STYLE: 'filled, rounded',
+        TABLECLASS : 'table-data'
+    },
+    'entity': {
+        SHAPE1: 'rect',
+        SHAPE2: 'rect',
+        COLOR1: "#fffedf",
+        COLOR2: "#fffedf",
+        STYLE: 'filled, rounded',
+        TABLECLASS : 'table-data'
+    },
+    # activity acording to PROV should be a rectangle with double lines on the side, but for now we use cds.
+    'activity': {
+        SHAPE1: 'cds',
+        SHAPE2: 'cds',
+        COLOR1: "#cfceff",
+        COLOR2: "#0460C3",
+        STYLE: 'filled',
+        TABLECLASS : 'table-data'
+    },
+    'process': {
+        SHAPE1: 'cds',
+        SHAPE2: 'cds',
+        COLOR1: "#ffffff",
+        COLOR2: "#003e80", # use for links
+        STYLE: 'filled',
+        TABLECLASS : 'table-data'
+    },
+    'agent': {
+        SHAPE1: 'house',
+        SHAPE2: 'house',
+        COLOR1: "#ffebc4",
+        COLOR2: "#ffebc4",
+        STYLE: 'filled',
+        TABLECLASS : 'table-data'
+    },
+    'xsd:datetime': {
+        SHAPE1: 'rect',
+        SHAPE2: 'rect',
+        COLOR1: "#e6e6e6",
+        COLOR2: "#e6e6e6",
+        STYLE: 'filled',
         TABLECLASS : 'table-data'
     },
 }
