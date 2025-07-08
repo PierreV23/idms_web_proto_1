@@ -15,8 +15,7 @@ FEATURES = {
     'reference': 'Show reference data configuration',
     'sharing': 'Configure datasets that need to be shared externally',
     'minilims': 'Show ONT samplesheet configuration interface',
-    'treeview': 'Use treeview in collection browser instead of project list',
-    'swappanes': 'Show content pane on top, graph on bottom'
+    'treeview': 'Use treeview in collection browser instead of project list'
 }
 
 COLL_KEY_MAP = {

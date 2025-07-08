@@ -939,8 +939,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // Move the graph so the center collection is in the center (size of coll = (70, 16))
   const centerGraphColl = () => {
     const $centerColl = $(graphDivColl).find('.center-coll'); // Find the position of center-coll
-    const $upstreamOnlyColl = document.getElementById('upstream_only_coll').checked; // Upstream only checked?
-    const $downstreamOnlyColl = document.getElementById('downstream_only_coll').checked; // Downstream only checked?
+    const $upstreamOnlyColl = document.getElementById('show_upstream_coll').checked; // Upstream only checked?
+    const $downstreamOnlyColl = document.getElementById('show_downstream_coll').checked; // Downstream only checked?
 
     if ($centerColl.length === 0) return; // check center-coll exists
 
@@ -1125,6 +1125,64 @@ document.addEventListener("DOMContentLoaded", () => {
 
   updateZoomObj(zoomLevelObj);
 });
+
+document.addEventListener("DOMContentLoaded", () => {
+  let moveStart = { x: 0, y: 0 };
+  let isMoving = false;
+  let vposSettingIdObj = 0;
+  const vMover = document.querySelector(".browser-vmove");
+
+  let vHeight = parseInt("{{ vertical_pos }}", 10)
+  console.log(`VH ${vHeight}`)
+
+ // Store zoomlevel in usersettings
+  const storeVPosLevelObj = () => {
+    $.post('{{ url_for("userinfo.usersetting") }}', {
+      attr: 'vertical_pos',
+      value: vHeight
+    });
+  };
+  
+  const updateWindows = () => {
+    maxHeight = $('#main-window').height() - 100
+    vHeight = Math.max(100, vHeight)
+    vHeight = Math.min(maxHeight, vHeight)    
+    document.getElementById("main-window").style.gridTemplateRows = `${vHeight}px [v1] 4px [v2] auto`;
+    if (vposSettingIdObj !== 0) clearTimeout(vposSettingIdObj);
+    vposSettingIdObj = setTimeout(storeVPosLevelObj, 1000);    
+  }
+
+  updateWindows()
+
+  // Dragging functionality
+  vMover.addEventListener("mousedown", (event) => {
+    isMoving = true;
+    moveStart = { x: event.clientX, y: event.clientY };  // Store the starting mouse position
+    vMover.style.cursor = "row-resize";  // Change cursor to indicate dragging (little hand)
+  });
+
+  vMover.addEventListener("mouseover", (event) => {
+    vMover.style.cursor = "row-resize";  // Change cursor to indicate dragging (little hand)
+  });  
+
+  window.addEventListener("mousemove", (event) => {
+    if (!isMoving) return; // Only operate if dragging is active
+    const deltaX = event.clientX - moveStart.x;  // Calculate how far the mouse moved on X
+    const deltaY = event.clientY - moveStart.y;  // Calculate how far the mouse moved on Y
+    moveStart = { x: event.clientX, y: event.clientY }; // Update the new starting point
+    // Update the current translation offsets
+    vHeight += deltaY
+    updateWindows(); // Apply the new translation offsets
+  });
+
+  window.addEventListener("mouseup", () => {
+    isMoving = false; // Disable dragging mode
+    vMover.style.cursor = "default"; // Reset cursor style
+  });  
+})
+
+
+
 </script>
 
 {% endif %}
@@ -1150,6 +1208,9 @@ document.addEventListener("DOMContentLoaded", () => {
 {% endif %}
   <div class="card browser-meta h-100" id="meta-card">
 
+  </div>
+
+  <div class="browser-vmove">
   </div>
 
 </div> <!-- browsergrid-->
@@ -1261,31 +1322,31 @@ document.addEventListener("DOMContentLoaded", () => {
   </div>
 </div> <!-- content -->
 
+
 <script>
 
-{% if current_user.feature('swappanes') %}
-topview = "contents"
-bottomview = "graph"
-{% else %}
-topview = "graph"
-bottomview = "contents"
-{% endif %}
-
 {% if current_user.feature('actions') %}
-grid_top_right = "actions"
+gt2 = "actions"
+gm2 = "vmove"
+gb2 = "metadata"
 {% else %}
-grid_top_right = "metadata"
+gt2 = "metadata"
+gm2 = "metadata"
+gb2 = "metadata"
 {% endif %}
 
 {% if current_user.feature('provenance') %}
-grid_top_mid = topview
-grid_bottom_mid = bottomview
+   gt1 = "graph"
+   gm1 = "vmove"
+   gb1 = "contents"
 {% else %}
-grid_top_mid = "contents"
-grid_bottom_mid = "contents"
+   gt1 = "contents"
+   gm1 = "contents"
+   gb1 = "contents"
 {% endif %}
 
-$('#main-window').css('grid-template-areas', `"sidebar ${grid_top_mid} ${grid_top_right}" "sidebar ${grid_bottom_mid} metadata"`)
+$('#main-window').css('grid-template-areas', 
+`"sidebar ${gt1} ${gt2}" "sidebar ${gm1} ${gm2}"  "sidebar ${gb1} ${gb2}"`)
 
 </script>
 
