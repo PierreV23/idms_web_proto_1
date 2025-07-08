@@ -151,7 +151,6 @@ body {
   grid-template-areas:
     "sidebar graph actions"
     "sidebar contents metadata"
-
 }
 
 .simplegrid {
@@ -435,7 +434,11 @@ ul {
 }
 
 .nopadding {
-  padding: 1px !important;
+  padding: 0px !important;
+}
+
+.padding4 {
+  padding: 4px !important;
 }
 
 .right-line {
