@@ -1463,6 +1463,7 @@ def collbrowser():
     show_downstream_obj=current_user.settings.setdefault('show_downstream_obj', "1")
     show_downstream_coll=current_user.settings.setdefault('show_downstream_coll', "1")
     graph_direction_tb_obj=current_user.settings.setdefault('graph_direction_tb_obj', "0")
+    vertical_pos = current_user.settings.setdefault('vertical_pos', "300")
 
     return render_template('collbrowser.html', path=path, selected_object=selected_object,
                            graph_levels_coll=graph_levels_coll, graph_levels_obj=graph_levels_obj,
@@ -1472,7 +1473,7 @@ def collbrowser():
                            include_all_from_coll=include_all_from_coll, show_collections=show_collections,
                            show_upstream_obj=show_upstream_obj, show_upstream_coll=show_upstream_coll,
                            show_downstream_obj=show_downstream_obj, show_downstream_coll=show_downstream_coll,
-                           graph_direction_tb_obj=graph_direction_tb_obj)
+                           graph_direction_tb_obj=graph_direction_tb_obj, vertical_pos=vertical_pos)
 
 
 @bp.route('upload_file', methods=['GET', 'POST'])
