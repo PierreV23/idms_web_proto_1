@@ -653,7 +653,7 @@ menuname='collectionbrowser'
              aria-labelledby="graph_coll_tab">
 
           <!-- Collection Graph Controls -->
-        <div class="form-inline d-flex align-items-center mb-2" style="gap: 10px; height: 12%;">
+        <div class="form-inline d-flex align-items-center mb-2" style="gap: 10px;">
           <!-- Simplify -->          
           <div class="form-group d-flex align-items-center" style="gap: 8px;">
             <span class="ml-2"></span>
@@ -1131,23 +1131,24 @@ document.addEventListener("DOMContentLoaded", () => {
   let isMoving = false;
   let vposSettingIdObj = 0;
   const vMover = document.querySelector(".browser-vmove");
-
-  let vHeight = parseInt("{{ vertical_pos }}", 10)
-  console.log(`VH ${vHeight}`)
+  mainHeight = Math.round($('#main-window').height())
+  let vHeight = Math.floor(parseInt("{{ vertical_pos }}", 10) * mainHeight / 100);
 
  // Store zoomlevel in usersettings
   const storeVPosLevelObj = () => {
+    mainHeight = Math.round($('#main-window').height())
     $.post('{{ url_for("userinfo.usersetting") }}', {
       attr: 'vertical_pos',
-      value: vHeight
+      value: vHeight/mainHeight*100
     });
   };
   
   const updateWindows = () => {
-    maxHeight = $('#main-window').height() - 100
+    mainHeight = Math.round($('#main-window').height())
+    maxHeight = mainHeight - 100
     vHeight = Math.max(100, vHeight)
-    vHeight = Math.min(maxHeight, vHeight)    
-    document.getElementById("main-window").style.gridTemplateRows = `${vHeight}px [v1] 4px [v2] auto`;
+    vHeight = Math.min(maxHeight, vHeight)
+    document.getElementById("main-window").style.gridTemplateRows = `${vHeight}px [v1] 4px [v2] ${mainHeight-vHeight-10}px`;
     if (vposSettingIdObj !== 0) clearTimeout(vposSettingIdObj);
     vposSettingIdObj = setTimeout(storeVPosLevelObj, 1000);    
   }
@@ -1178,7 +1179,15 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener("mouseup", () => {
     isMoving = false; // Disable dragging mode
     vMover.style.cursor = "default"; // Reset cursor style
-  });  
+  });
+
+  window.addEventListener("resize", () => {
+    updateWindows()
+  });
+
+  window.addEventListener("DOMContentLoaded", () => {
+    window.dispatchEvent(new Event('resize'));
+  })
 })
 
 
