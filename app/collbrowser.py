@@ -1463,7 +1463,7 @@ def collbrowser():
     show_downstream_obj=current_user.settings.setdefault('show_downstream_obj', "1")
     show_downstream_coll=current_user.settings.setdefault('show_downstream_coll', "1")
     graph_direction_tb_obj=current_user.settings.setdefault('graph_direction_tb_obj', "0")
-    vertical_pos = current_user.settings.setdefault('vertical_pos', "300")
+    vertical_pos = current_user.settings.setdefault('vertical_pos', "40")
 
     return render_template('collbrowser.html', path=path, selected_object=selected_object,
                            graph_levels_coll=graph_levels_coll, graph_levels_obj=graph_levels_obj,
