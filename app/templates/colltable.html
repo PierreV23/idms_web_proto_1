@@ -4,8 +4,8 @@
     data-striped="true"
     data-pagination="true"
     data-pagination-use-intermediate="true"
-    data-page-list="[12, 50, 100]"
-    data-page-size="12"
+    data-page-list="[10, 25, 50, 100]"
+    data-page-size="{{ current_user.settings.get('page_size', 10) }}"
     data-filter-control="true"
     #data-height="500"
     data-icons-prefix="fa"
@@ -107,5 +107,12 @@
                 load_meta();
                 build_title();
             }
+        },
+        onPageChange: function (number, size) {
+            // Store the page size
+            $.post('{{ url_for("userinfo.usersetting") }}', {
+                attr: 'page_size',
+                value: size
+            })            
         }
     })
