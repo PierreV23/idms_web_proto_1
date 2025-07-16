@@ -944,7 +944,7 @@ def _generate_graph_coll(coll, maxlevels, graph_simplify, provenance_labels, sho
                 if temp == set():
                     #we couldn't find any more reference_versions
                     break
-            reference_data_colls |= temp
+                reference_data_colls |= temp
             handle_neighbours(coll, reference_data_colls, dashed_edges, levels, inputs=True, relation_type='S')
 
         # FIND EXTRA OUTPUTS
@@ -1269,7 +1269,7 @@ def _generate_graph_dataobj(coll, dataobj, maxlevels, graph_simplify, provenance
             for neighbour in neighbours:
                 # if neighbour is not a path, but plain text (contains blanks or no initial '/')
                 if ' ' in neighbour or neighbour[:1] != '/':
-                    break
+                    continue
                 
                 if inputs:
                     vect = (neighbour, node, 'wasDerivedFrom')
