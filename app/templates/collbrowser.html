@@ -67,7 +67,7 @@ menuname='collectionbrowser'
   const graph_coll_loaded_event = new Event("graph_coll_loaded");
   const graph_obj_loaded_event = new Event("graph_obj_loaded");
 
-  // var myDefaultWhiteList = $.fn.tooltip.Constructor.Default.whiteList
+  var myDefaultWhiteList = $.fn.tooltip.Constructor.Default.whiteList
   $(function() {
     $.fn.popover.Constructor.Default.whiteList.table = [];
     $.fn.popover.Constructor.Default.whiteList.tr = [];
@@ -76,7 +76,7 @@ menuname='collectionbrowser'
     $.fn.popover.Constructor.Default.whiteList.tbody = [];
     $.fn.popover.Constructor.Default.whiteList.thead = [];
   })
-  // myDefaultWhiteList.span = ['data-path']
+  myDefaultWhiteList.span = ['data-path']
 
   function downloadURI(uri, name) {
     var link = document.createElement("a");
