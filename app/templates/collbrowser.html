@@ -63,20 +63,24 @@ menuname='collectionbrowser'
   var waiting = '<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>'
   activetab = localStorage.getItem('activetab')
   activetab ??= "#archive"
-// Events to trigger the function that centers the graphs on the selected element
+  
+  // Events to trigger the function that centers the graphs on the selected element
   const graph_coll_loaded_event = new Event("graph_coll_loaded");
   const graph_obj_loaded_event = new Event("graph_obj_loaded");
-
-  var myDefaultWhiteList = $.fn.tooltip.Constructor.Default.whiteList
+  
+  // Set whitelist for popover, allow all table elements, div, and span elements with attribute 'data-path'
   $(function() {
-    $.fn.popover.Constructor.Default.whiteList.table = [];
-    $.fn.popover.Constructor.Default.whiteList.tr = [];
-    $.fn.popover.Constructor.Default.whiteList.td = [];
-    $.fn.popover.Constructor.Default.whiteList.div = [];
-    $.fn.popover.Constructor.Default.whiteList.tbody = [];
-    $.fn.popover.Constructor.Default.whiteList.thead = [];
-  })
-  myDefaultWhiteList.span = ['data-path']
+    var whiteList = $.fn.popover.Constructor.Default.whiteList;
+
+    whiteList.table = [];
+    whiteList.thead = [];
+    whiteList.tbody = [];
+    whiteList.tr = [];
+    whiteList.td = [];
+    whiteList.div = [];
+    whiteList.span = ['data-path'];
+  });
+
 
   function downloadURI(uri, name) {
     var link = document.createElement("a");
