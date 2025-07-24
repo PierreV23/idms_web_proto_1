@@ -65,56 +65,6 @@ def get_process2list():
     return processes
 
 
-def get_contactlist(project):
-    cl, result = rest_call('GET', f'projects/{project}/contacts')
-    contacts = []
-    if result == 200:
-        contacts = cl
-    return contacts
-
-
-@BP.route('/projects/delete_contact', methods=['POST'])
-def delete_contact():
-    json = request.get_json(force=True)
-    project_id = json['project_id']
-    contact_id = json['contact_id']
-    result, status = rest_call('DELETE', f"projects/{project_id}/contacts/{contact_id}")
-    ret = {}
-    if status == 200:
-        ret = { "success": True }
-    else:
-        ret = { "msg": f"Error: {result['message']}"}
-    return ret
-
-
-@BP.route('/projects/update_contact', methods=['POST'])
-def update_contact():
-    json = request.get_json(force=True)
-    project_id = json['project_id']
-    contact_id = json['contact_id']
-    contact = json['contact']
-    result, status = rest_call('PUT', f"projects/{project_id}/contacts/{contact_id}", contact)
-    ret = {}
-    if status == 200:
-        ret = { "success": True }
-    else:
-        ret = { "msg": f"Error: {result['message']}", "contact": result['contact'] }
-    return ret
-
-
-@BP.route('/projects/create_contact', methods=['POST'])
-def create_contact():
-    json = request.get_json(force=True)
-    project_id = json['project_id']
-    contact = json['contact']
-    result, status = rest_call('POST', f"projects/{project_id}/contacts", contact)
-    ret = {}
-    if status == 201:
-        ret = { "success": True , "contact": result }
-    else:
-        ret = { "msg": f"Error: {result['message']}"}
-    return ret
-
 
 @BP.route('/')
 @login_required
@@ -181,8 +131,8 @@ def show_projectdetails():
                 projectdetails['processes'][name]['next_processes'] = [ next_processes[x] for x in next_processes ]
         
     #Contacts
-    contacts, result = rest_call('GET', '/projects/{}/contacts'.format(projectnaam))
-    projectdetails['contacts'] = contacts
+    #contacts, result = rest_call('GET', '/projects/{}/contacts'.format(projectnaam))
+    #projectdetails['contacts'] = contacts
 
     # Retrieve collections associated with project
     processing = iso2dt(projectdetails.get('last_updated', EPOCH)) > iso2dt(projectdetails.get('last_verified', EPOCH))
@@ -689,6 +639,7 @@ def usermanager():
     elif objecttype == 'processes':
         can_modify = process_permissions(objectname).get('managers', True)
     return render_template('usermanager.html', object=objectname, objecttype=objecttype, usertype=usertype, can_modify=can_modify)
+
 
 @BP.route('processusage', methods=['GET'])
 def processusage():

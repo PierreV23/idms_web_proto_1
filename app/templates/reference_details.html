@@ -1,6 +1,6 @@
 <br>
 
-<!-- PROJECT SETTINGS -->
+<!-- REFERENCE SETTINGS -->
 <div class="card h-100">
   <div class="card-header">
     <ul class="nav nav-pills nav2" id="referencetabs">
@@ -8,6 +8,11 @@
         <button class="btn btn-outline-primary active" id="settings-tab" 
         data-toggle="tab" href="#settings" role="tab" 
         aria-controls="settings" aria-selected="false">Settings</button>
+      </li>
+      <li class="nav-item mx-2">
+        <button class="btn btn-outline-primary contactmanager" id="contacts-tab" 
+        data-toggle="tab" href="#contacts" role="tab" 
+        aria-controls="contacts" aria-selected="false">Contacts</button>
       </li>
       <li class="nav-item mx-2">
         <button class="btn btn-outline-primary" id="versions-tab" 
@@ -134,6 +139,11 @@
   </form>
 </div>
 
+
+<!-- Contacts -->
+<div class="tab-pane" id="contacts" role="tabpanel" aria-labelledby="contacts-tab">
+</div>
+
 <!-- Versions -->
 <div class="tab-pane fullheight" id="versions" role="tabpanel" aria-labelledby="versions-tab">
   <div class="h100" id="versions-table"></div>
@@ -180,7 +190,7 @@
     </div>
 </div>
 
-<!-- PROJECT DELETE CONFIMATION DIALOG -->
+<!-- REFERENCE DELETE CONFIMATION DIALOG -->
 
 <div class="modal fade" id="confirm-delete" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -250,6 +260,25 @@ function load_versions() {
      $('#versions-table').html(data);
   });
 }
+
+
+function load_contacts() {
+    $.get("{{ url_for('contacts.contactmanager') }}", {
+      object: '{{ RD.name }}',
+      objecttype: 'reference_data'
+    }, function(data) {
+
+      $('#contacts').removeClass('pending')
+      $('#contacts').html(data);
+    });
+}
+
+$('.contactmanager').on('shown.bs.tab', function (event) {
+    $('#contacts').addClass('pending')
+    load_contacts();
+});
+
+
 
 
 seconds = +"{{ RD.synchronization_frequency }}"

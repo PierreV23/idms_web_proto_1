@@ -26,6 +26,11 @@ BP = Blueprint('reference', __name__, url_prefix='/reference')
 reference_change_allowed = [ 'description', 'synchronize_command', 'synchronization_frequency', 'repository', 'tag', 'is_active']
 
 
+# def refdata_permissions(refdata):
+#     """Return True if current_user is manager of reference dataset, for now return True until apropriate endpoint is available
+#     """
+#     return { 'managers': True, 'users': True}
+
 def get_referencelist():
     referencelist_raw, status_code = rest_call('GET', 'reference')
     referencelist = {}
@@ -267,3 +272,21 @@ def import_state():
 
     path=f"/{current_user.irods_zone}/projects/refdata/{reference_id}"
     return render_template('colltable.html', path=path, display_field=None)
+
+
+@BP.route('contactmanager', methods=['GET'])
+def contactmanager():
+    objectname = request.args.get('object')
+    objecttype = request.args.get('objecttype')
+    # can_modify will be used to hide/show the add/delete buttons
+    # if we are not sure, set it to true
+    # the rest service will enforce permissions anyway
+    can_modify = True
+    permissions = None 
+    if objecttype == 'refdata':
+        permissions = refdata_permissions(objectname)
+        can_modify = permissions.get('managers', True)
+
+    contacts, result = rest_call('GET', 'reference/{}/contacts'.format(objectname))
+    
+    return render_template('contactmanager.html', object=objectname, objecttype=objecttype, contacts=contacts, can_modify=can_modify, project_permissions=permissions)
