@@ -17,7 +17,7 @@ import irods.exception
 import subprocess
 from Crypto.PublicKey import RSA
 
-from . import auth, collbrowser, jobs, docviewer, messages
+from . import auth, collbrowser, jobs, docviewer, messages, contacts_manager
 from . import projects, cluster, admin, reports, userinfo, referencedatasets
 from . import ngsruns, upload, flaskcache, search
 from . import messages, oldjobs
@@ -116,6 +116,7 @@ app.register_blueprint(userinfo.bp)
 app.register_blueprint(oldjobs.bp)
 app.register_blueprint(messages.bp)
 app.register_blueprint(search.bp)
+app.register_blueprint(contacts_manager.BP)
 
 
 flaskcache.init(app)
