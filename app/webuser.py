@@ -27,6 +27,7 @@ from . import flaskcache
 from . import iqry
 from app.irodssessions import irods_manager, create_session
 from app.iconnect import Connection2
+from app.constants import FEATURES
 
 ATTR_DISPLAYNAME = 'sys::ad::displayName'
 
@@ -133,7 +134,8 @@ class WebUser(UserMixin):
     
     @flaskcache.cache.memoize(timeout=5, make_name=flaskcache.dep_userzone)
     def feature(self, name):
-        return self.settings.get(f'feature::{name}', 'false') == 'true'
+        default = FEATURES.get(name, (None, 'false'))[1]
+        return self.settings.get(f'feature::{name}', default) == 'true'
     
     @property
     def minilims_db(self):
