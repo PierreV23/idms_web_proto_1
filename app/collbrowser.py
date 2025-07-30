@@ -1878,3 +1878,14 @@ def search_result_old():
     }
     content = { 'searchResults': render_template('bootstraptable.html', data=searchResultsData), 'searchId': searchid }
     return content
+
+@bp.route('_mydatasets')
+def mydatasets():
+    with irods_manager.session() as session:
+        q = session.query(Collection.name).filter(
+            Criterion('=', Collection.owner_name, current_user.username)).filter(
+            Criterion('=', CollectionMeta.name, ATTR_DATASETID)
+            )
+        result = [{ 'collection': datafield('collection', r[Collection.name], 'irods_collection').htmlstring } for r in q]
+    print (result)
+    return jsonify(result)

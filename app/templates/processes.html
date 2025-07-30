@@ -25,8 +25,8 @@ menuname='processes'
 
   $(document).on('click', '.processname', function () {
     process = $(this).data('processname');
-    $('.processname').removeClass('active')
-    $(this).addClass("active")
+    $('.processname').removeClass('highlight')
+    $(this).addClass("highlight")
     $('#details').html('<div class="card">Loading settings for ' + process + " ... </div>")
     $.get('{{ url_for('projects.show_processdetails') }}', {
       name: process
@@ -76,11 +76,16 @@ menuname='processes'
 <div class="selectgrid h100">
   <div class="card selectlist">
     <div class="nopadding card-body scroll ">
-      <UL class="list-group">
+      <table 
+      data-toggle="table"
+      data-search="true">
+    <thead>
+      <tr><th>Process</th></tr>
+    </thead><tbody>
         {% for process in processes | sort %}
-        <LI class="processname list-group-item" data-processname="{{ process }}">{{ process }}</LI>
-        {% endfor %}
-      </UL>
+      <TR><TD class="processname" data-processname="{{ process }}">{{ process }}</TD></TR>
+      {% endfor %}
+    </tbody></table>
     </div>
   </div>
 

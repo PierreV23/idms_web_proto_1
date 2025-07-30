@@ -8,14 +8,14 @@ ATTR_RESOURCE_TAR = 'sys::resource::tar'
 ATTR_RESOURCE_ONLINE = 'sys::resource::online'
 
 FEATURES = {
-    'actions': 'Show actions pane',
-    'jobs': 'Show process configuration and job status page',
-    'projects': 'Show project configuration pages',
-    'provenance': 'Show and manage data provenance',
-    'reference': 'Show reference data configuration',
-    'sharing': 'Configure datasets that need to be shared externally',
-    'minilims': 'Show ONT samplesheet configuration interface',
-    'treeview': 'Use treeview in collection browser instead of project list'
+    'actions': ('Show actions pane', 'true'),
+    'jobs': ('Show process configuration and job status page', 'true'),
+    'projects': ('Show project configuration pages', 'true'),
+    'provenance': ('Show and manage data provenance', 'true'),
+    'reference': ('Show reference data configuration', 'false'),
+    'sharing': ('Configure datasets that need to be shared externally', 'false'),
+    'minilims': ('Show ONT samplesheet configuration interface', 'false'),
+    'treeview': ('Use treeview in collection browser instead of project list', 'false')
 }
 
 COLL_KEY_MAP = {

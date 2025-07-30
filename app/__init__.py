@@ -154,7 +154,8 @@ def about():
 @app.route('/settings')
 def settings():
     features = []
-    for feature, description in FEATURES.items():
+    for feature, feature_properties in FEATURES.items():
+        description, default = feature_properties
         features.append({
             'label': feature,
             'description': description,

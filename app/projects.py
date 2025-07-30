@@ -100,10 +100,7 @@ def show_projectdetails():
     projectnaam = request.args.get('name', '', type=str)
     processnaam = request.args.get('process', '', type=str)
     processgroup = request.args.get('processgroup', 'default', type=str) 
-
-    projectlist, result = rest_call('GET', 'projects')
-    all_projects = [ project['name'] for project in projectlist]
-    
+   
     projectdetails, result = rest_call('GET', 'projects/{}'.format(projectnaam))
 
     # Retrieve groups associated with project
@@ -115,28 +112,8 @@ def show_projectdetails():
         groups = [u[User.name] for u in query]
     projectdetails['groups'] = groups
 
-    processes, result = rest_call('GET', '/projects/{}/processes'.format(projectnaam))
-    projectdetails['processes'] = {}
-    for proces in processes:
-        name = proces['name']
-        projectdetails['processes'][name] = proces
-        if 'next_projectid' in proces:
-            next_project, result = rest_call('GET', '/projects/{}'.format(proces['next_projectid']))
-            if result == 200:
-                projectdetails['processes'][name]['next_projectID'] = next_project.get('name')
-            processlist, result = rest_call('GET', '/projects/{}/processes'.format(next_project.get('name')))
-            if result == 200:
-                next_processes = { proces['id']: proces['name'] for proces in processlist }
-                projectdetails['processes'][name]['next_processID'] = next_processes.get(proces['next_processid'], '')
-                projectdetails['processes'][name]['next_processes'] = [ next_processes[x] for x in next_processes ]
-        
-    #Contacts
-    #contacts, result = rest_call('GET', '/projects/{}/contacts'.format(projectnaam))
-    #projectdetails['contacts'] = contacts
-
-    # Retrieve collections associated with project
     processing = iso2dt(projectdetails.get('last_updated', EPOCH)) > iso2dt(projectdetails.get('last_verified', EPOCH))
-    return render_template('projectdetails.html', PD=projectdetails, all_projects = all_projects, processing=processing,
+    return render_template('projectdetails.html', PD=projectdetails, processing=processing,
                            processnaam=processnaam, processgroup=processgroup, project_permissions=project_permissions(projectnaam))
 
 @BP.route('_projectcolls')
