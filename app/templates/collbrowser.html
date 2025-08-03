@@ -1,7 +1,7 @@
 {% extends 'base2.html' %}
 
 {% block heading %}
-<div class="d-flex justify-content-between align-items-center mb-2">
+<div id="block_heading" class="d-flex justify-content-between align-items-center mb-2">
   <h3 class="mb-0">
     <span>
       <b>Collection:</b> <span id="title_coll_path"></span>
@@ -38,16 +38,161 @@ menuname='collectionbrowser'
 {% endif %}
 {% endblock %}
 
+{% block control_sidebar %}
+<div class="control-sidebar-header p-3">
+  <i class="fas fa-arrow-right pointer" data-widget="control-sidebar"></i>
+</div>
+<div class="control-sidebar-content p-0 collgraph-item" id="sidebar-coll">
+  <div class="control-sidebar-title p-0"><b>
+      <center>Graph Options</center>
+    </b></div>
+  <!-- Simplify -->
+  <div class="p-3">
+    <div class="form-group d-flex align-items-center" style="gap: 8px;">
+      <input type="checkbox" id="graph_simplify_coll" data-toggle="tooltip"
+        title="Simplify the collection graph, by combining multiple edges into one." {% if graph_simplify_coll=="1"
+        %}checked{% endif %}>
+      <label for="graph_simplify_coll">Simplify</label>
+    </div>
+
+    <!-- Upstream only -->
+    <div class="form-group d-flex align-items-center" style="gap: 8px;">
+      <input type="checkbox" id="show_upstream_coll" data-toggle="tooltip"
+        title="Show upstream provenance of the selected collection." {% if show_upstream_coll=="1" %}checked{% endif %}>
+      <label for="show_upstream_coll">Upstream</label>
+    </div>
+
+    <!-- Downstream only -->
+    <div class="form-group d-flex align-items-center" style="gap: 8px;">
+      <input type="checkbox" id="show_downstream_coll" data-toggle="tooltip"
+        title="Show only downstream provenance of the selected collection." {% if show_downstream_coll=="1" %}checked{%
+        endif %}>
+      <label for="show_downstream_coll">Downstream</label>
+    </div>
+
+    <!-- Graph Levels-->
+    <div class="form-group d-flex align-items-center" style="gap: 8px;">
+      <span class="ml-8"></span>
+      <label for="graph_levels_coll" data-toggle="tooltip"
+        title="Set the number of collection levels to show in the collection graph (min: 0, max: 10).">Graph
+        Levels:</label>
+      <input type="number" class="form-control" min="0" max="10" name="graph_levels_coll" id="graph_levels_coll"
+        value="{{ graph_levels_coll }}" data-toggle="tooltip" title="Enter a number between 0 and 10">
+    </div>
+
+    <!-- Zoom -->
+    <div class="form-group d-flex align-items-center" style="gap: 10px;">
+      <label for="zoomlevel_coll" class="form-label" data-toggle="tooltip"
+        title="Adjust the collection graph zoom level.">Zoom:</label>
+      <input type="range" id="zoomlevel_coll" class="form-range zoom-slider" min="10" max="150"
+        value="{{ zoomlevel_coll }}" style="width: 60px;" data-toggle="tooltip"
+        title="Slide to zoom in or out (min: 10%, max: 150%).">
+      <span class="zoom-display" id="zoomDisplay_coll" style="width: 50px;">100%</span>
+    </div>
+  </div>
+  <div class="p-0 control-sidebar-title"><b>
+      <center>Graph Legend</center>
+    </b></div>
+  <div id="graph-legend-coll" class="control-legend p-3">
+  </div>
+</div>
+</div>
+
+<div class="control-sidebar-content p-3 objectgraph-item" id="sidebar-obj">
+  <div class="control-sidebar-title p-0"><b>
+      <center>Graph Options</center>
+    </b></div>
+  <div class="p-3">
+    <div class="form-group d-flex align-items-center" style="gap: 8px;">
+      <input type="text" oninput="searchGraph(this.value)" placeholder="Search nodes..." data-toggle="tooltip"
+        title="Case sensitive search for node names (including the name of the path)" style="width: 100px;">
+    </div>
+
+    <!-- Include all files from selected collection -->
+    <div class="form-group d-flex align-items-center" style="gap: 8px;">
+      <input type="checkbox" id="include_all_from_coll" data-toggle="tooltip"
+        title="Include all files from the currently selected collection in the object graph." {% if
+        include_all_from_coll=="1" %}checked{% endif %}>
+      <label for="include_all_from_coll">All files</label>
+    </div>
+
+    <!-- Show Collections -->
+    <div class="form-group d-flex align-items-center" style="gap: 8px;">
+      <input type="checkbox" id="show_collections" data-toggle="tooltip"
+        title="Show all collections in the object graph." {% if show_collections=="1" %}checked{% endif %}>
+      <label for="show_collections">Show Collections</label>
+    </div>
+
+    <!-- Provenance labels -->
+    <div class="form-group d-flex align-items-center" style="gap: 8px;">
+      <input type="checkbox" id="provenance_labels_obj" data-toggle="tooltip"
+        title="Display provenance (PROV) labels on edges in the object graph." {% if provenance_labels_obj=="1"
+        %}checked{% endif %}>
+      <label for="provenance_labels_obj">Provenance labels</label>
+    </div>
+
+    <!-- Upstream only -->
+    <div class="form-group d-flex align-items-center" style="gap: 8px;">
+      <input type="checkbox" id="show_upstream_obj" data-toggle="tooltip"
+        title="Show upstream provenance of the selected object." {% if show_upstream_obj=="1" %}checked{% endif %}>
+      <label for="show_upstream_obj">Upstream</label>
+    </div>
+
+    <!-- Downstream only -->
+    <div class="form-group d-flex align-items-center" style="gap: 8px;">
+      <input type="checkbox" id="show_downstream_obj" data-toggle="tooltip"
+        title="Show downstream provenance of the selected object." {% if show_downstream_obj=="1" %}checked{% endif %}>
+      <label for="show_downstream_obj">Downstream</label>
+    </div>
+
+    <!-- Display Top -> Bottom -->
+    <div class="form-group d-flex align-items-center" style="gap: 8px;">
+      <input type="checkbox" id="graph_direction_tb_obj" data-toggle="tooltip" title="Show graph from top to bottom." {%
+        if graph_direction_tb_obj=="1" %}checked{% endif %}>
+      <label for="graph_direction_tb_obj">Top -> Bottom</label>
+    </div>
+
+    <!-- Graph Levels -->
+    <div class="form-group d-flex align-items-center" style="gap: 8px;">
+      <span class="ml-8"></span>
+      <label for="graph_levels_obj" data-toggle="tooltip"
+        title="Set the number of object levels to show in the object graph (min: 0, max: 20).">
+        Graph Levels:
+      </label>
+      <input type="number" class="form-control" min="0" max="20" name="graph_levels_obj" id="graph_levels_obj"
+        value="{{ graph_levels_obj }}" data-toggle="tooltip" title="Enter a number between 0 and 20.">
+    </div>
+
+    <!-- Zoom -->
+    <div class="form-group d-flex align-items-center" style="gap: 10px;">
+      <label for="zoomlevel_obj" class="form-label" data-toggle="tooltip"
+        title="Adjust the object graph zoom level.">Zoom:</label>
+      <input type="range" id="zoomlevel_obj" class="form-range zoom-slider" min="10" max="150"
+        value="{{ zoomlevel_obj }}" style="width: 60px;" data-toggle="tooltip"
+        title="Slide to zoom in or out (min: 10% max: 150%)">
+      <span class="zoom-display" id="zoomDisplay_obj" style="width: 50px;">100%</span>
+    </div>
+  </div>
+  <div class="p-0 control-sidebar-title"><b>
+      <center>Graph Legend</center>
+    </b></div>
+  <div class="p-3"><b>
+      <center>Graph Legend</center>
+    </b></div>
+  <div id="graph-legend-obj" class="control-legend p-3">
+  </div>
+</div>
+
+{% endblock %}
+
 {% block content %}
 <script>
   var collection = "{{ path }}";
   var selected_project = "{{ project }}"
   var selected_projectpath = ""
-  var graph_levels_coll = "{{ graph_levels_coll }}";
   var graph_simplify_coll = "{{ graph_simplify_coll }}"
-  var provenance_labels_coll = "{{ provenance_labels_coll }}"
+  var graph_levels_coll = "{{ graph_levels_coll }}";
   var graph_levels_obj = "{{ graph_levels_obj }}";
-  var graph_simplify_obj = "{{ graph_simplify_obj }}"
   var provenance_labels_obj = "{{ provenance_labels_obj }}"
   var include_all_from_coll = "{{ include_all_from_coll }}"
   var show_collections = "{{ show_collections }}"
@@ -56,7 +201,7 @@ menuname='collectionbrowser'
   var show_downstream_obj = "{{ show_downstream_obj }}"
   var show_downstream_coll = "{{ show_downstream_coll }}"
   var graph_direction_tb_obj = "{{ graph_direction_tb_obj }}"
-
+  
   var sortkey = "";
   var reverse = "";
   var selected_object = "{{ selected_object }}";
@@ -193,7 +338,6 @@ menuname='collectionbrowser'
     var seperator = "/";
     var addSSL = false;
     var protocolPrefix = "davs://"
-    //console.log("OperatingSystem:" + navigator.appVersion)
     if (navigator.appVersion.indexOf("Win") != -1 ) {
       seperator = "\\";
       var protocolPrefix = "\\\\"
@@ -215,9 +359,17 @@ menuname='collectionbrowser'
     //window.open( "webdavs:"+path, '_blank');
   }
 
-  $('.graphTabs').on('shown.bs.tab', function(event){
-    activegraphtab = event.target.getAttribute('href')
-});
+ 
+  function update_item_visibility() {
+    if (activegraphtab == "#graph_coll") {
+      $('.collgraph-item').attr('hidden', false)
+      $('.objectgraph-item').attr('hidden', true)      
+    }
+    else {
+      $('.collgraph-item').attr('hidden', true)
+      $('.objectgraph-item').attr('hidden', false)        
+    }
+  }
 
   function load_graph() {
     {% if current_user.feature('provenance') %}
@@ -231,8 +383,9 @@ menuname='collectionbrowser'
       load_graph_obj();
       $('#graph_obj_tab').removeClass('d-none');
       $('#title_object_label').removeClass('d-none');
-      activegraphtab = '#graph_obj';
+      activegraphtab = '#graph_obj'; 
     }
+    update_item_visibility();
     $('.graphTabs li a[href="' + activegraphtab + '"]').tab('show');
     {% endif %}
   }
@@ -246,11 +399,11 @@ menuname='collectionbrowser'
       selected_object: selected_object,
       graph_levels_coll: graph_levels_coll,
       graph_simplify_coll: graph_simplify_coll,
-      provenance_labels_coll: provenance_labels_coll,
       show_upstream_coll: show_upstream_coll,
       show_downstream_coll: show_downstream_coll
         }, function (data) {
-      $('#graphimg_coll').html(data);
+      $('#graphimg_coll').html(data.coll_graph);
+      $('#graph-legend-coll').html(data.coll_legends);
       $('#graphdiv_coll').removeClass('pending2');
       document.querySelector('#graphdiv_coll').dispatchEvent(graph_coll_loaded_event)
     })
@@ -264,7 +417,6 @@ menuname='collectionbrowser'
       path: collection,
       selected_object: selected_object,
       graph_levels_obj: graph_levels_obj,
-      graph_simplify_obj: graph_simplify_obj,
       provenance_labels_obj: provenance_labels_obj,
       include_all_from_coll: include_all_from_coll,
       show_collections: show_collections,
@@ -272,7 +424,8 @@ menuname='collectionbrowser'
       show_downstream_obj: show_downstream_obj,
       graph_direction_tb_obj: graph_direction_tb_obj
         }, function (data) {
-      $('#graphimg_obj').html(data);
+      $('#graphimg_obj').html(data.obj_graph);
+      $('#graph-legend-obj').html(data.obj_legends);
       $('#graphdiv_obj').removeClass('pending2');
       document.querySelector('#graphdiv_obj').dispatchEvent(graph_obj_loaded_event);
       load_graph_coll() // if path changed with selected object (TODO maybe check first?)
@@ -405,42 +558,8 @@ menuname='collectionbrowser'
     })
     load_graph_coll()
   })
-  $(document).on('change', '#graph_simplify_obj', function () {
-    graph_simplify_obj = (+ $(this).is(':checked')).toString()
-    $.post('{{ url_for("userinfo.usersetting") }}', {
-      attr: 'graph_simplify_obj',
-      value: graph_simplify_obj
-    })
-    load_graph_obj()
-  })
   
-    // Legend
-  $(document).on('change', '#legend_coll', function () {
-    legend_coll = (+ $(this).is(':checked')).toString()
-    $.post('{{ url_for("userinfo.usersetting") }}', {
-      attr: 'legend_coll',
-      value: legend_coll
-    })
-    load_graph_coll()
-  })
-  $(document).on('change', '#legend_obj', function () {
-    legend_obj = (+ $(this).is(':checked')).toString()
-    $.post('{{ url_for("userinfo.usersetting") }}', {
-      attr: 'legend_obj',
-      value: legend_obj
-    })
-    load_graph_obj()
-  })
-
-  // Provenance labels
-  $(document).on('change', '#provenance_labels_coll', function () {
-    provenance_labels_coll = (+ $(this).is(':checked')).toString()
-    $.post('{{ url_for("userinfo.usersetting") }}', {
-      attr: 'provenance_labels_coll',
-      value: provenance_labels_coll
-    })
-    load_graph_coll()
-  })
+  // Provenance Labels
   $(document).on('change', '#provenance_labels_obj', function () {
     provenance_labels_obj = (+ $(this).is(':checked')).toString()
     $.post('{{ url_for("userinfo.usersetting") }}', {
@@ -608,7 +727,8 @@ menuname='collectionbrowser'
       </div>
     </div>
     <div class="card-body scrollbar-y small-font h-100" id="treediv">
-      <div id="treeview"></div>
+      <div id="treeview">
+      </div>
     </div>
   </div>
 
@@ -644,11 +764,36 @@ menuname='collectionbrowser'
           </a>
         </li>
       </ul>
-    </div>
+      <div class="btn-group">
+      
+        <button id="fitGraph_obj" type="button" class="btn btn-sm btn-outline-secondary objectgraph-item"
+          data-toggle="tooltip" title="Fit the object graph to the display window (Also double-click).">
+          <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
+        </button>
+        <button id="fitGraph_coll" type="button" class="btn btn-sm btn-outline-secondary collgraph-item" data-toggle="tooltip"
+          title="Fit the collection graph to the display window (Also double-click).">
+          <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
+        </button>
+        <button id="maximize-button" type="button" class="btn btn-sm btn-outline-secondary" data-card-widget="maximize"
+          data-toggle="tooltip" title="Maximize the collection graph display window.">
+          <i class="fa fa-expand"></i>
+        </button>
+        <button id="sidebar-button" type="button" data-widget="control-sidebar" data-controlsidebar-slide="true"
+          class="btn btn-sm btn-outline-secondary" title="Open settings menu">
+          {% if current_user.settings.get('tips', 0) | int < 1 %} <div id="tips1"
+            class="overlay position-absolute top-0 start-0 text-black d-flex align-items-center justify-content-start"
+            style="top:-120%; width: 900%; background-color: rgb(240, 247, 200); padding: 4px; padding-left: 8px; color: black;">
+            &#8601; Graph settings have moved here
+      </div>
+      {% endif %}
+      <i class="fa fa-cog"></i>
+      </button>
+      </div>
+      </div>
 
     <!-- Tab Contents -->
     <div class="card-body h-100 padding4">
-      <div class="tab-content h-100 nopadding">
+        <div class="tab-content h-100 nopadding" id="graph-tab">
 
         <!-- Collection Graph Tab -->
         <div class="tab-pane fade show {% if is_coll %}active{% endif %} h-100 nopadding"
@@ -656,202 +801,27 @@ menuname='collectionbrowser'
              role="tabpanel"
              aria-labelledby="graph_coll_tab">
 
-          <!-- Collection Graph Controls -->
-        <div class="form-inline d-flex align-items-center mb-2" style="gap: 10px;">
-          <!-- Simplify -->          
-          <div class="form-group d-flex align-items-center" style="gap: 8px;">
-            <span class="ml-2"></span>
-            <input type="checkbox" id="graph_simplify_coll"
-                  data-toggle="tooltip" title="Simplify the collection graph, by combining multiple edges into one."
-                  {% if graph_simplify_coll == "1" %}checked{% endif %}>
-            <label for="graph_simplify_coll">Simplify</label>
-          </div>
-
-          <!-- Display Provenance labels-->
-          <!-- <div class="form-group d-flex align-items-center" style="gap: 8px;">
-            <input type="checkbox" id="provenance_labels_coll"
-                  data-toggle="tooltip" title="Display provenance (PROV) labels on edges in the collection graph."
-                  {% if provenance_labels_coll == "1" %}checked{% endif %}>
-            <label for="provenance_labels_coll">Provenance labels</label>
-          </div> -->
-
-          <!-- Upstream only -->
-          <div class="form-group d-flex align-items-center" style="gap: 8px;">
-            <input type="checkbox" id="show_upstream_coll"
-                  data-toggle="tooltip" title="Show upstream provenance of the selected collection."
-                  {% if show_upstream_coll == "1" %}checked{% endif %}>
-            <label for="show_upstream_coll">Upstream</label>
-          </div>
-
-          <!-- Downstream only -->          
-          <div class="form-group d-flex align-items-center" style="gap: 8px;">
-            <input type="checkbox" id="show_downstream_coll"
-                  data-toggle="tooltip" title="Show only downstream provenance of the selected collection."
-                  {% if show_downstream_coll == "1" %}checked{% endif %}>
-            <label for="show_downstream_coll">Downstream</label>
-          </div>
-
-          <!-- Graph Levels-->          
-          <div class="form-group d-flex align-items-center" style="gap: 8px;">
-            <span class="ml-8"></span>
-            <label for="graph_levels_coll" data-toggle="tooltip" 
-                  title="Set the number of collection levels to show in the collection graph (min: 0, max: 10).">Graph Levels:</label>
-            <input type="number" class="form-control" min="0" max="10"
-                  name="graph_levels_coll" id="graph_levels_coll"
-                  value="{{ graph_levels_coll }}"
-                  data-toggle="tooltip" title="Enter a number between 0 and 10">
-          </div>
-
-          <!-- Zoom -->
-          <div class="form-group d-flex align-items-center" style="gap: 10px;">
-            <label for="zoomlevel_coll" class="form-label" data-toggle="tooltip" 
-                  title="Adjust the collection graph zoom level.">Zoom:</label>
-            <input type="range" id="zoomlevel_coll" class="form-range zoom-slider"
-                  min="10" max="150" value="{{ zoomlevel_coll }}"
-                  style="width: 60px;" data-toggle="tooltip" title="Slide to zoom in or out (min: 10%, max: 150%).">
-            <span class="zoom-display" id="zoomDisplay_coll" style="width: 50px;">100%</span>
-          </div>
-
-          <!-- Fit Graph -->          
-          <div class="form-group">
-            <button id="fitGraph_coll" class="btn btn-primary fit-graph"
-                    data-toggle="tooltip" title="Fit the collection graph to the display window (Also double-click).">
-              Fit Graph
-            </button>
-          </div>
-
-          <!-- Maximize Graph -->
-          <div class="card-tools d-inline-flex" style="gap: 5px;">
-            <button type="button" id="maximizeBtn_coll" class="btn btn-tool"
-                    data-card-widget="maximize"
-                    data-toggle="tooltip" title="Maximize the collection graph display window.">
-              <i class="fas fa-expand"></i>
-            </button>
-          </div>
-        </div>
           <!-- Collection Graph Display -->
-          <div id="graphdiv_coll" class="d-flex justify-content-center align-items-center" style="overflow: hidden; position: relative; height: 85%; user-select: none">
+          <div id="graphdiv_coll" class="d-flex justify-content-center align-items-center" style="overflow: hidden; position: relative; height: 100%; user-select: none">
+            <!-- Legend Overlay -->
             <div id="graphimg_coll" style="transition: transform 0.3s ease, transform-origin 0.3s ease;">
               <h3>Collection Graph</h3>
             </div>
           </div>
         </div>
-
+        
         <!-- Object Graph Tab -->
         <div class="tab-pane fade show {% if is_obj %}active{% endif %} h-100 nopadding"
-             id="graph_obj"
-             role="tabpanel"
-             aria-labelledby="graph_obj_tab">
+            id="graph_obj"
+            role="tabpanel"
+            aria-labelledby="graph_obj_tab">
 
           <!-- Object Graph Controls -->
-        <div class="form-inline d-flex align-items-center mb-2" style="gap: 10px;">
-          <span class="ml-2"></span>
 
-          <!-- Simplify Graph -->
-          <!-- <div class="form-group d-flex align-items-center" style="gap: 8px;">
-            <input type="checkbox" id="graph_simplify_obj"
-                  data-toggle="tooltip" title="Simplify the object graph, by combining multiple edges into one."
-                  {% if graph_simplify_obj == "1" %}checked{% endif %}>
-            <label for="graph_simplify_obj">Simplify</label>
-          </div> -->
-
-          <!-- Include all files from selected collection -->
-          <div class="form-group d-flex align-items-center" style="gap: 8px;">
-            <input type="checkbox" id="include_all_from_coll"
-                  data-toggle="tooltip" title="Include all files from the currently selected object in the object graph."
-                  {% if include_all_from_coll == "1" %}checked{% endif %}>
-            <label for="include_all_from_coll">All files</label>
-          </div>
-
-          <!-- Show Collections -->
-          <div class="form-group d-flex align-items-center" style="gap: 8px;">
-            <input type="checkbox" id="show_collections"
-                  data-toggle="tooltip" title="Show all collections in the object graph."
-                  {% if show_collections == "1" %}checked{% endif %}>
-            <label for="show_collections">Show Collections</label>
-          </div>
-
-          <!-- Provenance labels -->
-          <div class="form-group d-flex align-items-center" style="gap: 8px;">
-            <input type="checkbox" id="provenance_labels_obj"
-                  data-toggle="tooltip" title="Display provenance (PROV) labels on edges in the object graph."
-                  {% if provenance_labels_obj == "1" %}checked{% endif %}>
-            <label for="provenance_labels_obj">Provenance labels</label>
-          </div>
-
-          <!-- Upstream only -->
-          <div class="form-group d-flex align-items-center" style="gap: 8px;">
-            <input type="checkbox" id="show_upstream_obj"
-                  data-toggle="tooltip" title="Show upstream provenance of the selected object."
-                  {% if show_upstream_obj == "1" %}checked{% endif %}>
-            <label for="show_upstream_obj">Upstream</label>
-          </div>
-
-          <!-- Downstream only -->
-          <div class="form-group d-flex align-items-center" style="gap: 8px;">
-            <input type="checkbox" id="show_downstream_obj"
-                  data-toggle="tooltip" title="Show downstream provenance of the selected object."
-                  {% if show_downstream_obj == "1" %}checked{% endif %}>
-            <label for="show_downstream_obj">Downstream</label>
-          </div>
-
-          <!-- Display Top -> Bottom -->
-          <div class="form-group d-flex align-items-center" style="gap: 8px;">
-            <input type="checkbox" id="graph_direction_tb_obj"
-                  data-toggle="tooltip" title="Show graph from top to bottom."
-                  {% if graph_direction_tb_obj == "1" %}checked{% endif %}>
-            <label for="graph_direction_tb_obj">Top -> Bottom</label>
-          </div>
-
-          <!-- Graph Levels -->
-          <div class="form-group d-flex align-items-center" style="gap: 8px;">
-            <span class="ml-8"></span>
-            <label for="graph_levels_obj"
-                  data-toggle="tooltip" title="Set the number of object levels to show in the object graph (min: 0, max: 10).">
-              Graph Levels:
-            </label>
-            <input type="number" class="form-control" min="0" max="10"
-                  name="graph_levels_obj" id="graph_levels_obj"
-                  value="{{ graph_levels_obj }}"
-                  data-toggle="tooltip" title="Enter a number between 0 and 10.">
-          </div>
-
-          <!-- Zoom -->
-          <div class="form-group d-flex align-items-center" style="gap: 10px;">
-            <label for="zoomlevel_obj" class="form-label"
-                  data-toggle="tooltip" title="Adjust the object graph zoom level.">Zoom:</label>
-            <input type="range" id="zoomlevel_obj" class="form-range zoom-slider"
-                  min="10" max="150" value="{{ zoomlevel_obj }}"
-                  style="width: 60px;" data-toggle="tooltip" title="Slide to zoom in or out (min: 10% max: 150%)">
-            <span class="zoom-display" id="zoomDisplay_obj" style="width: 50px;">100%</span>
-          </div>
-
-          <!-- Fit Graph -->          
-          <div class="form-group">
-            <button id="fitGraph_obj" class="btn btn-primary fit-graph"
-                    data-toggle="tooltip" title="Fit the object graph to the display window (Also double-click).">
-              Fit Graph
-            </button>
-          </div>
-
-          <!-- Maximize window -->
-          <div class="card-tools d-inline-flex" style="gap: 5px;">
-            <button type="button" id="maximizeBtn_obj" class="btn btn-tool"
-                    data-card-widget="maximize"
-                    data-toggle="tooltip" title="Maximize the object graph display window.">
-              <i class="fas fa-expand"></i>
-            </button>
-          </div>
-
-          <!-- Search nodes -->
-          <div class="form-group d-flex align-items-center" style="gap: 8px;">
-            <input type="text" oninput="searchGraph(this.value)" placeholder="Search nodes..."
-            data-toggle="tooltip" title="Case sensitive search for node names (including the name of the path)">
-          </div>
-        </div>
-
+            <!-- Search nodes -->
           <!-- Object Graph Display -->
-          <div id="graphdiv_obj" class="h-100 d-flex justify-content-center align-items-center" style="overflow: hidden; position: relative; user-select: none">
+          <div id="graphdiv_obj" class="d-flex justify-content-center align-items-center" style="overflow: hidden; position: relative; height: 100%; user-select: none">
+              <!-- Legend Overlay -->
             <div id="graphimg_obj" style="transition: transform 0.3s ease, transform-origin 0.3s ease;">
               <h3>Object Graph</h3>
             </div>
@@ -859,7 +829,7 @@ menuname='collectionbrowser'
         </div>
       </div>
     </div>
-</div>
+  </div>
 
 
 <!-- This part of the code is for handling the Collection graph interaction -->
@@ -886,15 +856,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const zoomSliderColl = document.querySelector("#zoomlevel_coll"); // Zoom slider input
   const zoomDisplayColl = document.querySelector("#zoomDisplay_coll"); // Display the zoom percentage
   const fitGraphBtnColl = document.querySelector("#fitGraph_coll"); // Fit Graph button
-
+  
   let zoomLevelColl = parseInt("{{ zoomlevel_coll }}", 10); // Default zoom level in percentage (as a variable)
   let zoomSettingIdColl = 0; // Timeout Request for storing zoom level
   let isDragging = false; // Track whether the user is currently dragging
   let dragStart = { x: 0, y: 0 }; // Store the starting mouse position during the drag operation
   let currentTranslateColl = { x: 0, y: 0 }; // Current translation offset for the graph
 
+ 
   // Update the transformation (translate + scale)
   const updateTransformColl = () => {
+    console.log(currentTranslateColl, zoomLevelColl);
     const scaleColl = zoomLevelColl / 100;
     graphImgColl.style.transform = `translate(${currentTranslateColl.x}px, ${currentTranslateColl.y}px) scale(${scaleColl})`;
   };
@@ -937,7 +909,7 @@ document.addEventListener("DOMContentLoaded", () => {
     zoomLevelColl = Math.floor(0.97*Math.min(Math.max(Math.floor(fitScaleColl * 100), 10), 150));
     updateZoomColl(zoomLevelColl); // Apply the calculated zoom level
     zoomSliderColl.value = zoomLevelColl; // Sync slider value
-    resetTransformColl(); // Reset the dragging offset to 0
+    resetTransformColl();
   };
 
   // Move the graph so the center collection is in the center (size of coll = (70, 16))
@@ -994,9 +966,16 @@ document.addEventListener("DOMContentLoaded", () => {
     e.preventDefault();
     const zoomStep = 4;
     const delta = Math.sign(e.deltaY);
+    svgRect = document.getElementById('graphimg_coll').getBoundingClientRect();
+    svgMouseX = e.clientX - svgRect.left - svgRect.width / 2;
+    svgMouseY = e.clientY - svgRect.top - svgRect.height / 2;
+    oldZoomLevelColl = zoomLevelColl
     zoomLevelColl = Math.min(Math.max(zoomLevelColl - delta * zoomStep, 10), 150);
-    updateZoomColl(zoomLevelColl);
     zoomSliderColl.value = zoomLevelColl;
+    scaleFactor = (zoomLevelColl/oldZoomLevelColl - 1)
+    currentTranslateColl.x = currentTranslateColl.x - scaleFactor * svgMouseX;
+    currentTranslateColl.y = currentTranslateColl.y - scaleFactor * svgMouseY;
+    updateTransformColl();
   });
 
   fitGraphBtnColl.addEventListener("click", fitGraphColl); // Fit graph when button clicked
@@ -1005,6 +984,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   updateZoomColl(zoomLevelColl);
 });
+
 
 // part to control the interaction with the Object graph
 document.addEventListener("DOMContentLoaded", () => {
@@ -1019,14 +999,15 @@ document.addEventListener("DOMContentLoaded", () => {
   let isDragging = false; // Track whether the user is currently dragging
   let dragStart = { x: 0, y: 0 }; // Store the starting mouse position during the drag operation
   let currentTranslateObj = { x: 0, y: 0 }; // Current translation offset for the graph
-
+  
+  
   // Update the transformation (translate + scale)
   const updateTransformObj = () => {
     const scaleObj = zoomLevelObj / 100;
     graphImgObj.style.transform = `translate(${currentTranslateObj.x}px, ${currentTranslateObj.y}px) scale(${scaleObj})`;
   };
 
-  // Reset the transformation (translate x and y to 0)
+  // Reset the transformation (translate x and y to 0),
   const resetTransformObj = () => {
     currentTranslateObj = { x: 0, y: 0 };
     updateTransformObj();
@@ -1051,7 +1032,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const fitGraphObj = () => {
     const graphBoundsObj = graphImgObj.getBoundingClientRect(); // Get the size of the graph content
     const containerBoundsObj = graphDivObj.getBoundingClientRect(); // Get the size of the card container
-
+    
     // Calculate the scaling factor needed to fit the graph content into the container
     const scaleWidthObj = containerBoundsObj.width / graphBoundsObj.width * zoomLevelObj / 100;
     const scaleHeightObj = containerBoundsObj.height / graphBoundsObj.height * zoomLevelObj / 100;
@@ -1172,7 +1153,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   window.addEventListener("mousemove", (event) => {
     if (!isMoving) return; // Only operate if dragging is active
-    const deltaX = event.clientX - moveStart.x;  // Calculate how far the mouse moved on X
     const deltaY = event.clientY - moveStart.y;  // Calculate how far the mouse moved on Y
     moveStart = { x: event.clientX, y: event.clientY }; // Update the new starting point
     // Update the current translation offsets
@@ -1193,9 +1173,6 @@ document.addEventListener("DOMContentLoaded", () => {
     window.dispatchEvent(new Event('resize'));
   })
 })
-
-
-
 </script>
 
 {% endif %}
@@ -1338,6 +1315,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
 <script>
 
+$('.graphTabs').on('shown.bs.tab', function(event){
+  activegraphtab = event.target.getAttribute('href')
+  update_item_visibility()
+});
+
 {% if current_user.feature('actions') %}
 gt2 = "actions"
 gm2 = "vmove"
@@ -1361,6 +1343,18 @@ gb2 = "metadata"
 $('#main-window').css('grid-template-areas', 
 `"sidebar ${gt1} ${gt2}" "sidebar ${gm1} ${gm2}"  "sidebar ${gb1} ${gb2}"`)
 
+# TODO: This is inserted august 2025 and can be removed after three months
+{% if current_user.settings.get('tips', 0) | int < 1 %}
+$('#sidebar-button').on('expanded.lte.controlsidebar', function(){
+    $.post('{{ url_for("userinfo.usersetting") }}', {
+      attr: 'tips',
+      value: 1
+    });
+    $('#tips1').remove()
+})
+{% endif %}
+
 </script>
 
 {% endblock %}
+
