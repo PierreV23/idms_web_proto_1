@@ -129,6 +129,22 @@ body {
     "selectlist selectdetail"
 }
 
+.legend-overlay {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 10px;
+  border-radius: 8px;
+  max-height: calc(100% - 10px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10; /* Ensure it's on top */
+}
 
 .selectlist {
   grid-area: selectlist;
@@ -233,6 +249,10 @@ body {
 ul {
   list-style-type: none;
   padding-left: 5px;
+}
+
+.pointer {
+  cursor: pointer;
 }
 
 .caret {
@@ -786,6 +806,28 @@ svg text{
    -moz-user-select: none;
    -ms-user-select: none;
    user-select: none;
+}
+
+.control-sidebar {
+    display: flex; /* Use flexbox for vertical layout */
+    flex-direction: column; /* Stack children vertically */
+    height: 100vh; /* Ensure the sidebar takes full height to allow body to fill remaining space */
+    z-index: 1041 !important;
+}
+
+.control-sidebar-header {
+    /* The header will take its natural height */
+    flex-shrink: 0; /* Prevent the header from shrinking */
+}
+
+.control-sidebar-content {
+    flex-grow: 1; /* Allow the body to take up all remaining space */
+    overflow-y: auto; /* Enable vertical scrolling when content overflows */
+}
+
+.control-sidebar-title {
+  color: white;
+  background-color: #6c757d;
 }
 
 .highlight {

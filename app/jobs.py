@@ -360,7 +360,7 @@ def shortname(name,l):
 
 def coll_shape(coll_type):
     layout = constants.LAYOUT.get(coll_type, constants.DEFAULT_SHAPE)
-    return layout[constants.SHAPE2], layout[constants.COLOR1]    
+    return layout[constants.SHAPE2], layout[constants.FILLCOLOR]    
 
 @bp.route('/processgraph')
 def processgraph():
@@ -375,10 +375,10 @@ def processgraph():
         state = iqry.qcollmetaval(coll, 'sys::runsheet::state', default='unknown')
         if state == 'done':
             state = iqry.qcollmetaval(coll, 'sys::run::result')
-        shape, shape_color = coll_shape(state)
+        shape, fillcolor = coll_shape(state)
         penwidth = '3' if runsheet_coll == coll else '1'
         graph.node(coll, label=iqry.qcollmetavalstatic(coll, 'sys::runsheet::description'), style='filled', penwidth=penwidth, 
-            shape=shape, fillcolor=shape_color, URL=url_for('jobs.jobdetails', name=iqry.qcollmetaval(coll, ATTR_RUNSHEET_ID)))
+            shape=shape, fillcolor=fillcolor, URL=url_for('jobs.jobdetails', name=iqry.qcollmetaval(coll, ATTR_RUNSHEET_ID)))
     for coll in colls:
         ir = iqry.qcollmetaval(coll, 'sys::pipeline::input_collection_id')
         input_colls = [ c for c in colls if iqry.qcollmetavalstatic(c, 'sys::dataset_id') == ir ]
@@ -391,8 +391,8 @@ def processgraph():
             for r in q:
                 src = r[Collection.name]
             if src:
-                shape, shape_color = coll_shape('source')
-                graph.node(src, shortname(src, NAME_LENGTH), shape=shape, fillcolor=shape_color, style='filled',
+                shape, fillcolor = coll_shape('source')
+                graph.node(src, shortname(src, NAME_LENGTH), shape=shape, fillcolor=fillcolor, style='filled',
                     URL=url_for('collbrowser.collbrowser', path=src))
                 graph.edge(src, coll)
 
