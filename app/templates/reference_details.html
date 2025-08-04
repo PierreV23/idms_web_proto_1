@@ -41,77 +41,6 @@
     <input type="hidden" id="reference" name="reference" value="{{RD.name}}">
 
     <div class="form-group">
-      <label for="reference_description_{{RD.name}}">Description</label>
-      <textarea rows="5" class="form-control" name="description" id="reference_description_{{RD.name}}">{{ RD.description }}</textarea>
-    </div>
-
-    <div class="form-group">
-      <label for="reference_synchronize_repository_{{RD.name}}">Repository</label>
-      <input type="text" class="form-control" name="repository" id="reference_synchronize_repository_{{RD.name}}" 
-             placeholder="https://gitlab.rivm.nl/bioinformatics/refdata_version_check.git" value="{{ RD.repository }}">
-    </div>
-
-    <div class="form-group">
-      <label for="reference_synchronize_repository_tag_{{RD.name}}">Tag</label>
-      <input type="text" class="form-control" name="tag" id="reference_synchronize_repository_tag_{{RD.name}}" 
-             placeholder="v1.1" value="{{ RD.tag }}">
-    </div>
-
-    <div class="form-group">
-      <label for="reference_synchronization_frequency_{{RD.name}}">Synchronization frequency (seconds)</label>
-      <input type="number" min="0" class="form-control" name="synchronization_frequency" id="reference_synchronization_frequency_{{RD.name}}" 
-             placeholder="86400" value="{{ RD.synchronization_frequency }}">
-      <small id="frequencyHelp" class="form-text text-muted">
-          Current Value: <span id="frequencyDays_{{RD.name}}">-</span> days, 
-                         <span id="frequencyHours_{{RD.name}}">-</span> hours, 
-                         <span id="frequencyMins_{{RD.name}}">-</span> min, 
-                         <span id="frequencySecs_{{RD.name}}">-</span> sec <br>
-          Examples:<br>
-          &emsp;&emsp;daily: 86400 <br>
-          &emsp;&emsp;weekly: 604800 <br>
-          &emsp;&emsp;monthly: 2592000 <br>
-      </small>
-    </div>
-  
-    <!-- update frequency is actually not used anymore-->
-    <!--div class="form-group">
-      <label for="reference_update_frequency_{{RD.name}}">Update frequency (seconds)</label>
-      <input type="number" min="0" class="form-control" name="update_frequency" id="reference_update_frequency_{RD.name}}" placeholder="86400" value="{{ RD.update_frequency }}">
-    </div-->
-    <div class="form-group">
-      <label for="reference_precheck_command_{{RD.name}}">Precheck command (bash command)</label>
-      <input type="text" class="form-control" name="precheck_command" id="precheck_command_{{RD.name}}" 
-             placeholder="precheck_changes.sh" value="{{ RD.precheck_command }}">
-              <small class="form-text text-muted">
-                command  &lt;FLAGDIR&gt; &lt;WORKDIR&gt; &lt;LATESTVERSIONDIR&gt;<br>
-                <dl>
-                  <dt>FLAGDIR</dt><dd>base directory, where the flag files precheck_finished__no_changes.txt / precheck_finished__found_changes.txt need to be stored.</dd>
-                  <dt>WORKDIR</dt><dd>working directory (usually "new"), place logfiles here.</dd>
-                  <dt>LATESTVERSIONDIR</dt><dd>directory containing the current version, check for changes against this content</dd>
-                </ul>
-              </small>
-    </div>
-    <div class="form-group">
-      <label for="reference_synchronize_command_{{RD.name}}">Synchronize command (bash command)</label>
-      <input type="text" class="form-control" name="synchronize_command" id="synchronize_command_{{RD.name}}" 
-             placeholder="download_dataset.sh" value="{{ RD.synchronize_command }}">
-             <small class="form-text text-muted">
-                command  &lt;WORKDIR&gt; <br>
-                <dl>
-                  <dt>WORKDIR</dt><dd>working directory (usually "new"), create a DATASET directory here.</dd>
-                  </ul>
-              </small>
-    </div>
-    <div class="form-group">
-      <label for="execution_environment_{{RD.name}}">execution environment</label>
-      <select class="form-control" name="execution_environment" id="execution_environment_{{RD.name}}" >
-             <option value="pid">local</option>
-             <option value="lsf">LSF</option>
-        </select>
-    </div>
-
-
-    <div class="form-group">
       <label for="reference_activate_{{RD.name}}">activate/Deactivate</label>
       <div>
         {% if RD.is_active %}
@@ -131,9 +60,101 @@
         {% endif %}
       </div>
     </div>
+
+    <div class="form-group">
+      <label for="reference_description_{{RD.name}}">Description</label>
+      <textarea rows="5" class="form-control" name="description" id="reference_description_{{RD.name}}">{{ RD.description }}</textarea>
+    </div>
+
+    <div class="form-group">
+      <label for="reference_synchronize_repository_{{RD.name}}">Repository</label>
+      <input type="text" class="form-control" name="repository" id="reference_synchronize_repository_{{RD.name}}" 
+             placeholder="https://gitlab.rivm.nl/bioinformatics/refdata_version_check.git" value="{{ RD.repository }}">
+    </div>
+
+    <div class="form-group">
+      <label for="reference_synchronize_repository_tag_{{RD.name}}">Tag</label>
+      <!--input type="text" class="form-control" name="tag" id="reference_synchronize_repository_tag_{{RD.name}}" 
+             placeholder="v1.1" value="{{ RD.tag }}"--> 
+      <select class="form-control form-control-sm" id="reference_synchronize_repository_tag_{{RD.name}}" name="tag">
+          <option disabled selected value> -- select a tag/branch -- </option>
+          {% for tag in available_tags %}
+          <option value="{{tag}}" {% if tag == RD.tag %}selected{% endif %}>{{ tag }}</option>
+          {% endfor %}
+        </select>
+    </div>
+   
+
+    <div class="form-group">
+      <label for="reference_synchronization_frequency_{{RD.name}}">Synchronization frequency (seconds)</label>
+      <input type="number" min="0" class="form-control" name="synchronization_frequency" id="reference_synchronization_frequency_{{RD.name}}" 
+             placeholder="86400" value="{{ RD.synchronization_frequency }}">
+      <small id="frequencyHelp" class="form-text text-muted">
+          Current Value: <span id="frequencyDays_{{RD.name}}">-</span> days, 
+                         <span id="frequencyHours_{{RD.name}}">-</span> hours, 
+                         <span id="frequencyMins_{{RD.name}}">-</span> min, 
+                         <span id="frequencySecs_{{RD.name}}">-</span> sec <br>
+      
+      </small>  
+    </div>
+
+    <div class="alert alert-light" role="alert"">
+        <small> 
+          Examples:<br>
+          &emsp;&emsp;daily: 86400 <br>
+          &emsp;&emsp;weekly: 604800 <br>
+          &emsp;&emsp;monthly: 2592000 <br>
+      </small>
+    </div>
+  
+    <!-- update frequency is actually not used anymore-->
+    <!--div class="form-group">
+      <label for="reference_update_frequency_{{RD.name}}">Update frequency (seconds)</label>
+      <input type="number" min="0" class="form-control" name="update_frequency" id="reference_update_frequency_{RD.name}}" placeholder="86400" value="{{ RD.update_frequency }}">
+    </div-->
+    <div class="form-group">
+      <label for="reference_precheck_command_{{RD.name}}">Precheck command (bash command)</label>
+      <input type="text" class="form-control" name="precheck_command" id="precheck_command_{{RD.name}}" 
+             placeholder="precheck_changes.sh" value="{{ RD.precheck_command }}">
+              <small class="form-text text-muted">
+                command  &lt;FLAGDIR&gt; &lt;WORKDIR&gt; &lt;LATESTVERSIONDIR&gt;<br>
+              </small>
+    </div>
+    <div class="form-group">
+      <label for="reference_synchronize_command_{{RD.name}}">Synchronize command (bash command)</label>
+      <input type="text" class="form-control" name="synchronize_command" id="synchronize_command_{{RD.name}}" 
+             placeholder="download_dataset.sh" value="{{ RD.synchronize_command }}">
+             <small class="form-text text-muted">
+                command  &lt;WORKDIR&gt; <br>
+              </small>
+    </div>
+
+    <div class="alert alert-light" role="alert"">
+        <small> 
+            <dl>  
+                <dt>FLAGDIR</dt><dd>base directory, where the flag files precheck_finished__no_changes.txt / precheck_finished__found_changes.txt need to be stored.</dd>
+                <dt>WORKDIR</dt><dd>working directory (usually "new"), place logfiles here, create a DATASET directory here.</dd>
+                <dt>LATESTVERSIONDIR</dt><dd>directory containing the current version, check for changes against this content</dd>
+             </dl>
+         </small>
+    </div>
+
+    <!-- for now the possible values are hardcoded. Later those values should be read from the API or the refdata_updater configuration.
+         The execution environment selected here will contain additional information (e.g. queue to use, walltime, number of cores, etc.) 
+    -->
+    <div class="form-group">
+      <label for="execution_environment_{{RD.name}}">execution environment</label>
+      <select class="form-control" name="execution_environment" id="execution_environment_{{RD.name}}" >
+             <option value="local" {% if RD.execution_environment == "local" %}selected{% endif %}>local</option>
+             <option value="lsf"   {% if RD.execution_environment == "lsf" %}selected{% endif %}>LSF</option>
+        </select>
+    </div>
+
+
+    <hr>
   
     <button type="submit" class="btn btn-primary">Submit</button>
-    <button type="button" class="btn btn-primary" data-href="/remove_reference?name={{RD.name}}" data-toggle="modal" data-target="#confirm-delete">
+    <button type="button" class="btn btn-danger" data-href="/remove_reference?name={{RD.name}}" data-toggle="modal" data-target="#confirm-delete">
       Remove reference dataset
     </button>
   </form>

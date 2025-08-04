@@ -23,7 +23,7 @@ from os import path
 
 BP = Blueprint('reference', __name__, url_prefix='/reference')
 
-reference_change_allowed = [ 'description', 'synchronize_command', 'synchronization_frequency', 'repository', 'tag', 'is_active']
+reference_change_allowed = [ 'description', 'synchronize_command', 'synchronization_frequency', 'repository', 'tag', 'is_active', 'execution_environment']
 
 
 # def refdata_permissions(refdata):
@@ -113,11 +113,16 @@ def show_reference_details():
         else:
             import_state[ f'{attr}_iso' ] = "---"
 
+    available_tags, r = rest_call('GET', f'reference/{reference_id}/tags')
+    if r != 200:
+        available_tags = []
+
     return render_template('reference_details.html', 
                            RD=reference_details, 
                            all_references=all_references, 
                            reference_versions=reference_versions, 
-                           import_state=import_state)
+                           import_state=import_state,
+                           available_tags=available_tags)
 
 
 @BP.route('/activate_reference', methods=['GET', 'POST'])
