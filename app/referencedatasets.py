@@ -40,20 +40,20 @@ def get_referencelist():
             reference["days_since_update_str"] = "N/A"
             if reference["importer_state"]:
                 ts_last_updated = reference["importer_state"]["last_updated"]
-                print(f"last update: {ts_last_updated}")
+                #print(f"last update: {ts_last_updated}")
                 ts_now = datetime.now().timestamp()
                 if ts_last_updated > 0:
                     delta_last_updated = ts_now - ts_last_updated
                     reference["status"] = "OK"
-                    if delta_last_updated > (2* reference["synchronization_frequency"]):
+                    if delta_last_updated > (4* reference["synchronization_frequency"]):
                         reference["status"] = "WARNING"
-                    # potentially in the future we should check if the importer_state contains an error_code
-                    #reference["status"] = "ERROR"
                     days_since_update = int(delta_last_updated / (24*60*60))
                     reference["days_since_update"] = days_since_update
                     reference["days_since_update_str"] = "< 1 day"
                     if days_since_update > 0:
                         reference["days_since_update_str"] = f"{days_since_update} days"
+                if reference["importer_state"]["error_count"] > 0:
+                    reference["status"] = "ERROR"
 
             referencelist[ reference['name'] ] = reference 
     return referencelist
@@ -183,7 +183,9 @@ def update_reference_settings():
             flash( 'update successful', 'info')
         location=f'reference_dataset={reference}'
     elif action == 'add_reference':
-        response, result = rest_call('POST', 'reference', data={'name': reference})
+        response, result = rest_call('POST', 'reference', data={'name': reference, 
+                                                                'owner': current_user.username, 
+                                                                'is_active': 0})
         if result == 201:
             flash( 'creation successful', 'info')
             location = f'reference_dataset={reference}'
