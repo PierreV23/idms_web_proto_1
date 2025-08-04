@@ -1,5 +1,8 @@
 <br>
 
+
+<script src="{{ url_for('static', filename='js/markdown-it.min.js') }}"></script>
+
 <!-- REFERENCE SETTINGS -->
 <div class="card h-100">
   <div class="card-header">
@@ -62,8 +65,25 @@
     </div>
 
     <div class="form-group">
-      <label for="reference_description_{{RD.name}}">Description</label>
-      <textarea rows="5" class="form-control" name="description" id="reference_description_{{RD.name}}">{{ RD.description }}</textarea>
+        <label for="reference_description_{{RD.name}}">Description</label>
+        <ul class="nav nav-tabs nav2" role="tablist">
+            <li class="nav-item" role="presentation">
+              <a class="nav-link active" id="show_desc_tab" data-toggle="tab" data-target="#show_desc" role="tab" aria-controls="show_desc" aria-selected="true" href="#">Show</a>
+            </li>
+            <li class="nav-item" role="presentation">
+              <a class="nav-link" id="edit_desc_tab" data-toggle="tab" data-target="#edit_desc" role="tab" aria-controls="edit_desc" aria-selected="false" href="#">Edit</a>
+            </li>
+        </ul>
+        <div class="tab-content" id="DescriptionTabContent">
+            <div class="tab-pane show active" id="show_desc" role="tabpanel" aria-labelledby="show_desc_tab">
+                <div class="card bg-light">
+                  <div class="card-body" id="markdown"></div>
+                </div>
+            </div>
+            <div class="tab-pane" id="edit_desc" role="tabpanel" aria-labelledby="edit_desc_tab">
+                <textarea rows="5" class="form-control" name="description" id="reference_description_{{RD.name}}">{{ RD.description }}</textarea>
+            </div>
+         </div>
     </div>
 
     <div class="form-group">
@@ -305,5 +325,10 @@ $('.contactmanager').on('shown.bs.tab', function (event) {
 seconds = +"{{ RD.synchronization_frequency }}"
 displayFrequencyForHumans( seconds )
 
+$(function(){
+  const md = window.markdownit();
+  const result = md.render( `{{ RD.description }}` );
+  $("#markdown").append(result)
+})
 
 </script>
