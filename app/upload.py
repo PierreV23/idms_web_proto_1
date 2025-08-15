@@ -11,12 +11,14 @@ import shutil
 import sys
 import logging
 import time
+import jsonavu
 from flask import Blueprint, render_template, redirect, request, url_for, session, current_app, flash
 from flask import jsonify
 from flask_login import current_user, login_required
 import uuid
 from app import projects, iqry
 from app.datafield import datafield
+from app.constants import ATTR_UISCHEMA
 import randomname
 import json
 import re
@@ -208,6 +210,13 @@ def upload_settings():
 
 
 def getSchemataForProject( projectId ):
+    """Return list of schemas for a project
+       and the default schemas
+       as a dictionary:
+       {
+        schema-name : schema-location
+       }
+    """
     def getSchemataInColl( coll ):
         result = {}
         for obj in coll.data_objects:
@@ -216,28 +225,42 @@ def getSchemataForProject( projectId ):
             result[ schemaId ] = path
         return result
 
+    result = {}
     with irods_manager.session() as session:
-        try:
-            schemaColl = session.collections.get( f'/{current_user.irods_zone}/system/schemata/{projectId}' )
-        except CollectionDoesNotExist:
-            schemaColl = session.collections.get( f'/{current_user.irods_zone}/system/schemata' )
-        result = getSchemataInColl( schemaColl )
-           #Alternatv: if we want always to offer a minimum standard as "default"
-           #result.update( defaultSchemata )
+        for schemaLocation in ('', projectId):
+            try:
+                print(f'OOO: {os.path.join('/', current_user.irods_zone, 'system/schemata', schemaLocation)}')
+                schemaColl = session.collections.get( os.path.join('/', current_user.irods_zone, 'system/schemata', schemaLocation))
+            except CollectionDoesNotExist:
+                continue
+            print('UPDATE')
+            result.update(getSchemataInColl(schemaColl))
     return result
 
 #POST (not very RESTful, but doesnt show up in history)
 @bp.route('_getschema', methods=['POST'])
 def get_schema():
+    content = "{}"
+    uiSchema = "{}"
     if request.method == 'POST':
         schemaFile = request.data.decode('UTF-8')
+        print(f'GET {schemaFile}')
         if schemaFile:
             with irods_manager.session() as session:
-               obj = session.data_objects.get( schemaFile )
-               with obj.open('r') as f:
-                   content = f.read()
-                   return content
-    return {}   
+                obj = session.data_objects.get( schemaFile )
+                with obj.open('r') as f:
+                    content = f.read().decode('UTF-8')
+                uiSchemaFile = obj.metadata.get_all(ATTR_UISCHEMA)
+                if uiSchemaFile:
+                    try:
+                        uiSchemaPath = uiSchemaFile[0].value
+                        uiObj =  session.data_objects.get(uiSchemaPath)
+                        with uiObj.open('r') as f:
+                            uiSchema = f.read().decode('UTF-8')
+                    except:
+                        pass
+    return { 'schema': content, 'uiSchema': uiSchema }
+    
 
 
 @bp.route('_uploadmeta', methods=['GET', 'POST'])
@@ -250,23 +273,20 @@ def upload_meta():
         schemata={}
         projectId = iqry.qcollmetaval(collection, f'{ATTR_UPLOADSETTINGS}projectID')
         schemata = getSchemataForProject( projectId )
-        metadata = iqry.qcollmetadict_typed(collection) #the typed version tries reading the unit field as a python type
-        data = { k[len(ATTR_UPLOADMETA):]: v for k, v in metadata.items() if k.startswith(ATTR_UPLOADMETA) }
-        selectedSchema = metadata.get(ATTR_UPLOADMETASCHEMA, None)
+        metadata = iqry.qcollmeta(collection) #the typed version tries reading the unit field as a python type
+        metadict = iqry.qcollmetadict(collection)
+        avudata = [ { 'a': avu[CollectionMeta.name][len(ATTR_UPLOADMETA):], 'v': avu[CollectionMeta.value], 'u': avu[CollectionMeta.units] } for avu in metadata if avu[CollectionMeta.name].startswith(ATTR_UPLOADMETA) ]
+        data = jsonavu.avu2json(avudata, "cat")
+        selectedSchema = metadict.get(ATTR_UPLOADMETASCHEMA, None)
         return render_template('upload_meta.html', coll=collection, project=projectId, name=name, schemata=schemata, selectedSchema=selectedSchema, data=data)
     if request.method == 'POST':
         record = request.json
         collection = record.get('coll')
         metadata = iqry.qcollmetadict(collection)
         unset_upload_meta(collection)
-        for k, v in record.get('data', {}).items():
-            key = sanitize(k, True)
-            type_name = type(v).__name__  # gives us just int,str, etc, which we can search in builtins
-            value = sanitize(str(v))    
-            if not value:
-                #AVUs without value will not be set
-                continue
-            iqry.scollmetaval_typed(collection, f'{ATTR_UPLOADMETA}{key}', value, type_name )    
+        avus = jsonavu.json2avu(record.get('data', {}), "cat")
+        for avu in avus:
+            iqry.scollmetaval(collection, f'{ATTR_UPLOADMETA}{avu["a"]}', avu["v"], unit=avu["u"] )    
         selectedSchema = record.get('selectedSchema')
         iqry.scollmetaval(collection, f'{ATTR_UPLOADMETASCHEMA}', selectedSchema)              
         return jsonify({'status': 'OK' }), 200

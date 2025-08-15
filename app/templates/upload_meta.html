@@ -53,20 +53,20 @@ menuname='upload_meta'
 
   const Form = JSONSchemaForm.default;
   const schemata = {{ schemata | safe }};
-  const formdata = {{ data | safe }};
+  const formdata = {{ data | tojson }};
   const selectedSchema = "{{ selectedSchema | safe }}";
 
   const log = (type) => console.log.bind(console, type);
   let metaForm;
 
-  function renderFormFunction( schema, fd ) {
-    //console.log( "rendering form for schema:" + schema)
+  function renderFormFunction( schema, uiSchema, fd ) {
     ReactDOM.render(
       React.createElement(
         Form, 
         {
           id: "metaForm",
           schema: schema,
+          uiSchema: uiSchema,
           formData: fd,
           onChange: function () {
             $('.formsubmit').removeAttr('disabled');
@@ -96,9 +96,9 @@ menuname='upload_meta'
       data: schemata[ schemaId ],
       contentType: "application/json; charset=utf-8",
       dataType: "json",
-      success: function (schema) {
+      success: function (result) {
         fd = (schemaId == selectedSchema) ? formdata : {}
-        renderFormFunction( schema, fd );
+        renderFormFunction(JSON.parse(result.schema), JSON.parse(result.uiSchema), fd);
       }
     })
   })
@@ -141,9 +141,9 @@ menuname='upload_meta'
         data: schemata[ schemaId ],
         contentType: "application/json; charset=utf-8",
         dataType: "json",
-        success: function (schema) {
+        success: function (result) {
           fd = (schemaId == selectedSchema) ? formdata : {}
-          renderFormFunction( schema, fd );
+          renderFormFunction(JSON.parse(result.schema), JSON.parse(result.uiSchema), fd );
           $('#schema-select-div').removeClass('d-none');
         }
       })

@@ -6,6 +6,7 @@ ATTR_RESOURCE_ENABLED = 'sys::resource::enabled'
 ATTR_RESOURCE_AVAILABLE = 'sys::resource::available'
 ATTR_RESOURCE_TAR = 'sys::resource::tar'
 ATTR_RESOURCE_ONLINE = 'sys::resource::online'
+ATTR_UISCHEMA = 'sys::uischema'
 
 FEATURES = {
     'actions': 'Show actions pane',
