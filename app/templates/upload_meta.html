@@ -17,22 +17,81 @@ menuname='upload_meta'
 <!--script src="https://unpkg.com/@rjsf/core/dist/react-jsonschema-form.js"></script-->
 <!--script src="https://unpkg.com/@rjsf/core/dist/core.cjs.production.min.js" crossorigin></script-->
 <script src="https://unpkg.com/react-jsonschema-form@1.8.1/dist/react-jsonschema-form.js" crossorigin></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css"
+  integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+<script src="{{ url_for('static', filename='js/bootstrap-table.min.js') }}"></script>
 
-<div id="app"></div>
-<div id="res"></div>
 <script>
   var formaction = 'default';
 </script>
 
+<div class="selectgrid h-100">
+  <div class="card selectlist">
+    <div class="card-header">
+      <div class="card-title">Schemata for project</div>
+    </div>
+      <table id="schemata-table" data-toggle='table' data-url="{{ url_for('metaedit.schemas_for_collection', collection=coll)}}" data-checkbox-header="false">
+        <thead>
+          <TR>
+            <TH data-field="selected" data-checkbox="true"></TH>
+            <TH data-field="schema" data-sortable="true">Schema</TH>
+            <TH data-field="schemapath" data-visible="false"></TH>
+          </TR>
+        </thead>
+      </table>
+  </div>
+  <div class="card selectdetail">
+    <div class="card-header">
+      <div class="card-title">Metadata editor</div>
+    </div>
+  </div>
+</div>
+
+<script>
+
+// Update the collection when a schema is enabled or disabled
+const toggleRow = function (schemapath, schema_action) {
+  $.post({
+    url: "{{ url_for('metaedit.set_schemata_for_collection')}}",
+    data: {
+      collection: "{{ coll }}",
+      schemapath: schemapath,
+      action: schema_action
+    }
+  })
+}
+
+// Load the correct schema form when a schema is selected
+const loadSchema = function(schemapath) {
+
+}
+
+// Install bootstraptable event handlers
+$('#schemata-table').bootstrapTable({
+  onCheck: function(row, $element) {
+    toggleRow(row.schemapath, 'add')
+  },
+  onUncheck: function(row, $element) {
+    toggleRow(row.schemapath, 'remove')
+  },
+  onClickRow: function(row, $element) {
+    $('#schemata-table tr').removeClass('highlight')
+    $('#schemata-table .selected').addClass('highlight')
+  }
+})
+
+</script>
+
+
+
 <div id="erwin"></div>
 <div class="card h-100">
   <div class="card-header">
-    <H3>Select a metadata-schema for project <em>{{ project }}</em></H3>
+    <H3>Select metadata-schemas for project <em>{{ project }}</em></H3>
     <div id="schema-select-div" class="d-none">
       <label for="schema-select">Schema:</label>
       <select id="schema-select" class="form-control form-select"></select>
-    </div>    
+    </div>
   </div>
 
   <div class="card-body autoscroll">
@@ -59,10 +118,10 @@ menuname='upload_meta'
   const log = (type) => console.log.bind(console, type);
   let metaForm;
 
-  function renderFormFunction( schema, uiSchema, fd ) {
+  function renderFormFunction(schema, uiSchema, fd) {
     ReactDOM.render(
       React.createElement(
-        Form, 
+        Form,
         {
           id: "metaForm",
           schema: schema,
@@ -82,18 +141,18 @@ menuname='upload_meta'
 
 
   //create selectbox with available schemafiles for project
-  for( s of Object.keys( schemata )) {
-      $('#schema-select').append(new Option(s, s))
+  for (s of Object.keys(schemata)) {
+    $('#schema-select').append(new Option(s, s))
   }
   $('#schema-select').val(selectedSchema);
-  $('#schema-select').on('change', function(){
+  $('#schema-select').on('change', function () {
     schemaId = $(this).val()
-    schemaFile = schemata[ schemaId ]
+    schemaFile = schemata[schemaId]
     //AJAX call to get the content of schemafile
     $.ajax({
       method: "POST",
       url: '{{ url_for("upload.get_schema") }}',
-      data: schemata[ schemaId ],
+      data: schemata[schemaId],
       contentType: "application/json; charset=utf-8",
       dataType: "json",
       success: function (result) {
@@ -131,19 +190,19 @@ menuname='upload_meta'
   }
 
   //when DOM ready trigger initial rendering
-  $( document ).ready(function() {
-    if( Object.keys( schemata ).length > 0 ) {
+  $(document).ready(function () {
+    if (Object.keys(schemata).length > 0) {
       schemaId = $('#schema-select').val()
       //AJAX call to get the content of schemafile
       $.ajax({
         method: "POST",
         url: '{{ url_for("upload.get_schema") }}',
-        data: schemata[ schemaId ],
+        data: schemata[schemaId],
         contentType: "application/json; charset=utf-8",
         dataType: "json",
         success: function (result) {
           fd = (schemaId == selectedSchema) ? formdata : {}
-          renderFormFunction(JSON.parse(result.schema), JSON.parse(result.uiSchema), fd );
+          renderFormFunction(JSON.parse(result.schema), JSON.parse(result.uiSchema), fd);
           $('#schema-select-div').removeClass('d-none');
         }
       })
@@ -152,7 +211,7 @@ menuname='upload_meta'
       $('#schema-select-alert').removeClass('d-none');
     }
 
-     $('.col-xs-12').addClass('col-12');
+    $('.col-xs-12').addClass('col-12');
   });
 
 

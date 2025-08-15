@@ -19,7 +19,7 @@ from Crypto.PublicKey import RSA
 
 from . import auth, collbrowser, jobs, docviewer, messages
 from . import projects, cluster, admin, reports, userinfo, referencedatasets
-from . import ngsruns, upload, flaskcache, search
+from . import ngsruns, upload, flaskcache, search, metaedit
 from . import messages, oldjobs
 from .ngsruns import db as ngsruns_db, NGSRunsDBUnavailableException
 from .jobs import db as jobs_db, JobsDBUnavailableException
@@ -116,6 +116,7 @@ app.register_blueprint(userinfo.bp)
 app.register_blueprint(oldjobs.bp)
 app.register_blueprint(messages.bp)
 app.register_blueprint(search.bp)
+app.register_blueprint(metaedit.bp)
 
 
 flaskcache.init(app)

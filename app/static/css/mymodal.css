@@ -137,6 +137,7 @@ body {
 
 .selectdetail {
   grid-area: selectdetail;
+  height: 100%;
 }
 
 .browsergrid {
@@ -776,3 +777,4 @@ svg text{
    -ms-user-select: none;
    user-select: none;
 }
+
