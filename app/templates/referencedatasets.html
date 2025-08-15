@@ -44,9 +44,10 @@ $(window).on('load', function() {
   $("li[data-referencename='{{ reference_dataset }}']").trigger('click');
 });
 
+
 // Some functions for the processgroup graphs 
 
-$(document).on('click', '#select_input_button', function(){
+/*$(document).on('click', '#select_input_button', function(){
     if (mode != 'select_input') {
         mode = 'select_input';
         console.log('Mode: select_input')
@@ -56,6 +57,7 @@ $(document).on('click', '#select_input_button', function(){
     
     load_pgpage();
 })
+    */
 
 </script>
 
@@ -119,7 +121,7 @@ $(document).on('click', '#select_input_button', function(){
     </div>
   </div>
 
-  <div class="card selectdetail" id="details">
+  <div class="card selectdetail scroll" id="details">
 
   </div>
 </div>

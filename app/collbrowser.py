@@ -6,7 +6,7 @@ Created on Mon Nov 18 10:54:56 2019
 @author: wierinve
 """
 
-import base64
+import copy
 import logging
 import os
 import time
@@ -14,10 +14,10 @@ import logging
 from datetime import datetime, timezone
 from functools import cached_property
 from dateutil.relativedelta import relativedelta
-from flask import Blueprint, render_template, redirect, request, url_for, jsonify, flash, current_app
+from flask import Blueprint, render_template, redirect, request, url_for, jsonify, flash, current_app, render_template_string
 from flask_login import current_user, login_required
 from irods.models import Collection, CollectionMeta, DataObject, DataObjectMeta
-from irods.exception import CAT_NO_ROWS_FOUND, CAT_NO_ACCESS_PERMISSION, CollectionDoesNotExist
+from irods.exception import CAT_NO_ROWS_FOUND, CAT_NO_ACCESS_PERMISSION, CollectionDoesNotExist, DataObjectDoesNotExist
 from irods.column import Criterion
 from app.datafield import AVU2data, datafield
 from app.irods_helper import getmetaitem
@@ -32,22 +32,26 @@ from .flaskcache import cache, key_zone, key_userzone, dep_zone, dep_userzone
 import json
 from app.constants import COLL_KEY_MAP, DATA_KEY_MAP, ATTR_RESOURCE_ONLINE
 from app.auth import auth_endpoint
-from . import constants
 from .projectdb_api import rest_call
+from .constants import *
 
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
 
 # This is the maximum collection name length that is not
 # abbreviated to ...<last part of name>
-NAME_LENGTH = 20
+NAME_LENGTH_COLL = 20
+NAME_LENGTH_OBJ = 40
+
 # This is exactly what it suggests
 DEFAULT_GRAPH_LEVELS = 3
 # This is the maximum number of subcollections we will show
 # in the treeview. If there are more, we will indicate that
 # by ... above/below the list
+
 MAX_TREEVIEW_COLLS = 150
 
 ATTR_DATASETID = 'sys::dataset_id'
+ATTR_DATAOBJECTID = 'sys::object_id'
 ATTR_PROJECTID = 'projectID'
 ATTR_PROCESSID = 'processID'
 ATTR_PROCESSGROUPID = 'processgroupID'
@@ -73,8 +77,8 @@ ATTR_ARCHIVE_MINCOPIES = f'{ATTR_ARCHIVE_PREFIX}min_copies'
 ATTR_ARCHIVE_CREATERETENTION = f'{ATTR_ARCHIVE_PREFIX}create_retention'
 ATTR_ARCHIVE_LASTUSERETENTION = f'{ATTR_ARCHIVE_PREFIX}lastuse_retention'
 
-ATTR_RULES_OBJECTIDS = 'sys::rules::object_ids'
 
+ATTR_RULES_OBJECTIDS = 'sys::rules::object_ids'
 
 COLL_KEY_MAP = {
     'displayname': Collection.name,
@@ -90,8 +94,6 @@ DATA_KEY_MAP = {
     'owner_name': DataObject.owner_name
 }
 
-PROCESS_SHAPE = 'cds'
-
 # CACHE CONTROL FUNCTIONS
 def contents_changed():
     '''Function should be called if collection contents change
@@ -105,10 +107,10 @@ def collections_changed(path=None):
     immediate representation of changes in the interface is required
     '''
     args = [path] if path else []
-    cache.delete_memoized(_generate_graph)
+    cache.delete_memoized(_generate_graph_coll)
+    cache.delete_memoized(_generate_graph_dataobj)
     cache.delete_memoized(add_items)
     cache.delete_memoized(subitems, *args)
-    cache.delete_memoized(_generate_graph)
 
 # TODO: use the irods_helper instead (role irods_cronjobs)
 
@@ -139,7 +141,7 @@ def _propagateDownstreamInvalid(base_irods_coll, irods_coll):
     return downstream_collections
 
 def getmetatree(irods_coll, attr, default=None):
-    return  _getmetatree(irods_coll, attr, irods_coll, default=None)
+    return _getmetatree(irods_coll, attr, irods_coll, default=None)
 
 def _getmetatree(irods_coll, attr, base, default=None):
     value = iqry.qcollmetaval(irods_coll, attr)
@@ -163,8 +165,8 @@ def metatree():
 
 @bp.route('_meta')
 def coll_meta():
-    path = request.args.get('path','/', type=str)
-    selected_object = request.args.get('object', '', type=str)
+    path = request.args.get('path', '/', type=str)
+    selected_object = request.args.get('selected_object', '', type=str)
 
 # Query for collection metadata
     coll_avu = []
@@ -175,17 +177,11 @@ def coll_meta():
         units = coll_metadata[CollectionMeta.units]
         if current_user.settings.get('sysmeta', 'true') == "true" or not name.startswith('sys::'):
             coll_avu.append(AVU2data(name, value, units))
-
 # Query for object metadata
-    object_avu = None
+    object_avu = []
     if selected_object:
-        object_avu = []
         with irods_manager.session() as session:
-            query = session.query(DataObjectMeta.name, DataObjectMeta.value,
-                                        DataObjectMeta.units).filter(
-                                            Criterion('=', Collection.name, path)).filter(
-                                            Criterion('=', DataObject.name, selected_object)
-                                        )
+            query = iqry.qdataobjmeta(selected_object)
             for object_metadata in query:
                 name = object_metadata[DataObjectMeta.name]
                 value = object_metadata[DataObjectMeta.value]
@@ -248,7 +244,7 @@ def upstream():
                     'type': kind
                 })
     #add reference datasets used, there can be several
-    kind, prefix = ('refdata', 'sys::pipeline::refdata::[0]::')  
+    kind, prefix = ('refdata', 'sys::pipeline::refdata::[0]::')
     inputs = iqry.qcollmetavals_with_placeholder(collection, f'{prefix}reference_version_dataset_id')
     for i in inputs:
         c = iqry.qcollbymeta('sys::dataset_id', i[CollectionMeta.value])
@@ -294,7 +290,6 @@ def rmmeta():
         iqry.delcollmeta(collection, attr, value)
     collections_changed()
     return 'DONE', 200
-
 
 @bp.route('_setoverride', methods=['GET'])
 def setoverride():
@@ -499,8 +494,6 @@ def generate_external_url(dataset_id, ticket):
     url = f'{base}/{dataset_id}-{ticket}'
     return url
 
-
-
 @bp.route('_actions_tabs')
 def actions_tabs():
     collection = request.args.get('collection', type=str)
@@ -517,7 +510,6 @@ def coll_actions():
     collection = request.args.get('path','/', type=str)
     coll_state = CollectionState(collection)
     return render_template('actions.html', coll_state=coll_state, collection=collection, admin=current_user.is_admin)
-
 @bp.route('_sharetable')
 def sharetable():
     collection = request.args.get('collection')
@@ -603,7 +595,7 @@ def startprocess():
 
 @bp.route('_collist')
 def collist():
-    path = request.args.get('path','/', type=str)
+    path = request.args.get('path', '/', type=str)
     display_field = iqry.qcollmetaval(path, 'ngsweb::display_field')
     refresh = request.args.get('refresh', 0, type=int)
     if refresh:
@@ -617,7 +609,7 @@ def collist():
 
 @bp.route('collcontents')
 def collcontents():
-    path = request.args.get('path','/', type=str)
+    path = request.args.get('path', '/', type=str)
     offset = request.args.get('offset', 0, type=int)
     limit = request.args.get('limit', 999, type=int)
     filterstr = request.args.get('filter', '{}')
@@ -668,7 +660,7 @@ def _collcontents(path, offset, limit, filterstr, key, order):
     min_data = min(max(offset - coll_count, 0), data_count)
     max_data = min(max(offset + limit - coll_count, 0), data_count)
 
-    results = { 'total': coll_count + data_count , 'rows': []}
+    results = {'total': coll_count + data_count , 'rows': []}
 
 # Query for collection subcollections
     if min_coll < max_coll:
@@ -690,9 +682,9 @@ def _collcontents(path, offset, limit, filterstr, key, order):
                 objdict['type'] = iqry.qcollmetaval(coll[Collection.name], 'sys::data::type', default='')
                 objdict['state'] = iqry.qcollmetaval(coll[Collection.name], 'sys::data::state', default='')
                 if objdict['state'] != 'valid':
-                    objdict['tableclass'] = constants.LAYOUT.get(objdict['state'], constants.DEFAULT_SHAPE)['tableclass']
+                    objdict['tableclass'] = LAYOUT.get(objdict['state'], DEFAULT_SHAPE)['tableclass']
                 else:
-                    objdict['tableclass'] = constants.LAYOUT.get(objdict['type'], constants.DEFAULT_SHAPE)['tableclass']
+                    objdict['tableclass'] = LAYOUT.get(objdict['type'], DEFAULT_SHAPE)['tableclass']
                 objdict['display_field'] = iqry.qcollmetaval(coll[Collection.name], display_field, default='')
                 results['rows'].append(objdict)
         except CAT_NO_ROWS_FOUND:
@@ -710,8 +702,8 @@ def _collcontents(path, offset, limit, filterstr, key, order):
             for do in dataobjects:
                 objdict = {
                     'displayname': do[DataObject.name],
-                    'object': 'dataobject',
                     'path': os.path.join(path, do[DataObject.name]),
+                    'object': 'dataobject',
                     'size': do[DataObject.size],
                     'create_time': datafield('create_time', do[DataObject.create_time], 'timestamp').htmlstring,
                     'owner_name': do[DataObject.owner_name]
@@ -721,18 +713,209 @@ def _collcontents(path, offset, limit, filterstr, key, order):
             pass
     return jsonify(results)
 
-
-def shortname(name,l):
+# helper functions used for labeling, and layout
+def shortname(name, l):
     s = name
     if len(name)>l:
         s = '...' + name[-l+4:]
     return s
 
+def shape(key, legends, color = '', penwidth=''):
+    '''
+    depending the type determine the attributes of the item
+    add the item to the legend
+    input:
+        type: key to fetch from constants
+        legends: list of unique legend dictionaries
+        color: optional; different color
+        penwidth: optional different penwidth
+    return:
+        legends: with added item to the list of unique legend dicts
+    '''
+    # deepcopy, to prevent old values getting overwritten
+    layout = copy.deepcopy(LAYOUT.get(key, DEFAULT_SHAPE))
+    layout['key'] = key
+    
+    # look for different color or penwidth
+    if color != '':
+        layout['color'] = color
+        if layout['color'] == SYS_INVALID_COLOR:
+            layout['tooltip'] += ', System Status: Failed!'
+        if layout['color'] == USER_INVALID_COLOR:
+            layout['tooltip'] += ', User Status: Failed!'
+    if penwidth != '':
+        layout['penwidth'] = penwidth    
+        if layout['penwidth'] == SELECTED_FILE_IN_COLL_PENWIDTH:
+            layout['tooltip'] = 'From Collection Selected ' + layout['tooltip']
+        if layout['penwidth'] == SELECTED_PENWIDTH:
+            layout['tooltip'] = 'Selected ' + layout['tooltip']
+    
+    # Deduplication check
+    layout_hashable = tuple(sorted(layout.items()))
+    seen = {tuple(sorted(l.items())) for l in legends}
+    
+    if layout_hashable not in seen:
+        legends.append(layout)
+        
+    return layout, legends
 
-def coll_shape(coll_type):
-    layout = constants.LAYOUT.get(coll_type, constants.DEFAULT_SHAPE)
-    return layout[constants.SHAPE1], layout[constants.COLOR1]
 
+def export_as_svg(layout: dict, path: str = SVG_PATH):
+    """
+    Exports a specific graph as an SVG file for usage in the legend.
+    """
+    # Create a new Graphviz graph for the single node
+    graph = Digraph(format='svg')
+    graph.graph_attr['rankdir'] = 'LR'
+        
+    if layout['type'] in ['node', 'graph']:
+        graph.node(layout['label'], layout['label'], 
+                    shape=layout['shape'], 
+                    style=layout['style'], 
+                    fillcolor=layout['fillcolor'], color=layout['color'],
+                    tooltip = layout['tooltip'], 
+                    width = '1', height = '0.4', margin = '0.1', 
+                    penwidth=layout['penwidth'],
+                    fontname = ATTR_GRAPH_FONT,
+                    fontsize = DEFAULT_FONTSIZE_BIG)
+            
+    if layout['type'] == 'edge':
+        graph.node("n_1", layout['name'], # left blank node providing label in legend
+                style='cds', 
+                color='white', 
+                shape='none', 
+                width='0', 
+                height='0', 
+                tooltip = layout['label'],
+                fontname = ATTR_GRAPH_FONT
+                )
+        graph.node("n_2", '', # right blank node
+                style='invisible', 
+                shape='none', 
+                width='0', 
+                height='0', 
+                tooltip = layout['label'])
+        graph.edge("n_1", "n_2", 
+                tooltip = layout['label'], 
+                style=layout['style'], 
+                arrowhead=layout['arrowhead'], 
+                fontsize = DEFAULT_FONTSIZE_BIG,
+                fontname = ATTR_GRAPH_FONT,
+                penwidth = layout['penwidth'])
+           
+    filepath = os.path.join(path, layout['filename'])
+    
+    # Render to file
+    graph.render(filepath, cleanup=True)
+
+
+def generate_all_svg():
+    '''
+    Function to generate all svg files, takes about 30 seconds now
+    '''
+    
+    # rm svgs
+    for filename in os.listdir(SVG_PATH):
+        file_path = os.path.join(SVG_PATH, filename)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+    
+    for k, v in LAYOUT.items():
+        v['key'] = k
+    
+    #initial set
+    all_layouts = copy.deepcopy([v for k, v in LAYOUT.items()])
+    all_layouts = add_filename_and_check(all_layouts)
+    
+    # change color
+    for k, v in LAYOUT.items():
+        v['color'] = SYS_INVALID_COLOR
+    
+    all_layouts_sys_red = copy.deepcopy([v for k, v in LAYOUT.items()])
+    all_layouts_sys_red = add_filename_and_check(all_layouts_sys_red)
+    
+    # change color
+    for k, v in LAYOUT.items():
+        v['color'] = USER_INVALID_COLOR
+    
+    all_layouts_user_red = copy.deepcopy([v for k, v in LAYOUT.items()])
+    all_layouts_user_red = add_filename_and_check(all_layouts_user_red)
+    
+    # penwidth = 3
+    for d in all_layouts + all_layouts_sys_red + all_layouts_user_red:
+        d['penwidth'] = SELECTED_PENWIDTH
+    
+    all_bold = add_filename_and_check(all_layouts + all_layouts_sys_red + all_layouts_user_red)
+
+    
+
+def add_filename_and_check(legends):
+    '''
+    Add a filename to the layout
+    Check if the svg files for legends exists, and generate it if not.
+    '''
+    for layout in legends:
+    
+        if layout['type'] in ['node', 'graph']:
+            filename = f"{layout['type']}_{layout['key']}_{layout['shape']}_{layout['fillcolor']}_{layout['color']}_{layout['penwidth']}"
+        if layout['type'] == 'edge':
+            filename = f"{layout['type']}_{layout['key']}_{layout['style']}_{layout['fillcolor']}_{layout['color']}_{layout['penwidth']}_{layout['arrowhead']}"
+            
+        layout['filename'] = filename
+
+        # check if svg file exists
+        filepath = os.path.join(SVG_PATH, filename + '.svg')
+        
+        if not os.path.exists(filepath):
+            export_as_svg(layout)
+    
+    return legends
+
+    
+def generate_legend_graph_svg(legends, generate_all = False):
+    '''
+    Add filename to legends, and check if file exists
+    If file not exists, generate svg file
+    Create a HTML snippet to ingest into the HTML
+    TODO : make better! Temp solution to generate all files from layout: set generate_all to True, and run once 
+    All svg files will be recreated. Don't forget to set back to False 
+    '''
+    
+    if generate_all:
+        generate_all_svg()
+        return
+
+    legends = add_filename_and_check(legends)
+        
+    legends = sorted(legends, key=lambda x: (
+                    x.get('type', ''),
+                    int(x.get('order', 0)),
+                    -int(x.get('penwidth', 0))  # negative for descending sort
+                    ))
+    
+    # HTML template snippet to fill for legend rows       
+    legend_html = render_template_string('''
+        <table class="table table-bordered text-center align-middle">
+        <thead></thead>
+        <tbody>
+        {% for item in legend_items %}
+        <tr class="m-1">
+            <td class="p-1">
+                <img src="{{ url_for('static', filename='svg/' + item.filename + '.svg') }}"
+                     class="m-1 d-block"
+                     width="100"
+                     data-bs-toggle="tooltip"
+                     data-bs-placement="right"
+                     title="{{ item.tooltip }}">
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+        </table>''', legend_items=legends)
+        
+    return legend_html
+        
+  
 class Dictlist(dict):
     """ Custom dict class that allows storing multiple values under one key
     get method will return first value, so can be used as in-place dict replacement
@@ -753,14 +936,31 @@ class Dictlist(dict):
             return self[key]
         return default
 
+# if 'byname' is not set, check both name and id
+PROVATTR = [
+    {'type': 'entity', 'attr': 'sys::pipeline::input_collection_id', 'byname': False},
+    {'type': 'entity', 'attr': 'user::pipeline::input_collection_id', 'byname': False},
+    {'type': 'entity', 'attr': 'sys::pipeline::input_collection', 'byname': True},
+    {'type': 'entity', 'attr': 'user::pipeline::input_collection', 'byname': True},
+    {'type': 'entity', 'attr': 'prov:wasDerivedFrom'},
+    {'type': 'entity', 'attr': 'prov::wasDerivedFrom'},
+    {'type': 'activity', 'attr': 'prov:wasGeneratedBy'},
+    {'type': 'activity', 'attr': 'prov::wasGeneratedBy'},
+    {'type': 'git', 'attr': 'mdma::git::remote'},
+    {'type': 'githash', 'attr': 'mdma::git::sha'},
+    {'type': 'git', 'attr': 'sys::pipeline::gitrepo'},
+    {'type': 'githash', 'attr': 'sys::pipeline::githash'},
+]
+
 @bp.route('_related')
-def multi_list():
+def multi_list_coll():
     # Create a small HTML page with a list of related collections
     #
     PARAMSETS = {
         'U':[
             ('user::pipeline::input_collection', True),
-            ('user::pipeline::input_collection_id', False)
+            ('user::pipeline::input_collection_id', False),
+            ('prov:wasDerivedFrom', True)
         ],
         'S':[
             ('sys::pipeline::input_collection_id', False)
@@ -775,17 +975,19 @@ def multi_list():
     params = PARAMSETS.get(query_type[1], ())
     resultnames = []
     for attr, byname in params:
-        resultnames += related(coll, attr, forward=forward, byname=byname)
-    results = [ (iqry.qcollmetaval(r, ATTR_PROJECTID, default=''), datafield('coll', r, 'irods_collection')) for r in resultnames ]
+        resultnames += related_coll(coll, attr, forward=forward, byname=byname)
+    results = [(iqry.qcollmetaval(r, ATTR_PROJECTID, default=''), datafield('coll', r, 'irods_collection')) for r in resultnames]
     return render_template('small_collist.html', results = results)
 
-def related(coll, attr, forward=True, byname=True):
-    # Find collections related to <coll>
-    # In case forward=True
-    #   Search for collections that have metadata attribute <attr> with the name or dataset_id of coll in the value
-    # In case forward=False
-    #   Search for collections that have a name or datasetid equal to the value of <attr> on <coll>
+def related_coll(coll, attr, forward=True, byname=True):
+    '''Find collections related to <coll>
+    In case forward=True
+       Search for collections that have metadata attribute <attr> with the name or dataset_id of coll in the value
+    In case forward=False
+       Search for collections that have a name or datasetid equal to the value of <attr> on <coll>
 
+    returns: list of related collections
+    '''
     # Find metadata of <coll>
     collmeta = Dictlist()
     q = iqry.qcollmeta(coll)
@@ -807,34 +1009,37 @@ def related(coll, attr, forward=True, byname=True):
                 result.update([ c[Collection.name] for c in q ])
     return result
 
-
-@bp.route('/_graph')
-def generate_graph():
+# Generate Collection Graph
+@bp.route('/_graph_coll')
+def generate_graph_coll():
     coll = request.args.get('path', '/', type=str)
-    maxlevels = request.args.get('levels', DEFAULT_GRAPH_LEVELS, type=int)
-    graph_simplify = request.args.get('graph_simplify', 0, type=int)
-    return _generate_graph(coll, maxlevels, graph_simplify)
-
+    maxlevels = request.args.get('graph_levels_coll', DEFAULT_GRAPH_LEVELS, type=int)
+    graph_simplify = request.args.get('graph_simplify_coll', 0, type=int)
+    show_upstream = request.args.get('show_upstream_coll', 0, type=int)
+    show_downstream = request.args.get('show_downstream_coll', 0, type=int)
+    return _generate_graph_coll(coll, maxlevels, graph_simplify,  show_upstream, show_downstream)
 
 @cache.memoize(timeout=60, make_name=dep_userzone)
-def _generate_graph(coll, maxlevels, graph_simplify):
+def _generate_graph_coll(coll, maxlevels, graph_simplify, show_upstream, show_downstream):
 
     multinodes = []
     nodes = set()
     processes = set()
     edges = set()
     dashed_edges = set()
+    dotted_edges = set()
     multi_edges = set()
+    legends = list()
 
     def destnode(node):
         # Determine if destination node is a collection node,
         # or the associated process node
         if node in processes:
-            return f'G-{node}'
+            return f'GITNODE-{node}'
         else:
             return node
 
-    def traverse(coll, levels=DEFAULT_GRAPH_LEVELS):
+    def traverse(coll, levels=maxlevels):
         if coll in nodes:
             return
 
@@ -844,6 +1049,8 @@ def _generate_graph(coll, maxlevels, graph_simplify):
         MAX_OUTPUTS = current_app.config.get('GRAPH_MAX_OUTPUTS', 11)
 
         def handle_neighbours(node, neighbours, edgelist, levels, inputs=True, relation_type='S'):
+            '''
+            '''
             multi = False
             if graph_simplify:
                 max_nodes = MAX_INPUTS if inputs else MAX_OUTPUTS
@@ -867,38 +1074,53 @@ def _generate_graph(coll, maxlevels, graph_simplify):
                         traverse(neighbour, levels=levels-1)
                         edgelist.add(vect)
                     else:
-                        dashed_edges.add(vect)
+                        dotted_edges.add(vect)
                 elif neighbour in nodes:
                     edgelist.add(vect)
 
         # FIND INPUTS
-        input_colls = related(coll, 'sys::pipeline::input_collection_id', forward=False, byname=False)
-        handle_neighbours(coll, input_colls, edges, levels, inputs=True)
+        if show_upstream == 1:
+            input_colls = related_coll(coll, 'sys::pipeline::input_collection_id', forward=False, byname=False)
+            handle_neighbours(coll, input_colls, edges, levels, inputs=True)
 
         # FIND OUTPUTS
-        output_colls = related(coll, 'sys::pipeline::input_collection_id', forward=True, byname=False)
-        handle_neighbours(coll, output_colls, edges, levels, inputs=False)
+        if show_downstream == 1:
+            output_colls = related_coll(coll, 'sys::pipeline::input_collection_id', forward=True, byname=False)
+            handle_neighbours(coll, output_colls, edges, levels, inputs=False)
 
         # FIND EXTRA INPUTS
-        extra_colls = set(related(coll, 'user::pipeline::input_collection', forward=False, byname=True))
-        extra_colls |= set(related(coll, 'user::pipeline::input_collection_id', forward=False, byname=False))
-        handle_neighbours(coll, extra_colls, dashed_edges, levels, inputs=True, relation_type='U')
+        if show_upstream == 1:
+            extra_colls = set(related_coll(coll, 'user::pipeline::input_collection', forward=False, byname=True))
+            extra_colls |= set(related_coll(coll, 'user::pipeline::input_collection_id', forward=False, byname=False))
+            handle_neighbours(coll, extra_colls, dashed_edges, levels, inputs=True, relation_type='U')
+
+        # FIND PROV COLLECTIONS (files)
+        if show_upstream == 1:
+            prov_colls_i = set(related_coll(coll, 'prov:wasDerivedFrom', forward=False, byname=True))
+            prov_colls_i |= set(related_coll(coll, 'prov::wasDerivedFrom', forward=False, byname=True))
+            handle_neighbours(coll, prov_colls_i, edges, levels, inputs=True, relation_type='S')
+
+        if show_downstream == 1:
+            prov_colls_o = set(related_coll(coll, 'prov:wasDerivedFrom', forward=True, byname=True))
+            prov_colls_o |= set(related_coll(coll, 'prov::wasDerivedFrom', forward=True, byname=True))
+            handle_neighbours(coll, prov_colls_o, edges, levels, inputs=False, relation_type='S')
 
         # FIND EXTRA INPUTS OF REFERENCE_DATA
-        reference_data_colls = set()
-        for i in range(1000): #just an arbitrary but large number
-           temp = set(related(coll, f'sys::pipeline::refdata::{i}::reference_version_dataset_id', forward=False, byname=False))
-           if temp == set():
-               #we couldn't find any more reference_version
-               break
-           reference_data_colls |= temp
-        handle_neighbours(coll, reference_data_colls, dashed_edges, levels, inputs=True, relation_type='S')
+        if show_upstream == 1:
+            reference_data_colls = set()
+            for i in range(1000): #just an arbitrary but large number
+                temp = set(related_coll(coll, f'sys::pipeline::refdata::{i}::reference_version_dataset_id', forward=False, byname=False))
+                if temp == set():
+                    #we couldn't find any more reference_versions
+                    break
+                reference_data_colls |= temp
+            handle_neighbours(coll, reference_data_colls, dashed_edges, levels, inputs=True, relation_type='S')
 
         # FIND EXTRA OUTPUTS
-        ref_colls = set(related(coll, 'user::pipeline::input_collection', forward=True, byname=True))
-        ref_colls |= set(related(coll, 'user::pipeline::input_collection_id', forward=True, byname=False))
-        handle_neighbours(coll, ref_colls, dashed_edges, levels, inputs=False, relation_type='U')
-
+        if show_downstream == 1:
+            ref_colls = set(related_coll(coll, 'user::pipeline::input_collection', forward=True, byname=True))
+            ref_colls |= set(related_coll(coll, 'user::pipeline::input_collection_id', forward=True, byname=False))
+            handle_neighbours(coll, ref_colls, dashed_edges, levels, inputs=False, relation_type='U')
 
     traverse(coll, levels=maxlevels)
 
@@ -936,94 +1158,390 @@ def _generate_graph(coll, maxlevels, graph_simplify):
                     del multinodes[n]
                     break
 
-
     #######################################
-    # Draw the graph
+    # Draw the Collection Graph
 
-    graph = Digraph('datagraph')
-    graph.graph_attr['rankdir'] = 'LR'
-    graph.graph_attr['fontsize'] = '15'
+    graph_coll = Digraph('Collections')
+    graph_coll.graph_attr['rankdir'] = 'LR'
+    graph_coll.attr(fontname = ATTR_GRAPH_FONT, fontsize = DEFAULT_FONTSIZE_BIG)
+    graph_coll.attr('node', fontname = ATTR_GRAPH_FONT, fontsize = DEFAULT_FONTSIZE_BIG)
+    graph_coll.attr('edge', fontname = ATTR_GRAPH_FONT, fontsize = DEFAULT_FONTSIZE)
 
     # Start with all the nodes
-    for node in nodes:
+    for node in sorted(nodes):
         collmeta = Dictlist()
         q = iqry.qcollmeta(node)
         for m in q:
             collmeta[m[CollectionMeta.name]] = m[CollectionMeta.value]
 
+        # list of activity attribute labels to check for:
+        activity_attrs = [item['attr'] for item in PROVATTR if item['type'] == 'activity']
+
+        # combine activity metadata in list
+        code_nodes = [collmeta.get(a) for a in activity_attrs if collmeta.get(a)]
+
+        for cn in code_nodes:
+            code_node = f'GITNODE-{node}'
+            n, legends = shape('activity', legends)
+            graph_coll.node(code_node, cn, shape=n['shape'], fillcolor = n['fillcolor'], style = n['style'], tooltip = cn, target = "_blank", fontsize = DEFAULT_FONTSIZE)
+            graph_coll.edge(code_node, node)
+            processes.add(node)
+
         # create the collection graph node
         git = collmeta.get('sys::pipeline::gitrepo')
         githash = collmeta.get('sys::pipeline::githash')
         if git:
+            n, legends = shape('process', legends)
             repo_url = urlparse(git)
             # Strip credentials from repo url and add commit hash.
             repo_url = repo_url._replace(netloc=repo_url.hostname)
             link = repo_url._replace(path='{}/tree/{}'.format(repo_url.path.replace('.git', ''), githash))
-            processid = f"{collmeta.get('sys::runsheet::processID', '')}\n{git.split('/')[-1]}"
-            git_node = f'G-{node}'
-            graph.node(git_node, processid, shape=PROCESS_SHAPE, URL=link.geturl(), target="_blank", fontsize='8')
-            graph.edge(git_node, node)
+            label = f"{collmeta.get('sys::runsheet::processID', '')}  \n{git.split('/')[-1]}  " #2 spaces to avoid overlap label text and node border
+            git_node = f'GITNODE-{node}'
+            graph_coll.node(git_node, label, shape=n['shape'], fillcolor = n['fillcolor'], style = n['style'], URL=link.geturl(), target = "_blank", fontsize=DEFAULT_FONTSIZE)
+            graph_coll.edge(git_node, node)
             processes.add(node)
-        coll_type = collmeta.get('sys::runsheet::state', 'unknown')
-        if coll_type in ('done', 'unknown'):
-            coll_type = collmeta.get('sys::data::type', coll_type)
-            coll_type = collmeta.get('user::data::type', coll_type)
-        shape, shape_color = coll_shape(coll_type)
-
+        
+        ###################################################################
+        # TODO dit logischer maken
+        node_type = collmeta.get('sys::runsheet::state', 'unknown')
+        if node_type in ('unknown'):
+            node_type = collmeta.get('sys::data::type', 'data')
+        if node_type in ('unknown'):
+            node_type = collmeta.get('user::data::type', 'data')
+        if node_type in ('done'):
+            node_type = collmeta.get('sys::data::type', node_type)
+            node_type = collmeta.get('user::data::type', node_type)
+        
+        color = DEFAULT_COLOR
+        penwidth = DEFAULT_PENWIDTH
+        fontsize = DEFAULT_FONTSIZE
+        
         # set border/fill colors for invalid collections
-        border_color = "black"
         if collmeta.get('sys::data::state') == "invalid":
-            # shape_color += f":{constants.SYS_INVALID_COLOR}"
-            # shape_color += f";0.9:{constants.SYS_INVALID_COLOR}"
-            border_color = constants.SYS_INVALID_COLOR
+            color = SYS_INVALID_COLOR
         elif collmeta.get('user::data::state') == "invalid":
-            # shape_color += f":{constants.USER_INVALID_COLOR}"
-            # shape_color += f";0.9:{constants.USER_INVALID_COLOR}"
-            border_color = constants.USER_INVALID_COLOR
+            color = USER_INVALID_COLOR
 
         projectid = collmeta.get('projectID', '') + '\n'
+                            
+        # determine whether the object type is a collection or dataobject
+        obj_type = iqry.qpathobjecttype(node)
+        
+        # make object clickable
+        clss = { 'class' : f'{obj_type}-change' }
+        
+        # focus on this object and center (penwidth = SELECTED_PENWIDTH)
         if node == coll:
-            penwidth = '3'
-            clss = { 'class' : 'path-change center-coll'}
+            penwidth = SELECTED_PENWIDTH
+            clss['class'] += ' center-coll'
+            
+        if obj_type != 'path':
+            n, legends = shape('file', legends, color, penwidth)
+            # make label (show filename in separate line, and maximized path length accordingly)
+            split_parts = node.split("/")
+            filename = split_parts[-1]
+            project_path = os.path.join(*split_parts[:4])
+            filepath = node[len(project_path) + 1:len(node) - len(filename)]
+            label = shortname(filepath, max(NAME_LENGTH_COLL, len(filename) + 2)) + '\n' + filename
         else:
-            penwidth = '1'
-            clss = { 'class' : 'path-change' }
+            n, legends = shape(node_type, legends, color, penwidth)
+            label = projectid + shortname(node, NAME_LENGTH_COLL)
 
-        graph.node(node, projectid + shortname(node,NAME_LENGTH), shape=shape, color=border_color,
-            fillcolor=shape_color, style='filled', penwidth=penwidth,
-            fontsize='8', setting='extra', **clss, id=node)
+        graph_coll.node(node, label, shape=n['shape'], color=n['color'],
+            fillcolor=n['fillcolor'], style=n['style'], penwidth=n['penwidth'],
+            fontsize=fontsize, **clss, id=node)
 
     # multi-nodes
     for multinode, related_node, neighbours in multinodes:
         clss = { 'class' : 'collist' }
-        graph.node(multinode, '.. multiple ..', shape="rarrow", style='filled', setting='extra', **clss, id=multinode)
+        n, legends = shape('multinode', legends)
+        graph_coll.node(multinode, '.. multiple ..', shape=n['shape'], style=n['style'], fillcolor=n['fillcolor'], **clss, id=multinode)
 
     # draw the solid lines
     for s, d in edges:
-        graph.edge(s, destnode(d))
+        e, legends = shape('solid', legends)
+        graph_coll.edge(s, destnode(d), style=e['style'], arrowhead=e['arrowhead'])
 
-    # draw the dashed lines
-    dash_counter = 1
-    for vt in dashed_edges - edges:
+     # draw the dashed lines
+    for s, d in dashed_edges - edges:
+        e, legends = shape('dashed', legends)
+        graph_coll.edge(s, destnode(d), style=e['style'], arrowhead=e['arrowhead'])
+
+    # draw the dotted lines
+    dot_counter = 1
+    for vt in dotted_edges - dashed_edges - edges:
+        e, legends = shape('dotted', legends)
         vect = list(vt)
         for i, v in enumerate(vect):
             if not v in nodes:
-                vect[i] = f'NODE{dash_counter}'
-                dash_counter += 1
-                graph.node(vect[i], '', shape='none', width='0', height='0')
-        graph.edge(vect[0], destnode(vect[1]), style='dashed')
-
+                vect[i] = f'NODE{dot_counter}'
+                dot_counter += 1
+                graph_coll.node(vect[i], '', shape='none', width='0', height='0')
+        graph_coll.edge(vect[0], destnode(vect[1]), style = e['style'], arrowhead=e['arrowhead'], penwidth=e['penwidth'])
+    
     for s, d in multi_edges:
-        graph.edge(s, destnode(d), style='dotted')
+        e, legends = shape('dashed_crow', legends)
+        graph_coll.edge(s, destnode(d), style=e['style'], arrowhead=e['arrowhead'])
 
-    return graph.pipe(format='svg').decode('utf-8')
+    coll_graph = graph_coll.pipe(format='svg').decode('utf-8')
+    
+    coll_legends = generate_legend_graph_svg(legends)
+    
+    return jsonify({ 'coll_graph': coll_graph, 'coll_legends':  coll_legends})
+
+
+# Generate Dataobject Graph
+def related_dataobj(dataobj, attr, forward=True, byname=True):
+    # Find data objects related to <dataobj>
+    # In case forward=True
+    #   Search for data objects that have metadata attribute <attr> with the name in the metadata value
+    # In case forward=False
+    #   Search for data objects that have a name equal to the value of <attr> on <dataobj>
+
+    # Find metadata of <dataobj>
+    dataobjmeta = Dictlist()
+    q = iqry.qdataobjmeta(dataobj)
+    for m in q:
+        dataobjmeta[m[DataObjectMeta.name]] = m[DataObjectMeta.value]
+
+    if forward:
+        search_value = dataobj if byname else dataobjmeta.get(ATTR_DATAOBJECTID)
+        q = iqry.qdataobjbymeta(attr, search_value)
+        result = { c[Collection.name] + '/' + c[DataObject.name] for c in q }
+    else:
+        if byname:
+            result = set(dataobjmeta.get_all(attr, []))
+        else:
+            result = set()
+            values =  dataobjmeta.get_all(attr, [])
+            for value in values:
+                q = iqry.qdataobjbymeta(ATTR_DATAOBJECTID, value)
+                result.update([ c[Collection.name] + '/' + c[DataObject.name] for c in q ])
+    return result
+
+@bp.route('/_graph_dataobj')
+def generate_graph_dataobj():
+    coll = request.args.get('path', '/', type=str)
+    dataobj = request.args.get('selected_object', '', type=str)
+    maxlevels = request.args.get('graph_levels_obj', DEFAULT_GRAPH_LEVELS, type=int)
+    provenance_labels = request.args.get('provenance_labels_obj', 0, type=int)
+    include_all_from_coll = request.args.get('include_all_from_coll', 0, type=int)
+    show_collections = request.args.get('show_collections', 0, type=int)
+    show_upstream = request.args.get('show_upstream_obj', 0, type=int)
+    show_downstream = request.args.get('show_downstream_obj', 0, type=int)
+    graph_direction_tb = request.args.get('graph_direction_tb_obj', 0, type=int)
+    return _generate_graph_dataobj(coll, dataobj, maxlevels, provenance_labels, include_all_from_coll, show_collections, show_upstream, show_downstream, graph_direction_tb)
+
+@cache.memoize(timeout=60, make_name=dep_userzone)
+def _generate_graph_dataobj(coll, dataobj, maxlevels, provenance_labels, include_all_from_coll, show_collections, show_upstream, show_downstream, graph_direction_tb):
+
+    nodes = set()
+    processes = set()
+    edges = set()
+    dotted_edges = set()
+    legends = list()
+
+    def destnode(node):
+        # Determine if destination node is a collection node or the associated process node
+        if node in processes:
+            return f'GITNODE-{node}'
+        else:
+            return node
+
+    def prov(label, destination = ''):
+        # Toggle the labels for provenance
+        if provenance_labels == 1:
+            # check for destination = git
+            if destination.startswith('GITNODE-'):
+                label = 'used'
+            return label
+        else:
+            return ''
+
+    def traverse(dataobj, levels=maxlevels):
+        '''
+        '''
+        if dataobj in nodes:
+            return
+
+        # if dataobj is not a path, but plain text (contains blanks or no initial '/')
+        if ' ' in dataobj or dataobj[:1] != '/':
+            return
+
+        nodes.add(dataobj)
+
+        def handle_neighbours(node, neighbours, edgelist, levels, inputs=True):
+
+            for neighbour in neighbours:
+                # if neighbour is not a path, but plain text (contains blanks or no initial '/')
+                if ' ' in neighbour or neighbour[:1] != '/':
+                    continue
+
+                if inputs:
+                    vect = (neighbour, node, 'wasDerivedFrom')
+                else:
+                    vect = (node, neighbour, 'wasDerivedFrom')
+
+                if levels:
+                    traverse(neighbour, levels=levels-1)
+                    edgelist.add(vect)
+                else:
+                    dotted_edges.add(vect)
+
+        # FIND INPUTS
+        if show_upstream == 1:
+            input_dataobjects = related_dataobj(dataobj, 'prov:wasDerivedFrom', forward=False, byname=True)
+            input_dataobjects |= related_dataobj(dataobj, 'prov::wasDerivedFrom', forward=False, byname=True)
+            handle_neighbours(dataobj, input_dataobjects, edges, levels, inputs=True)
+
+        # FIND OUTPUTS
+        if show_downstream == 1:
+            output_dataobjects = related_dataobj(dataobj, 'prov:wasDerivedFrom', forward=True, byname=True)
+            output_dataobjects |= related_dataobj(dataobj, 'prov::wasDerivedFrom', forward=True, byname=True)
+            handle_neighbours(dataobj, output_dataobjects, edges, levels, inputs=False)
+
+        return nodes
+
+    if include_all_from_coll == 1:
+        dataobjs = iqry.qcolldataobjectpaths(coll)
+        for do in dataobjs:
+            traverse(do, levels=maxlevels)
+    else:
+        if dataobj:
+            traverse(dataobj, levels=maxlevels)
+        else:
+            return
+
+    #######################################
+    # Draw the Data Object graph
+
+    graph_obj = Digraph('Data Objects')
+    graph_obj.graph_attr['rankdir'] = 'LR' if graph_direction_tb == 0 else 'TB' # Graph direction
+    graph_obj.attr(fontname = ATTR_GRAPH_FONT, fontsize = DEFAULT_FONTSIZE_BIG)
+    graph_obj.attr('node', fontname = ATTR_GRAPH_FONT, fontsize = DEFAULT_FONTSIZE_BIG)
+    graph_obj.attr('edge', fontname = ATTR_GRAPH_FONT, fontsize = DEFAULT_FONTSIZE)
+
+    # longer path_names in top_bottom representation
+    NAME_LENGTH_OBJ = 40 if graph_direction_tb == 0 else 100
+
+    # Start with all the nodes
+    for node in nodes:
+        dataobjmeta = Dictlist()
+        q = iqry.qdataobjmeta(node)
+        for m in q:
+            dataobjmeta[m[DataObjectMeta.name]] = m[DataObjectMeta.value]
+
+        # list of activity attribute labels to check for:
+        activity_attrs = [item['attr'] for item in PROVATTR if item['type'] == 'activity']
+
+        # combine activity metadata (avoid None in list)
+        code_nodes = [dataobjmeta.get(a) for a in activity_attrs if dataobjmeta.get(a)]
+
+        # TODO check if node is Collection (https://gitlab.rivm.nl/bioinformatics/ngsweb/-/issues/145)
+
+        # set class to enable clicking in graph
+        clss = { 'class' : 'dataobject-change' }
+
+        # make label (show complete filename, and path length accordingly 3x...)
+        split_parts = node.split("/")
+        filename = split_parts[-1]
+        project_path = os.path.join(*split_parts[:2])
+        filepath = node[len(project_path)+1:len(node) - len(filename)]
+        # show only filename in node label, if collections are shown
+        label = filename if show_collections == 1 else shortname(filepath, max(len(filename) + 2, NAME_LENGTH_OBJ)) + '\n' + filename
+        
+        color = DEFAULT_COLOR
+        penwidth = DEFAULT_PENWIDTH
+        fontsize = DEFAULT_FONTSIZE
+           
+        if node == dataobj:
+            penwidth = SELECTED_PENWIDTH
+            fontsize = SELECTED_FONTSIZE
+            clss['class'] += ' center-obj' # add class to centralize object
+        # make all files from selected collection bold
+        elif include_all_from_coll == 1 and node[:len(node) - len(node.split('/')[-1]) - 1] == coll:
+            penwidth = SELECTED_FILE_IN_COLL_PENWIDTH
+            fontsize = SELECTED_FONTSIZE
+            label = filename # reset label to filename if shown in collection         
+        
+        # default node shape is file, add to legend
+        n, legends = shape('file', legends, color, penwidth)
+        
+        if include_all_from_coll == 1 and node[:len(node) - len(node.split('/')[-1]) - 1] == coll:
+            # generate 1 subgraph, styled as collection for selected collection, add spacing around label.
+            penwidth = '3'
+            with graph_obj.subgraph(name=f'cluster_{coll}') as sub:
+                g, legends = shape('collection_graph', legends, color, penwidth)
+                sub.attr(style=g['style'], fillcolor=g['fillcolor'], color = g['color'], penwidth = g['penwidth'], tooltip=f'Collection: {coll}', fontsize = SELECTED_FONTSIZE, label=f'  {coll}  ')
+                sub.node(node, label, shape=n['shape'], fillcolor=n['fillcolor'], style=n['style'], penwidth=n['penwidth'],
+                    fontsize=fontsize, **clss, id=node)
+        elif show_collections == 1:
+            # generate subgraphs, styled as collections for all collections
+            with graph_obj.subgraph(name=f'cluster_{filepath}') as sub:
+                g, legends = shape('collection_graph', legends, color, penwidth)
+                sub.attr(style=g['style'], fillcolor=g['fillcolor'], penwidth = g['penwidth'], tooltip=f'Collection: {filepath}', label=filepath)
+                sub.node(node, label, shape=n['shape'], fillcolor=n['fillcolor'], style=n['style'], penwidth=n['penwidth'],
+                    fontsize=fontsize, **clss, id=node)
+        else:
+            # no subgraphs
+            graph_obj.node(node, label, shape=n['shape'], fillcolor=n['fillcolor'], style=n['style'], penwidth=n['penwidth'],
+                fontsize=fontsize, **clss, id=node)
+
+        # list of activity attribute labels to check for:
+        activity_attrs = [item['attr'] for item in PROVATTR if item['type'] == 'activity']
+
+        # combine activity metadata (avoid None in list)
+        code_nodes = [dataobjmeta.get(a) for a in activity_attrs if dataobjmeta.get(a)]
+
+        for cn in code_nodes:
+            code_node = f'GITNODE-{node}'
+            n, legends = shape('activity', legends)
+            if include_all_from_coll == 1 and node[:len(node) - len(node.split('/')[-1]) - 1] == coll:
+                # add nodes and edge to the selected collection subgraph
+                with graph_obj.subgraph(name=f'cluster_{coll}') as c:
+                    c.node(code_node, cn, shape=n['shape'], fillcolor=n['fillcolor'], style = n['style'], tooltip = cn, target = "_blank", fontsize = SELECTED_FONTSIZE)
+                    c.edge(code_node, node, prov('wasGeneratedBy'))
+            elif show_collections == 1:
+                # add nodes and edge to all the subgraphs
+                with graph_obj.subgraph(name=f'cluster_{filepath}') as c:
+                    c.node(code_node, cn, shape=n['shape'], fillcolor=n['fillcolor'], style = n['style'], tooltip = cn, target = "_blank", fontsize = DEFAULT_FONTSIZE)
+                    c.edge(code_node, node, prov('wasGeneratedBy'))
+            else:
+                graph_obj.node(code_node, cn, shape=n['shape'], fillcolor=n['fillcolor'], style = n['style'], tooltip = cn, target = "_blank", fontsize = DEFAULT_FONTSIZE)
+                graph_obj.edge(code_node, node, prov('wasGeneratedBy'))
+            processes.add(node)
+
+    # draw the solid lines ( destnode determines GITNODES)
+    for s, d, label in edges:
+        e, legends = shape('solid', legends)
+        graph_obj.edge(s, destnode(d), prov('wasGeneratedBy'), style=e['style'], arrowhead=e['arrowhead'])
+
+    # draw the dotted lines
+    dot_counter = 1
+    for vt in dotted_edges - edges:
+        e, legends = shape('dotted', legends)
+        vect = list(vt)
+        for i, v in enumerate(vect):
+            if not v in nodes:
+                # create a blank node, to point to
+                vect[i] = f'NODE{dot_counter}'
+                dot_counter += 1
+                graph_obj.node(vect[i], '', shape='none', width='0', height='0')
+        graph_obj.edge(vect[0], destnode(vect[1]), prov(label, destnode(vect[1])), style=e['style'], arrowhead=e['arrowhead'], penwidth=e['penwidth'])
+
+    obj_graph = graph_obj.pipe(format='svg').decode('utf-8')
+    
+    obj_legends = generate_legend_graph_svg(legends)
+    
+    return jsonify({ 'obj_graph': obj_graph, 'obj_legends':  obj_legends})
 
 @cache.memoize(timeout=300, make_name=dep_zone)
 def subitems(path):
     count = 0
     with irods_manager.session() as session:
         query = session.query(Collection.id).filter(
-            Criterion('=',Collection.parent_name, path)).count(Collection.id)
+            Criterion('=', Collection.parent_name, path)).count(Collection.id)
         try:
             for a in query:
                 count = a[Collection.id]
@@ -1035,7 +1553,7 @@ def subitems(path):
 def add_items(path, level, active):
     result = ''
     parts = active.split('/')
-    colls = [ c[Collection.name] for c in iqry.qcollchildren(path)]
+    colls = [c[Collection.name] for c in iqry.qcollchildren(path)]
 
     #
     # Handle very long list of collections
@@ -1068,7 +1586,7 @@ def add_items(path, level, active):
             if collpath == '...':
                 result = '{0}<li><span class="caret-nosub">...</span></li>'.format(result)
             else:
-                c1=' path-active' if collpath == active else '';
+                c1=' path-active' if collpath == active else ''
                 link='<span class="tree-label path-change{}" data-path="{}">{}</span>'.format(c1, collpath, collname)
                 subtree=''
                 dummy=0
@@ -1091,7 +1609,7 @@ def add_items(path, level, active):
                     result = '{}<ul id="{}">{}</ul>'.format(result, collpath, subtree)
     return(result)
 
-
+# Collection tree
 @bp.route('/_tree')
 @cache.cached(timeout=60, key_prefix=key_zone)
 def colltree():
@@ -1101,40 +1619,51 @@ def colltree():
     rs = add_items(current, level, active)
     return('<ul id="{}">{}</ul>'.format(current, rs))
 
-
 @bp.route('/')
 @login_required
 def collbrowser():
-    path = request.args.get('path', None)
-    session = irods_manager.session()
+    path = request.args.get('path', None, type=str)
+    selected_object = request.args.get('selected_object', '', type=str)
 
-    path_valid = False
+    # Check supplied path for collection or object
+    obj_type = iqry.qpathobjecttype(path) if path else 'not_found'
 
-    # Check supplied path
-    if path:
-        try:
-            session.collections.get(path)
-            path_valid = True
-        except CollectionDoesNotExist:
-            flash(f"Invalid Collection: {path}", 'error')
-
-    # Get path from user settings or default
-    if not path_valid:
+    # Get path from user settings or default, revert to collection when dataobject is selected
+    if obj_type in ['not_found', 'dataobject']:
         path = current_user.settings.get('path', f'/{current_user.irods_zone}/projects')
-        try:
-            session.collections.get(path)
-        except CollectionDoesNotExist:
-            path = (f'/{current_user.irods_zone}/projects')
-
+    
     # Store path in user settings
     current_user.settings['path'] = path
 
-    graph_levels = current_user.settings.setdefault('graph_levels', DEFAULT_GRAPH_LEVELS)
-    graph_simplify = current_user.settings.setdefault('graph_simplify', 1)
-    zoomlevel = current_user.settings.setdefault('zoomlevel', 50)
+    graph_levels_coll = current_user.settings.setdefault('graph_levels_coll', DEFAULT_GRAPH_LEVELS)
+    graph_simplify_coll = current_user.settings.setdefault('graph_simplify_coll', "0")
+    provenance_labels_coll = current_user.settings.setdefault('provenance_labels_coll', "0")
+    zoomlevel_coll = current_user.settings.setdefault('zoomlevel_coll', "50")
+    graph_levels_obj = current_user.settings.setdefault('graph_levels_obj', DEFAULT_GRAPH_LEVELS)
+    graph_simplify_obj = current_user.settings.setdefault('graph_simplify_obj', "0")
+    provenance_labels_obj = current_user.settings.setdefault('provenance_labels_obj', "0")
+    zoomlevel_obj = current_user.settings.setdefault('zoomlevel_obj', "50")
+    include_all_from_coll=current_user.settings.setdefault('include_all_from_coll', "0")
+    show_collections=current_user.settings.setdefault('show_collections', "0")
+    show_upstream_obj=current_user.settings.setdefault('show_upstream_obj', "1")
+    show_upstream_coll=current_user.settings.setdefault('show_upstream_coll', "1")
+    show_downstream_obj=current_user.settings.setdefault('show_downstream_obj', "1")
+    show_downstream_coll=current_user.settings.setdefault('show_downstream_coll', "1")
+    graph_direction_tb_obj=current_user.settings.setdefault('graph_direction_tb_obj', "0")
+    vertical_pos = current_user.settings.setdefault('vertical_pos', "40")
+    legend_obj=current_user.settings.setdefault('legend_obj', "0")
+    legend_coll=current_user.settings.setdefault('legend_coll', "0")
 
-    return render_template('collbrowser.html',  path=path, graph_levels=graph_levels, graph_simplify=graph_simplify, zoomlevel=zoomlevel)
-
+    return render_template('collbrowser.html', path=path, selected_object=selected_object,
+                           graph_levels_coll=graph_levels_coll, graph_levels_obj=graph_levels_obj,
+                           graph_simplify_coll=graph_simplify_coll, graph_simplify_obj=graph_simplify_obj,
+                           zoomlevel_coll=zoomlevel_coll, zoomlevel_obj=zoomlevel_obj,
+                           provenance_labels_coll=provenance_labels_coll, provenance_labels_obj=provenance_labels_obj,
+                           include_all_from_coll=include_all_from_coll, show_collections=show_collections,
+                           show_upstream_obj=show_upstream_obj, show_upstream_coll=show_upstream_coll,
+                           show_downstream_obj=show_downstream_obj, show_downstream_coll=show_downstream_coll,
+                           graph_direction_tb_obj=graph_direction_tb_obj, vertical_pos=vertical_pos,
+                           legend_obj=legend_obj, legend_coll=legend_coll)
 
 @bp.route('upload_file', methods=['GET', 'POST'])
 def upload_file():
@@ -1538,3 +2067,14 @@ def search_result_old():
     }
     content = { 'searchResults': render_template('bootstraptable.html', data=searchResultsData), 'searchId': searchid }
     return content
+
+@bp.route('_mydatasets')
+def mydatasets():
+    with irods_manager.session() as session:
+        q = session.query(Collection.name).filter(
+            Criterion('=', Collection.owner_name, current_user.username)).filter(
+            Criterion('=', CollectionMeta.name, ATTR_DATASETID)
+            )
+        result = [{ 'collection': datafield('collection', r[Collection.name], 'irods_collection').htmlstring } for r in q]
+    print (result)
+    return jsonify(result)

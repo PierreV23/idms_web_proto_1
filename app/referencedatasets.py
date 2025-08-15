@@ -23,8 +23,13 @@ from os import path
 
 BP = Blueprint('reference', __name__, url_prefix='/reference')
 
-reference_change_allowed = [ 'description', 'synchronize_command', 'synchronization_frequency', 'repository', 'tag', 'is_active']
+reference_change_allowed = [ 'description', 'synchronize_command', 'synchronization_frequency', 'repository', 'tag', 'is_active', 'execution_environment']
 
+
+# def refdata_permissions(refdata):
+#     """Return True if current_user is manager of reference dataset, for now return True until apropriate endpoint is available
+#     """
+#     return { 'managers': True, 'users': True}
 
 def get_referencelist():
     referencelist_raw, status_code = rest_call('GET', 'reference')
@@ -34,21 +39,21 @@ def get_referencelist():
             reference["status"] = "WARNING"  #default state
             reference["days_since_update_str"] = "N/A"
             if reference["importer_state"]:
-                ts_last_update = reference["importer_state"]["last_update"]
-                print(f"last update: {ts_last_update}")
+                ts_last_updated = reference["importer_state"]["last_updated"]
+                #print(f"last update: {ts_last_updated}")
                 ts_now = datetime.now().timestamp()
-                if ts_last_update > 0:
-                    delta_last_update = ts_now - ts_last_update
+                if ts_last_updated > 0:
+                    delta_last_updated = ts_now - ts_last_updated
                     reference["status"] = "OK"
-                    if delta_last_update > (2* reference["synchronization_frequency"]):
+                    if delta_last_updated > (4* reference["synchronization_frequency"]):
                         reference["status"] = "WARNING"
-                    # potentially in the future we should check if the importer_state contains an error_code
-                    #reference["status"] = "ERROR"
-                    days_since_update = int(delta_last_update / (24*60*60))
+                    days_since_update = int(delta_last_updated / (24*60*60))
                     reference["days_since_update"] = days_since_update
                     reference["days_since_update_str"] = "< 1 day"
                     if days_since_update > 0:
                         reference["days_since_update_str"] = f"{days_since_update} days"
+                if reference["importer_state"]["error_count"] > 0:
+                    reference["status"] = "ERROR"
 
             referencelist[ reference['name'] ] = reference 
     return referencelist
@@ -84,7 +89,7 @@ def show_reference_details():
 
     reference_details_raw, result = rest_call('GET', 'reference/{}'.format(reference_id))
     reference_details = {}
-    for attr in ['description', 'id', 'name', 'creation_date',  'owner',  'synchronize_command', 'repository', 'tag', 'is_active']:
+    for attr in ['description', 'id', 'name', 'creation_date',  'owner',  'execution_environment', 'synchronize_command', 'precheck_command', 'repository', 'tag', 'is_active']:
         val = reference_details_raw.get(attr, '')
         if val == None:
             val = ''
@@ -99,26 +104,25 @@ def show_reference_details():
 
     import_state_raw, result = rest_call('GET', 'reference/{}/importer_state'.format(reference_id))
     import_state = {}
-    for attr in [  "current_version",  "id",  "last_task_pid",    "referenceid"]:
+    for attr in [  "current_version",  "id",  "last_task", "last_task_pid",   "last_task_message",  "referenceid", 'error_count', 'dataset_id']:
         import_state[attr] = import_state_raw.get(attr, '')
-    for attr in [  "last_synchronize",  "last_update" ]:
+    for attr in [  "last_synchronized",  "last_updated", 'last_prechecked', 'last_task_changed' ]:
         import_state[attr] = import_state_raw.get(attr, 0)
+        if import_state[ attr ] != 0:
+            import_state[ f'{attr}_iso' ] = datetime.fromtimestamp(import_state[attr]).strftime("%d-%m-%Y %H:%M:%S")
+        else:
+            import_state[ f'{attr}_iso' ] = "---"
 
-    if import_state[ 'last_update' ] != 0:
-        import_state[ 'last_update_iso' ] = datetime.fromtimestamp(import_state['last_update']).strftime("%d-%m-%Y %H:%M:%S")
-    else:
-        import_state[ 'last_update_iso' ] = "---"
-
-    if import_state['last_synchronize'] != 0:
-       import_state[ 'last_synchronize_iso' ] =  datetime.fromtimestamp(import_state['last_synchronize']).strftime("%d-%m-%Y %H:%M:%S")
-    else:
-        import_state[ 'last_synchronize_iso' ] = "---"
+    available_tags, r = rest_call('GET', f'reference/{reference_id}/tags')
+    if r != 200:
+        available_tags = []
 
     return render_template('reference_details.html', 
                            RD=reference_details, 
                            all_references=all_references, 
                            reference_versions=reference_versions, 
-                           import_state=import_state)
+                           import_state=import_state,
+                           available_tags=available_tags)
 
 
 @BP.route('/activate_reference', methods=['GET', 'POST'])
@@ -179,7 +183,9 @@ def update_reference_settings():
             flash( 'update successful', 'info')
         location=f'reference_dataset={reference}'
     elif action == 'add_reference':
-        response, result = rest_call('POST', 'reference', data={'name': reference})
+        response, result = rest_call('POST', 'reference', data={'name': reference, 
+                                                                'owner': current_user.username, 
+                                                                'is_active': 0})
         if result == 201:
             flash( 'creation successful', 'info')
             location = f'reference_dataset={reference}'
@@ -273,3 +279,21 @@ def import_state():
 
     path=f"/{current_user.irods_zone}/projects/refdata/{reference_id}"
     return render_template('colltable.html', path=path, display_field=None)
+
+
+@BP.route('contactmanager', methods=['GET'])
+def contactmanager():
+    objectname = request.args.get('object')
+    objecttype = request.args.get('objecttype')
+    # can_modify will be used to hide/show the add/delete buttons
+    # if we are not sure, set it to true
+    # the rest service will enforce permissions anyway
+    can_modify = True
+    permissions = None 
+    if objecttype == 'refdata':
+        permissions = refdata_permissions(objectname)
+        can_modify = permissions.get('managers', True)
+
+    contacts, result = rest_call('GET', 'reference/{}/contacts'.format(objectname))
+    
+    return render_template('contactmanager.html', object=objectname, objecttype=objecttype, contacts=contacts, can_modify=can_modify, project_permissions=permissions)

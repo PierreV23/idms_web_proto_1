@@ -155,6 +155,7 @@ class NGSBarcode(Base):
     sampleid = Column(String(30), nullable = False)
     primer_set = Column(String(128), nullable = True)
     virus_target = Column(String(128), nullable = True)
+    kit = Column(String(128), nullable = True)
     description = Column(String(256), nullable = True)
     project = Column(String(32))
     creation_date = Column(TIMESTAMP, server_default=func.current_timestamp(), nullable=False)
@@ -163,6 +164,18 @@ class NGSBarcode(Base):
         self.ngsrun = ngsrun
         self.barcode = barcode
 
+class Kits(Base):
+    #__bind_key__ = current_user.environment
+    __tablename__ = 'kits'
+    id = Column(Integer, primary_key=True)
+    kit = Column(String(128), nullable = False)
+    start_date = Column(TIMESTAMP, server_default=func.current_timestamp(), nullable=False)
+    end_date = Column(TIMESTAMP, nullable=True)
+
+    def __init__(self, kit, end_date=None):
+        self.kit = kit
+        if end_date:
+            self.end_date = end_date
 class NGSRunsSchema(ma.Schema):
     id = fields.Integer(dump_only=True)
     name = fields.String(required=True, validate=validate.Length(1))
@@ -180,18 +193,25 @@ class NGSBarcodesSchema(ma.Schema):
     primer_set = fields.String()
     sampleid = fields.String()
     virus_target = fields.String()
+    kit = fields.String()
     description = fields.String()
     project = fields.String()
+
+class KitsSchema(ma.Schema):
+    id = fields.Integer(dump_only=True)
+    kit = fields.String(required=True, validate=validate.Length(1))
 
 ngsrun_schema = NGSRunSchema()
 ngsruns_schema = NGSRunsSchema(many=True)
 barcodes_schema = NGSBarcodesSchema(many=True)
+kits_schema = KitsSchema()
 
 barcodes = [ 'barcode{:02d}'.format(bar) for bar in range(1,97) ]
 
 FIELDS = {
     'virus_target': NGSBarcode.virus_target,
-    'primer_set': NGSBarcode.primer_set
+    'primer_set': NGSBarcode.primer_set,
+    'kit': NGSBarcode.kit
 }
 
 def minilims_authorized_for_projects(projectlist):
@@ -358,6 +378,10 @@ def run_barcodes():
 @bp.route('edit', methods=['GET'])
 @login_required
 def edit_form():
+    if current_app.config.get('MINILIMS_AUTHORS_GROUP') in current_user.groups():
+        projectlist = get_projectlist().keys()
+    else:
+        projectlist = current_user.projects()    
     id = request.args.get('idrequest', '', type=str)
     run = db.session().query(NGSRun).filter(NGSRun.id == id).one_or_none()
     barcode_obj = db.session().query(NGSBarcode).filter(NGSBarcode.ngsrun == id).all()
@@ -369,7 +393,7 @@ def edit_form():
     data.update({"name": run.name})
     data.update({"description": run.description})
     data.update({"owner": run.owner})
-    return render_template('ngsrun.html', data=data, barcodes=barcodes, id=id)
+    return render_template('ngsrun.html', projects=projectlist, data=data, barcodes=barcodes, id=id)
 
 @bp.route('new', methods=['GET'])
 @login_required
@@ -382,7 +406,7 @@ def run_form():
         projectlist = current_user.projects()
     data = { barcode : None for barcode in barcodes }
     selected_id = int(request.args.get('id', -1))
-    if selected_id > 0:    
+    if selected_id > 0:
         authorized, unauthorized_projects = minilims_authorized_for_projects(projects_in_run(selected_id))
         if not authorized:
             flash(f'You are not authorized to edit a sample sheet for project(s) {",".join(unauthorized_projects)}', 'error')
@@ -390,14 +414,15 @@ def run_form():
         run = db.session().query(NGSRun).filter(NGSRun.id == selected_id).one_or_none()
         if run is None:
             flash(f'Run {selected_id} does not exist', 'error')
-            return redirect(url_for('ngsruns.run_list', idrequest=selected_id))                       
+            return redirect(url_for('ngsruns.run_list', idrequest=selected_id))
         # Copy run properties
         for attr in ['name', 'flowcell', 'description', 'owner']:
             data[attr] = getattr(run, attr)
         barcode_obj = db.session().query(NGSBarcode).filter(NGSBarcode.ngsrun == selected_id).all()
         for f in barcode_obj:
-            data[f.barcode] = f        
-    return render_template('ngsrun.html', data=data, projects=projectlist, barcodes=barcodes, id=selected_id, default_project=current_user.settings.get('default_project', ''))
+            data[f.barcode] = f
+    kits = get_kits()
+    return render_template('ngsrun.html', data=data, projects=projectlist, barcodes=barcodes, id=selected_id, default_project=current_user.settings.get('default_project', ''), kits=kits)
 
 @bp.route('delete', methods=['GET'])
 def delete_ngs_run():
@@ -410,6 +435,11 @@ def delete_ngs_run():
         db.session().query(NGSRun).filter(NGSRun.id == id).delete()
         db.session().commit()
     return redirect(url_for('ngsruns.run_list'))
+
+# Fetch the kits for the drop down
+def get_kits():
+    kits = db.session().query(Kits.kit).distinct().all()
+    return sorted([kit[0] for kit in kits])
 
 @bp.route('new', methods=['POST'])
 def run_update():
@@ -430,7 +460,7 @@ def run_update():
     # Check if user is authorized
     # either the user is in MINILIMS_AUTHORS_GROUP
     # or he/she is a member of all projects in the runsheet
-    projects = { f.get('project_{}'.format(barcode)) for barcode in barcodes if f.get('sampleid_{}'.format(barcode)) }
+    projects = { f.get(f'project_{barcode}') for barcode in barcodes if f.get(f'sampleid_{barcode}') }
     authorized, invalid_projects = minilims_authorized_for_projects(projects)
     if not authorized:
         flash(f'You are not authorized to create a sample sheet for projects {",".join(invalid_projects)}', 'error')
@@ -448,10 +478,22 @@ def run_update():
             new_barcode.sampleid = f.get('sampleid_{}'.format(barcode)).replace(" ","")
             new_barcode.virus_target = f.get('target_{}'.format(barcode))
             new_barcode.primer_set = f.get('primer_{}'.format(barcode))
+            new_barcode.kit = f.get('kit_{}'.format(barcode))
             new_barcode.description = f.get('description_{}'.format(barcode))
             new_barcode.project = f.get('project_{}'.format(barcode))
             db.session().add(new_barcode)
     db.session().commit()
+    
+    # determine new kits added in form
+    current_kits = get_kits()
+    new_kits = {v for k, v in f.items() if k.startswith('kit') and v != '' and v not in current_kits}
+    
+    # add new kits to the database table for future selectivity
+    for nk in new_kits:
+        new_kit = Kits(nk)
+        db.session().add(new_kit)
+    db.session().commit()
+
     if len(projects) == 1:
         current_user.settings['default_project'] = projects.pop()
     return redirect(url_for('ngsruns.run_list', idrequest=modify_run.id))
@@ -483,3 +525,5 @@ def get_ngs_barcodes(flowcell):
     ngsrun = db.session(env).query(NGSRunView).filter(NGSRunView.flowcell == flowcell).one_or_none()
     barcodes = db.session(env).query(NGSBarcode).filter(NGSBarcode.ngsrun == ngsrun.id).all()
     return jsonify(barcodes_schema.dump(barcodes))
+
+

@@ -16,6 +16,16 @@
 menuname='pglist'
 {% endblock %}
 
+{% block helptitle %}
+processgroups
+{% endblock %}
+
+{% block helptext %}
+This page shows an overview of <emp>processgroups</emp>. Processgroups are groups of pipelines that act on a specific collection
+or the output of a previous pipeline. For each project, one ore more processgroups can be configured using the processgroup tab in the 
+<A HREF="/projects">project configuration</A>
+{% endblock %}
+
 {% block content %}
 <div class="h-100">
     <script>

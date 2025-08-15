@@ -12,6 +12,7 @@ from flask_login import current_user, login_required
 from flask import jsonify
 from .flaskcache import cache, key_zone, key_userzone, dep_zone, dep_userzone
 from irods.models import Collection, CollectionMeta, User, UserMeta
+from irods.exception import CAT_NO_ROWS_FOUND
 from irods.column import Criterion
 from app.datafield import datafield
 from graphviz import Digraph
@@ -64,56 +65,6 @@ def get_process2list():
     return processes
 
 
-def get_contactlist(project):
-    cl, result = rest_call('GET', f'projects/{project}/contacts')
-    contacts = []
-    if result == 200:
-        contacts = cl
-    return contacts
-
-
-@BP.route('/projects/delete_contact', methods=['POST'])
-def delete_contact():
-    json = request.get_json(force=True)
-    project_id = json['project_id']
-    contact_id = json['contact_id']
-    result, status = rest_call('DELETE', f"projects/{project_id}/contacts/{contact_id}")
-    ret = {}
-    if status == 200:
-        ret = { "success": True }
-    else:
-        ret = { "msg": f"Error: {result['message']}"}
-    return ret
-
-
-@BP.route('/projects/update_contact', methods=['POST'])
-def update_contact():
-    json = request.get_json(force=True)
-    project_id = json['project_id']
-    contact_id = json['contact_id']
-    contact = json['contact']
-    result, status = rest_call('PUT', f"projects/{project_id}/contacts/{contact_id}", contact)
-    ret = {}
-    if status == 200:
-        ret = { "success": True }
-    else:
-        ret = { "msg": f"Error: {result['message']}", "contact": result['contact'] }
-    return ret
-
-
-@BP.route('/projects/create_contact', methods=['POST'])
-def create_contact():
-    json = request.get_json(force=True)
-    project_id = json['project_id']
-    contact = json['contact']
-    result, status = rest_call('POST', f"projects/{project_id}/contacts", contact)
-    ret = {}
-    if status == 201:
-        ret = { "success": True , "contact": result }
-    else:
-        ret = { "msg": f"Error: {result['message']}"}
-    return ret
-
 
 @BP.route('/')
 @login_required
@@ -149,10 +100,7 @@ def show_projectdetails():
     projectnaam = request.args.get('name', '', type=str)
     processnaam = request.args.get('process', '', type=str)
     processgroup = request.args.get('processgroup', 'default', type=str) 
-
-    projectlist, result = rest_call('GET', 'projects')
-    all_projects = [ project['name'] for project in projectlist]
-    
+   
     projectdetails, result = rest_call('GET', 'projects/{}'.format(projectnaam))
 
     # Retrieve groups associated with project
@@ -164,28 +112,8 @@ def show_projectdetails():
         groups = [u[User.name] for u in query]
     projectdetails['groups'] = groups
 
-    processes, result = rest_call('GET', '/projects/{}/processes'.format(projectnaam))
-    projectdetails['processes'] = {}
-    for proces in processes:
-        name = proces['name']
-        projectdetails['processes'][name] = proces
-        if 'next_projectid' in proces:
-            next_project, result = rest_call('GET', '/projects/{}'.format(proces['next_projectid']))
-            if result == 200:
-                projectdetails['processes'][name]['next_projectID'] = next_project.get('name')
-            processlist, result = rest_call('GET', '/projects/{}/processes'.format(next_project.get('name')))
-            if result == 200:
-                next_processes = { proces['id']: proces['name'] for proces in processlist }
-                projectdetails['processes'][name]['next_processID'] = next_processes.get(proces['next_processid'], '')
-                projectdetails['processes'][name]['next_processes'] = [ next_processes[x] for x in next_processes ]
-        
-    #Contacts
-    contacts, result = rest_call('GET', '/projects/{}/contacts'.format(projectnaam))
-    projectdetails['contacts'] = contacts
-
-    # Retrieve collections associated with project
     processing = iso2dt(projectdetails.get('last_updated', EPOCH)) > iso2dt(projectdetails.get('last_verified', EPOCH))
-    return render_template('projectdetails.html', PD=projectdetails, all_projects = all_projects, processing=processing,
+    return render_template('projectdetails.html', PD=projectdetails, processing=processing,
                            processnaam=processnaam, processgroup=processgroup, project_permissions=project_permissions(projectnaam))
 
 @BP.route('_projectcolls')
@@ -335,7 +263,7 @@ def update_process():
     rest_call('PUT', f'processes/{procid}', data=data)
     return redirect(f'{ url_for("projects.show_projects") }?page=processes&process={process}')
 
-@BP.route('/get_process', methods=['GET','POST'])
+@BP.route('/get_process', methods=['GET', 'POST'])
 def get_process():
     data = request.form.to_dict()
     if not 'project' in data:
@@ -688,6 +616,7 @@ def usermanager():
     elif objecttype == 'processes':
         can_modify = process_permissions(objectname).get('managers', True)
     return render_template('usermanager.html', object=objectname, objecttype=objecttype, usertype=usertype, can_modify=can_modify)
+
 
 @BP.route('processusage', methods=['GET'])
 def processusage():

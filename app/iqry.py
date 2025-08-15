@@ -1,11 +1,12 @@
 import json
 import sys
+import os
 import time
 from flask_login import current_user, login_required
 from irods.models import Collection, CollectionMeta, DataObject, DataObjectMeta, User, UserMeta, Resource, ResourceMeta
 from irods.meta import iRODSMeta, AVUOperation
 from irods.column import Criterion
-from irods.exception import CAT_NO_ACCESS_PERMISSION
+from irods.exception import CAT_NO_ACCESS_PERMISSION, CollectionDoesNotExist, DataObjectDoesNotExist
 
 from . import flaskcache
 from app.irodssessions import irods_manager
@@ -47,7 +48,7 @@ def qresmeta(resource):
         q = session.query(ResourceMeta.name, ResourceMeta.value, ResourceMeta.units).filter(
             Criterion('=', Resource.name, resource))
         result = [r for r in q]
-    return result    
+    return result
 
 # TODO: This is not useable if units are used
 def qresmetadict(resource):
@@ -74,7 +75,7 @@ def scollmetaval(coll, attr, value, unit=None):
 
         # The atomic metadata operations are preferred, but require a higher permission level
         try:
-            u.metadata.apply_atomic_operations( 
+            u.metadata.apply_atomic_operations(
                 *[AVUOperation(operation='remove', avu=i) for i in old_avus],
                 AVUOperation(operation='add', avu=new_avu)
             )
@@ -84,7 +85,7 @@ def scollmetaval(coll, attr, value, unit=None):
             u.metadata[attr] = new_avu
 
     flaskcache.cache.delete_memoized(qcollmeta, coll)
-    
+
 def addcollmetaval(coll, attr, value, unit=None):
     if qcollmetaval(coll, attr) == value:
         return
@@ -92,7 +93,7 @@ def addcollmetaval(coll, attr, value, unit=None):
         u = session.collections.get(coll)
         new_avu = iRODSMeta(attr, value, unit)
         u.metadata.add(new_avu)
-    flaskcache.cache.delete_memoized(qcollmeta, coll)    
+    flaskcache.cache.delete_memoized(qcollmeta, coll)
 
 def rmallcollmetaattr(coll, attr):
     with irods_manager.session() as session:
@@ -101,7 +102,7 @@ def rmallcollmetaattr(coll, attr):
     flaskcache.cache.delete_memoized(qcollmeta, coll)
 
 def delcollmeta(coll, attr, value=None, unit=None):
-    q = qcollmeta(coll)    
+    q = qcollmeta(coll)
     with irods_manager.session() as session:
         u = session.collections.get(coll)
         for m in q:
@@ -231,3 +232,61 @@ def qcollproperty(collection, property):
     with irods_manager.session() as session:
         c = session.collections.get(collection)
     return getattr(c, property)
+
+@flaskcache.cache.memoize(timeout=60, make_name=flaskcache.dep_zone)
+def qdataobjmeta(dataobject):
+    with irods_manager.session() as session:
+        # split in dataobject_name and collection
+        coll, dataobject_name = os.path.split(dataobject)
+        q = session.query(DataObjectMeta.name, DataObjectMeta.value, DataObjectMeta.units).filter(
+            Criterion('=', DataObject.name, dataobject_name)).filter(
+            Criterion('=', Collection.name, coll))
+        result = [r for r in q]
+    return result
+
+@flaskcache.cache.memoize(timeout=120, make_name=flaskcache.dep_zone)
+def qdataobjbymeta(attr, value):
+    with irods_manager.session() as session:
+        q = session.query(Collection.name, DataObject.name).filter(
+            Criterion('=', DataObjectMeta.name, attr)).filter(
+            Criterion('=', DataObjectMeta.value, value))
+        result = [r for r in q]
+    return result
+
+@flaskcache.cache.memoize(timeout=120, make_name=flaskcache.dep_zone)
+def qcolldataobjectpaths(collection):
+    '''
+    Query to fetch dataobject names for a collection.
+    Returns paths of data objects in a given collection'''
+    with irods_manager.session() as session:
+        q = session.query(Collection.name, DataObject.name).min(
+            DataObject.create_time).filter(
+            Criterion('=', Collection.name, collection))
+        dataobject_paths = [list(d.values())[0] + '/' + list(d.values())[1] for d in q]
+    return dataobject_paths
+
+def qpathobjecttype(path):
+    '''
+    Check whether an iRODS path is a collection or a data_object
+    
+    params:
+        path to be checked
+    return:
+        'path', 'dataobject' or 'not_found'
+    '''
+    with irods_manager.session() as session:
+        try:
+            # Try to get it as a DataObject
+            obj = session.data_objects.get(path)
+            return 'dataobject'
+        except DataObjectDoesNotExist:
+            pass
+
+        try:
+            # Try to get it as a Collection
+            coll = session.collections.get(path)
+            return 'path'
+        except CollectionDoesNotExist:
+            pass
+
+    return 'not_found'

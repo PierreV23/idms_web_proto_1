@@ -6,34 +6,42 @@ $('.meta-tabs').on('shown.bs.tab', function(event){
 
 </script>
 
-<div class="card-header myheader">
-    <ul class="nav nav-tabs meta-tabs">
-        <li class="nav-item mx-2">
-          <a class="nav-link {% if object_avu is none %} active {% endif %}" id="collmeta-tab"
-            data-toggle="tab" href="#collmeta" role="tab"
-            aria-controls="collmeta" aria-selected="false">Collection metadata</a>
-        </li>
-        <li class="nav-item mx-2">
-          <a class="nav-link {% if object_avu is not none %} active {% else %} bg-secondary disabled {% endif %}" id="objectmeta-tab"
-            data-toggle="tab" href="#objectmeta" role="tab"
-            aria-controls="objectmeta" aria-selected="false">Object metadata</a>
-        </li>
-    </ul>
-
-    <div class="card-tools">
+<div class="card-header d-flex align-items-center justify-content-between">
+    <div>
+        <ul class="nav nav-tabs meta-tabs">
+            <li class="nav-item mx-2">
+                <a class="nav-link {% if object_avu |length == 0 %} active {% endif %}"
+                    id="collmeta-tab"
+                    data-toggle="tab"
+                    href="#collmeta"
+                    role="tab"
+                    aria-controls="collmeta">Collection Metadata</a>
+            </li>
+            <li class="nav-item mx-2">
+                <a class="nav-link {% if object_avu |length > 0 %} active {% else %} disabled {% endif %}"
+                    id="objectmeta-tab"
+                    data-toggle="tab"
+                    href="#objectmeta"
+                    role="tab"
+                    aria-controls="objectmeta">Object Metadata</a>
+            </li>
+        </ul>
+    </div>
+    <div class="form-inline d-flex align-items-center" style="gap: 10px;">
         <div class="form-check">
             <input class="form-check-input" type="checkbox" value="" onchange='avu_table()' id="metatoggle" checked>
-            <label class="form-check-label" id="metatext" for="metatoggle">
+            <label class="hspace" id="metatext" for="metatoggle">
                 Formatted
             </label>
-            </div>
+        </div>
     </div>
     {% if current_user.settings.get('sysmeta', 'true') == 'false' %}
-    <div class="small-bar"><i>System metadata is not shown (<a href="{{ url_for('settings') }}">settings</a>)</i></div>
-    {% endif %}            
+    <div class="small-bar"><i>System metadata is not shown (<a href="{{ url_for('settings') }}">settings</a>)</i>
+    </div>
+    {% endif %}
 </div>
 <div class="card-body scroll tab-content">
-    <div class="tab-pane {% if object_avu is none %} active {% endif %}" id="collmeta" role="tabpanel" aria-labelledby="collmeta-tab">
+    <div class="tab-pane {% if object_avu |length == 0 %} active {% endif %}" id="collmeta" role="tabpanel" aria-labelledby="collmeta-tab">
         <table class="table table-hover table-striped table-sm">
             <thead>
                 <tr>
@@ -55,8 +63,8 @@ $('.meta-tabs').on('shown.bs.tab', function(event){
             </tbody>
         </table>
     </div>
-{% if object_avu is not none %}
-    <div class="tab-pane {% if object_avu is not none %} active {% endif %}" id="objectmeta" role="tabpanel" aria-labelledby="objectmeta-tab">
+    {% if object_avu | length > 0 %}
+    <div class="tab-pane active " id="objectmeta" role="tabpanel" aria-labelledby="objectmeta-tab">
         <table class="table table-hover table-striped table-sm">
             <thead>
                 <tr>
@@ -76,7 +84,6 @@ $('.meta-tabs').on('shown.bs.tab', function(event){
         {% endfor %}
             </tbody>
         </table>
-{% endif %}
+    {% endif %}
     </div>
-
 </div>

@@ -17,7 +17,7 @@ import irods.exception
 import subprocess
 from Crypto.PublicKey import RSA
 
-from . import auth, collbrowser, jobs, docviewer, messages
+from . import auth, collbrowser, jobs, docviewer, messages, contacts_manager
 from . import projects, cluster, admin, reports, userinfo, referencedatasets
 from . import ngsruns, upload, flaskcache, search, metaedit
 from . import messages, oldjobs
@@ -117,7 +117,7 @@ app.register_blueprint(oldjobs.bp)
 app.register_blueprint(messages.bp)
 app.register_blueprint(search.bp)
 app.register_blueprint(metaedit.bp)
-
+app.register_blueprint(contacts_manager.BP)
 
 flaskcache.init(app)
 
@@ -154,7 +154,8 @@ def about():
 @app.route('/settings')
 def settings():
     features = []
-    for feature, description in FEATURES.items():
+    for feature, feature_properties in FEATURES.items():
+        description, default = feature_properties
         features.append({
             'label': feature,
             'description': description,

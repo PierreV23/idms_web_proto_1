@@ -26,10 +26,10 @@ menuname='projects'
 
 $(document).on('click', '.projectname', function() {
   project=$(this).data('projectname');
-  $('.projectname').removeClass('active')
-  $('.processname').removeClass('active')
+  $('.projectname').removeClass('highlight')
+  $('.processname').removeClass('highlight')
   $('.activeproject').html(project)
-  $(this).addClass("active")
+  $(this).addClass("highlight")
   $('#details').html('<center><IMG SRC="{{ url_for('static', filename='img/loading.gif') }}" width="30%"></IMG><center>')
   $.get('{{ url_for('projects.show_projectdetails') }}', {
     name: project,
@@ -92,11 +92,18 @@ $(document).on('click', '#select_input_button', function(){
 
   <div class="card selectlist">
     <div class="card-body nopadding scroll">
-      <UL class="list-group">
-        {% for project in projects | sort %}
-          <li class="list-group-item projectname " data-projectname="{{ project }}">{{ project }}</LI>
-        {% endfor %}
-      </UL>      
+      <TABLE id="projects-table"
+      data-toggle="table"
+      data-search="true"
+      >
+      <thead>
+        <tr><th data-field="project">Project</th></tr>
+      </thead>
+      <tbody>
+      {% for project in projects | sort %}
+      <TR><TD class="projectname" data-projectname="{{ project }}">{{ project }}</TD></TR>
+      {% endfor %}</tbody>
+      </TABLE>
     </div>
   </div>
 

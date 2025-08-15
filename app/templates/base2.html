@@ -129,7 +129,7 @@
 
     <!-- Sidebar -->
 
-    <div class="sidebar" style="height:calc(100% - (14.5rem + 2px))"><!--height adjusted for sidebar-bottom-->
+    <div class="sidebar" style="height:calc(100% - (16.5rem + 2px))"><!--height adjusted for sidebar-bottom-->
       <!-- Sidebar user panel (optional) -->
       <div class="user-panel mt-3 pb-3 mb-3 d-flex">
         <!-- <div class="image">
@@ -170,14 +170,14 @@
           <li class="nav-item">
             <a href="{{ url_for('jobs.jobpage') }}" data-menuname="joblist" class="nav-link">
               <i class="fas fa-tasks nav-icon"></i>
-              <p>Job list</p>
+              <p>Job List</p>
             </a>
           </li>
 {% endif %}
           <li class="nav-item">
             <a href="{{ url_for('collbrowser.collbrowser') }}" data-menuname="collectionbrowser" class="nav-link">
               <i class="fas fa-folder-tree nav-icon"></i>
-              <p>Collection browser</p>
+              <p>Collection Browser</p>
             </a>
           </li>
 
@@ -214,7 +214,7 @@
               data-menuname="reference-datasets" role="button">
               <i class="fas fa-warehouse nav-icon"> <!-- other option: fa-boxes-stacked -->
               </i>
-              <p>Reference datasets</p>
+              <p>Reference Datasets</p>
             </a>
           </li>
           {% endif %}
@@ -402,6 +402,12 @@
             </a>
           </li>
           <li class="nav-item">
+            <a href="#" id="openhelp" data-menuname="help" class="nav-link" data-toggle="modal" data-target="#helpmodal">
+              <i class="fas fa-question nav-icon"></i>
+              <p>Help</p>
+            </a>
+          </li>             
+          <li class="nav-item">
             <a href="{{ url_for('settings') }}" data-menuname="settings" class="nav-link">
               <i class="fas fa-gear nav-icon"></i>
               <p>Settings</p>
@@ -426,6 +432,26 @@
 
     <!-- /.sidebar -->
   </aside>
+
+<!-- HELP Modal -->
+<div class="modal" id="helpmodal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Help {% if self.helptitle() %} on {% endif %}{% block helptitle %}{% endblock %}</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>{% if not (self.helptext() | trim) %}No help is available for this page{% endif %}{% block helptext %} {% endblock %}</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div> 
 
   <!-- Content Wrapper. Contains page content -->
   <div class="content-wrapper">
@@ -452,9 +478,9 @@
   </div>
 
   <!-- Control Sidebar -->
-  <aside class="control-sidebar control-sidebar-dark">
+  <aside class="control-sidebar control-sidebar-light">
     <!-- Control sidebar content goes here -->
-    {% block sidebar %} {% endblock %}
+    {% block control_sidebar %} {% endblock %}
   </aside>
   <!-- /.control-sidebar -->
 
