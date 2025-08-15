@@ -117,7 +117,7 @@ class SessionPool():
         self.active_timeout = active_timeout
         self._idle = []
         self._active = []
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self.envdata = envdata
     
     def cleanup(self):
@@ -282,8 +282,9 @@ class MultiSessionManager():
 
     def remove(self, user):
         """Removes the session for user"""
-        with self._lock:
-            if (manager := self._managers.get(user.environment)):
-                manager.remove(user)
+        self._lock.acquire(timeout=1)
+        if (manager := self._managers.get(user.environment)):
+            manager.remove(user)
+        self._lock.release()
 
 irods_manager = MultiSessionManager()
