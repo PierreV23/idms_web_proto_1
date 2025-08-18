@@ -1515,7 +1515,7 @@ def _generate_graph_dataobj(coll, dataobj, maxlevels, provenance_labels, include
     # draw the solid lines ( destnode determines GITNODES)
     for s, d, label in edges:
         e, legends = shape('solid', legends)
-        graph_obj.edge(s, destnode(d), prov('wasGeneratedBy'), style=e['style'], arrowhead=e['arrowhead'])
+        graph_obj.edge(s, destnode(d), prov(label, destnode(d)), style=e['style'], arrowhead=e['arrowhead'])
 
     # draw the dotted lines
     dot_counter = 1
