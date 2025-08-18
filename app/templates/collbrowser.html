@@ -1344,7 +1344,7 @@ gb2 = "metadata"
 $('#main-window').css('grid-template-areas', 
 `"sidebar ${gt1} ${gt2}" "sidebar ${gm1} ${gm2}"  "sidebar ${gb1} ${gb2}"`)
 
-// When grash sidebar is expanded in maximized window shift buttons left
+// When graph sidebar is expanded in maximized window shift buttons left
 $(document).on('expanded.lte.controlsidebar', function () {
   if ($('#maximize-button').closest('.card').hasClass('maximized-card')) {
     $('#btn-group-graph').addClass('shift-left');
