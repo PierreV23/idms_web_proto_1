@@ -1331,19 +1331,19 @@ gb2 = "metadata"
 {% endif %}
 
 {% if current_user.feature('provenance') %}
-   gt1 = "graph"
-   gm1 = "vmove"
-   gb1 = "contents"
+gt1 = "graph"
+gm1 = "vmove"
+gb1 = "contents"
 {% else %}
-   gt1 = "contents"
-   gm1 = "contents"
-   gb1 = "contents"
+gt1 = "contents"
+gm1 = "contents"
+gb1 = "contents"
 {% endif %}
 
 $('#main-window').css('grid-template-areas', 
 `"sidebar ${gt1} ${gt2}" "sidebar ${gm1} ${gm2}"  "sidebar ${gb1} ${gb2}"`)
 
-# TODO: This is inserted august 2025 and can be removed after three months
+// TODO: This is inserted august 2025 and can be removed after three months
 {% if current_user.settings.get('tips', 0) | int < 1 %}
 $('#sidebar-button').on('expanded.lte.controlsidebar', function(){
     $.post('{{ url_for("userinfo.usersetting") }}', {
