@@ -764,7 +764,7 @@ menuname='collectionbrowser'
           </a>
         </li>
       </ul>
-      <div class="btn-group">
+      <div class="btn-group" id="btn-group-graph">
       
         <button id="fitGraph_obj" type="button" class="btn btn-sm btn-outline-secondary objectgraph-item"
           data-toggle="tooltip" title="Fit the object graph to the display window (Also double-click).">
@@ -780,14 +780,15 @@ menuname='collectionbrowser'
         </button>
         <button id="sidebar-button" type="button" data-widget="control-sidebar" data-controlsidebar-slide="true"
           class="btn btn-sm btn-outline-secondary" title="Open settings menu">
-          {% if current_user.settings.get('tips', 0) | int < 1 %} <div id="tips1"
+          {% if current_user.settings.get('tips', 0) | int < 1 %} 
+          <div id="tips1"
             class="overlay position-absolute top-0 start-0 text-black d-flex align-items-center justify-content-start"
             style="top:-120%; width: 900%; background-color: rgb(240, 247, 200); padding: 4px; padding-left: 8px; color: black;">
             &#8601; Graph settings have moved here
-      </div>
-      {% endif %}
-      <i class="fa fa-cog"></i>
-      </button>
+          </div>
+          {% endif %}
+          <i class="fa fa-cog"></i>
+        </button>
       </div>
       </div>
 
@@ -1342,6 +1343,18 @@ gb2 = "metadata"
 
 $('#main-window').css('grid-template-areas', 
 `"sidebar ${gt1} ${gt2}" "sidebar ${gm1} ${gm2}"  "sidebar ${gb1} ${gb2}"`)
+
+// When grash sidebar is expanded in maximized window shift buttons left
+$(document).on('expanded.lte.controlsidebar', function () {
+  if ($('#maximize-button').closest('.card').hasClass('maximized-card')) {
+    $('#btn-group-graph').addClass('shift-left');
+  }
+});
+
+// When the sidebar collapses or fullscreen mode is left, remove shift-left class
+$(document).on('collapsed.lte.controlsidebar minimized.lte.cardwidget' , function () {
+  $('#btn-group-graph').removeClass('shift-left');
+});
 
 # TODO: This is inserted august 2025 and can be removed after three months
 {% if current_user.settings.get('tips', 0) | int < 1 %}
