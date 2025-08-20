@@ -99,7 +99,7 @@
 
     $('#colltable').bootstrapTable({
         onClickRow: function (row, element, field) {
-            if (row['object'] == 'dataobject') {
+            if (row['object'] == 'dataobject' & field != 'dnld' & field != 'view') {
                 $('#colltable tr').removeClass('table-primary');
                 element.addClass('table-primary');
                 selected_object = row['path'];
