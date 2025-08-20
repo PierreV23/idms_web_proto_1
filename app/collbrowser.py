@@ -846,8 +846,7 @@ def generate_all_svg():
         d['penwidth'] = SELECTED_PENWIDTH
     
     all_bold = add_filename_and_check(all_layouts + all_layouts_sys_red + all_layouts_user_red)
-
-    
+   
 
 def add_filename_and_check(legends):
     '''
@@ -915,7 +914,6 @@ def generate_legend_graph_svg(legends, generate_all = False):
         
     return legend_html
         
-  
 class Dictlist(dict):
     """ Custom dict class that allows storing multiple values under one key
     get method will return first value, so can be used as in-place dict replacement
@@ -1288,7 +1286,7 @@ def _generate_graph_coll(coll, maxlevels, graph_simplify, show_upstream, show_do
     
     coll_legends = generate_legend_graph_svg(legends)
     
-    return jsonify({ 'coll_graph': coll_graph, 'coll_legends':  coll_legends})
+    return jsonify({'coll_graph': coll_graph, 'coll_legends': coll_legends})
 
 
 # Generate Dataobject Graph
@@ -1440,21 +1438,24 @@ def _generate_graph_dataobj(coll, dataobj, maxlevels, provenance_labels, include
 
         # TODO check if node is Collection (https://gitlab.rivm.nl/bioinformatics/ngsweb/-/issues/145)
 
-        # set class to enable clicking in graph
-        clss = { 'class' : 'dataobject-change' }
-
-        # make label (show complete filename, and path length accordingly 3x...)
+        # make label
         split_parts = node.split("/")
         filename = split_parts[-1]
         project_path = os.path.join(*split_parts[:2])
         filepath = node[len(project_path)+1:len(node) - len(filename)]
-        # show only filename in node label, if collections are shown
-        label = filename if show_collections == 1 else shortname(filepath, max(len(filename) + 2, NAME_LENGTH_OBJ)) + '\n' + filename
         
+        # Set label: default label = path and filename on separate lines, in collection show only filename
+        label = shortname(filepath, max(len(filename) + 2, NAME_LENGTH_OBJ)) + '\n' + filename
+        if (include_all_from_coll == 1 and node[:len(node) - len(node.split('/')[-1]) - 1] == coll) or show_collections == 1:
+            label = filename
+        
+        # Set penwidth, fontsize and additional classes   
         color = DEFAULT_COLOR
         penwidth = DEFAULT_PENWIDTH
         fontsize = DEFAULT_FONTSIZE
-           
+        # set class to enable clicking in graph
+        clss = { 'class' : 'dataobject-change' }
+
         if node == dataobj:
             penwidth = SELECTED_PENWIDTH
             fontsize = SELECTED_FONTSIZE
@@ -1462,9 +1463,8 @@ def _generate_graph_dataobj(coll, dataobj, maxlevels, provenance_labels, include
         # make all files from selected collection bold
         elif include_all_from_coll == 1 and node[:len(node) - len(node.split('/')[-1]) - 1] == coll:
             penwidth = SELECTED_FILE_IN_COLL_PENWIDTH
-            fontsize = SELECTED_FONTSIZE
-            label = filename # reset label to filename if shown in collection         
-        
+            fontsize = SELECTED_FONTSIZE  
+
         # default node shape is file, add to legend
         n, legends = shape('file', legends, color, penwidth)
         

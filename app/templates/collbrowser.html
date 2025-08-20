@@ -738,7 +738,7 @@ menuname='collectionbrowser'
   {% set is_coll = (not is_obj) %}
 
   {% if current_user.feature('provenance') %}
-  <div class="card browser-graph h100">
+  <div class="card browser-graph h100" id="graph-card">
 
     <!-- Header: Tabs -->
     <div class="card-header d-flex align-items-center justify-content-between">
@@ -1332,13 +1332,13 @@ gb2 = "metadata"
 {% endif %}
 
 {% if current_user.feature('provenance') %}
-   gt1 = "graph"
-   gm1 = "vmove"
-   gb1 = "contents"
+gt1 = "graph"
+gm1 = "vmove"
+gb1 = "contents"
 {% else %}
-   gt1 = "contents"
-   gm1 = "contents"
-   gb1 = "contents"
+gt1 = "contents"
+gm1 = "contents"
+gb1 = "contents"
 {% endif %}
 
 $('#main-window').css('grid-template-areas', 
@@ -1356,7 +1356,13 @@ $(document).on('collapsed.lte.controlsidebar minimized.lte.cardwidget' , functio
   $('#btn-group-graph').removeClass('shift-left');
 });
 
-# TODO: This is inserted august 2025 and can be removed after three months
+$(document).on('maximized.lte.cardwidget', '#graph-card', function() {
+  if (!$('.control-sidebar').is(':hidden')) {
+    $('#btn-group-graph').addClass('shift-left');
+  }
+})
+
+// TODO: This is inserted august 2025 and can be removed after three months
 {% if current_user.settings.get('tips', 0) | int < 1 %}
 $('#sidebar-button').on('expanded.lte.controlsidebar', function(){
     $.post('{{ url_for("userinfo.usersetting") }}', {
