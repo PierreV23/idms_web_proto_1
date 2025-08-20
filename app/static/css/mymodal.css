@@ -184,6 +184,10 @@ body {
     "sidebar contents metadata"    
 }
 
+.shift-left {
+  position: relative;
+  left: -250px; /* moves item left */
+}
 
 .actiontable-grid {
   display: grid;
