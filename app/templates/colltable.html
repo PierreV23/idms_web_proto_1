@@ -22,7 +22,7 @@
             {% if display_field %}
             <th data-field="display_field" data-align="left" data-sortable="false">Description</th>
             {% endif %}
-            <th data-field="size" data-align="left" data-sortable="true">Size</th>
+            <th data-field="size" data-align="right" data-sortable="true" data-formatter="decDots">Size</th>
             <th data-field="create_time" data-align="" data-sortable="true">Create Date</th>
             <th data-field="owner_name" data-align="" data-sortable="true">Owner</th>
             {% if options.download_btn == True %}
@@ -46,6 +46,17 @@
         "valid": "table-success",
         "distributed": "table-secondary"
     };
+
+    function decDots(value) {
+        var r = ""
+        var s = value.toString()
+        while (s.length > 3) {
+            r = '.' + s.substring(s.length-3) + r
+            s = s.substring(0, s.length - 3)
+        }
+        r = s + r
+        return r
+    }
 
     function rowStyle(row, index) {
         return {
