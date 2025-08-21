@@ -48,14 +48,12 @@
     };
 
     function decDots(value) {
-        var r = ""
-        var s = value.toString()
-        while (s.length > 3) {
-            r = '.' + s.substring(s.length-3) + r
-            s = s.substring(0, s.length - 3)
+        if (isNaN(value)) {
+            return value
+        } else {
+            // Use . as thousands separator
+            return Intl.NumberFormat('nl-NL').format(value)
         }
-        r = s + r
-        return r
     }
 
     function rowStyle(row, index) {
@@ -124,6 +122,6 @@
             $.post('{{ url_for("userinfo.usersetting") }}', {
                 attr: 'page_size',
                 value: size
-            })            
+            })
         }
     })
