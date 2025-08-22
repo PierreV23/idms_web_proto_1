@@ -22,7 +22,7 @@
             {% if display_field %}
             <th data-field="display_field" data-align="left" data-sortable="false">Description</th>
             {% endif %}
-            <th data-field="size" data-align="left" data-sortable="true">Size</th>
+            <th data-field="size" data-align="right" data-sortable="true" data-formatter="decDots">Size</th>
             <th data-field="create_time" data-align="" data-sortable="true">Create Date</th>
             <th data-field="owner_name" data-align="" data-sortable="true">Owner</th>
             {% if options.download_btn == True %}
@@ -46,6 +46,15 @@
         "valid": "table-success",
         "distributed": "table-secondary"
     };
+
+    function decDots(value) {
+        if (isNaN(value)) {
+            return value
+        } else {
+            // Use . as thousands separator
+            return Intl.NumberFormat('nl-NL').format(value)
+        }
+    }
 
     function rowStyle(row, index) {
         return {
@@ -113,6 +122,6 @@
             $.post('{{ url_for("userinfo.usersetting") }}', {
                 attr: 'page_size',
                 value: size
-            })            
+            })
         }
     })
