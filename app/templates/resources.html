@@ -19,7 +19,7 @@ menuname='resources'
             </span></div></th>
             {% for column in columns %}
                 <th 
-                    {% if columns[column].type == 'bool' %}
+                    {% if columns[column].type == 'bool' or columns[column].type == 'status' %}
                         class="rotated-text" scope="col"
                     {% endif %}
                 ><div><span>
@@ -72,6 +72,15 @@ menuname='resources'
                             {% endfor %}
                         </select>
                     </TD>
+                {% elif columns[property].type == 'status' %}
+                    <TD><center>
+                        {% if resources[resource].get(property) == "true" %}
+                            <i class="fa-solid fa-square-check fa-lg" style="color:green"></i>
+                        {% else %}
+                            <i class="fa-solid fa-square-xmark fa-lg" style="color:red"></i>
+                        {% endif %}
+                        </center>
+                    </TD>                
                 {% endif %}
             {% endfor %}
         </TR>

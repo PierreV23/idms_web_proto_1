@@ -182,16 +182,16 @@ RESOURCE_PROPS = {
         'type': 'bool',
         'help': 'This resource is suitable to store Reference Datasets'
     },
-    'available': {
-        'label': 'Available',
-        'meta': 'sys::resource::available',
-        'type': 'bool',
-        'help': 'This resource is found to be available by the automatic resource test script'
-    },
     'enabled': {
         'label': 'Enabled',
         'meta': 'sys::resource::enabled',
         'type': 'bool',
         'help': 'This resource can be used'
-    }
+    },
+    'available': {
+        'label': 'Available',
+        'meta': 'sys::resource::available',
+        'type': 'status',
+        'help': 'This resource is found to be available by the automatic resource test script'
+    },    
 }
