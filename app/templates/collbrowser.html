@@ -858,7 +858,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const zoomDisplayColl = document.querySelector("#zoomDisplay_coll"); // Display the zoom percentage
   const fitGraphBtnColl = document.querySelector("#fitGraph_coll"); // Fit Graph button
   
-  let zoomLevelColl = parseInt("{{ zoomlevel_coll }}", 10); // Default zoom level in percentage (as a variable)
+  let zoomLevelColl = Number("{{ zoomlevel_coll }}"); // Default zoom level in percentage (as a variable)
   let zoomSettingIdColl = 0; // Timeout Request for storing zoom level
   let isDragging = false; // Track whether the user is currently dragging
   let dragStart = { x: 0, y: 0 }; // Store the starting mouse position during the drag operation
@@ -958,7 +958,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   // Handle zoom slider changes
   zoomSliderColl.addEventListener("input", (e) => {
-    const newZoomLevelColl= parseInt(e.target.value, 10); // Update zoom value from the slider
+    const newZoomLevelColl= Number(e.target.value); // Update zoom value from the slider
     updateZoomColl(newZoomLevelColl);
   });
 
@@ -995,7 +995,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const zoomDisplayObj = document.querySelector("#zoomDisplay_obj"); // Display the zoom percentage
   const fitGraphBtnObj = document.querySelector("#fitGraph_obj"); // Fit Graph button
 
-  let zoomLevelObj = parseInt("{{ zoomlevel_obj }}", 10); // Default zoom level in percentage (as a variable)
+  let zoomLevelObj = Number("{{ zoomlevel_obj }}"); // Default zoom level in percentage (as a variable)
   let zoomSettingIdObj = 0; // Timeout Request for storing zoom level
   let isDragging = false; // Track whether the user is currently dragging
   let dragStart = { x: 0, y: 0 }; // Store the starting mouse position during the drag operation
@@ -1092,7 +1092,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   zoomSliderObj.addEventListener("input", (e) => {
-    const newZoomLevelObj= parseInt(e.target.value, 10); // Update zoom value from the slider
+    const newZoomLevelObj= Number(e.target.value); // Update zoom value from the slider
     updateZoomObj(newZoomLevelObj);
   });
 
