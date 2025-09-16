@@ -5,15 +5,15 @@
   <!-- Required meta tags -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
-  <title>iDMS</title>
+  
+  <!-- favicon -->
+  <link rel="shortcut icon" type="image/svg+xml" href="{{ url_for('static', filename='files/favicons/favicon.svg') }}">
+  
+  <title>RIVM iDMS</title>
 
   {% block meta %}
 
   {% endblock %}
-
-  <!-- favicon -->
-  <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
   <!-- Bootstrap CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/mymodal.css') }}">
@@ -65,7 +65,7 @@
   {% with messages = get_flashed_messages(category_filter=["modalpopup", "news"], with_categories=true) %}
   {% if messages %}
   <div class="modal" data-show="true" id="message">
-    <div class="modal-dialog modal-dialog-centxered" role="document">
+    <div class="modal-dialog modal-dialog-centered" role="document">
       <div class="modal-content">
         <div class="tab-content">
           {% for category, message in messages %}
@@ -111,23 +111,22 @@
 
   <!-- Main Sidebar Container -->
   <aside class="main-sidebar sidebar-dark-primary sidebar-no-expand elevation-4" style="overflow-x: hidden">
-    <div class="brand-link logo-switch font-weight-light">
+    <div class="brand-link logo-switch font-weight-light" 
+        style="display:flex; align-items:center; justify-content:space-between; height:50px; padding:0 10px;">
       <!-- Brand Logo -->
       <a href="/" class="logo-xl" style="width:100px">
         <!-- <img src="dist/img/AdminLTELogo.png" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity: .8"> -->
-        <span class="brand-link" style="width:100px">
-          iDMS
+        <span class="brand-link" ">
+          <img src="/static/files/beeldmerk-rijksoverheid-desktop_44.svg" alt="logo" width="44", height="44" />
+          RIVM iDMS
         </span>
       </a>
       <!-- Hamburger Menu-->
-      <a data-widget="pushmenu" data-enable-remember=True href="#" role="button" style="float:right;width:30px">
-        <i class="fas fa-arrow-left brand-link logo-xl" style="width:40px;transition: width 0.0s"></i>
-        <i class="fas fa-arrow-right brand-link logo-xs"></i>
+      <a data-widget="pushmenu" data-enable-remember=True href="#" role="button" style="display:flex; align-items:center; justify-content:center;">
+        <i class="fas fa-arrow-left brand-link logo-xl" style="width:40px; transition: width 0.0s"></i>
+        <i class="fas fa-arrow-right brand-link logo-xs" style="display:flex; align-items:center;"></i>
       </a>
-
     </div>
-
-    <!-- Sidebar -->
 
     <div class="sidebar" style="height:calc(100% - (16.5rem + 2px))"><!--height adjusted for sidebar-bottom-->
       <!-- Sidebar user panel (optional) -->
@@ -171,7 +170,7 @@
             <a href="{{ url_for('jobs.jobpage') }}" data-menuname="joblist" class="nav-link">
               <i class="fas fa-tasks nav-icon"></i>
               <p>Job List</p>
-            </a>
+                </a>
           </li>
 {% endif %}
           <li class="nav-item">
@@ -509,9 +508,8 @@
       $(this).attr('title', $(this).children('p').html());
     })
 
-
+    // Keep sidebar selection open and in focus
     let menuname = "unknown"
-
     {% block menuname %} {% endblock %}
 
     $('a[data-menuname=' + menuname + ']').addClass('active')
@@ -532,7 +530,10 @@
       searchModal.show()
 
     })
-
+    
+    function uploadDownstream() {
+      window.location.href = "{{ url_for('upload.new_upload')}}?parent=" + encodeURIComponent(collection)
+    }
   </script>
 
 </body>
