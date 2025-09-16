@@ -865,11 +865,11 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentTranslateColl = { x: 0, y: 0 }; // Current translation offset for the graph
 
  
-  // Update the transformation (translate + scale)
+  // Update the transformation (translate + scale); correct for sidebar in fullscreen window
   const updateTransformColl = () => {
     console.log(currentTranslateColl, zoomLevelColl);
     const scaleColl = zoomLevelColl / 100;
-    graphImgColl.style.transform = `translate(${currentTranslateColl.x}px, ${currentTranslateColl.y}px) scale(${scaleColl})`;
+    graphImgColl.style.transform = `translate(${currentTranslateColl.x - sidebarSize/2}px, ${currentTranslateColl.y}px) scale(${scaleColl})`;
   };
 
   // Reset the transformation (translate x and y to 0)
@@ -902,7 +902,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const containerBoundsColl = graphDivColl.getBoundingClientRect(); // Get the size of the card container
 
     // Calculate the scaling factor needed to fit the graph content into the container
-    const scaleWidthColl = containerBoundsColl.width / graphBoundsColl.width * zoomLevelColl / 100;
+    const scaleWidthColl = (containerBoundsColl.width - sidebarSize) / graphBoundsColl.width * zoomLevelColl / 100;
     const scaleHeightColl = containerBoundsColl.height / graphBoundsColl.height * zoomLevelColl / 100;
     // Choose the smaller scaling factor to ensure it fits both dimensions
     const fitScaleColl = Math.min(scaleWidthColl, scaleHeightColl);
@@ -1002,10 +1002,10 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentTranslateObj = { x: 0, y: 0 }; // Current translation offset for the graph
   
   
-  // Update the transformation (translate + scale)
+  // Update the transformation (translate + scale); correct for sidebar in fullsize window.
   const updateTransformObj = () => {
     const scaleObj = zoomLevelObj / 100;
-    graphImgObj.style.transform = `translate(${currentTranslateObj.x}px, ${currentTranslateObj.y}px) scale(${scaleObj})`;
+    graphImgObj.style.transform = `translate(${currentTranslateObj.x - sidebarSize/2}px, ${currentTranslateObj.y}px) scale(${scaleObj})`;
   };
 
   // Reset the transformation (translate x and y to 0),
@@ -1035,7 +1035,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const containerBoundsObj = graphDivObj.getBoundingClientRect(); // Get the size of the card container
     
     // Calculate the scaling factor needed to fit the graph content into the container
-    const scaleWidthObj = containerBoundsObj.width / graphBoundsObj.width * zoomLevelObj / 100;
+    const scaleWidthObj = (containerBoundsObj.width - sidebarSize)/ graphBoundsObj.width * zoomLevelObj / 100;
     const scaleHeightObj = containerBoundsObj.height / graphBoundsObj.height * zoomLevelObj / 100;
 
     // Choose the smaller scaling factor to ensure it fits both dimensions
@@ -1315,6 +1315,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 <script>
+var sidebarSize = 0
 
 $('.graphTabs').on('shown.bs.tab', function(event){
   activegraphtab = event.target.getAttribute('href')
@@ -1344,16 +1345,18 @@ gb1 = "contents"
 $('#main-window').css('grid-template-areas', 
 `"sidebar ${gt1} ${gt2}" "sidebar ${gm1} ${gm2}"  "sidebar ${gb1} ${gb2}"`)
 
-// When graph sidebar is expanded in maximized window shift buttons left
+// When graph sidebar is expanded in maximized window shift buttons left, and set potential sidebar size (250px)
 $(document).on('expanded.lte.controlsidebar', function () {
   if ($('#maximize-button').closest('.card').hasClass('maximized-card')) {
     $('#btn-group-graph').addClass('shift-left');
+    sidebarSize = 250;
   }
 });
 
 // When the sidebar collapses or fullscreen mode is left, remove shift-left class
 $(document).on('collapsed.lte.controlsidebar minimized.lte.cardwidget' , function () {
   $('#btn-group-graph').removeClass('shift-left');
+  sidebarSize = 0;
 });
 
 $(document).on('maximized.lte.cardwidget', '#graph-card', function() {
