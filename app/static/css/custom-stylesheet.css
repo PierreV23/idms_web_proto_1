@@ -1,263 +1,3 @@
-/* Add any CSS necessary for your custom content */
-
-/* Use Rijkshuisstijl font ***********************/
-/* Regular */
-@font-face {
-  font-family: 'RO Sans';
-  src:  url('../fonts/ROsanswebtextregular.eot');
-  src:  url('../fonts/ROsanswebtextregular.woff') format('woff2'),
-        url('../fonts/ROsanswebtextregular.woff') format('woff'),
-        url('../fonts/ROsanswebtextregular.ttf') format('ttf'),
-        url('../fonts/ROsanswebtextregular.woff') format('opentype'),
-        url('../fonts/ROsanswebtextregular.ttf') format('truetype'),
-        url('../fonts/ROsanswebtextregular.eot?') format('embedded-opentype');
-  font-weight: 400;
-  font-style: normal;
-}
-
-/* Bold */
-@font-face {
-  font-family: 'RO Sans';
-  src:  url('../fonts/ROsanswebtextbold.eot');
-  src:  url('../fonts/ROsanswebtextbold.woff') format('woff2'),
-        url('../fonts/ROsanswebtextbold.woff') format('woff'),
-        url('../fonts/ROsanswebtextbold.ttf') format('ttf'),
-        url('../fonts/ROsanswebtextbold.woff') format('opentype'),
-        url('../fonts/ROsanswebtextbold.ttf') format('truetype'),
-        url('../fonts/ROsanswebtextbold.eot?') format('embedded-opentype');
-  font-weight: 700;
-  font-style: normal;
-}
-
-/* Italic */
-@font-face {
-  font-family: 'RO Sans';
-  src:  url('../fonts/ROsanswebtextitalic.eot');
-  src:  url('../fonts/ROsanswebtextitalic.woff') format('woff2'),
-        url('../fonts/ROsanswebtextitalic.woff') format('woff'),
-        url('../fonts/ROsanswebtextitalic.ttf') format('ttf'),
-        url('../fonts/ROsanswebtextitalic.woff') format('opentype'),
-        url('../fonts/ROsanswebtextitalic.ttf') format('truetype'),
-        url('../fonts/ROsanswebtextitalic.eot?') format('embedded-opentype');
-        font-weight: 400;
-  font-style: italic;
-}
-
-/* Regular */
-@font-face {
-  font-family: 'RO Serif';
-  src:  url('../fonts/ROserifwebtextregular.eot');
-  src:  url('../fonts/ROserifwebtextregular.woff') format('woff2'),
-        url('../fonts/ROserifwebtextregular.woff') format('woff'),
-        url('../fonts/ROserifwebtextregular.ttf') format('ttf'),
-        url('../fonts/ROserifwebtextregular.woff') format('opentype'),
-        url('../fonts/ROserifwebtextregular.ttf') format('truetype'),
-        url('../fonts/ROserifwebtextregular.eot?') format('embedded-opentype');
-        font-weight: 400;
-  font-style: normal;
-}
-
-/* Bold */
-@font-face {
-  font-family: 'RO Serif';
-  src:  url('../fonts/ROserifwebtextbold.eot');
-  src:  url('../fonts/ROserifwebtextbold.woff') format('woff2'),
-        url('../fonts/ROserifwebtextbold.woff') format('woff'),
-        url('../fonts/ROserifwebtextbold.ttf') format('ttf'),
-        url('../fonts/ROserifwebtextbold.woff') format('opentype'),
-        url('../fonts/ROserifwebtextbold.ttf') format('truetype'),
-        url('../fonts/ROserifwebtextbold.eot?') format('embedded-opentype');
-        font-weight: 700;
-  font-style: normal;
-}
-
-/* Italic */
-@font-face {
-  font-family: 'RO Serif';
-  src:  url('../fonts/ROserifwebtextitalic.eot');
-  src:  url('../fonts/ROserifwebtextitalic.woff') format('woff2'),
-        url('../fonts/ROserifwebtextitalic.woff') format('woff'),
-        url('../fonts/ROserifwebtextitalic.ttf') format('ttf'),
-        url('../fonts/ROserifwebtextitalic.woff') format('opentype'),
-        url('../fonts/ROserifwebtextitalic.ttf') format('truetype'),
-        url('../fonts/ROserifwebtextitalic.eot?') format('embedded-opentype');
-        font-weight: 400;
-  font-style: italic;
-}
-
-:root {
-    --RIVM-RR-100: #CA005D;
-    --RIVM-RR-75: #D74085;
-    --RIVM-RR-60: #DF669D;
-    --RIVM-RR-45: #E78CB6;
-    --RIVM-RR-30: #EFB2CE;
-    --RIVM-RR-15: #F7D9E7;
-    --RO-blue: #154273;
-    --RIVM-LB-75: #4f7196;
-    --RIVM-LB-45: #95a9c0;
-    --RIVM-LB-30: #b8c6d5;
-    --RIVM-LB-15: #dce3ea;
-}
-
-/* Use the Rijksoverheids fonts, correct the overwriting*/
-body {
-    font-family: "RO Sans", "Helvetica Neue", Helvetica, Arial, sans-serif!important;
-    font-size: 14px;
-    line-height: 1.42857143;
-    margin-bottom: 0;
-}
-
-.ui-widget {
-    font-family: "RO Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-size: 1.1em;
-}
-
-widget button {
-    font-family: "RO Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-size: 1em;
-}
-
-code, kbd, pre, samp {
-    font-family: "RO Sans", Menlo, Monaco, Consolas, "Courier New", monospace;
-}
-
-/* Use correct Robijnrood colours*/
-span.glyphicon-question-sign.tooltip-icon {
-    color: var(--RIVM-RR-75) !important;
-}
-.icon-dataverse:before {
-    color: var(--RIVM-RR-100) !important;
-}
-
-/* General text and links */
-.text-danger { color: var(--RIVM-RR-100); }
-a,
-.text-primary,
-.text-info,
-.btn-link,
-.icon-dataset,
-.tooltip-icon:hover::before {
-    color: var(--RO-blue) !important;
-}
-a:hover,
-a:focus {
-    text-decoration: underline;
-}
-.btn-primary,
-.bg-warning,
-.bg-info {
-    background: var(--RIVM-LB-15) !important;
-    text-shadow: none !important
-}
-
-/* Ensures links in the footer stay white */
-#custom-footer a { color: white !important; }
-
-/* Styles for labels */
-.label-primary,
-.label-warning,
-.label-info {
-    color: white !important;
-}
-.label-primary { background-color: var(--RO-blue) !important; }
-.label-warning { background-color: var(--RIVM-RR-100) !important; }
-.label-info { background-color: var(--RIVM-LB-75) !important; }
-
-/* Notification label */
-span.label.label-danger {
-    background-color: white !important;
-    color: var(--RIVM-RR-100) !important;
-    border-radius: 6px; padding: 2px 6px;
-}
-
-/* Alerts (e.g. 404 page) */
-.alert-danger,
-.ui-message-error,
-.ui-messages-error {
-    border: 1px solid var(--RIVM-RR-100) !important;
-    background: var(--RIVM-RR-15) !important;
-    color: var(--RIVM-RR-100) !important;
-}
-/* exclude when bg-citation is also present */
-.alert-warning,
-.alert-success,
-.alert-info:not(.bg-citation) {
-    border: 1px solid var(--RO-blue) !important;
-    background: var(--RIVM-LB-15) !important;
-    color: var(--RO-blue) !important;
-}
-.emptyResults { background: var(--RIVM-LB-15) !important; }
-
-/* Borders for cards */
-.datasetResult,
-#div-card-results > div:has(.resultDatasetCitationBlock) {
-    border: 1px solid var(--RO-blue) !important;
-}
-.dataverseResult,
-#div-card-results > div:not(:has(.resultDatasetCitationBlock)) {
-    border: 1px solid var(--RIVM-RR-100) !important;
-}
-
-/* shadow around selected text boxes */
-.col-sm-9 input:focus, .col-sm-9 textarea:focus,
-.col-sm-8 input:focus, .form-control:focus,
-.ui-state-focus.ui-widget.ui-inputfield {
-    box-shadow: 0 0 4px 2px var(--RIVM-LB-45) !important;
-    border: 1px solid var(--RO-blue) !important;
-}
-
-/* Numbers at botom of page */
-.pagination li.active a {
-    background-color: var(--RIVM-LB-30) !important;
-    border: 1px solid #ddd;
-}
-.pagination li.active a:hover {
-    border: 1px solid var(--RO-blue) !important;
-}
-
-/* Drop-down selected option */
-.ui-state-highlight {
-    background: var(--RIVM-LB-75) !important;
-}
-
-/* Checkbox color */
-input[type="checkbox"] {
-    accent-color: var(--RIVM-LB-45) !important; /* Modern browsers */
-    border: 1px solid var(--RIVM-LB-45) !important; /* Fallback for older browsers */
-    background-color: var(--RIVM-LB-45) !important;
-}
-
-#notesText > td > pre {
-    word-break: normal !important;
-    text-align: justify !important;
-}
-
-#metadata_notesText > td > pre {
-    word-break: normal !important;
-    text-align: justify !important;
-}
-
-#metadata_dsDescription > td > pre {
-    word-break: normal !important;
-    text-align: justify !important;
-}
-
-#dsDescription > td > div > pre {
-    word-break: normal !important;
-    text-align: justify !important;
-}
-
-.screenreader-only {
-  border: 0;
-  clip: rect(0, 0, 0, 0);
-  height: 1px;
-  margin: -1px;
-  overflow: hidden;
-  padding: 0;
-  position: absolute;
-  width: 1px;
-}
-
 th.rotated-text {
     height: 80px;
     white-space: nowrap;
@@ -273,6 +13,112 @@ th.rotated-text > div {
 
 th.rotated-text > div > span {
     padding: 5px 10px;
+}
+
+/* Use Rijkshuisstijl font ***********************/
+/* Regular */
+@font-face {
+  font-family: 'RO_Sans';
+  src:  url('../fonts/ROsanswebtextregular.eot');
+  src:  url('../fonts/ROsanswebtextregular.woff') format('woff2'),
+        url('../fonts/ROsanswebtextregular.woff') format('woff'),
+        url('../fonts/ROsanswebtextregular.ttf') format('ttf'),
+        url('../fonts/ROsanswebtextregular.woff') format('opentype'),
+        url('../fonts/ROsanswebtextregular.ttf') format('truetype'),
+        url('../fonts/ROsanswebtextregular.eot?') format('embedded-opentype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+/* Bold */
+@font-face {
+  font-family: 'RO_Sans';
+  src:  url('../fonts/ROsanswebtextbold.eot');
+  src:  url('../fonts/ROsanswebtextbold.woff') format('woff2'),
+        url('../fonts/ROsanswebtextbold.woff') format('woff'),
+        url('../fonts/ROsanswebtextbold.ttf') format('ttf'),
+        url('../fonts/ROsanswebtextbold.woff') format('opentype'),
+        url('../fonts/ROsanswebtextbold.ttf') format('truetype'),
+        url('../fonts/ROsanswebtextbold.eot?') format('embedded-opentype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+/* Italic */
+@font-face {
+  font-family: 'RO_Sans';
+  src:  url('../fonts/ROsanswebtextitalic.eot');
+  src:  url('../fonts/ROsanswebtextitalic.woff') format('woff2'),
+        url('../fonts/ROsanswebtextitalic.woff') format('woff'),
+        url('../fonts/ROsanswebtextitalic.ttf') format('ttf'),
+        url('../fonts/ROsanswebtextitalic.woff') format('opentype'),
+        url('../fonts/ROsanswebtextitalic.ttf') format('truetype'),
+        url('../fonts/ROsanswebtextitalic.eot?') format('embedded-opentype');
+        font-weight: 400;
+  font-style: italic;
+}
+
+/* Regular */
+@font-face {
+  font-family: 'RO_Serif';
+  src:  url('../fonts/ROserifwebtextregular.eot');
+  src:  url('../fonts/ROserifwebtextregular.woff') format('woff2'),
+        url('../fonts/ROserifwebtextregular.woff') format('woff'),
+        url('../fonts/ROserifwebtextregular.ttf') format('ttf'),
+        url('../fonts/ROserifwebtextregular.woff') format('opentype'),
+        url('../fonts/ROserifwebtextregular.ttf') format('truetype'),
+        url('../fonts/ROserifwebtextregular.eot?') format('embedded-opentype');
+        font-weight: 400;
+  font-style: normal;
+}
+
+/* Bold */
+@font-face {
+  font-family: 'RO_Serif';
+  src:  url('../fonts/ROserifwebtextbold.eot');
+  src:  url('../fonts/ROserifwebtextbold.woff') format('woff2'),
+        url('../fonts/ROserifwebtextbold.woff') format('woff'),
+        url('../fonts/ROserifwebtextbold.ttf') format('ttf'),
+        url('../fonts/ROserifwebtextbold.woff') format('opentype'),
+        url('../fonts/ROserifwebtextbold.ttf') format('truetype'),
+        url('../fonts/ROserifwebtextbold.eot?') format('embedded-opentype');
+        font-weight: 700;
+  font-style: normal;
+}
+
+/* Italic */
+@font-face {
+  font-family: 'RO_Serif';
+  src:  url('../fonts/ROserifwebtextitalic.eot');
+  src:  url('../fonts/ROserifwebtextitalic.woff') format('woff2'),
+        url('../fonts/ROserifwebtextitalic.woff') format('woff'),
+        url('../fonts/ROserifwebtextitalic.ttf') format('ttf'),
+        url('../fonts/ROserifwebtextitalic.woff') format('opentype'),
+        url('../fonts/ROserifwebtextitalic.ttf') format('truetype'),
+        url('../fonts/ROserifwebtextitalic.eot?') format('embedded-opentype');
+        font-weight: 400;
+  font-style: italic;
+}
+
+body {
+  font-family: RO_Sans,Arial,sans-serif !important;/* Main body uses RO_Sans */
+} 
+p {
+  font-family: RO_Sans,Arial,sans-serif !important;/* Main body uses RO_Sans */
+} 
+
+:root {
+    --RIVM-RR-100: #CA005D;
+    --RIVM-RR-75: #D74085;
+    --RIVM-RR-60: #DF669D;
+    --RIVM-RR-45: #E78CB6;
+    --RIVM-RR-30: #EFB2CE;
+    --RIVM-RR-15: #F7D9E7;
+    --RO-blue: #154273;
+    --RIVM-LB-75: #4f7196;
+    --RIVM-LB-45: #95a9c0;
+    --RIVM-LB-30: #b8c6d5;
+    --RIVM-LB-15: #dce3ea;
 }
 
 .sidebar-dark-primary {
