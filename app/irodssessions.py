@@ -282,8 +282,9 @@ class MultiSessionManager():
 
     def remove(self, user):
         """Removes the session for user"""
-        with self._lock:
-            if (manager := self._managers.get(user.environment)):
-                manager.remove(user)
+        ...
+        #with self._lock:
+        # if (manager := self._managers.get(user.environment)):
+        #     manager.remove(user)
 
 irods_manager = MultiSessionManager()
