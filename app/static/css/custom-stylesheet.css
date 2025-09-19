@@ -144,3 +144,35 @@ p {
   background-color: var(--RIVM-LB-75) !important; /* your custom color */
   color: #fff !important;
 }
+
+#loading-spinner {
+  position: absolute;
+  bottom: 10px;   /* adjust spacing from bottom */
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.7); /* optional translucent background */
+  padding: 6px;
+  border-radius: 50%;
+  z-index: 10; /* make sure it stays above IGV */
+}
+
+.spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #ccc9c9;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.irods-collection-wrapper {
+  display: flex;
+  justify-content: left; /* to the left */
+  white-space: wrap;     
+  text-overflow: ellipsis;   /* adds ... if too long */
+}
