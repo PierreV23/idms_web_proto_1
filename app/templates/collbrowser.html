@@ -176,9 +176,6 @@ menuname='collectionbrowser'
   <div class="p-0 control-sidebar-title"><b>
       <center>Graph Legend</center>
     </b></div>
-  <div class="p-3"><b>
-      <center>Graph Legend</center>
-    </b></div>
   <div id="graph-legend-obj" class="control-legend p-3">
   </div>
 </div>
@@ -201,7 +198,7 @@ menuname='collectionbrowser'
   var show_downstream_obj = "{{ show_downstream_obj }}"
   var show_downstream_coll = "{{ show_downstream_coll }}"
   var graph_direction_tb_obj = "{{ graph_direction_tb_obj }}"
-  
+    
   var sortkey = "";
   var reverse = "";
   var selected_object = "{{ selected_object }}";
@@ -260,7 +257,7 @@ menuname='collectionbrowser'
       if (result["access"] == "GRANTED" ) {
         $('#DocTitle').html(name)
         source = "{{ url_for('docviewer.serve_object') }}?path=" + encodeURIComponent(path)
-        newEmbed = '<embed src="' + source + '" width="100%" height="100%" id="DocText" >'
+        newEmbed = '<embed src="' + source + '" width="100%" height="100%" id="DocText" ></embed>'
         $('#mBody').html(newEmbed)
         $('#myOutput').modal()
       } else {
@@ -867,7 +864,6 @@ document.addEventListener("DOMContentLoaded", () => {
  
   // Update the transformation (translate + scale); correct for sidebar in fullscreen window
   const updateTransformColl = () => {
-    console.log(currentTranslateColl, zoomLevelColl);
     const scaleColl = zoomLevelColl / 100;
     graphImgColl.style.transform = `translate(${currentTranslateColl.x - sidebarSize/2}px, ${currentTranslateColl.y}px) scale(${scaleColl})`;
   };
@@ -958,7 +954,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   // Handle zoom slider changes
   zoomSliderColl.addEventListener("input", (e) => {
-    const newZoomLevelColl= Number(e.target.value); // Update zoom value from the slider
+    const newZoomLevelColl = Number(e.target.value); // Update zoom value from the slider
     updateZoomColl(newZoomLevelColl);
   });
 
@@ -1274,18 +1270,49 @@ document.addEventListener("DOMContentLoaded", () => {
   <!-- Document viewer modal dialog -->
   <div class="modal modal-tall" id="myOutput" role="dialog">
     <div class="modal-dialog modal-xl" role="document">
-      <div class="modal-content ">
+      <div class="modal-content">
         <div class="modal-header">
-          <!-- <button type="button" class="close" data-dismiss="modal">&times;</button> -->
           <h5 class="modal-title" id="DocTitle">Modal Header</h5>
-          <button type="button" class="btn btn-default btn-primary btn-sm" data-dismiss="modal">Close</button>
+  
+          <div class="ml-auto d-flex gap-2">
+            <!-- Browser fullscreen toggle -->
+            <button type="button" id="fullscreen-btn" title="Toggle Fullscreen in Browser Window"
+              style="background:transparent; border:none; padding:0.5rem; cursor:pointer; border-radius:6px;"
+              onmouseover="this.style.backgroundColor='rgba(0,0,0,0.1)'"
+              onmouseout="this.style.backgroundColor='transparent'">
+              <i class="fa fa-expand"></i>
+            </button>
+            <!-- Close button -->
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"
+              <span aria-hidden="true">&times</span>
+            </button>
+          </div>
         </div>
-        <div class="modal-body" id="mBody">
-          <embed src="" width="100%" height="100%" id="DocText">
+  
+        <div class="modal-body p-0" id="mBody" style="height:80vh;">
+          <embed src="" width="100%" height="100%" id="DocText"></embed>
         </div>
       </div>
     </div>
   </div>
+
+  <script>
+  const fsBtn = document.getElementById("fullscreen-btn");
+  const fsIcon = fsBtn.querySelector("i");
+  const modal = document.getElementById("myOutput");
+
+  fsBtn.addEventListener("click", () => {
+    modal.classList.toggle("browser-fullscreen");
+
+    if (modal.classList.contains("browser-fullscreen")) {
+      fsIcon.classList.remove("fa-expand");
+      fsIcon.classList.add("fa-compress");
+    } else {
+      fsIcon.classList.remove("fa-compress");
+      fsIcon.classList.add("fa-expand");
+    }
+  });
+  </script>
 
   <!-- Upload modal modal dialog -->
   <div class="modal" id="upload" role="dialog">
@@ -1379,4 +1406,3 @@ $('#sidebar-button').on('expanded.lte.controlsidebar', function(){
 </script>
 
 {% endblock %}
-

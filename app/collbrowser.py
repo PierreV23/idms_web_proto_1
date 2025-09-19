@@ -603,7 +603,10 @@ def collist():
     options = {
         'download_btn': request.args.get('download_btn', 'true', type=str) == 'true',
         'view_btn': request.args.get('view_btn', 'true', type=str) == 'true',
-        'delete_btn': request.args.get('delete_btn', 'false', type=str) == 'true'
+        'delete_btn': request.args.get('delete_btn', 'false', type=str) == 'true',
+        'up_btn': request.args.get('up_btn', 'false', type=str) == 'true',
+        'row_handler': request.args.get('row_handler', 'true', type=str) == 'true',
+        'row_select_class': request.args.get('row_select_class', '', type=str)
     }
     return render_template('colltable.html', path=path, display_field=display_field, options=options)
 
@@ -2076,5 +2079,4 @@ def mydatasets():
             Criterion('=', CollectionMeta.name, ATTR_DATASETID)
             )
         result = [{ 'collection': datafield('collection', r[Collection.name], 'irods_collection').htmlstring } for r in q]
-    print (result)
     return jsonify(result)

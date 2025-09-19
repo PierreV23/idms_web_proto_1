@@ -1,5 +1,20 @@
 
-<table id="colltable" class="table"
+<!-- UP-button used in colltable selector for igv viewer -->
+{% if options.up_btn is sameas true %}
+    {% set parts = path.split('/') %}
+    {% set count_slash = parts|length - 1 %}
+    {% if count_slash >= 2 %}  <!-- Prevent going to upper directories, without selection options -->
+        <button class="up-btn path-change" id="up-button" data-path="{{ parts[:-1] | join('/') }}" title="Go to parent directory">Up</button>
+    {% endif %}
+        <div class="irods-collection-wrapper">
+            <span>
+                <b>Collection:</b> {{ path }}
+            </span>
+        </div>
+        
+    
+{% endif %}
+<table id="colltable" class="table table-bordered"
     data-toggle="table"
     data-striped="true"
     data-pagination="true"
@@ -9,7 +24,7 @@
     data-filter-control="true"
     #data-height="500"
     data-icons-prefix="fa"
-    data-row-style="rowStyle"
+    data-row-style="rowStyleFunction"
     data-show-button-icons="false"
     data-search="false"
     data-unique-id="id"
@@ -39,7 +54,8 @@
 </table>
 
 <script>
-
+    var collection = "{{ path }}"
+    
     var styles = {
         "temporary": "table-warning",
         "invalid": "table-danger",
@@ -56,13 +72,23 @@
         }
     }
 
-    function rowStyle(row, index) {
+    function decDots(value) {
+        if (isNaN(value)) {
+            return value
+        } else {
+            // Use . as thousands separator
+            return Intl.NumberFormat('nl-NL').format(value)
+        }
+    }
+
+    function rowStyleFunction(row, index) {
         return {
-            classes: row.tableclass,
+            classes: {% if options.row_select_class %}row.tableclass + " {{ options.row_select_class }}"{% else %}row.tableclass{% endif %},
             css: {
                 'height': '22px !important',
                 'padding-top': '4px',
-                'padding-bottom': '4px'
+                'padding-bottom': '4px',
+                'font-size': '12.8px'
             }             
         }
     }
@@ -105,8 +131,10 @@
         }
         return '';
     }
+    
 
     $('#colltable').bootstrapTable({
+        {% if options.row_handler is sameas True %}
         onClickRow: function (row, element, field) {
             if (row['object'] == 'dataobject' & field != 'dnld' & field != 'view') {
                 $('#colltable tr').removeClass('table-primary');
@@ -117,6 +145,7 @@
                 build_title();
             }
         },
+        {% endif %}
         onPageChange: function (number, size) {
             // Store the page size
             $.post('{{ url_for("userinfo.usersetting") }}', {

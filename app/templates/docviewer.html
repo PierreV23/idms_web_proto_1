@@ -15,7 +15,7 @@ document viewer : {{ path }}
 <pre>
 {{ doc }}
 </pre>
-{% elif file_extension in [ ".html", ".htm", ".xml", ".pdf", ".txt", ".csv" ] %}
+{% elif file_extension in [ ".html", ".htm", ".xml", ".pdf", ".txt", ".csv", ".metrics", ".vcf" ] %}
 <div class="card">
 <embed src="{{ url_for('docviewer.serve_image') + '?path=' + path }}" width="1280" height="1024"></embed>
 </div>
