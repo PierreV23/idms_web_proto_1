@@ -21,7 +21,8 @@ from datetime import datetime, timezone
 from .flaskcache import cache, dep_zone, key_zone, key_userzone
 from app.irodssessions import irods_manager
 from . import iqry
-from . import constants
+from .constants import *
+from .collbrowser import shape
 
 bp = Blueprint('oldjobs', __name__, url_prefix='/oldjobs')
 
@@ -173,27 +174,30 @@ def shortname(name,l):
         s = '...' + name[-l+4:]
     return s
 
-def coll_shape(coll_type):
-    layout = constants.LAYOUT.get(coll_type, constants.DEFAULT_SHAPE)
-    return layout[constants.SHAPE2], layout[constants.FILLCOLOR]    
 
 @bp.route('/processgraph')
 def processgraph():
     runsheet_coll = request.args.get('runsheet', '/', type=str)
-    graph = Digraph('datagraph')
+    graph = Digraph('processgraph')
 
     # We need the processgroupID
-    pgid = iqry.qcollmetavalstatic(runsheet_coll, 'sys::runsheet::processgroupid')
-    q = iqry.qcollbymeta('sys::runsheet::processgroupid', pgid)
+    processgroupid = iqry.qcollmetavalstatic(runsheet_coll, 'sys::runsheet::processgroupid') 
+    q = iqry.qcollbymeta('sys::runsheet::processgroupid', processgroupid)
     colls = [ r[Collection.name] for r in q ]
+    
     for coll in colls:
-        state = iqry.qcollmetaval(coll, 'sys::runsheet::state', default='unknown')
+        state = iqry.qcollmetaval(coll, 'sys::runsheet::state', default='unknown').lower()
+
         if state == 'done':
-            state = iqry.qcollmetaval(coll, 'sys::run::result')
-        shape, fillcolor = coll_shape(state)
+            state = iqry.qcollmetaval(coll, 'sys::run::result').lower() 
+
+        # draw the nodes
         penwidth = '3' if runsheet_coll == coll else '1'
-        graph.node(coll, label=iqry.qcollmetavalstatic(coll, 'sys::runsheet::description'), style='filled', penwidth=penwidth, 
-            shape=shape, fillcolor=fillcolor, URL=url_for('oldjobs.jobdetails', name=iqry.qcollmetaval(coll, ATTR_RUNSHEET_ID)))
+        layout, legends = shape(state, penwidth=penwidth)
+        print(layout)
+        graph.node(coll, label=iqry.qcollmetavalstatic(coll, 'sys::runsheet::description'), style=layout['style'], penwidth=layout['penwidth'], 
+            shape=layout['shape_process'], fillcolor=layout['fillcolor'], URL=url_for('jobs.jobdetails', name=iqry.qcollmetaval(coll, ATTR_RUNSHEET_ID)))
+        
     for coll in colls:
         ir = iqry.qcollmetaval(coll, 'sys::pipeline::input_collection_id')
         input_colls = [ c for c in colls if iqry.qcollmetavalstatic(c, 'sys::dataset_id') == ir ]
@@ -206,9 +210,9 @@ def processgraph():
             for r in q:
                 src = r[Collection.name]
             if src:
-                shape, fillcolor = coll_shape('source')
-                graph.node(src, shortname(src, NAME_LENGTH), shape=shape, fillcolor=fillcolor, style='filled',
-                    URL=url_for('collbrowser.collbrowser', path=src))
+                layout, legends = shape('source')
+                graph.node(src, shortname(src, NAME_LENGTH), shape=layout['shape'], fillcolor=layout['fillcolor'], style=layout['style'],
+                        tooltip = layout['tooltip'], URL=url_for('collbrowser.collbrowser', path=src))
                 graph.edge(src, coll)
 
     graph.graph_attr['rankdir'] = 'LR'

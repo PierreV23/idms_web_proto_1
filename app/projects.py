@@ -528,7 +528,7 @@ def pg_graph():
     graph = Digraph('datagraph')
     graph.graph_attr['rankdir'] = 'LR'
     # There is always a node for NEW_DATA
-    graph.node('d,0', label="NEW DATA", shape='box', id='d,0')
+    graph.node('d,0', label="   NEW DATA   ", shape='box', id='d,0')
     for process in pl:
         pname = process.get('name')
         add_process(pname, process.get('id'), pname==selected_processref)
