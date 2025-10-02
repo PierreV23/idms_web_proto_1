@@ -6,7 +6,6 @@ Created on Mon Nov 18 10:54:56 2019
 @author: wierinve
 """
 
-import copy
 import logging
 import os
 import time
@@ -34,6 +33,7 @@ from app.constants import COLL_KEY_MAP, DATA_KEY_MAP, ATTR_RESOURCE_ONLINE
 from app.auth import auth_endpoint
 from .projectdb_api import rest_call
 from .constants import *
+from copy import deepcopy
 
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
 
@@ -723,20 +723,20 @@ def shortname(name, l):
         s = '...' + name[-l+4:]
     return s
 
-def shape(key, legends, color = '', penwidth=''):
+def shape(key, legends=[], color='', penwidth=''):
     '''
     depending the type determine the attributes of the item
     add the item to the legend
     input:
-        type: key to fetch from constants
+        key: key to fetch from constants
         legends: list of unique legend dictionaries
         color: optional; different color
-        penwidth: optional different penwidth
+        penwidth: optional; different penwidth
     return:
         legends: with added item to the list of unique legend dicts
     '''
     # deepcopy, to prevent old values getting overwritten
-    layout = copy.deepcopy(LAYOUT.get(key, DEFAULT_SHAPE))
+    layout = deepcopy(LAYOUT.get(key, DEFAULT_SHAPE))
     layout['key'] = key
     
     # look for different color or penwidth
@@ -827,21 +827,21 @@ def generate_all_svg():
         v['key'] = k
     
     #initial set
-    all_layouts = copy.deepcopy([v for k, v in LAYOUT.items()])
+    all_layouts = deepcopy([v for k, v in LAYOUT.items()])
     all_layouts = add_filename_and_check(all_layouts)
     
     # change color
     for k, v in LAYOUT.items():
         v['color'] = SYS_INVALID_COLOR
     
-    all_layouts_sys_red = copy.deepcopy([v for k, v in LAYOUT.items()])
+    all_layouts_sys_red = deepcopy([v for k, v in LAYOUT.items()])
     all_layouts_sys_red = add_filename_and_check(all_layouts_sys_red)
     
     # change color
     for k, v in LAYOUT.items():
         v['color'] = USER_INVALID_COLOR
     
-    all_layouts_user_red = copy.deepcopy([v for k, v in LAYOUT.items()])
+    all_layouts_user_red = deepcopy([v for k, v in LAYOUT.items()])
     all_layouts_user_red = add_filename_and_check(all_layouts_user_red)
     
     # penwidth = 3
