@@ -33,18 +33,7 @@ DATA_KEY_MAP = {
 }
 
 # Constansts that define the JOB VIEW
-
 JOB_PAGE_SIZE = 25
-
-JOB_FIELDS = {
-    'sys::runsheet::description': ('Description', 'text'),
-    'sys::runsheet::processgroupid': ('GroupInstance', 'processgroupguid'),
-    'sys::run::start_time': ('Start time', 'timestamp'),
-    'sys::run::finish_time': ('End time', 'timestamp'),
-    'sys::runsheet::projectID': ('projectID', 'projectid'),
-    'sys::run::exit_code': ('Result', 'int'),
-    'sys::runsheet::input_collection': ('Input Collection', 'irods_collection')
-}
 
 # Border colors of shapes
 DEFAULT_COLOR = '#000000'
