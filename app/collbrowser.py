@@ -24,6 +24,7 @@ from app.irodssessions import irods_manager
 from graphviz import Digraph
 from irods.meta import iRODSMeta
 from urllib.parse import urlparse
+from fs_irods import fs_irods
 from . import projects
 from . import iqry
 from . import irods_objects
@@ -180,20 +181,17 @@ def coll_meta():
 # Query for object metadata
     object_avu = []
     if selected_object:
-        with irods_manager.session() as session:
-            query = iqry.qdataobjmeta(selected_object)
-            for object_metadata in query:
-                name = object_metadata[DataObjectMeta.name]
-                value = object_metadata[DataObjectMeta.value]
-                units = object_metadata[DataObjectMeta.units]
-                if current_user.settings.get('sysmeta', 'true') == "true" or not name.startswith('sys::'):
-                    object_avu.append(AVU2data(name, value, units))
+        query = iqry.qdataobjmeta(selected_object)
+        for object_metadata in query:
+            name = object_metadata[DataObjectMeta.name]
+            value = object_metadata[DataObjectMeta.value]
+            units = object_metadata[DataObjectMeta.units]
+            if current_user.settings.get('sysmeta', 'true') == "true" or not name.startswith('sys::'):
+                object_avu.append(AVU2data(name, value, units))
     return render_template('metadata.html', coll_avu=coll_avu, object_avu=object_avu)
 
 @bp.route('_setKeepOnlineUntil', methods=['GET'])
 def setKeepOnlineUntil():
-    irods_session = irods_manager.session()
-
     selectionStr = request.args.get('selection','None', type=str)
     collection = request.args.get('collection','None', type=str)
 
@@ -205,7 +203,6 @@ def setKeepOnlineUntil():
         logging.warning( f"unknown selection for _setKeepOnlineUntil: {selectionStr}")
         return('DONE')
     keepOnlineUntil = now + relativedelta(days=days)
-
     iqry.scollmetaval(collection, ATTR_ARCHIVE_KEEP_ONLINE_TILL, str(int(datetime.timestamp(keepOnlineUntil))), 'timestamp')
     return('DONE')
 
@@ -624,7 +621,6 @@ def collcontents():
 # when a user uses the upload facility (and invalidates the cache in that way)
 @cache.memoize(timeout=60, make_name=dep_userzone)
 def _collcontents(path, offset, limit, filterstr, key, order):
-    irods_session = irods_manager.session()
 
 # Look for metadate attrs starting with ngsweb:: on the collection
     q1 = iqry.qcollmeta(path)
@@ -647,73 +643,74 @@ def _collcontents(path, offset, limit, filterstr, key, order):
         qd_filters.append(Criterion('like', DataObject.name, f'%{filters["displayname"]}%'))
 
 # Get item counts
-    qc_count = irods_session.query(Collection.id)
-    for qc_filter in qc_filters:
-        qc_count = qc_count.filter(qc_filter)
-    coll_count = next(qc_count.count(Collection.id).get_results())[Collection.id]
-
-    qd_count = irods_session.query(DataObject.id)
-    for qd_filter in qd_filters:
-        qd_count = qd_count.filter(qd_filter)
-    data_count = len(list(qd_count))
-
-# Determine offset and limits
-    min_coll = min(offset, coll_count)
-    max_coll = min(offset + limit, coll_count)
-    min_data = min(max(offset - coll_count, 0), data_count)
-    max_data = min(max(offset + limit - coll_count, 0), data_count)
-
-    results = {'total': coll_count + data_count , 'rows': []}
-
-# Query for collection subcollections
-    if min_coll < max_coll:
-        q1 = irods_session.query(Collection)
+    with irods_manager.session() as irods_session:
+        qc_count = irods_session.query(Collection.id)
         for qc_filter in qc_filters:
-            q1 = q1.filter(qc_filter)
-        q1 = q1.order_by(c_sortkey, order=sort_order).offset(offset).limit(limit)
-        try:
-            colls = q1.execute()
-            for coll in colls:
-                objdict = {
-                    'displayname': datafield('irods_collection', coll[Collection.name], 'irods_collection').collentry,
-                    'path': coll[Collection.name],
-                    'object': 'collection',
-                    'size': 'DIR',
-                    'create_time': datafield('create_time', coll[Collection.create_time], 'timestamp').htmlstring,
-                    'owner_name': coll[Collection.owner_name]
-                }
-                objdict['type'] = iqry.qcollmetaval(coll[Collection.name], 'sys::data::type', default='')
-                objdict['state'] = iqry.qcollmetaval(coll[Collection.name], 'sys::data::state', default='')
-                if objdict['state'] != 'valid':
-                    objdict['tableclass'] = LAYOUT.get(objdict['state'], DEFAULT_SHAPE)['tableclass']
-                else:
-                    objdict['tableclass'] = LAYOUT.get(objdict['type'], DEFAULT_SHAPE)['tableclass']
-                objdict['display_field'] = iqry.qcollmetaval(coll[Collection.name], display_field, default='')
-                results['rows'].append(objdict)
-        except CAT_NO_ROWS_FOUND:
-            pass
+            qc_count = qc_count.filter(qc_filter)
+        coll_count = next(qc_count.count(Collection.id).get_results())[Collection.id]
 
-# Query irods for dataobjects
-    if min_data < max_data:
-        qd = irods_session.query(DataObject.name, DataObject.create_time, DataObject.size, DataObject.owner_name)
+        qd_count = irods_session.query(DataObject.id)
         for qd_filter in qd_filters:
-            qd = qd.filter(qd_filter)
-        qd = qd.min(DataObject.create_time)
-        qd = qd.order_by(d_sortkey, order=sort_order).offset(min_data).limit(max_data - min_data)
-        try:
-            dataobjects = qd.execute()
-            for do in dataobjects:
-                objdict = {
-                    'displayname': do[DataObject.name],
-                    'path': os.path.join(path, do[DataObject.name]),
-                    'object': 'dataobject',
-                    'size': do[DataObject.size],
-                    'create_time': datafield('create_time', do[DataObject.create_time], 'timestamp').htmlstring,
-                    'owner_name': do[DataObject.owner_name]
-                }
-                results['rows'].append(objdict)
-        except CAT_NO_ROWS_FOUND:
-            pass
+            qd_count = qd_count.filter(qd_filter)
+        data_count = len(list(qd_count))
+
+    # Determine offset and limits
+        min_coll = min(offset, coll_count)
+        max_coll = min(offset + limit, coll_count)
+        min_data = min(max(offset - coll_count, 0), data_count)
+        max_data = min(max(offset + limit - coll_count, 0), data_count)
+
+        results = {'total': coll_count + data_count , 'rows': []}
+
+    # Query for collection subcollections
+        if min_coll < max_coll:
+            q1 = irods_session.query(Collection)
+            for qc_filter in qc_filters:
+                q1 = q1.filter(qc_filter)
+            q1 = q1.order_by(c_sortkey, order=sort_order).offset(offset).limit(limit)
+            try:
+                colls = q1.execute()
+                for coll in colls:
+                    objdict = {
+                        'displayname': datafield('irods_collection', coll[Collection.name], 'irods_collection').collentry,
+                        'path': coll[Collection.name],
+                        'object': 'collection',
+                        'size': 'DIR',
+                        'create_time': datafield('create_time', coll[Collection.create_time], 'timestamp').htmlstring,
+                        'owner_name': coll[Collection.owner_name]
+                    }
+                    objdict['type'] = iqry.qcollmetaval(coll[Collection.name], 'sys::data::type', default='')
+                    objdict['state'] = iqry.qcollmetaval(coll[Collection.name], 'sys::data::state', default='')
+                    if objdict['state'] != 'valid':
+                        objdict['tableclass'] = LAYOUT.get(objdict['state'], DEFAULT_SHAPE)['tableclass']
+                    else:
+                        objdict['tableclass'] = LAYOUT.get(objdict['type'], DEFAULT_SHAPE)['tableclass']
+                    objdict['display_field'] = iqry.qcollmetaval(coll[Collection.name], display_field, default='')
+                    results['rows'].append(objdict)
+            except CAT_NO_ROWS_FOUND:
+                pass
+
+    # Query irods for dataobjects
+        if min_data < max_data:
+            qd = irods_session.query(DataObject.name, DataObject.create_time, DataObject.size, DataObject.owner_name)
+            for qd_filter in qd_filters:
+                qd = qd.filter(qd_filter)
+            qd = qd.min(DataObject.create_time)
+            qd = qd.order_by(d_sortkey, order=sort_order).offset(min_data).limit(max_data - min_data)
+            try:
+                dataobjects = qd.execute()
+                for do in dataobjects:
+                    objdict = {
+                        'displayname': do[DataObject.name],
+                        'path': os.path.join(path, do[DataObject.name]),
+                        'object': 'dataobject',
+                        'size': do[DataObject.size],
+                        'create_time': datafield('create_time', do[DataObject.create_time], 'timestamp').htmlstring,
+                        'owner_name': do[DataObject.owner_name]
+                    }
+                    results['rows'].append(objdict)
+            except CAT_NO_ROWS_FOUND:
+                pass
     return jsonify(results)
 
 # helper functions used for labeling, and layout
@@ -1675,10 +1672,11 @@ def upload_file():
         f = request.files['file']
         # Generate irods file object
         iObjName = requestdata['collection'] + '/' + f.filename
-        iObj = current_user.ifs.open(iObjName, 'w')
-        f.save(iObj)
-        iObj.close()
-        contents_changed()
+        with irods_mananger.session() as session:
+            iObj = fs_irods(session).open(iObjName, 'w')
+            f.save(iObj)
+            iObj.close()
+            contents_changed()
     return redirect(url_for('collbrowser.collbrowser') + '?path=' + requestdata['collection'])
 
 @bp.route('_deletefile', methods=['POST'])
@@ -1686,7 +1684,8 @@ def delete_file():
     requestdata = request.form.to_dict()
     if 'path' in requestdata:
         path = requestdata['path']
-        current_user.ifs.deletefile(path)
+        with irods_manager.session() as session:
+            fs_irods(session).deletefile(path)
         contents_changed()
     return '', 201
 
@@ -1805,57 +1804,57 @@ CSS_NAME_TO_COLUMN = {
 }
 
 def search_result_query(object_type, filter_dict, search_dict):
-    irods_session = irods_manager.session()
-    query = irods_session.query(*OBJECT_TYPES.get(object_type, (Collection, )))
+    with irods_manager.session() as irods_session:
+        query = irods_session.query(*OBJECT_TYPES.get(object_type, (Collection, )))
 
-    # initial search
-    SEARCH_PATTERN = '%{}%'
-    SEARCH_OPTION = 'like'
-    if search_dict["useExactMatch"] == 'True':
-        SEARCH_PATTERN = '{}'
-        SEARCH_OPTION = '='
+        # initial search
+        SEARCH_PATTERN = '%{}%'
+        SEARCH_OPTION = 'like'
+        if search_dict["useExactMatch"] == 'True':
+            SEARCH_PATTERN = '{}'
+            SEARCH_OPTION = '='
 
-    SEARCH_IN_OPTIONS = {
-        "collection_metadata": CollectionMeta.value,
-        "collection_name": Collection.name,
-        "dataobject_metadata": DataObjectMeta.value,
-        "object_name": DataObject.name,
-    }
-    SEARCH_IN_DEFAULT = Collection.name
+        SEARCH_IN_OPTIONS = {
+            "collection_metadata": CollectionMeta.value,
+            "collection_name": Collection.name,
+            "dataobject_metadata": DataObjectMeta.value,
+            "object_name": DataObject.name,
+        }
+        SEARCH_IN_DEFAULT = Collection.name
 
-    if search_dict["searchtext"]:
-        search_in_type = search_dict.get("searchIn")
-        if search_in_type == "collection_metadata":
-            # To reliably search for metadata values in all metadata fields, iRODS still needs the field to be 'specified'.
+        if search_dict["searchtext"]:
+            search_in_type = search_dict.get("searchIn")
+            if search_in_type == "collection_metadata":
+                # To reliably search for metadata values in all metadata fields, iRODS still needs the field to be 'specified'.
+                query = query.filter(Criterion(
+                    "like",
+                    CollectionMeta.name,
+                    "%")
+                )
+            if search_in_type == "dataobject_metadata":
+                # To reliably search for metadata values in all metadata fields, iRODS still needs the field to be 'specified'.
+                query = query.filter(Criterion(
+                    "like",
+                    DataObjectMeta.name,
+                    "%")
+                )
             query = query.filter(Criterion(
-                "like",
-                CollectionMeta.name,
-                "%")
-            )
-        if search_in_type == "dataobject_metadata":
-            # To reliably search for metadata values in all metadata fields, iRODS still needs the field to be 'specified'.
-            query = query.filter(Criterion(
-                "like",
-                DataObjectMeta.name,
-                "%")
-            )
-        query = query.filter(Criterion(
-            SEARCH_OPTION,
-            SEARCH_IN_OPTIONS.get(search_in_type, SEARCH_IN_DEFAULT),
-            SEARCH_PATTERN.format(search_dict["searchtext"])
-        ))
+                SEARCH_OPTION,
+                SEARCH_IN_OPTIONS.get(search_in_type, SEARCH_IN_DEFAULT),
+                SEARCH_PATTERN.format(search_dict["searchtext"])
+            ))
 
-    # filter by columns.
+        # filter by columns.
 
-    # Searching for datasets by checking if the collection has a sys::dataset_id metadata field.
-    if object_type == "dataset" and "sys::dataset_id" not in filter_dict:
-        filter_dict["sys::dataset_id"] = ""
+        # Searching for datasets by checking if the collection has a sys::dataset_id metadata field.
+        if object_type == "dataset" and "sys::dataset_id" not in filter_dict:
+            filter_dict["sys::dataset_id"] = ""
 
-    for name, value in filter_dict.items():
-        if "meta_name" in COLUMNS[name]:
-            query = query.filter(CollectionMeta.name == COLUMNS[name]["meta_name"]).filter(Criterion( "like", CollectionMeta.value, '%{}%'.format(value)))
-            continue
-        query = query.filter(Criterion( "like", COLUMNS[name]["irods_object"], '%{}%'.format(value)))
+        for name, value in filter_dict.items():
+            if "meta_name" in COLUMNS[name]:
+                query = query.filter(CollectionMeta.name == COLUMNS[name]["meta_name"]).filter(Criterion( "like", CollectionMeta.value, '%{}%'.format(value)))
+                continue
+            query = query.filter(Criterion( "like", COLUMNS[name]["irods_object"], '%{}%'.format(value)))
     return query
 
 def search_result_count(object_type, filter_dict, search_dict, searchId):
@@ -2002,73 +2001,73 @@ def search_result_old():
         SEARCH_PATTERN = '{}'
         SEARCH_OPTION = '='
 
-    irods_session = irods_manager.session()
-    data = list()
+    with irods_manager.session() as irods_session:
+        data = list()
 
-    if useSearchDatasetNames:
-        #search for datasets
-        query = irods_session.query(Collection.name).filter(
-            Criterion( '=', CollectionMeta.name, ATTR_DATASETID ) ).filter(
-            #EVEN IN AN EXACT SEARCH WE NEED TO DO A LIKE SEARCH ON A PATTERN, BECAUSE
-            #THE ACTUAL COLLECTION_NAME CONTAINS THE COMPLETE PATH, INCL. PARENT COLLECTION!
-            Criterion( 'like', Collection.name, ('%'+SEARCH_PATTERN).format(searchtext) )
-        )
-        for coll in query:
-            basename = os.path.basename(coll[Collection.name])
-            if useExactMatch:
-                if searchtext != basename:
-                    continue
-            else:
-                #this would happen by searching part of the parent path, e.g. 'minion'
-                if searchtext not in basename:
-                    continue
-            data.append( { 'collection': datafield('collection', coll[Collection.name], 'irods_collection').htmlstring ,
-                           'dataobject': '',
-                           'metaattribute': '',
-                           'metavalue':'' } )
+        if useSearchDatasetNames:
+            #search for datasets
+            query = irods_session.query(Collection.name).filter(
+                Criterion( '=', CollectionMeta.name, ATTR_DATASETID ) ).filter(
+                #EVEN IN AN EXACT SEARCH WE NEED TO DO A LIKE SEARCH ON A PATTERN, BECAUSE
+                #THE ACTUAL COLLECTION_NAME CONTAINS THE COMPLETE PATH, INCL. PARENT COLLECTION!
+                Criterion( 'like', Collection.name, ('%'+SEARCH_PATTERN).format(searchtext) )
+            )
+            for coll in query:
+                basename = os.path.basename(coll[Collection.name])
+                if useExactMatch:
+                    if searchtext != basename:
+                        continue
+                else:
+                    #this would happen by searching part of the parent path, e.g. 'minion'
+                    if searchtext not in basename:
+                        continue
+                data.append( { 'collection': datafield('collection', coll[Collection.name], 'irods_collection').htmlstring ,
+                            'dataobject': '',
+                            'metaattribute': '',
+                            'metavalue':'' } )
 
-    if useSearchObjectNames:
-        #search for data objects
-        query = irods_session.query(Collection.name, DataObject.name).filter(
-            Criterion( SEARCH_OPTION, DataObject.name, SEARCH_PATTERN.format(searchtext) )
-        )
-        for obj in query:
-            data.append( { 'collection': datafield('collection', obj[Collection.name], 'irods_collection').htmlstring ,
-                           'dataobject': obj[DataObject.name],
-                           'metaattribute': '',
-                           'metavalue':'' } )
+        if useSearchObjectNames:
+            #search for data objects
+            query = irods_session.query(Collection.name, DataObject.name).filter(
+                Criterion( SEARCH_OPTION, DataObject.name, SEARCH_PATTERN.format(searchtext) )
+            )
+            for obj in query:
+                data.append( { 'collection': datafield('collection', obj[Collection.name], 'irods_collection').htmlstring ,
+                            'dataobject': obj[DataObject.name],
+                            'metaattribute': '',
+                            'metavalue':'' } )
 
-    if useSearchMeta:
-        query = irods_session.query(Collection.name, CollectionMeta.name, CollectionMeta.value).filter(
-            Criterion( SEARCH_OPTION, CollectionMeta.value, SEARCH_PATTERN.format(searchtext) )
-        )
-        for coll in query:
-            data.append({ 'collection':  datafield('collection', coll[Collection.name], 'irods_collection').htmlstring ,
-                          'dataobject': '',
-                          'metaattribute': coll[CollectionMeta.name],
-                          'metavalue': coll[CollectionMeta.value] })
+        if useSearchMeta:
+            query = irods_session.query(Collection.name, CollectionMeta.name, CollectionMeta.value).filter(
+                Criterion( SEARCH_OPTION, CollectionMeta.value, SEARCH_PATTERN.format(searchtext) )
+            )
+            for coll in query:
+                data.append({ 'collection':  datafield('collection', coll[Collection.name], 'irods_collection').htmlstring ,
+                            'dataobject': '',
+                            'metaattribute': coll[CollectionMeta.name],
+                            'metavalue': coll[CollectionMeta.value] })
 
-        #iquest "SELECT COLL_NAME, DATA_NAME, META_DATA_ATTR_NAME, META_DATA_ATTR_VALUE where META_DATA_ATTR_VALUE like 'a55f0cd5-79cf-4b27-91e8-ce10f055e817'"
-        query = irods_session.query(Collection.name, DataObject.name, DataObjectMeta.name, DataObjectMeta.value, DataObjectMeta.units).filter(
-                Criterion( SEARCH_OPTION, DataObjectMeta.value, SEARCH_PATTERN.format(searchtext)) )
-        for obj in query:
-            data.append({ 'collection':  datafield('collection', obj[Collection.name], 'irods_collection').htmlstring ,
-                          'dataobject': obj[DataObject.name],
-                          'metaattribute': obj[DataObjectMeta.name],
-                          'metavalue': obj[DataObjectMeta.value]})
+            #iquest "SELECT COLL_NAME, DATA_NAME, META_DATA_ATTR_NAME, META_DATA_ATTR_VALUE where META_DATA_ATTR_VALUE like 'a55f0cd5-79cf-4b27-91e8-ce10f055e817'"
+            query = irods_session.query(Collection.name, DataObject.name, DataObjectMeta.name, DataObjectMeta.value, DataObjectMeta.units).filter(
+                    Criterion( SEARCH_OPTION, DataObjectMeta.value, SEARCH_PATTERN.format(searchtext)) )
+            for obj in query:
+                data.append({ 'collection':  datafield('collection', obj[Collection.name], 'irods_collection').htmlstring ,
+                            'dataobject': obj[DataObject.name],
+                            'metaattribute': obj[DataObjectMeta.name],
+                            'metavalue': obj[DataObjectMeta.value]})
 
 
-    data2 = sorted(data, key = lambda e: (e['collection'], e['dataobject'], e['metaattribute'] ) )
-    columns = [ { "field": "collection",    "title": "Collection", "sortable": True },
-                { "field": "dataobject",    "title": "File", "sortable": True  },
-                { "field": "metaattribute", "title": "Attr", "sortable": True  },
-                { "field": "metavalue",     "title": "Value", "sortable": True  } ]
-    searchResultsData = {
-                    'id': 'searchResult',
-                    'columnsJSON': json.dumps(columns),
-                    'dataJSON': json.dumps(data2)
-    }
-    content = { 'searchResults': render_template('bootstraptable.html', data=searchResultsData), 'searchId': searchid }
+        data2 = sorted(data, key = lambda e: (e['collection'], e['dataobject'], e['metaattribute'] ) )
+        columns = [ { "field": "collection",    "title": "Collection", "sortable": True },
+                    { "field": "dataobject",    "title": "File", "sortable": True  },
+                    { "field": "metaattribute", "title": "Attr", "sortable": True  },
+                    { "field": "metavalue",     "title": "Value", "sortable": True  } ]
+        searchResultsData = {
+                        'id': 'searchResult',
+                        'columnsJSON': json.dumps(columns),
+                        'dataJSON': json.dumps(data2)
+        }
+        content = { 'searchResults': render_template('bootstraptable.html', data=searchResultsData), 'searchId': searchid }
     return content
 
 @bp.route('_mydatasets')

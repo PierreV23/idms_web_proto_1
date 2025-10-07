@@ -23,26 +23,26 @@ RESOURCES_OMIT = ('demoResc', 'bundleResc')
 bp = Blueprint('reports', __name__, url_prefix='/reports')
 
 def collection_size(coll, resource, timeout=86400):
-    irods_session = irods_manager.session()
-    size_attr = 'sys::collection_size::{}'.format(resource)
-    query = irods_session.query(CollectionMeta.value).filter(
-        Criterion('=', Collection.name, coll)).filter(
-            Criterion('=', CollectionMeta.name, size_attr))
-    size = 0
-    for q in query:
-        size += int(round(float((q[CollectionMeta.value]))))
+    with irods_manager.session() as irods_session:
+        size_attr = 'sys::collection_size::{}'.format(resource)
+        query = irods_session.query(CollectionMeta.value).filter(
+            Criterion('=', Collection.name, coll)).filter(
+                Criterion('=', CollectionMeta.name, size_attr))
+        size = 0
+        for q in query:
+            size += int(round(float((q[CollectionMeta.value]))))
     return size
 
 def projectdata_in_resource(project, resource):
     # Find all collections with a specific projectid
-    irods_session = irods_manager.session()
-    query = irods_session.query(Collection.name).filter(
-            Criterion('=', CollectionMeta.name, 'projectID')).filter(
-            Criterion('=', CollectionMeta.value, project))
-    usage = 0
-    for coll in query:
-        usage += collection_size(coll[Collection.name], resource)
-        
+    with irods_manager.session() as irods_session:
+        query = irods_session.query(Collection.name).filter(
+                Criterion('=', CollectionMeta.name, 'projectID')).filter(
+                Criterion('=', CollectionMeta.value, project))
+        usage = 0
+        for coll in query:
+            usage += collection_size(coll[Collection.name], resource)
+            
     return usage
 
 @bp.route('_irods_sessionreport')
@@ -93,25 +93,25 @@ def get_space_usage():
     projectinfo = get_projectlist()
           
     #query resources
-    irods_session = irods_manager.session()
-    query = irods_session.query(Resource.name)
-    resources = [ r[Resource.name] for r in query if not r[Resource.name] in RESOURCES_OMIT ]
-    # query projects
-    query =  irods_session.query(CollectionMeta.value).filter(
-        Criterion('=', CollectionMeta.name, 'projectID'))
-    projects=[ r[CollectionMeta.value] for r in query]
-    projects.sort()
-    # create projectlist
-    projectlist = []
-    for p in projects:
-        projectdata = {'id': p}
-        projectdata['name'] = projectinfo.get(p, {'name': p, 'description': ''})['description']      
-        total = 0
-        for r in resources:
-            projectdata[r] = datafield('usage', projectdata_in_resource(p, r), 'bytes')
-            total += int(projectdata[r])
-        projectdata['total'] = datafield('total', total, 'bytes')
-        projectlist.append(projectdata)
+    with irods_manager.session() as irods_session:
+        query = irods_session.query(Resource.name)
+        resources = [ r[Resource.name] for r in query if not r[Resource.name] in RESOURCES_OMIT ]
+        # query projects
+        query =  irods_session.query(CollectionMeta.value).filter(
+            Criterion('=', CollectionMeta.name, 'projectID'))
+        projects=[ r[CollectionMeta.value] for r in query]
+        projects.sort()
+        # create projectlist
+        projectlist = []
+        for p in projects:
+            projectdata = {'id': p}
+            projectdata['name'] = projectinfo.get(p, {'name': p, 'description': ''})['description']      
+            total = 0
+            for r in resources:
+                projectdata[r] = datafield('usage', projectdata_in_resource(p, r), 'bytes')
+                total += int(projectdata[r])
+            projectdata['total'] = datafield('total', total, 'bytes')
+            projectlist.append(projectdata)
     return projectlist, resources
 
 

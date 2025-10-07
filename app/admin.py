@@ -15,6 +15,7 @@ from irods.meta import iRODSMeta
 from irods.models import Collection, CollectionMeta, DataObject, Resource, ResourceMeta, DataObjectMeta, RuleExec
 from irods.column import Criterion
 from irods.query import SpecificQuery
+from fs_irods import fs_irods
 from app.irods_helper import getmetaitem
 from app.datafield import datafield
 from app.irodssessions import irods_manager
@@ -164,27 +165,27 @@ def archive_action():
     requestdata = request.form.to_dict()
     action = requestdata.get('action')
     collection = requestdata.get('collection')
-    session = irods_manager.session()
-    try:
-        collobj = session.collections.get(collection)
-    except irods.exception.CollectionDoesNotExist:
-        return jsonify({'message': 'Collection does not exist'})
-    if action == 'remove_archive':
-        state =  getmetaitem(collobj, ATTR_ARCHIVE_STATE)
-        if state is None:
-            return jsonify({'message': 'Cannot modify collection with unknown state'})
-        if state.count('1')<2: # Dont remove archive if no other copy is present
-            return jsonify({'message': 'Cannot remove last data copy in collection'})
-        for attr in (ATTR_ARCHIVE_TARFILE, ATTR_ARCHIVE_MANIFESTFILE):
-            filename = getmetaitem(collobj, attr)
-            if filename and current_user.ifs.fileexists(filename):
-                session.data_objects.unlink(filename)
-                collobj.metadata.remove(iRODSMeta(attr, filename))
-    if action in ('clear_status', 'remove_archive') :
-        for attr in (ATTR_ARCHIVE_STATUS, ATTR_ARCHIVE_STATUSMSG, ATTR_ARCHIVE_LASTCHECK):
-            val = getmetaitem(collobj, attr)
-            if val:
-                collobj.metadata.remove(iRODSMeta(attr, val))
+    with irods_manager.session() as session:
+        try:
+            collobj = session.collections.get(collection)
+        except irods.exception.CollectionDoesNotExist:
+            return jsonify({'message': 'Collection does not exist'})
+        if action == 'remove_archive':
+            state =  getmetaitem(collobj, ATTR_ARCHIVE_STATE)
+            if state is None:
+                return jsonify({'message': 'Cannot modify collection with unknown state'})
+            if state.count('1')<2: # Dont remove archive if no other copy is present
+                return jsonify({'message': 'Cannot remove last data copy in collection'})
+            for attr in (ATTR_ARCHIVE_TARFILE, ATTR_ARCHIVE_MANIFESTFILE):
+                filename = getmetaitem(collobj, attr)
+                if filename and fs_irods(session).fileexists(filename):
+                    session.data_objects.unlink(filename)
+                    collobj.metadata.remove(iRODSMeta(attr, filename))
+        if action in ('clear_status', 'remove_archive') :
+            for attr in (ATTR_ARCHIVE_STATUS, ATTR_ARCHIVE_STATUSMSG, ATTR_ARCHIVE_LASTCHECK):
+                val = getmetaitem(collobj, attr)
+                if val:
+                    collobj.metadata.remove(iRODSMeta(attr, val))
     return jsonify({'status':'ok'})
 
 @bp.route('_archissue', methods=['GET'])
@@ -219,27 +220,27 @@ def admin():
     if not current_user.is_admin:
         return render_template('denied.html')
     queues = {}
-    session = irods_manager.session()
-    for q in ['incoming', 'depends', 'choose', 'prepare', 'stage', 'spacecheck', 'download', 'queued', 'active', 'finishing', 'postprocessing', 'notify', 'waiting']:
-        enabled = True
-        path = f'/{current_user.irods_zone}/system/runsheet'
-        metaquery = session.query(CollectionMeta.value).filter(
-            Criterion('=', Collection.name, path)).filter(
-            Criterion('=', CollectionMeta.name, f'sys::enable::{q}'))
-        for meta in metaquery:
-            enabled = meta[CollectionMeta.value] == 'true'
-        if q == 'incoming':
-            items = session.query(DataObject.id).filter(\
-                Criterion('=', Collection.name, '/rivmZone/system/runsheet/processing')).filter(\
-                Criterion('=', DataObjectMeta.name, 'sys::runsheet::state')).filter(\
-                Criterion('=', DataObjectMeta.value, q)).count(DataObject.id)
-            count  = items.execute()[0][DataObject.id]
-        else:
-            items = session.query(Collection.id).filter(\
-                Criterion('=', CollectionMeta.name, 'sys::runsheet::state')).filter(\
-                Criterion('=', CollectionMeta.value, q)).count(Collection.id)
-            count  = items.execute()[0][Collection.id]
-        queues[q] = {'enabled': enabled, 'count': count}
+    with irods_manager.session() as session:
+        for q in ['incoming', 'depends', 'choose', 'prepare', 'stage', 'spacecheck', 'download', 'queued', 'active', 'finishing', 'postprocessing', 'notify', 'waiting']:
+            enabled = True
+            path = f'/{current_user.irods_zone}/system/runsheet'
+            metaquery = session.query(CollectionMeta.value).filter(
+                Criterion('=', Collection.name, path)).filter(
+                Criterion('=', CollectionMeta.name, f'sys::enable::{q}'))
+            for meta in metaquery:
+                enabled = meta[CollectionMeta.value] == 'true'
+            if q == 'incoming':
+                items = session.query(DataObject.id).filter(\
+                    Criterion('=', Collection.name, '/rivmZone/system/runsheet/processing')).filter(\
+                    Criterion('=', DataObjectMeta.name, 'sys::runsheet::state')).filter(\
+                    Criterion('=', DataObjectMeta.value, q)).count(DataObject.id)
+                count  = items.execute()[0][DataObject.id]
+            else:
+                items = session.query(Collection.id).filter(\
+                    Criterion('=', CollectionMeta.name, 'sys::runsheet::state')).filter(\
+                    Criterion('=', CollectionMeta.value, q)).count(Collection.id)
+                count  = items.execute()[0][Collection.id]
+            queues[q] = {'enabled': enabled, 'count': count}
     return render_template('queues.html', queues=queues)
 
 @bp.route('/resource_data')
@@ -249,27 +250,27 @@ def resource_data_cached():
     
 def resource_data():
     resources =  {}    
-    session = irods_manager.session()
-    q = session.query(Resource.name)
-    for r in q:
-        resources[r[Resource.name]] = {}
-        resource = session.resources.get(r[Resource.name])
-        metadata = resource.metadata.items()
-        metanames = [ m.name for m in metadata ]
-        for property in RESOURCE_PROPS:
-            meta_name = RESOURCE_PROPS[property].get('meta')
-            if meta_name:
-                if meta_name in metanames:
-                    irods_meta = resource.metadata.get_one(meta_name)
-                    if RESOURCE_PROPS[property].get('unit', False):
-                        value = irods_meta.units
-                    else:
-                        value = irods_meta.value
-                    factor = RESOURCE_PROPS[property].get('factor')
-                    if factor:
-                        resources[r[Resource.name]][property] = float(value) / factor
-                    else:
-                        resources[r[Resource.name]][property] = value
+    with irods_manager.session() as session:
+        q = session.query(Resource.name)
+        for r in q:
+            resources[r[Resource.name]] = {}
+            resource = session.resources.get(r[Resource.name])
+            metadata = resource.metadata.items()
+            metanames = [ m.name for m in metadata ]
+            for property in RESOURCE_PROPS:
+                meta_name = RESOURCE_PROPS[property].get('meta')
+                if meta_name:
+                    if meta_name in metanames:
+                        irods_meta = resource.metadata.get_one(meta_name)
+                        if RESOURCE_PROPS[property].get('unit', False):
+                            value = irods_meta.units
+                        else:
+                            value = irods_meta.value
+                        factor = RESOURCE_PROPS[property].get('factor')
+                        if factor:
+                            resources[r[Resource.name]][property] = float(value) / factor
+                        else:
+                            resources[r[Resource.name]][property] = value
     return resources
     
 
@@ -282,37 +283,37 @@ def resources():
 @bp.route('/_update_resources', methods=['POST'])
 @auth_endpoint
 def update_resources():
-    session = irods_manager.session()
-    data = request.form.to_dict()
-    # Create a dict of the form data
-    new_settings = {}
-    for d in data:
-        resource, attr = d.split('__')
-        value = data[d]
-        if not resource in new_settings:
-            new_settings[resource] = {}
-        new_settings[resource][attr] = value
-    for resource in new_settings:
-        res_obj = session.resources.get(resource)
-        for property in RESOURCE_PROPS:
-            meta_name = RESOURCE_PROPS[property]['meta']
-            if property in new_settings[resource]:
-                if new_settings[resource][property]:
-                    try:
-                        current_meta = res_obj.metadata.get_one(meta_name)
-                    except KeyError:
-                        current_meta = iRODSMeta(meta_name, '')
-                    new_meta = iRODSMeta(meta_name, current_meta.value, current_meta.units)
-                    new_value = new_settings[resource][property]
-                    if RESOURCE_PROPS[property].get('factor'):
-                        new_value = str(int(float(new_value) * RESOURCE_PROPS[property].get('factor') // 1))
-                    if RESOURCE_PROPS[property].get('unit', False):
-                        new_meta.units = new_value
-                    else:
-                        new_meta.value = new_value
-                    res_obj.metadata[meta_name] = new_meta
-            else:
-                del res_obj.metadata[meta_name]
+    with irods_manager.session() as session:
+        data = request.form.to_dict()
+        # Create a dict of the form data
+        new_settings = {}
+        for d in data:
+            resource, attr = d.split('__')
+            value = data[d]
+            if not resource in new_settings:
+                new_settings[resource] = {}
+            new_settings[resource][attr] = value
+        for resource in new_settings:
+            res_obj = session.resources.get(resource)
+            for property in RESOURCE_PROPS:
+                meta_name = RESOURCE_PROPS[property]['meta']
+                if property in new_settings[resource]:
+                    if new_settings[resource][property]:
+                        try:
+                            current_meta = res_obj.metadata.get_one(meta_name)
+                        except KeyError:
+                            current_meta = iRODSMeta(meta_name, '')
+                        new_meta = iRODSMeta(meta_name, current_meta.value, current_meta.units)
+                        new_value = new_settings[resource][property]
+                        if RESOURCE_PROPS[property].get('factor'):
+                            new_value = str(int(float(new_value) * RESOURCE_PROPS[property].get('factor') // 1))
+                        if RESOURCE_PROPS[property].get('unit', False):
+                            new_meta.units = new_value
+                        else:
+                            new_meta.value = new_value
+                        res_obj.metadata[meta_name] = new_meta
+                else:
+                    del res_obj.metadata[meta_name]
 
     return redirect(url_for('admin.resources'))
 

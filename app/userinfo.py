@@ -33,7 +33,8 @@ def userinfo(user):
 def groupinfo(group):
     ginfo={}
     try:
-        gobj = irods_manager.session().user_groups.get(group)
+        with irods_manager.session() as session:
+            gobj = session.user_groups.get(group)
     except:
         ginfo["None"] = {'sys::ad::mail': None, 'sys::ad::department': None}
         return(ginfo)

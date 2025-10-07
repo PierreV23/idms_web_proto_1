@@ -35,9 +35,9 @@ def mdconvert(fobj):
 @BP.route('/serve_image')
 def serve_image():
     path = urllib.parse.unquote(request.args.get('path', '/', type=str))
-    ifs = current_user.ifs
-    obj = ifs.getfile(path)
-    imagefile = obj.open('r')
+    with irods_manager.session() as session:
+        obj = fs_irods(session).getfile(path)
+        imagefile = obj.open('r')
     return send_file(imagefile, download_name=os.path.split(path)[1],
                      as_attachment=False)
 
@@ -59,7 +59,6 @@ def test_access():
 @BP.route('/download_object')
 def download_object():
     path = urllib.parse.unquote(request.args.get('path', '/', type=str))
-    #objectfile = current_user.ifs.getfile(path).open('r')
     with irods_manager.session() as session:
         objectfile = fs_irods(session=session).getfile(path).open('r')
         AA = send_file(objectfile, download_name=os.path.split(path)[1],
