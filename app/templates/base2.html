@@ -6,10 +6,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   
-  <!-- favicon -->
+  <!-- favicon Huisstijl Rijksoverheid
   <link rel="shortcut icon" type="image/svg+xml" href="{{ url_for('static', filename='files/favicons/favicon.svg') }}">
+  -->
   
-  <title>RIVM iDMS</title>
+  <!-- favicon -->
+  <link rel="shortcut icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.ico') }}">
+  
+  <title>iDMS</title>
 
   {% block meta %}
 
@@ -25,8 +29,13 @@
   <!-- FontAwesome -->
   <link rel="stylesheet" href="{{ url_for('static', filename='font-awesome-6.2.1/css/all.min.css') }}">
 
+  <!-- Rijkshuisstijl Font and colors 
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/custom-rijkshuisstijl.css') }}">
+  -->
+  
   <!-- MyCustomCss -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/custom-stylesheet.css') }}">
+
 
   <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.7.1/css/bootstrap-datepicker.min.css" rel="stylesheet"/>
 

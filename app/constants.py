@@ -63,7 +63,7 @@ SELECTED_FONTSIZE = '10'
 
 # Variables for Graphs
 SVG_PATH = 'app/static/svg'
-ATTR_GRAPH_FONT = "RO_Sans,'Source Sans Pro',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif,'Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol'"
+ATTR_GRAPH_FONT = "'Source Sans Pro',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif,'Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol'"
 
 # Constants for graphical layout, shapes and colors, also used to create a legend.
 ORDER ='order'
