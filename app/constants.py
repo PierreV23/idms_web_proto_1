@@ -33,7 +33,6 @@ DATA_KEY_MAP = {
 }
 
 # Constansts that define the JOB VIEW
-
 JOB_PAGE_SIZE = 25
 
 # Border colors of shapes
