@@ -94,9 +94,9 @@
         </div>
         <hr>
         <button type="submit" class="btn btn-primary">Submit</button>
-        <!-- <button type="button" class="btn btn-primary" data-href="/remove_process2?name={{details['name']}}" data-toggle="modal" data-target="#confirm-delete">
-        Remove process
-      </button> -->
+        <button type="button" class="btn btn-primary" data-href="/remove_process2?name={{details['name']}}" data-toggle="modal" data-target="#confirm-delete">
+          Remove process
+        </button>
 
       </form>
     </div>
@@ -122,12 +122,12 @@
         Remove process
       </div>
       <div class="modal-body">
-        Are you sure you want to remove project {{ details['name'] }}
+        Are you sure you want to remove process {{ details['name'] }}
       </div>
       <div class="modal-footer">
         <form method="post" action="update_project">
           <input type="hidden" id="action" name="action" value="remove_process">
-          <input type="hidden" id="project" name="project" value="{{ details['name'] }}">
+          <input type="hidden" id="process" name="process" value="{{ details['name'] }}">
           <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
           <button type="submit" class="btn btn-danger btn-ok">Delete</a>
         </form>

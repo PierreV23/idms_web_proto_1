@@ -207,6 +207,16 @@ def update_projectsettings():
             data = {'name': process}
             response, result = rest_call('POST', 'processes', data=data)
         location=f'page=processes&process={process}'
+    elif action == 'remove_process':
+        print(f'Remove process {process}')
+        if process:
+            response, result = rest_call('DELETE', f'processes/{process}')
+            print(response, result)
+            if result != 200:
+                flash(response.get('message'), 'error')
+                location = f'page=processes&process={process}'
+            else:
+                location = f'page=processes'
     elif action == 'add_processgroup':
         name = requestdata.get('name')
         if project and name:
