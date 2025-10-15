@@ -279,17 +279,17 @@ def upload_meta():
         data = jsonavu.avu2json(avudata, "cat")
         selectedSchema = metadict.get(ATTR_UPLOADMETASCHEMA, None)
         return render_template('upload_meta.html', coll=collection, project=projectId, name=name, schemata=schemata, selectedSchema=selectedSchema, data=data)
-    if request.method == 'POST':
-        record = request.json
-        collection = record.get('coll')
-        metadata = iqry.qcollmetadict(collection)
-        unset_upload_meta(collection)
-        avus = jsonavu.json2avu(record.get('data', {}), "cat")
-        for avu in avus:
-            iqry.scollmetaval(collection, f'{ATTR_UPLOADMETA}{avu["a"]}', avu["v"], unit=avu["u"] )    
-        selectedSchema = record.get('selectedSchema')
-        iqry.scollmetaval(collection, f'{ATTR_UPLOADMETASCHEMA}', selectedSchema)              
-        return jsonify({'status': 'OK' }), 200
+#     if request.method == 'POST':
+#         record = request.json
+#         collection = record.get('coll')
+#         metadata = iqry.qcollmetadict(collection)
+#         unset_upload_meta(collection)
+#         avus = jsonavu.json2avu(record.get('data', {}), "cat")
+#         for avu in avus:
+#             iqry.scollmetaval(collection, f'{ATTR_UPLOADMETA}{avu["a"]}', avu["v"], unit=avu["u"] )    
+#         selectedSchema = record.get('selectedSchema')
+#         iqry.scollmetaval(collection, f'{ATTR_UPLOADMETASCHEMA}', selectedSchema)              
+#         return jsonify({'status': 'OK' }), 200
 
 def unset_upload_meta(collection):
     metadata = iqry.qcollmetadict(collection)
