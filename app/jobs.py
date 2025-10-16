@@ -24,7 +24,8 @@ from datetime import datetime, timezone
 from .flaskcache import cache, dep_zone, key_zone, key_userzone
 from app.irodssessions import irods_manager
 from . import iqry
-from . import constants
+from .constants import *
+from .collbrowser import shape
 import psycopg2
 from psycopg2 import pool
 from psycopg2.extras import RealDictCursor
@@ -358,27 +359,30 @@ def shortname(name,l):
         s = '...' + name[-l+4:]
     return s
 
-def coll_shape(coll_type):
-    layout = constants.LAYOUT.get(coll_type, constants.DEFAULT_SHAPE)
-    return layout[constants.SHAPE2], layout[constants.FILLCOLOR]    
 
 @bp.route('/processgraph')
 def processgraph():
     runsheet_coll = request.args.get('runsheet', '/', type=str)
-    graph = Digraph('datagraph')
+    graph = Digraph('processgraph')
 
     # We need the processgroupID
-    processgroupid = iqry.qcollmetavalstatic(runsheet_coll, 'sys::runsheet::processgroupid')
+    processgroupid = iqry.qcollmetavalstatic(runsheet_coll, 'sys::runsheet::processgroupid') 
     q = iqry.qcollbymeta('sys::runsheet::processgroupid', processgroupid)
     colls = [ r[Collection.name] for r in q ]
+    
     for coll in colls:
-        state = iqry.qcollmetaval(coll, 'sys::runsheet::state', default='unknown')
+        state = iqry.qcollmetaval(coll, 'sys::runsheet::state', default='unknown').lower()
+
         if state == 'done':
-            state = iqry.qcollmetaval(coll, 'sys::run::result')
-        shape, fillcolor = coll_shape(state)
+            state = iqry.qcollmetaval(coll, 'sys::run::result').lower() 
+
+        # draw the nodes
         penwidth = '3' if runsheet_coll == coll else '1'
-        graph.node(coll, label=iqry.qcollmetavalstatic(coll, 'sys::runsheet::description'), style='filled', penwidth=penwidth, 
-            shape=shape, fillcolor=fillcolor, URL=url_for('jobs.jobdetails', name=iqry.qcollmetaval(coll, ATTR_RUNSHEET_ID)))
+        layout, legends = shape(state, penwidth=penwidth)
+        
+        graph.node(coll, label=iqry.qcollmetavalstatic(coll, 'sys::runsheet::description'), margin = '0.1, 0', style=layout['style'], penwidth=layout['penwidth'], 
+            shape=layout['shape_process'], fillcolor=layout['fillcolor'], URL=url_for('jobs.jobdetails', name=iqry.qcollmetaval(coll, ATTR_RUNSHEET_ID)))
+        
     for coll in colls:
         ir = iqry.qcollmetaval(coll, 'sys::pipeline::input_collection_id')
         input_colls = [ c for c in colls if iqry.qcollmetavalstatic(c, 'sys::dataset_id') == ir ]
@@ -391,9 +395,10 @@ def processgraph():
             for r in q:
                 src = r[Collection.name]
             if src:
-                shape, fillcolor = coll_shape('source')
-                graph.node(src, shortname(src, NAME_LENGTH), shape=shape, fillcolor=fillcolor, style='filled',
-                    URL=url_for('collbrowser.collbrowser', path=src))
+                layout, legends = shape('source')
+                graph.node(src, shortname(src, NAME_LENGTH), shape=layout['shape'], margin = '0.1, 0', fillcolor=layout['fillcolor'], style=layout['style'],
+                        tooltip = layout['tooltip'] + ': ' + src, 
+                        URL=url_for('collbrowser.collbrowser', path=src))
                 graph.edge(src, coll)
 
     graph.graph_attr['rankdir'] = 'LR'
@@ -480,39 +485,39 @@ def jobdetails():
 @bp.route('joblogs')
 def job_logs():
     jobnaam = request.args.get('name', '', type=str)
-    session = irods_manager.session()
+    with irods_manager.session() as session:
 
-    # the jobnaam is refering to metainfo on a collection
-    query = session.query(Collection.name, CollectionMeta).filter( 
-            Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_ID )).filter(
-            Criterion('=', CollectionMeta.value, f'{jobnaam}'))
-    # Find the job log file
-    results = query.get_results()
-    job = next(results)
-    runsheet = job[Collection.name] 
-    q2 = session.query(CollectionMeta.name, CollectionMeta.value).filter( \
-            Criterion('=', Collection.name, runsheet ))
-    metadata = {meta[CollectionMeta.name] : meta[CollectionMeta.value] for meta in q2}
-    ifs = current_user.ifs
+        # the jobnaam is refering to metainfo on a collection
+        query = session.query(Collection.name, CollectionMeta).filter( 
+                Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_ID )).filter(
+                Criterion('=', CollectionMeta.value, f'{jobnaam}'))
+        # Find the job log file
+        results = query.get_results()
+        job = next(results)
+        runsheet = job[Collection.name] 
+        q2 = session.query(CollectionMeta.name, CollectionMeta.value).filter( \
+                Criterion('=', Collection.name, runsheet ))
+        metadata = {meta[CollectionMeta.name] : meta[CollectionMeta.value] for meta in q2}
 
-    # Find output logs
-    logfiles = {}
-    try:
-        log_location = '{}/log'.format(metadata['sys::run::output_collection'])
-        if current_user.ifs.folderexists(log_location):
-            logfiles = _get_logfiles(log_location)
-    except KeyError:
-        # output collection not set as metadata. Ignore.
-        pass    
+        # Find output logs
+        logfiles = {}
+        try:
+            log_location = '{}/log'.format(metadata['sys::run::output_collection'])
+            if fs_irods(session).folderexists(log_location):
+                logfiles = _get_logfiles(log_location)
+        except KeyError:
+            # output collection not set as metadata. Ignore.
+            pass    
     return render_template('joblogs.html', jobnaam = datafield('jobnaam', jobnaam, 'runsheet'), logs = logfiles)
 
 
 def _get_logfiles(location, subdir=''):
     logs = {}
     currentdir = os.path.join(location, subdir)
-    for subdir2 in current_user.ifs.lsdirnames(currentdir):
-        logs.update(_get_logfiles(location, subdir=os.path.join(subdir, subdir2)))
-    logs.update({ os.path.join(subdir, filename): os.path.join(currentdir, filename) for filename in current_user.ifs.lsfilenames(currentdir) }) 
+    with irods_manager.session() as session:
+        for subdir2 in fs_irods(session).lsdirnames(currentdir):
+            logs.update(_get_logfiles(location, subdir=os.path.join(subdir, subdir2)))
+        logs.update({ os.path.join(subdir, filename): os.path.join(currentdir, filename) for filename in fs_irods(session).lsfilenames(currentdir) }) 
     return(logs)
 
 @bp.route('/_joblog')
@@ -528,28 +533,28 @@ def show_logfile():
 
     path = request.args.get('path', '', type=str)
     filename = path.split("/")[-1]
+    with irods_manager.session() as session:
+        try:
+            obj = fs_irods(session).getfile(path)
+        except DataObjectDoesNotExist:
+            result["msg"] = f"The {path} does not exist"
+            result["error"] = True
+            return result
 
-    try:
-        obj = current_user.ifs.getfile(path)
-    except DataObjectDoesNotExist:
-        result["msg"] = f"The {path} does not exist"
-        result["error"] = True
-        return result
+        try:
+            with obj.open('r') as f:
+                data = f.read(MAX_READ_LOG_BYTES)
+        except CAT_NO_ACCESS_PERMISSION: # if encountered the error
+            result["msg"] = f"You don't have permission to access {filename}"
+            result["error"] = True
+            return result # return the result, otherwise data is being read
+        
+        if sys.getsizeof(data) >= MAX_READ_LOG_BYTES:
+            result["data"] = f"{data.decode('utf-8')}\n!!! log truncated to max {MAX_READ_LOG_BYTES} bytes !!!"
+            return result
 
-    try:
-        with obj.open('r') as f:
-            data = f.read(MAX_READ_LOG_BYTES)
-    except CAT_NO_ACCESS_PERMISSION: # if encountered the error
-        result["msg"] = f"You don't have permission to access {filename}"
-        result["error"] = True
-        return result # return the result, otherwise data is being read
-    
-    if sys.getsizeof(data) >= MAX_READ_LOG_BYTES:
-        result["data"] = f"{data.decode('utf-8')}\n!!! log truncated to max {MAX_READ_LOG_BYTES} bytes !!!"
-        return result
-
-    # if everything went well
-    result["data"] = data.decode('utf-8')
+        # if everything went well
+        result["data"] = data.decode('utf-8')
     
     return result
 

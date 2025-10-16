@@ -112,7 +112,8 @@ def unique_coll(base_coll, prefix=None, use_date=False):
             collname = os.path.join(projectcoll, f'{fullprefix}{i:04}')
             i += 1
     logging.debug('upload/unique_coll(): mkdir "{}"'.format(collname))
-    current_user.ifs.mkdir(collname)
+    with irods_manager.session() as session:
+        fs_irods(session).mkdir(collname)
     # TODO : add some metadata?
     return collname
 
@@ -315,10 +316,11 @@ def upload_data():
             fullPath = f.filename
         filename = os.path.join(coll, fullPath)
         filepath = os.path.dirname(filename)
-        if not current_user.ifs.folderexists(filepath):
-            current_user.ifs.mkdir(filepath)
-        with current_user.ifs.open(filename, 'w') as d:
-            shutil.copyfileobj(f, d)
+        with irods_manager.session() as session:
+            if not fs_irods(session).folderexists(filepath):
+                fs_irods(session).mkdir(filepath)
+            with fs_irods(session).open(filename, 'w') as d:
+                shutil.copyfileobj(f, d)
         iqry.invalidate(coll)
         return 'OK'
 
@@ -334,7 +336,8 @@ def upload_actions():
         iqry.scollmetaval(coll, ATTR_UPLOAD, UploadType.Ready)
         return redirect(url_for('upload.show_uploads'))
     elif action == 'cancel':
-        current_user.ifs.rmdir(coll, recurse=True, force=True)
+        with irods_manager.session() as session:
+            fs_irods(session).rmdir(coll, recurse=True, force=True)
         return redirect(url_for('upload.show_uploads'))
     flash(f'Unknown request: {action}', 'error')
     return redirect(url_for('upload.upload_settings', coll=coll))

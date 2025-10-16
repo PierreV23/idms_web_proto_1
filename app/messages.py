@@ -5,6 +5,8 @@ from datetime import datetime
 from flask import current_app, Blueprint, request, jsonify
 from flask_login import current_user
 from .flaskcache import cache, dep_zone
+from app.irodssessions import irods_manager
+
 
 bp = Blueprint('messages', __name__, url_prefix='/messages')
 
@@ -56,35 +58,36 @@ def load_messages(category=None, only_current=False):
         return []
     all_messages = []
     messageobject = os.path.join('/', current_user.irods_zone, current_app.config.get("MESSAGES_OBJECT","none"))
-    try:
-        if current_user.ifs.fileexists(messageobject):
-            obj = current_user.ifs.getfile(messageobject)
-            messages_json = obj.open('r').read().decode('utf-8')
-            all_messages = json.loads(messages_json).get('messages', [])
-    except Exception as ex:
-        # Do not break the website if the message file has an invalid format
-        pass
-    if category is None:
-        category_messages = all_messages
-    else:
-        category_messages = [ msg for msg in all_messages if msg.get('category', 'NOT_SET') == category ]
-    if only_current:
-        messages = []
-        for msg in category_messages:
-            valid_msg = True
-            try:
-                if (ts := msg.get("start")):
-                    if dateutil.parser.parse(ts) > datetime.now():
-                        continue
-                if (ts := msg.get("end")):
-                    if dateutil.parser.parse(ts) < datetime.now():
-                        continue
-                messages.append(msg)
-            except:
-                # skip message with invalid time fields
-                pass
-    else:
-        messages = category_messages
+    with irods_manager.session() as session:
+        try:
+            if fs_irods(session).fileexists(messageobject):
+                obj = fs_irods(session).getfile(messageobject)
+                messages_json = obj.open('r').read().decode('utf-8')
+                all_messages = json.loads(messages_json).get('messages', [])
+        except Exception as ex:
+            # Do not break the website if the message file has an invalid format
+            pass
+        if category is None:
+            category_messages = all_messages
+        else:
+            category_messages = [ msg for msg in all_messages if msg.get('category', 'NOT_SET') == category ]
+        if only_current:
+            messages = []
+            for msg in category_messages:
+                valid_msg = True
+                try:
+                    if (ts := msg.get("start")):
+                        if dateutil.parser.parse(ts) > datetime.now():
+                            continue
+                    if (ts := msg.get("end")):
+                        if dateutil.parser.parse(ts) < datetime.now():
+                            continue
+                    messages.append(msg)
+                except:
+                    # skip message with invalid time fields
+                    pass
+        else:
+            messages = category_messages
     return messages        
 
 
@@ -92,13 +95,14 @@ def write_messages(all_messages):
     if not hasattr(current_user, 'irods_zone'):
         return []
     messageobject = os.path.join('/', current_user.irods_zone, current_app.config.get("MESSAGES_OBJECT","none"))
-    try:
-        if current_user.ifs.fileexists(messageobject):
-            messagestring = json.dumps({ 'messages' : all_messages}, indent=4)
-            obj = current_user.ifs.getfile(messageobject)
-            messages_json = obj.open('w').write(messagestring.encode())
-    except Exception as ex:
-        # Do not break the website if the message file has an invalid format
-        pass
-    cache.delete_memoized(load_messages)
+    with irods_manager.session() as session:
+        try:
+            if fs_irods(session).fileexists(messageobject):
+                messagestring = json.dumps({ 'messages' : all_messages}, indent=4)
+                obj = fs_irods(session).getfile(messageobject)
+                messages_json = obj.open('w').write(messagestring.encode())
+        except Exception as ex:
+            # Do not break the website if the message file has an invalid format
+            pass
+        cache.delete_memoized(load_messages)
     return all_messages    

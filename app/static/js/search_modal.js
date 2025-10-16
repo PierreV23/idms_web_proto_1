@@ -12,7 +12,7 @@ function SearchModal(data) {
       this.format = 'plain'
     }
     this.requestid = 0
-    modal = this
+    search_modal = this
 
     this.filltable = function(update_attrs) {
         $('#searchtable').addClass('pending')
@@ -21,19 +21,19 @@ function SearchModal(data) {
         id = Date.now()
         search_data['id'] = id
         search_data['format'] = this.format
-        modal = this
+        search_modal = this
         $.ajax({
             type: 'POST',
-            url: modal.api_searchtable,
+            url: search_modal.api_searchtable,
             data: JSON.stringify(search_data),
             contentType: 'application/json;charset=UTF-8',
             success: function (data) {
                 if (data['id'] == id) {
                     $('#searchtable').bootstrapTable('destroy').bootstrapTable(data).removeClass('pending')
                     $('#progress-bar').removeClass('show-progress')
-                    modal.current_attrs = data['attrs']
+                    search_modal.current_attrs = data['attrs']
                     if (update_attrs) {
-                        modal.load_attrs()
+                        search_modal.load_attrs()
                     }
                 }
             }
@@ -56,7 +56,7 @@ function SearchModal(data) {
     }
 
     this.select_wrapper = function(target, value, event) {
-      modal.select_function(modal, target, value, event)
+      search_modal.select_function(search_modal, target, value, event)
     }
 
     this.close = function() {
@@ -69,7 +69,7 @@ function SearchModal(data) {
         $('#searchModal').modal('show')
         $(document).off('click.search').off("select.search").off("click-row.bs.table.search")
         $('select').selectpicker();
-        modal=this
+        search_modal=this
 
         if (this.select_function) {
           $(document).on('click-row.bs.table.search', '#searchtable', this.select_wrapper)
@@ -79,12 +79,12 @@ function SearchModal(data) {
             // Set the selected attr on the button
             attr_name = $('#meta-attr-select').selectpicker('val')
             $('.meta-value-option').remove()
-            search_data = modal.form_data()
+            search_data = search_modal.form_data()
             search_data['attr'] = attr_name
             $('#progress-bar').addClass('show-progress')
             $.ajax({
                 type: 'POST',
-                url: modal.api_attrvalues_for_search,
+                url: search_modal.api_attrvalues_for_search,
                 data: JSON.stringify(search_data),
                 contentType: 'application/json;charset=UTF-8',
                 success: function (data) {
@@ -103,34 +103,34 @@ function SearchModal(data) {
         })
 
         $(document).on('changed.bs.select', '#meta-value-select', function () {
-            modal.filltable()
+            search_modal.filltable()
             $('#add_meta').attr('disabled', false)
         })
 
         $(document).on('click.search', '#add_meta', function () {
-            modal.add_metadata_search()
-            modal.init_metadata_search()
+            search_modal.add_metadata_search()
+            search_modal.init_metadata_search()
             $('#meta-attr-select').focus()
         })
 
         $(document).on('click.search', '.meta-remove', function() {
             $(this).parentsUntil('.meta-card').parent().remove()
-            modal.filltable(true)
-            //modal.load_attrs()
+            search_modal.filltable(true)
+            //search_modal.load_attrs()
         })
 
         $('#searchReset').on('click', function() {
-            modal.init_searchform()
+            search_modal.init_searchform()
         })
 
         $('#searchtext').on('input', function (data) {
             val = $(this).val()
             id = Date.now()
-            if (modal.requestid != 0) {
-                clearTimeout(modal.requestid)
+            if (search_modal.requestid != 0) {
+                clearTimeout(search_modal.requestid)
             }
-            modal.requestid = setTimeout(function () {
-                modal.filltable(true)
+            search_modal.requestid = setTimeout(function () {
+                search_modal.filltable(true)
             }, 1000)
         })
 

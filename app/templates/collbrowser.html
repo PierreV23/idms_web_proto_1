@@ -176,9 +176,6 @@ menuname='collectionbrowser'
   <div class="p-0 control-sidebar-title"><b>
       <center>Graph Legend</center>
     </b></div>
-  <div class="p-3"><b>
-      <center>Graph Legend</center>
-    </b></div>
   <div id="graph-legend-obj" class="control-legend p-3">
   </div>
 </div>
@@ -201,7 +198,7 @@ menuname='collectionbrowser'
   var show_downstream_obj = "{{ show_downstream_obj }}"
   var show_downstream_coll = "{{ show_downstream_coll }}"
   var graph_direction_tb_obj = "{{ graph_direction_tb_obj }}"
-  
+    
   var sortkey = "";
   var reverse = "";
   var selected_object = "{{ selected_object }}";
@@ -260,7 +257,7 @@ menuname='collectionbrowser'
       if (result["access"] == "GRANTED" ) {
         $('#DocTitle').html(name)
         source = "{{ url_for('docviewer.serve_object') }}?path=" + encodeURIComponent(path)
-        newEmbed = '<embed src="' + source + '" width="100%" height="100%" id="DocText" >'
+        newEmbed = '<embed src="' + source + '" width="100%" height="100%" id="DocText" ></embed>'
         $('#mBody').html(newEmbed)
         $('#myOutput').modal()
       } else {
@@ -738,7 +735,7 @@ menuname='collectionbrowser'
   {% set is_coll = (not is_obj) %}
 
   {% if current_user.feature('provenance') %}
-  <div class="card browser-graph h100">
+  <div class="card browser-graph h100" id="graph-card">
 
     <!-- Header: Tabs -->
     <div class="card-header d-flex align-items-center justify-content-between">
@@ -764,7 +761,7 @@ menuname='collectionbrowser'
           </a>
         </li>
       </ul>
-      <div class="btn-group">
+      <div class="btn-group" id="btn-group-graph">
       
         <button id="fitGraph_obj" type="button" class="btn btn-sm btn-outline-secondary objectgraph-item"
           data-toggle="tooltip" title="Fit the object graph to the display window (Also double-click).">
@@ -780,14 +777,15 @@ menuname='collectionbrowser'
         </button>
         <button id="sidebar-button" type="button" data-widget="control-sidebar" data-controlsidebar-slide="true"
           class="btn btn-sm btn-outline-secondary" title="Open settings menu">
-          {% if current_user.settings.get('tips', 0) | int < 1 %} <div id="tips1"
+          {% if current_user.settings.get('tips', 0) | int < 1 %} 
+          <div id="tips1"
             class="overlay position-absolute top-0 start-0 text-black d-flex align-items-center justify-content-start"
             style="top:-120%; width: 900%; background-color: rgb(240, 247, 200); padding: 4px; padding-left: 8px; color: black;">
             &#8601; Graph settings have moved here
-      </div>
-      {% endif %}
-      <i class="fa fa-cog"></i>
-      </button>
+          </div>
+          {% endif %}
+          <i class="fa fa-cog"></i>
+        </button>
       </div>
       </div>
 
@@ -857,18 +855,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const zoomDisplayColl = document.querySelector("#zoomDisplay_coll"); // Display the zoom percentage
   const fitGraphBtnColl = document.querySelector("#fitGraph_coll"); // Fit Graph button
   
-  let zoomLevelColl = parseInt("{{ zoomlevel_coll }}", 10); // Default zoom level in percentage (as a variable)
+  let zoomLevelColl = Number("{{ zoomlevel_coll }}"); // Default zoom level in percentage (as a variable)
   let zoomSettingIdColl = 0; // Timeout Request for storing zoom level
   let isDragging = false; // Track whether the user is currently dragging
   let dragStart = { x: 0, y: 0 }; // Store the starting mouse position during the drag operation
   let currentTranslateColl = { x: 0, y: 0 }; // Current translation offset for the graph
 
  
-  // Update the transformation (translate + scale)
+  // Update the transformation (translate + scale); correct for sidebar in fullscreen window
   const updateTransformColl = () => {
-    console.log(currentTranslateColl, zoomLevelColl);
     const scaleColl = zoomLevelColl / 100;
-    graphImgColl.style.transform = `translate(${currentTranslateColl.x}px, ${currentTranslateColl.y}px) scale(${scaleColl})`;
+    graphImgColl.style.transform = `translate(${currentTranslateColl.x - sidebarSize/2}px, ${currentTranslateColl.y}px) scale(${scaleColl})`;
   };
 
   // Reset the transformation (translate x and y to 0)
@@ -901,7 +898,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const containerBoundsColl = graphDivColl.getBoundingClientRect(); // Get the size of the card container
 
     // Calculate the scaling factor needed to fit the graph content into the container
-    const scaleWidthColl = containerBoundsColl.width / graphBoundsColl.width * zoomLevelColl / 100;
+    const scaleWidthColl = (containerBoundsColl.width - sidebarSize) / graphBoundsColl.width * zoomLevelColl / 100;
     const scaleHeightColl = containerBoundsColl.height / graphBoundsColl.height * zoomLevelColl / 100;
     // Choose the smaller scaling factor to ensure it fits both dimensions
     const fitScaleColl = Math.min(scaleWidthColl, scaleHeightColl);
@@ -957,7 +954,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   // Handle zoom slider changes
   zoomSliderColl.addEventListener("input", (e) => {
-    const newZoomLevelColl= parseInt(e.target.value, 10); // Update zoom value from the slider
+    const newZoomLevelColl = Number(e.target.value); // Update zoom value from the slider
     updateZoomColl(newZoomLevelColl);
   });
 
@@ -994,17 +991,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const zoomDisplayObj = document.querySelector("#zoomDisplay_obj"); // Display the zoom percentage
   const fitGraphBtnObj = document.querySelector("#fitGraph_obj"); // Fit Graph button
 
-  let zoomLevelObj = parseInt("{{ zoomlevel_obj }}", 10); // Default zoom level in percentage (as a variable)
+  let zoomLevelObj = Number("{{ zoomlevel_obj }}"); // Default zoom level in percentage (as a variable)
   let zoomSettingIdObj = 0; // Timeout Request for storing zoom level
   let isDragging = false; // Track whether the user is currently dragging
   let dragStart = { x: 0, y: 0 }; // Store the starting mouse position during the drag operation
   let currentTranslateObj = { x: 0, y: 0 }; // Current translation offset for the graph
   
   
-  // Update the transformation (translate + scale)
+  // Update the transformation (translate + scale); correct for sidebar in fullsize window.
   const updateTransformObj = () => {
     const scaleObj = zoomLevelObj / 100;
-    graphImgObj.style.transform = `translate(${currentTranslateObj.x}px, ${currentTranslateObj.y}px) scale(${scaleObj})`;
+    graphImgObj.style.transform = `translate(${currentTranslateObj.x - sidebarSize/2}px, ${currentTranslateObj.y}px) scale(${scaleObj})`;
   };
 
   // Reset the transformation (translate x and y to 0),
@@ -1034,7 +1031,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const containerBoundsObj = graphDivObj.getBoundingClientRect(); // Get the size of the card container
     
     // Calculate the scaling factor needed to fit the graph content into the container
-    const scaleWidthObj = containerBoundsObj.width / graphBoundsObj.width * zoomLevelObj / 100;
+    const scaleWidthObj = (containerBoundsObj.width - sidebarSize)/ graphBoundsObj.width * zoomLevelObj / 100;
     const scaleHeightObj = containerBoundsObj.height / graphBoundsObj.height * zoomLevelObj / 100;
 
     // Choose the smaller scaling factor to ensure it fits both dimensions
@@ -1091,7 +1088,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   zoomSliderObj.addEventListener("input", (e) => {
-    const newZoomLevelObj= parseInt(e.target.value, 10); // Update zoom value from the slider
+    const newZoomLevelObj= Number(e.target.value); // Update zoom value from the slider
     updateZoomObj(newZoomLevelObj);
   });
 
@@ -1273,18 +1270,49 @@ document.addEventListener("DOMContentLoaded", () => {
   <!-- Document viewer modal dialog -->
   <div class="modal modal-tall" id="myOutput" role="dialog">
     <div class="modal-dialog modal-xl" role="document">
-      <div class="modal-content ">
+      <div class="modal-content">
         <div class="modal-header">
-          <!-- <button type="button" class="close" data-dismiss="modal">&times;</button> -->
           <h5 class="modal-title" id="DocTitle">Modal Header</h5>
-          <button type="button" class="btn btn-default btn-primary btn-sm" data-dismiss="modal">Close</button>
+  
+          <div class="ml-auto d-flex gap-2">
+            <!-- Browser fullscreen toggle -->
+            <button type="button" id="fullscreen-btn" title="Toggle Fullscreen in Browser Window"
+              style="background:transparent; border:none; padding:0.5rem; cursor:pointer; border-radius:6px;"
+              onmouseover="this.style.backgroundColor='rgba(0,0,0,0.1)'"
+              onmouseout="this.style.backgroundColor='transparent'">
+              <i class="fa fa-expand"></i>
+            </button>
+            <!-- Close button -->
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"
+              <span aria-hidden="true">&times</span>
+            </button>
+          </div>
         </div>
-        <div class="modal-body" id="mBody">
-          <embed src="" width="100%" height="100%" id="DocText">
+  
+        <div class="modal-body p-0" id="mBody" style="height:80vh;">
+          <embed src="" width="100%" height="100%" id="DocText"></embed>
         </div>
       </div>
     </div>
   </div>
+
+  <script>
+  const fsBtn = document.getElementById("fullscreen-btn");
+  const fsIcon = fsBtn.querySelector("i");
+  const modal = document.getElementById("myOutput");
+
+  fsBtn.addEventListener("click", () => {
+    modal.classList.toggle("browser-fullscreen");
+
+    if (modal.classList.contains("browser-fullscreen")) {
+      fsIcon.classList.remove("fa-expand");
+      fsIcon.classList.add("fa-compress");
+    } else {
+      fsIcon.classList.remove("fa-compress");
+      fsIcon.classList.add("fa-expand");
+    }
+  });
+  </script>
 
   <!-- Upload modal modal dialog -->
   <div class="modal" id="upload" role="dialog">
@@ -1314,6 +1342,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 <script>
+var sidebarSize = 0
 
 $('.graphTabs').on('shown.bs.tab', function(event){
   activegraphtab = event.target.getAttribute('href')
@@ -1331,19 +1360,39 @@ gb2 = "metadata"
 {% endif %}
 
 {% if current_user.feature('provenance') %}
-   gt1 = "graph"
-   gm1 = "vmove"
-   gb1 = "contents"
+gt1 = "graph"
+gm1 = "vmove"
+gb1 = "contents"
 {% else %}
-   gt1 = "contents"
-   gm1 = "contents"
-   gb1 = "contents"
+gt1 = "contents"
+gm1 = "contents"
+gb1 = "contents"
 {% endif %}
 
 $('#main-window').css('grid-template-areas', 
 `"sidebar ${gt1} ${gt2}" "sidebar ${gm1} ${gm2}"  "sidebar ${gb1} ${gb2}"`)
 
-# TODO: This is inserted august 2025 and can be removed after three months
+// When graph sidebar is expanded in maximized window shift buttons left, and set potential sidebar size (250px)
+$(document).on('expanded.lte.controlsidebar', function () {
+  if ($('#maximize-button').closest('.card').hasClass('maximized-card')) {
+    $('#btn-group-graph').addClass('shift-left');
+    sidebarSize = 250;
+  }
+});
+
+// When the sidebar collapses or fullscreen mode is left, remove shift-left class
+$(document).on('collapsed.lte.controlsidebar minimized.lte.cardwidget' , function () {
+  $('#btn-group-graph').removeClass('shift-left');
+  sidebarSize = 0;
+});
+
+$(document).on('maximized.lte.cardwidget', '#graph-card', function() {
+  if (!$('.control-sidebar').is(':hidden')) {
+    $('#btn-group-graph').addClass('shift-left');
+  }
+})
+
+// TODO: This is inserted august 2025 and can be removed after three months
 {% if current_user.settings.get('tips', 0) | int < 1 %}
 $('#sidebar-button').on('expanded.lte.controlsidebar', function(){
     $.post('{{ url_for("userinfo.usersetting") }}', {
@@ -1357,4 +1406,3 @@ $('#sidebar-button').on('expanded.lte.controlsidebar', function(){
 </script>
 
 {% endblock %}
-

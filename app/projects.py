@@ -207,6 +207,16 @@ def update_projectsettings():
             data = {'name': process}
             response, result = rest_call('POST', 'processes', data=data)
         location=f'page=processes&process={process}'
+    elif action == 'remove_process':
+        print(f'Remove process {process}')
+        if process:
+            response, result = rest_call('DELETE', f'processes/{process}')
+            print(response, result)
+            if result != 200:
+                flash(response.get('message'), 'error')
+                location = f'page=processes&process={process}'
+            else:
+                location = f'page=processes'
     elif action == 'add_processgroup':
         name = requestdata.get('name')
         if project and name:
@@ -528,7 +538,7 @@ def pg_graph():
     graph = Digraph('datagraph')
     graph.graph_attr['rankdir'] = 'LR'
     # There is always a node for NEW_DATA
-    graph.node('d,0', label="NEW DATA", shape='box', id='d,0')
+    graph.node('d,0', label="   NEW DATA   ", shape='box', id='d,0')
     for process in pl:
         pname = process.get('name')
         add_process(pname, process.get('id'), pname==selected_processref)

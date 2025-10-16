@@ -249,9 +249,10 @@ def versions_table():
                     for c in q1 }
     
     #and their metadata
+    REFDATA_META = ( 'reference_dataset', 'sys::data::type', 'sys::dataset_id'  )
     for key, items in version_colls.items():
         q2 = iqry.qcollmeta(items["irods_path"])
-        meta_of_c = { m[CollectionMeta.name]: m[CollectionMeta.value] for m in q2 }
+        meta_of_c = { m[CollectionMeta.name]: m[CollectionMeta.value] for m in q2  if m[CollectionMeta.name].startswith( REFDATA_META ) }
         version_colls[key]["irods_metadata"] = meta_of_c
 
 

@@ -44,7 +44,7 @@
     <input type="hidden" id="reference" name="reference" value="{{RD.name}}">
 
     <div class="form-group">
-      <label for="reference_activate_{{RD.name}}">activate/Deactivate</label>
+      <label for="reference_activate_{{RD.name}}">Activate/Deactivate</label>
       <div>
         {% if RD.is_active %}
         <div class="btn-group">
@@ -161,12 +161,14 @@
 
     <!-- for now the possible values are hardcoded. Later those values should be read from the API or the refdata_updater configuration.
          The execution environment selected here will contain additional information (e.g. queue to use, walltime, number of cores, etc.) 
+         THE SELECTED VALUE HAS TO CORRESPOND TO THE STRING IN THE CONFIG.YAML OF REFERENCE_UPDATER!
     -->
     <div class="form-group">
-      <label for="execution_environment_{{RD.name}}">execution environment</label>
+      <label for="execution_environment_{{RD.name}}">Execution environment</label>
       <select class="form-control" name="execution_environment" id="execution_environment_{{RD.name}}" >
              <option value="local" {% if RD.execution_environment == "local" %}selected{% endif %}>local</option>
-             <option value="lsf"   {% if RD.execution_environment == "lsf" %}selected{% endif %}>LSF</option>
+             <option value="standard"   {% if RD.execution_environment == "standard" %}selected{% endif %}>standard</option>
+             <option value="long_running"   {% if RD.execution_environment == "long_running" %}selected{% endif %}>long_running</option>
         </select>
     </div>
 
@@ -213,7 +215,7 @@
   
     
     <label for="import_state_{{import_state.id}}_last_task_pid">last task PID/JOBID</label>
-    <input type="number" class="form-control" name="import_state_last_task_pid" id="import_state_{{import_state.id}}_last_task_pid" value="{{import_state.last_task_pid}}" readonly>
+    <input type="text" class="form-control" name="import_state_last_task_pid" id="import_state_{{import_state.id}}_last_task_pid" value="{{import_state.last_task_pid}}" readonly>
   
      
       <label for="import_state_{{import_state.id}}_last_task_message">last task message</label>
