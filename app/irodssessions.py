@@ -91,12 +91,13 @@ class Session():
         _attr = getattr(self.s, attr)
         return _attr
 
-    def __del__(self):
-        self.release()
-             
+
 class PoolObject():
+    counter = 0
     def __init__(self, obj):
         self.timestamp = time.time()
+        self.id = PoolObject.counter
+        PoolObject.counter += 1
         self.obj = obj
 
     def update(self):
@@ -117,7 +118,7 @@ class SessionPool():
         self.active_timeout = active_timeout
         self._idle = []
         self._active = []
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self.envdata = envdata
     
     def cleanup(self):
@@ -207,7 +208,7 @@ class SessionPoolManager():
     def __init__(self, envdata, refresh_time=120):
         self.envdata = envdata
         self._pools = {}
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
 
     def session(self, user):
         with self._lock:
@@ -247,7 +248,7 @@ class MultiSessionManager():
     """
     def __init__(self):
         self._managers = {}
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
 
     def init_app(self, app):
         self.scheduler = BackgroundScheduler(daemon=True)
@@ -283,8 +284,8 @@ class MultiSessionManager():
     def remove(self, user):
         """Removes the session for user"""
         ...
-        #with self._lock:
-        # if (manager := self._managers.get(user.environment)):
-        #     manager.remove(user)
+        with self._lock:
+            if (manager := self._managers.get(user.environment)):
+                manager.remove(user)
 
 irods_manager = MultiSessionManager()
