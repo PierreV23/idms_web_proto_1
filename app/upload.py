@@ -230,7 +230,7 @@ def getSchemataForProject( projectId ):
     with irods_manager.session() as session:
         for schemaLocation in ('', projectId):
             try:
-                print(f'OOO: {os.path.join('/', current_user.irods_zone, 'system/schemata', schemaLocation)}')
+                print(f"OOO: {os.path.join('/', current_user.irods_zone, 'system/schemata', schemaLocation)}")
                 schemaColl = session.collections.get( os.path.join('/', current_user.irods_zone, 'system/schemata', schemaLocation))
             except CollectionDoesNotExist:
                 continue

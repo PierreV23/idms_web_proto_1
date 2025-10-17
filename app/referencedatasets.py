@@ -21,7 +21,7 @@ from .projectdb_api import EPOCH, iso2dt, search, rest_call, add_checkbox
 from datetime import datetime
 from os import path
 
-BP = Blueprint('reference', __name__, url_prefix='/reference')
+bp = Blueprint('reference', __name__, url_prefix='/reference')
 
 reference_change_allowed = [ 'description', 'synchronize_command', 'synchronization_frequency', 'repository', 'tag', 'is_active', 'execution_environment']
 
@@ -58,7 +58,7 @@ def get_referencelist():
             referencelist[ reference['name'] ] = reference 
     return referencelist
 
-@BP.route('/')
+@bp.route('/')
 @login_required
 def show_reference_datasets():
     """
@@ -76,7 +76,7 @@ def show_reference_datasets():
     reference_dataset_list = get_referencelist()
     return render_template('referencedatasets.html', referencedatasets=reference_dataset_list, reference_dataset=reference_dataset)
 
-@BP.route('/details')
+@bp.route('/details')
 @login_required
 def show_reference_details():
     """
@@ -125,7 +125,7 @@ def show_reference_details():
                            available_tags=available_tags)
 
 
-@BP.route('/activate_reference', methods=['GET', 'POST'])
+@bp.route('/activate_reference', methods=['GET', 'POST'])
 @login_required
 def activate_reference():
     requestdata = request.args.to_dict()
@@ -140,7 +140,7 @@ def activate_reference():
 
     return redirect(f'{url_for("reference.show_reference_datasets")}?{location}')
 
-@BP.route('/deactivate_reference', methods=['GET', 'POST'])
+@bp.route('/deactivate_reference', methods=['GET', 'POST'])
 @login_required
 def deactivate_reference():
     requestdata = request.args.to_dict()
@@ -156,7 +156,7 @@ def deactivate_reference():
     return redirect(f'{url_for("reference.show_reference_datasets")}?{location}')
 
 
-@BP.route('/update_reference', methods=['GET', 'POST'])
+@bp.route('/update_reference', methods=['GET', 'POST'])
 @login_required
 def update_reference_settings():
     """
@@ -199,7 +199,7 @@ def update_reference_settings():
     return redirect(f'{url_for("reference.show_reference_datasets")}?{location}')
 
 
-@BP.route('/changeVersionName', methods=['GET', 'POST'])
+@bp.route('/changeVersionName', methods=['GET', 'POST'])
 @login_required
 def change_version_name():
     requestdata = request.values.to_dict()
@@ -210,7 +210,7 @@ def change_version_name():
     return (response, result)
 
 
-@BP.route('/versions')
+@bp.route('/versions')
 @login_required
 def versions_table():
     reference_id = request.args.get('id', '', type=str)
@@ -273,7 +273,7 @@ def versions_table():
 
 
 
-@BP.route('/import_state')
+@bp.route('/import_state')
 @login_required
 def import_state():
     reference_id = request.args.get('name', '', type=str)
@@ -282,7 +282,7 @@ def import_state():
     return render_template('colltable.html', path=path, display_field=None)
 
 
-@BP.route('contactmanager', methods=['GET'])
+@bp.route('contactmanager', methods=['GET'])
 def contactmanager():
     objectname = request.args.get('object')
     objecttype = request.args.get('objecttype')

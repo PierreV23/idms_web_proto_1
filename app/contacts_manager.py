@@ -19,7 +19,7 @@ from app.constants import COLL_KEY_MAP
 from app.irodssessions import irods_manager
 from .projectdb_api import EPOCH, iso2dt, search, rest_call, add_checkbox
 
-BP = Blueprint('contacts', __name__, url_prefix='/contacts')
+bp = Blueprint('contacts', __name__, url_prefix='/contacts')
 
 
 @cache.memoize(timeout=600, make_name=dep_userzone)
@@ -46,7 +46,7 @@ def process_permissions(process):
 
 
 
-@BP.route('/projects/delete_contact', methods=['POST'])
+@bp.route('/projects/delete_contact', methods=['POST'])
 def delete_contact():
     json = request.get_json(force=True)
     objecttype = json['objecttype']
@@ -67,7 +67,7 @@ def delete_contact():
     return ret
 
 
-@BP.route('/projects/update_contact', methods=['POST'])
+@bp.route('/projects/update_contact', methods=['POST'])
 def update_contact():
     json = request.get_json(force=True)
     objecttype = json['objecttype']
@@ -89,7 +89,7 @@ def update_contact():
     return ret
 
 
-@BP.route('/projects/create_contact', methods=['POST'])
+@bp.route('/projects/create_contact', methods=['POST'])
 def create_contact():
     json = request.get_json(force=True)
     objecttype = json['objecttype']
@@ -111,7 +111,7 @@ def create_contact():
 
 
 
-@BP.route('usermanager', methods=['GET'])
+@bp.route('usermanager', methods=['GET'])
 def usermanager():
     objectname = request.args.get('object')
     objecttype = request.args.get('objecttype')
@@ -127,7 +127,7 @@ def usermanager():
     return render_template('usermanager.html', object=objectname, objecttype=objecttype, usertype=usertype, can_modify=can_modify)
 
 
-@BP.route('/contactmanager', methods=['GET'])
+@bp.route('/contactmanager', methods=['GET'])
 def contactmanager():
     objectname = request.args.get('object')
     objecttype = request.args.get('objecttype')
