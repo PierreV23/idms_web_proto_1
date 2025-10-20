@@ -297,9 +297,9 @@ def upload_data():
         filename = os.path.join(coll, fullPath)
         filepath = os.path.dirname(filename)
         with irods_manager.session() as session:
-            if not fs_irods(session).folderexists(filepath):
-                fs_irods(session).mkdir(filepath)
-            with fs_irods(session).open(filename, 'w') as d:
+            if not fs_irods(session=session).folderexists(filepath):
+                fs_irods(session=session).mkdir(filepath)
+            with fs_irods(session=session).open(filename, 'w') as d:
                 shutil.copyfileobj(f, d)
         iqry.invalidate(coll)
         return 'OK'
@@ -317,7 +317,7 @@ def upload_actions():
         return redirect(url_for('upload.show_uploads'))
     elif action == 'cancel':
         with irods_manager.session() as session:
-            fs_irods(session).rmdir(coll, recurse=True, force=True)
+            fs_irods(session=session).rmdir(coll, recurse=True, force=True)
         return redirect(url_for('upload.show_uploads'))
     flash(f'Unknown request: {action}', 'error')
     return redirect(url_for('upload.upload_settings', coll=coll))
