@@ -108,7 +108,7 @@ def unique_coll(base_coll, prefix=None, use_date=False):
     i = 1
     with irods_manager.session() as session:
         while session.collections.exists(collname):
-            collname = os.path.join(projectcoll, f'{fullprefix}{i:04}')
+            collname = os.path.join(base_coll, f'{fullprefix}{i:04}')
             i += 1
         logging.debug('upload/unique_coll(): mkdir "{}"'.format(collname))
         fs_irods(session).mkdir(collname)
