@@ -111,7 +111,7 @@ def unique_coll(base_coll, prefix=None, use_date=False):
             collname = os.path.join(base_coll, f'{fullprefix}{i:04}')
             i += 1
         logging.debug('upload/unique_coll(): mkdir "{}"'.format(collname))
-        fs_irods(session).mkdir(collname)
+        fs_irods(session=session).mkdir(collname)
     # TODO : add some metadata?
     return collname
 
