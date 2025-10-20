@@ -26,6 +26,7 @@ from irods.meta import iRODSMeta
 from irods.exception import CollectionDoesNotExist
 from app.irodssessions import irods_manager
 from ast import literal_eval
+from fs_irods import fs_irods
 
 ATTR_PROJECTID = 'projectID'
 ATTR_UPLOAD = 'user::upload'
@@ -109,8 +110,7 @@ def unique_coll(base_coll, prefix=None, use_date=False):
         while session.collections.exists(collname):
             collname = os.path.join(projectcoll, f'{fullprefix}{i:04}')
             i += 1
-    logging.debug('upload/unique_coll(): mkdir "{}"'.format(collname))
-    with irods_manager.session() as session:
+        logging.debug('upload/unique_coll(): mkdir "{}"'.format(collname))
         fs_irods(session).mkdir(collname)
     # TODO : add some metadata?
     return collname
