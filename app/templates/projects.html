@@ -46,7 +46,9 @@ $(document).on('click', '.projectname', function() {
 });
 
 $(window).on('load', function() {
-  $("td[data-projectname='{{ project }}']").trigger('click');
+  setTimeout(function(){
+    $("td[data-projectname='{{ project }}']").trigger('click');
+  }, 20)
 });
 
 // Some functions for the processgroup graphs 
