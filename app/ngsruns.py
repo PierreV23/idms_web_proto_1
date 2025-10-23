@@ -151,6 +151,7 @@ class NGSBarcode(Base):
     __tablename__ = 'ngsbarcodes'
     id = Column(Integer, primary_key=True)
     ngsrun = Column(Integer, ForeignKey('ngsruns.id'))
+    enabled = Column(String(32), nullable=False, default='true')
     barcode = Column(String(128), nullable = False)
     sampleid = Column(String(30), nullable = False)
     primer_set = Column(String(128), nullable = True)
@@ -189,6 +190,7 @@ class NGSRunSchema(ma.Schema):
     project = fields.String()
 
 class NGSBarcodesSchema(ma.Schema):
+    enabled = fields.String()
     barcode = fields.String()
     primer_set = fields.String()
     sampleid = fields.String()
@@ -473,14 +475,15 @@ def run_update():
     if run_id > 0:
         db.session().query(NGSBarcode).filter(NGSBarcode.ngsrun==run_id).delete()
     for barcode in barcodes:
-        if f.get('sampleid_{}'.format(barcode)):
+        if f.get(f'sampleid_{barcode}'):
             new_barcode = NGSBarcode(modify_run.id, barcode)
-            new_barcode.sampleid = f.get('sampleid_{}'.format(barcode)).replace(" ","")
-            new_barcode.virus_target = f.get('target_{}'.format(barcode))
-            new_barcode.primer_set = f.get('primer_{}'.format(barcode))
-            new_barcode.kit = f.get('kit_{}'.format(barcode))
-            new_barcode.description = f.get('description_{}'.format(barcode))
-            new_barcode.project = f.get('project_{}'.format(barcode))
+            new_barcode.enabled = f.get(f'enabled_{barcode}', 'true')
+            new_barcode.sampleid = f.get(f'sampleid_{barcode}').replace(" ","")
+            new_barcode.virus_target = f.get(f'target_{barcode}')
+            new_barcode.primer_set = f.get(f'primer_{barcode}')
+            new_barcode.kit = f.get(f'kit_{barcode}')
+            new_barcode.description = f.get(f'description_{barcode}')
+            new_barcode.project = f.get(f'project_{barcode}')
             db.session().add(new_barcode)
     db.session().commit()
     
@@ -519,11 +522,9 @@ def get_ngs_run(flowcell):
 
 @bp.route('/api/runs/<flowcell>/barcodes', methods=['GET'])
 def get_ngs_barcodes(flowcell):
-    """Retrieve barcodes for a single ngs runs
+    """Retrieve enabled barcodes for a single ngs runs
     """
     env = request.args.get('env', None)
     ngsrun = db.session(env).query(NGSRunView).filter(NGSRunView.flowcell == flowcell).one_or_none()
-    barcodes = db.session(env).query(NGSBarcode).filter(NGSBarcode.ngsrun == ngsrun.id).all()
+    barcodes = db.session(env).query(NGSBarcode).filter(NGSBarcode.ngsrun == ngsrun.id).filter(NGSBarcode.enabled == 'true').all()
     return jsonify(barcodes_schema.dump(barcodes))
-
-

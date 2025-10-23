@@ -13,9 +13,11 @@ the NGS runs overview
 {% endblock%}
 
 {% block helptext %}
-This page show an overview of all NGS Runs on Oxford Nanopore technologies sequencers. <P>
+This page show an overview of all NGS Runs on Oxford Nanopore technologies sequencers. <p>
 As soon as a collection is found that has a matching flowcell, it will be shown in the <emp>Collection</emp> column.<p>
-The project column will show <emp>Multiple</emp> if the sample sheet contains samples for multiple projects.<p>
+The project column will display <b>Multiple</b> if the sample sheet contains samples for multiple projects.<p>
+Selecting a row will display the barcodes on the right hand side, with options to <b>Delete</b> or <b>Edit</b> the sample sheet, 
+for example disabling specific barcodes.<p>
 Use the <A HREF="{{ url_for('ngsruns.run_form')}}">New run</A> menu item to create a new samplesheet.
 
 {% endblock %}
