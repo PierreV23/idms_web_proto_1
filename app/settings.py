@@ -51,6 +51,7 @@ NGSRUN_FIELDS = {
 }
 
 BARCODE_FIELDS = {
+    'enabled': {'title': 'Enabled', 'field': 'enabled', 'sortable': 'true'},
     'barcode': {'title': 'Barcode', 'field': 'barcode', 'sortable': 'true'},
     'sampleid': {'title': 'ID', 'field': 'sampleid', 'sortable': 'true'},
     'virus_target': {'title': 'Virus Target', 'field': 'virus_target', 'sortable': 'true'},
