@@ -25,6 +25,11 @@ menuname='projects'
 <script>
 
 $(document).on('click', '.projectname', function() {
+  // Scroll to project, in case this is triggered programmatically
+  position = $(this).position().top - $('.fixed-table-body').height() / 2
+  $('.fixed-table-body').animate({scrollTop: position}, 500)
+
+
   project=$(this).data('projectname');
   $('.projectname').removeClass('highlight')
   $('.processname').removeClass('highlight')
@@ -41,7 +46,7 @@ $(document).on('click', '.projectname', function() {
 });
 
 $(window).on('load', function() {
-  $("li[data-projectname='{{ project }}']").trigger('click');
+  $("td[data-projectname='{{ project }}']").trigger('click');
 });
 
 // Some functions for the processgroup graphs 
