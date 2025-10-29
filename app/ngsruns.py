@@ -522,9 +522,27 @@ def get_ngs_run(flowcell):
 
 @bp.route('/api/runs/<flowcell>/barcodes', methods=['GET'])
 def get_ngs_barcodes(flowcell):
-    """Retrieve enabled barcodes for a single ngs runs
+    """Retrieve all barcodes for a single ngs run
+    """
+    env = request.args.get('env', None)
+    ngsrun = db.session(env).query(NGSRunView).filter(NGSRunView.flowcell == flowcell).one_or_none()
+    barcodes = db.session(env).query(NGSBarcode).filter(NGSBarcode.ngsrun == ngsrun.id).all()
+    return jsonify(barcodes_schema.dump(barcodes))
+
+@bp.route('/api/runs/<flowcell>/barcodes/enabled', methods=['GET'])
+def get_ngs_barcodes_enabled(flowcell):
+    """Retrieve all enabled barcodes for a single ngs run
     """
     env = request.args.get('env', None)
     ngsrun = db.session(env).query(NGSRunView).filter(NGSRunView.flowcell == flowcell).one_or_none()
     barcodes = db.session(env).query(NGSBarcode).filter(NGSBarcode.ngsrun == ngsrun.id).filter(NGSBarcode.enabled == 'true').all()
+    return jsonify(barcodes_schema.dump(barcodes))
+
+@bp.route('/api/runs/<flowcell>/barcodes/disabled', methods=['GET'])
+def get_ngs_barcodes_disabled(flowcell):
+    """Retrieve all disabled barcodes for a single ngs run
+    """
+    env = request.args.get('env', None)
+    ngsrun = db.session(env).query(NGSRunView).filter(NGSRunView.flowcell == flowcell).one_or_none()
+    barcodes = db.session(env).query(NGSBarcode).filter(NGSBarcode.ngsrun == ngsrun.id).filter(NGSBarcode.enabled == 'false').all()
     return jsonify(barcodes_schema.dump(barcodes))
