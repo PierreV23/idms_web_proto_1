@@ -539,7 +539,7 @@ def get_ngs_barcodes_enabled(flowcell):
     return jsonify(barcodes_schema.dump(barcodes))
 
 @bp.route('/api/runs/<flowcell>/barcodes/disabled', methods=['GET'])
-def get_ngs_barcodes_enabled(flowcell):
+def get_ngs_barcodes_disabled(flowcell):
     """Retrieve all disabled barcodes for a single ngs run
     """
     env = request.args.get('env', None)
