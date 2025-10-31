@@ -41,6 +41,7 @@ th {
         <th>Column</th><th>Description</th>
     </tr>
     <tr><td>Checkboxes</td><td>The checkboxes can be used to edit multiple entries at once. Shift-click or Ctrl-click can also be used here.</td></tr>
+    <tr><td>Enabled</td><td>ONLY when <b>editing</b> the samplesheet by selecting it in <A HREF="{{ url_for('ngsruns.run_list')}}">Run list</A>. Specific barcodes can be enabled or disabled. This is stored for the specific sample sheet, and can be reverted in another edit.</td></tr>
     <tr><td>ID</td><td>Contains the sample ID. The <b>ID List</b> button can be used to paste a list of IDs from another document.</td>
     <tr><td>Virus Target</td><td>Fill in the Virus Target. Usage depends on your downstream pipeline. Use <b>Copy down</b> to fill the first field and copy the value to the whole column. </B></td>
     <tr><td>Primer Set</td><td>Fill in the Primer Set. Usage depends on your downstream pipeline.</td></tr>
@@ -86,41 +87,47 @@ th {
 }
 </style>
 
-<form action="new" method="post" class="h-100" id="new_run">
+<form action="new" method="post" class="h-100" id="new_run" onsubmit="return confirmDisabledSubmit()">
     <div class="card h-100">
+        <!-- Card Header with Run Information, Controls and Data Header-->
         <div class="card-header">
             <input type="hidden" id="id" name="id" value="{{ id }}">
             <div class="row flash_bar bg-info">
-Note: The project selection has been moved to the individual barcodes. You can use the 'Copy Down' button if all barcodes belong to the same project.
+                Note: The project selection has been moved to the individual barcodes.
+                You can use the 'Copy Down' button if all barcodes belong to the same project.
             </div>
+            <!-- Run and Flowcell related information -->
             <div class="form-group row">
-                <label for="ngs_name" class="col-sm-1 col-form-label">Name:</label>
-                <input type="text" class="form-control col-sm-1 input-sm" autocomplete="off" name="name" id="ngs_name"
-                    placeholder="Run Name" value="{{ data.name }}">
-                <label for="ngs_flowcell" class="col-sm-1 col-form-label">Flowcell:</label>
-                <input type="text" class="form-control col-sm-1" autocomplete="off" name="flowcell" id="ngs_flowcell"
-                    placeholder="Flowcell" value="{{ data.flowcell }}">
-                <label for="ngs_description" class="col-sm-1 col-form-label">Description:</label>
+                <label for="ngs_name" class="col-auto col-form-label text-right">Name:</label>
+                <input type="text" class="form-control col-sm-2 input-sm" autocomplete="off" name="name" id="ngs_name"
+                    placeholder="Run Name" value="{{ data.name }}"required>
+                <label for="ngs_flowcell" class="col-sm-1 col-form-label text-right">Flowcell:</label>
+                <input type="text" class="form-control col-sm-2" autocomplete="off" name="flowcell" id="ngs_flowcell"
+                    placeholder="Flowcell" value="{{ data.flowcell }}" required>
+                <label for="ngs_description" class="col-sm-1 col-form-label text-right">Description:</label>
                 <input type="text" class="form-control col-sm-3" autocomplete="off" name="description"
                     id="ngs_description" placeholder="Description" value="{{ data.description }}">
             </div>
+            <!-- Barcodes Header Information -->
             <div class="form-group row bg-light">
+                <div class="col-auto" style="width: 2.0rem;"></div>
                 <div class="col-sm-1"></div>
                 <label class="col-sm-1 col-form-label">Barcode</label>
                 <label class="col-sm-1 col-form-label">ID</label>
                 <label class="col-sm-2 col-form-label">Virus Target</label>
                 <label class="col-sm-2 col-form-label">Primer Set</label>
-                <label class="col-sm-2 col-form-label">Kit</label>
+                <label class="col-sm-1 col-form-label">Kit</label>
                 <label class="col-sm-2 col-form-label">Description</label>
-                <label class="col-sm-1 col-form-label" title="Select a project from the available project list.&#013 If you are not a member of a project you can request access (See ? Help).">Project</label>
+                <label class="col-sm-1 col-form-label"
+                    title="Select a project from the available project list.&#013 If you are not a member of a project you can request access (See ? Help).">Project</label>
             </div>
-            <div class="form-group row">
+            <!-- Barcodes Form Controls -->
+            <div class="form-group row align-items-center">
                 <div class="col-sm-1" data-barcode="ALL">
-                   <button type="button" class="btn btn-secondary selectall"
-                   id="allbutton">All</button>
-                   <button type="button" class="btn btn-secondary selectnone"
-                   id="allbutton">None</button>
+                    <button type="button" class="btn btn-secondary selectall" id="allbutton">All</button>
+                    <button type="button" class="btn btn-secondary selectnone" id="allbutton">None</button>
                 </div>
+                <div class="col-auto" style="width: 2.0rem;"></div>
                 <label class="col-sm-1 col-form-label"></label>
                 <label class="col-sm-1 col-form-label"><button type="button" class="btn btn-secondary" id="databutton"
                         data-toggle="modal" data-target="#sampleid_list">ID List</button></label>
@@ -128,30 +135,51 @@ Note: The project selection has been moved to the individual barcodes. You can u
                         id="targetbutton">Copy down</button></label>
                 <label class="col-sm-2 col-form-label"><button type="button" class="btn btn-secondary"
                         id="primerbutton">Copy down</button></label>
-                <label class="col-sm-2 col-form-label"><button type="button" class="btn btn-secondary"
+                <label class="col-sm-1 col-form-label"><button type="button" class="btn btn-secondary"
                         id="kitbutton">Copy down</button></label>
                 <label class="col-sm-2 col-form-label"></label>
                 <label class="col-sm-1 col-form-label"><button type="button" class="btn btn-secondary"
-                    id="projectbutton">Copy down</button></label>
+                        id="projectbutton">Copy down</button></label>
             </div>
         </div>
+        <!-- Card Data -->
         <div class="card-body scroll h-100">
             {% for barcode in barcodes %}
             <div class="form-group form-row align-items-center">
                 <!-- Checkbox -->
-                <div class="col-sm-1 barbox" data-barcode="{{ barcode }}">
-                    <input type="checkbox" class="checkbox barselect" id="check_{{ barcode }}" data-barcode="{{ barcode }}" tabindex="-1">
+                <div class="col-auto barbox" data-barcode="{{ barcode }}">
+                    <input type="checkbox" class="checkbox barselect" id="check_{{ barcode }}"
+                        data-barcode="{{ barcode }}" tabindex="-1">
                 </div>
+                <!-- id = -1 for new entries, only show Enable button if barcode has sampleid -->
+                {% if data[barcode].sampleid %}
+                <!-- Enable/Disable button when editing row -->
+                <div class="col-sm-1 btn-group" role="group">
+                    <button type="button" id="toggleEnabled_{{ barcode }}"
+                        class="btn {% if data[barcode].enabled == 'true' %}btn-success{% else %}btn-danger{% endif %}"
+                        onclick="toggleEnabled('{{ barcode }}')">
+                        {% if data[barcode].enabled == 'true'%}Enabled{% else %}Disabled{% endif %}
+                    </button>
+                </div>
+                {% else %}
+                <div class="col-sm-1"></div>
+                {% endif %}
+                <input type="hidden" name="barcode" value="{{ barcode }}">
+                <!-- id = -1 for new runs, default value is true -->
+                <input type="hidden" name="enabled_{{ barcode }}" id="enabled_{{ barcode }}"
+                    value="{{ 'true' if not data[barcode].sampleid else data[barcode].enabled }}">
 
                 <!-- Barcode (readonly) -->
                 <div class="col-sm-1">
-                    <input type="text" class="form-control" name="bar_{{ barcode }}" id="bar_{{ barcode }}" value="{{ barcode }}" readonly tabindex="-1">
+                    <input type="text" class="form-control" name="bar_{{ barcode }}" id="bar_{{ barcode }}"
+                        value="{{ barcode }}" readonly tabindex="-1">
                 </div>
 
                 <!-- Sample ID -->
                 <div class="col-sm-1">
                     <input type="text" class="form-control" name="sampleid_{{ barcode }}" id="sampleid_{{ barcode }}"
-                        placeholder="ID" value="{{ data[barcode].sampleid }}" autocomplete="off" tabindex="{{ loop.index }}">
+                        placeholder="ID" value="{{ data[barcode].sampleid }}" autocomplete="off"
+                        tabindex="{{ loop.index }}">
                 </div>
 
                 <!-- Virus Target -->
@@ -168,8 +196,8 @@ Note: The project selection has been moved to the individual barcodes. You can u
                         data-barcode="{{ barcode }}" autocomplete="off" tabindex="{{ loop.index + 48 }}">
                 </div>
 
-                <!-- Kit Datalist-->
-                <div class="col-sm-2">
+                <!-- Kit Datalist -->
+                <div class="col-sm-1">
                     <input type="text" class="form-control kitfield" name="kit_{{ barcode }}" id="kit_{{ barcode }}"
                         list="kit_list_{{ barcode }}" placeholder="Kit" value="{{ data[barcode].kit }}"
                         data-barcode="{{ barcode }}" tabindex="{{ loop.index + 72 }}">
@@ -182,17 +210,18 @@ Note: The project selection has been moved to the individual barcodes. You can u
 
                 <!-- Description -->
                 <div class="col-sm-2">
-                    <input type="text" class="form-control" name="description_{{ barcode }}" id="description_{{ barcode }}"
-                        placeholder="Description" value="{{ data[barcode].description }}" autocomplete="off" tabindex="{{ loop.index + 96 }}">
+                    <input type="text" class="form-control" name="description_{{ barcode }}"
+                        id="description_{{ barcode }}" placeholder="Description" value="{{ data[barcode].description }}"
+                        autocomplete="off" tabindex="{{ loop.index + 96 }}">
                 </div>
 
                 <!-- Project Dropdown -->
                 <div class="col-sm-1">
                     <select class="custom-select projectfield" name="project_{{ barcode }}" id="project_{{ barcode }}"
-                            title="Select a project from the available project list.&#013If you are not a member of a project you can request access (See ? Help)."
-                            data-barcode="{{ barcode }}">
+                        title="Select a project from the available project list.&#013If you are not a member of a project you can request access (See ? Help)."
+                        data-barcode="{{ barcode }}">
                         {% for project in projects|sort %}
-                        <option {% if project == default_project %} selected {% endif %}>{{ project }}</option>
+                        <option {% if project==default_project %} selected {% endif %}>{{ project }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -205,8 +234,56 @@ Note: The project selection has been moved to the individual barcodes. You can u
     </div>
 </form>
 
-
 <script>
+    // Function for toggle Enabled/Disabled barcodes
+    function toggleEnabled(barcode) {
+        const enabled = document.getElementById(`enabled_${barcode}`);
+        const btn = document.getElementById(`toggleEnabled_${barcode}`);
+        if (!enabled || !btn) return;
+
+        const newValue = enabled.value === "true" ? "false" : "true";
+
+        // Get all selected checkboxes
+        const selected = Array.from(document.querySelectorAll('.barselect:checked'))
+            .map(cb => cb.dataset.barcode);
+
+        // Combine selected with the clicked barcode (Set removes duplicates)
+        const targets = [...new Set([...selected, barcode])];
+
+        // Apply to all target barcodes
+        targets.forEach(b => {
+            const target = document.getElementById(`enabled_${b}`);
+            const button = document.getElementById(`toggleEnabled_${b}`);
+            if (!target || !button) return;
+
+            target.value = newValue;
+            button.classList.toggle("btn-success", newValue === "true");
+            button.classList.toggle("btn-danger", newValue !== "true");
+            button.textContent = newValue === "true" ? "Enabled" : "Disabled";
+        });
+    }
+        
+        function confirmDisabledSubmit() {
+        // Find all hidden inputs tracking enabled state
+        const all = document.querySelectorAll('[id^="enabled_"]');
+
+        // Collect any that are disabled
+        const disabled = Array.from(all)
+            .filter(h => h.value === "false")
+            .map(h => h.id.replace("enabled_", "")); // get the barcode numbers
+
+        if (disabled.length > 0) {
+            const message = `You are submitting ${disabled.length} disabled barcode row(s):\n` +
+                            disabled.join(", ") +
+                            "\n\nDo you want to continue?";
+            // Confirm — if user presses "Cancel", prevent submission
+            return confirm(message);
+        }
+
+        // No disabled rows, allow submission
+        return true;
+    }
+
     $('.selectall').click(function(){
         $('.barselect').prop('checked', true)
         $('.barbox, .targetfield, .primerfield, .kitfield, .projectfield').addClass('bg-light').addClass('selected')

@@ -28,6 +28,7 @@ from irods.meta import iRODSMeta
 from irods.exception import CollectionDoesNotExist
 from app.irodssessions import irods_manager
 from ast import literal_eval
+from fs_irods import fs_irods
 
 ATTR_PROJECTID = 'projectID'
 ATTR_UPLOAD = 'user::upload'
@@ -109,11 +110,10 @@ def unique_coll(base_coll, prefix=None, use_date=False):
     i = 1
     with irods_manager.session() as session:
         while session.collections.exists(collname):
-            collname = os.path.join(projectcoll, f'{fullprefix}{i:04}')
+            collname = os.path.join(base_coll, f'{fullprefix}{i:04}')
             i += 1
-    logging.debug('upload/unique_coll(): mkdir "{}"'.format(collname))
-    with irods_manager.session() as session:
-        fs_irods(session).mkdir(collname)
+        logging.debug('upload/unique_coll(): mkdir "{}"'.format(collname))
+        fs_irods(session=session).mkdir(collname)
     # TODO : add some metadata?
     return collname
 
@@ -317,9 +317,9 @@ def upload_data():
         filename = os.path.join(coll, fullPath)
         filepath = os.path.dirname(filename)
         with irods_manager.session() as session:
-            if not fs_irods(session).folderexists(filepath):
-                fs_irods(session).mkdir(filepath)
-            with fs_irods(session).open(filename, 'w') as d:
+            if not fs_irods(session=session).folderexists(filepath):
+                fs_irods(session=session).mkdir(filepath)
+            with fs_irods(session=session).open(filename, 'w') as d:
                 shutil.copyfileobj(f, d)
         iqry.invalidate(coll)
         return 'OK'
@@ -337,7 +337,7 @@ def upload_actions():
         return redirect(url_for('upload.show_uploads'))
     elif action == 'cancel':
         with irods_manager.session() as session:
-            fs_irods(session).rmdir(coll, recurse=True, force=True)
+            fs_irods(session=session).rmdir(coll, recurse=True, force=True)
         return redirect(url_for('upload.show_uploads'))
     flash(f'Unknown request: {action}', 'error')
     return redirect(url_for('upload.upload_settings', coll=coll))
