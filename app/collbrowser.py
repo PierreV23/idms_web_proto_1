@@ -1672,7 +1672,7 @@ def upload_file():
         f = request.files['file']
         # Generate irods file object
         iObjName = requestdata['collection'] + '/' + f.filename
-        with irods_mananger.session() as session:
+        with irods_manager.session() as session:
             iObj = fs_irods(session).open(iObjName, 'w')
             f.save(iObj)
             iObj.close()
