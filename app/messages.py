@@ -6,6 +6,7 @@ from flask import current_app, Blueprint, request, jsonify
 from flask_login import current_user
 from .flaskcache import cache, dep_zone
 from app.irodssessions import irods_manager
+from fs_irods import fs_irods
 
 
 bp = Blueprint('messages', __name__, url_prefix='/messages')
@@ -60,8 +61,8 @@ def load_messages(category=None, only_current=False):
     messageobject = os.path.join('/', current_user.irods_zone, current_app.config.get("MESSAGES_OBJECT","none"))
     with irods_manager.session() as session:
         try:
-            if fs_irods(session).fileexists(messageobject):
-                obj = fs_irods(session).getfile(messageobject)
+            if fs_irods(session=session).fileexists(messageobject):
+                obj = fs_irods(session=session).getfile(messageobject)
                 messages_json = obj.open('r').read().decode('utf-8')
                 all_messages = json.loads(messages_json).get('messages', [])
         except Exception as ex:
@@ -97,9 +98,9 @@ def write_messages(all_messages):
     messageobject = os.path.join('/', current_user.irods_zone, current_app.config.get("MESSAGES_OBJECT","none"))
     with irods_manager.session() as session:
         try:
-            if fs_irods(session).fileexists(messageobject):
+            if fs_irods(session=session).fileexists(messageobject):
                 messagestring = json.dumps({ 'messages' : all_messages}, indent=4)
-                obj = fs_irods(session).getfile(messageobject)
+                obj = fs_irods(session=session).getfile(messageobject)
                 messages_json = obj.open('w').write(messagestring.encode())
         except Exception as ex:
             # Do not break the website if the message file has an invalid format

@@ -1673,7 +1673,7 @@ def upload_file():
         # Generate irods file object
         iObjName = requestdata['collection'] + '/' + f.filename
         with irods_manager.session() as session:
-            iObj = fs_irods(session).open(iObjName, 'w')
+            iObj = fs_irods(session=session).open(iObjName, 'w')
             f.save(iObj)
             iObj.close()
             contents_changed()
@@ -1685,7 +1685,7 @@ def delete_file():
     if 'path' in requestdata:
         path = requestdata['path']
         with irods_manager.session() as session:
-            fs_irods(session).deletefile(path)
+            fs_irods(session=session).deletefile(path)
         contents_changed()
     return '', 201
 

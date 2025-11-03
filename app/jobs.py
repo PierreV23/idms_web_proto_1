@@ -29,6 +29,7 @@ from .collbrowser import shape
 import psycopg2
 from psycopg2 import pool
 from psycopg2.extras import RealDictCursor
+from fs_irods import fs_irods
 
 from app.stats import TD
 
@@ -503,7 +504,7 @@ def job_logs():
         logfiles = {}
         try:
             log_location = '{}/log'.format(metadata['sys::run::output_collection'])
-            if fs_irods(session).folderexists(log_location):
+            if fs_irods(session=session).folderexists(log_location):
                 logfiles = _get_logfiles(log_location)
         except KeyError:
             # output collection not set as metadata. Ignore.
@@ -515,9 +516,9 @@ def _get_logfiles(location, subdir=''):
     logs = {}
     currentdir = os.path.join(location, subdir)
     with irods_manager.session() as session:
-        for subdir2 in fs_irods(session).lsdirnames(currentdir):
+        for subdir2 in fs_irods(session=session).lsdirnames(currentdir):
             logs.update(_get_logfiles(location, subdir=os.path.join(subdir, subdir2)))
-        logs.update({ os.path.join(subdir, filename): os.path.join(currentdir, filename) for filename in fs_irods(session).lsfilenames(currentdir) }) 
+        logs.update({ os.path.join(subdir, filename): os.path.join(currentdir, filename) for filename in fs_irods(session=session).lsfilenames(currentdir) }) 
     return(logs)
 
 @bp.route('/_joblog')
@@ -535,7 +536,7 @@ def show_logfile():
     filename = path.split("/")[-1]
     with irods_manager.session() as session:
         try:
-            obj = fs_irods(session).getfile(path)
+            obj = fs_irods(session=session).getfile(path)
         except DataObjectDoesNotExist:
             result["msg"] = f"The {path} does not exist"
             result["error"] = True
