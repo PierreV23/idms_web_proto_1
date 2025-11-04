@@ -11,7 +11,6 @@ from flask_login import current_user, login_required
 from irods.exception import DataObjectDoesNotExist, CAT_NO_ACCESS_PERMISSION
 from irods.models import Collection, CollectionMeta
 from irods.column import Criterion
-from fs_irods import fs_irods
 from app.datafield import datafield
 from app.settings import JOB_FIELDS, PG_FIELDS, PG_JOB_FIELDS
 from graphviz import Digraph
@@ -30,6 +29,7 @@ from .collbrowser import shape
 import psycopg2
 from psycopg2 import pool
 from psycopg2.extras import RealDictCursor
+from fs_irods import fs_irods
 
 from app.stats import TD
 
@@ -482,42 +482,43 @@ def jobdetails():
     processgroupid = metadata.get('sys::runsheet::processgroupid', '')
     return render_template('jobdetails.html', details=details, multi=multi, runsheet=runsheet, processgroupid=processgroupid, jobnaam=datafield('jobnaam', jobnaam, 'runsheet'))
 
+
 @bp.route('joblogs')
 def job_logs():
     jobnaam = request.args.get('name', '', type=str)
-    session = irods_manager.session()
+    with irods_manager.session() as session:
 
-    # the jobnaam is refering to metainfo on a collection
-    query = session.query(Collection.name, CollectionMeta).filter( 
-            Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_ID )).filter(
-            Criterion('=', CollectionMeta.value, f'{jobnaam}'))
-    # Find the job log file
-    results = query.get_results()
-    job = next(results)
-    runsheet = job[Collection.name] 
-    q2 = session.query(CollectionMeta.name, CollectionMeta.value).filter( \
-            Criterion('=', Collection.name, runsheet ))
-    metadata = {meta[CollectionMeta.name] : meta[CollectionMeta.value] for meta in q2}
-    ifs = current_user.ifs
+        # the jobnaam is refering to metainfo on a collection
+        query = session.query(Collection.name, CollectionMeta).filter( 
+                Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_ID )).filter(
+                Criterion('=', CollectionMeta.value, f'{jobnaam}'))
+        # Find the job log file
+        results = query.get_results()
+        job = next(results)
+        runsheet = job[Collection.name] 
+        q2 = session.query(CollectionMeta.name, CollectionMeta.value).filter( \
+                Criterion('=', Collection.name, runsheet ))
+        metadata = {meta[CollectionMeta.name] : meta[CollectionMeta.value] for meta in q2}
 
-    # Find output logs
-    logfiles = {}
-    try:
-        log_location = '{}/log'.format(metadata['sys::run::output_collection'])
-        if current_user.ifs.folderexists(log_location):
-            logfiles = _get_logfiles(log_location)
-    except KeyError:
-        # output collection not set as metadata. Ignore.
-        pass    
+        # Find output logs
+        logfiles = {}
+        try:
+            log_location = '{}/log'.format(metadata['sys::run::output_collection'])
+            if fs_irods(session=session).folderexists(log_location):
+                logfiles = _get_logfiles(log_location)
+        except KeyError:
+            # output collection not set as metadata. Ignore.
+            pass    
     return render_template('joblogs.html', jobnaam = datafield('jobnaam', jobnaam, 'runsheet'), logs = logfiles)
 
 
 def _get_logfiles(location, subdir=''):
     logs = {}
     currentdir = os.path.join(location, subdir)
-    for subdir2 in current_user.ifs.lsdirnames(currentdir):
-        logs.update(_get_logfiles(location, subdir=os.path.join(subdir, subdir2)))
-    logs.update({ os.path.join(subdir, filename): os.path.join(currentdir, filename) for filename in current_user.ifs.lsfilenames(currentdir) }) 
+    with irods_manager.session() as session:
+        for subdir2 in fs_irods(session=session).lsdirnames(currentdir):
+            logs.update(_get_logfiles(location, subdir=os.path.join(subdir, subdir2)))
+        logs.update({ os.path.join(subdir, filename): os.path.join(currentdir, filename) for filename in fs_irods(session=session).lsfilenames(currentdir) }) 
     return(logs)
 
 @bp.route('/_joblog')
@@ -533,105 +534,28 @@ def show_logfile():
 
     path = request.args.get('path', '', type=str)
     filename = path.split("/")[-1]
+    with irods_manager.session() as session:
+        try:
+            obj = fs_irods(session=session).getfile(path)
+        except DataObjectDoesNotExist:
+            result["msg"] = f"The {path} does not exist"
+            result["error"] = True
+            return result
 
-    try:
-        obj = current_user.ifs.getfile(path)
-    except DataObjectDoesNotExist:
-        result["msg"] = f"The {path} does not exist"
-        result["error"] = True
-        return result
+        try:
+            with obj.open('r') as f:
+                data = f.read(MAX_READ_LOG_BYTES)
+        except CAT_NO_ACCESS_PERMISSION: # if encountered the error
+            result["msg"] = f"You don't have permission to access {filename}"
+            result["error"] = True
+            return result # return the result, otherwise data is being read
+        
+        if sys.getsizeof(data) >= MAX_READ_LOG_BYTES:
+            result["data"] = f"{data.decode('utf-8')}\n!!! log truncated to max {MAX_READ_LOG_BYTES} bytes !!!"
+            return result
 
-    try:
-        with obj.open('r') as f:
-            data = f.read(MAX_READ_LOG_BYTES)
-    except CAT_NO_ACCESS_PERMISSION: # if encountered the error
-        result["msg"] = f"You don't have permission to access {filename}"
-        result["error"] = True
-        return result # return the result, otherwise data is being read
-    
-    if sys.getsizeof(data) >= MAX_READ_LOG_BYTES:
-        result["data"] = f"{data.decode('utf-8')}\n!!! log truncated to max {MAX_READ_LOG_BYTES} bytes !!!"
-        return result
-
-    # if everything went well
-    result["data"] = data.decode('utf-8')
+        # if everything went well
+        result["data"] = data.decode('utf-8')
     
     return result
-
-# TODO check this code for use with fs_irods (https://gitlab.rivm.nl/bioinformatics/ngsweb/-/issues/183)
-# @bp.route('joblogs')
-# def job_logs():
-#     jobnaam = request.args.get('name', '', type=str)
-#     with irods_manager.session() as session:
-
-#         # the jobnaam is refering to metainfo on a collection
-#         query = session.query(Collection.name, CollectionMeta).filter( 
-#                 Criterion('=', CollectionMeta.name, ATTR_RUNSHEET_ID )).filter(
-#                 Criterion('=', CollectionMeta.value, f'{jobnaam}'))
-#         # Find the job log file
-#         results = query.get_results()
-#         job = next(results)
-#         runsheet = job[Collection.name] 
-#         q2 = session.query(CollectionMeta.name, CollectionMeta.value).filter( \
-#                 Criterion('=', Collection.name, runsheet ))
-#         metadata = {meta[CollectionMeta.name] : meta[CollectionMeta.value] for meta in q2}
-
-#         # Find output logs
-#         logfiles = {}
-#         try:
-#             log_location = '{}/log'.format(metadata['sys::run::output_collection'])
-#             if fs_irods(session).folderexists(log_location):
-#                 logfiles = _get_logfiles(log_location)
-#         except KeyError:
-#             # output collection not set as metadata. Ignore.
-#             pass    
-#     return render_template('joblogs.html', jobnaam = datafield('jobnaam', jobnaam, 'runsheet'), logs = logfiles)
-
-
-# def _get_logfiles(location, subdir=''):
-#     logs = {}
-#     currentdir = os.path.join(location, subdir)
-#     with irods_manager.session() as session:
-#         for subdir2 in fs_irods(session).lsdirnames(currentdir):
-#             logs.update(_get_logfiles(location, subdir=os.path.join(subdir, subdir2)))
-#         logs.update({ os.path.join(subdir, filename): os.path.join(currentdir, filename) for filename in fs_irods(session).lsfilenames(currentdir) }) 
-#     return(logs)
-
-# @bp.route('/_joblog')
-# @cache.cached(timeout=120, key_prefix=key_userzone)
-# def show_logfile():
-#     # result object
-#     result = { 
-#         "error": False, 
-#         "data": None, 
-#         "msg": None
-#     }
-
-
-#     path = request.args.get('path', '', type=str)
-#     filename = path.split("/")[-1]
-#     with irods_manager.session() as session:
-#         try:
-#             obj = fs_irods(session).getfile(path)
-#         except DataObjectDoesNotExist:
-#             result["msg"] = f"The {path} does not exist"
-#             result["error"] = True
-#             return result
-
-#         try:
-#             with obj.open('r') as f:
-#                 data = f.read(MAX_READ_LOG_BYTES)
-#         except CAT_NO_ACCESS_PERMISSION: # if encountered the error
-#             result["msg"] = f"You don't have permission to access {filename}"
-#             result["error"] = True
-#             return result # return the result, otherwise data is being read
-        
-#         if sys.getsizeof(data) >= MAX_READ_LOG_BYTES:
-#             result["data"] = f"{data.decode('utf-8')}\n!!! log truncated to max {MAX_READ_LOG_BYTES} bytes !!!"
-#             return result
-
-#         # if everything went well
-#         result["data"] = data.decode('utf-8')
-    
-#     return result
 

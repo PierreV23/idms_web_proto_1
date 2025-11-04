@@ -178,7 +178,7 @@ def archive_action():
                 return jsonify({'message': 'Cannot remove last data copy in collection'})
             for attr in (ATTR_ARCHIVE_TARFILE, ATTR_ARCHIVE_MANIFESTFILE):
                 filename = getmetaitem(collobj, attr)
-                if filename and fs_irods(session).fileexists(filename):
+                if filename and fs_irods(session=session).fileexists(filename):
                     session.data_objects.unlink(filename)
                     collobj.metadata.remove(iRODSMeta(attr, filename))
         if action in ('clear_status', 'remove_archive') :
