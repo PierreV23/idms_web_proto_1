@@ -188,6 +188,7 @@ $('#del_dep').on('click', function() {
     $.get('{{ url_for("projects.pgaction") }}', {
         project: "{{ project }}",
         group: "{{ group }}",
+        process: selected_processref,
         action: 'delete_dependency',
         depend: $('.select-dep.active').text()
     }, function(data) {
