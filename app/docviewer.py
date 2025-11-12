@@ -36,7 +36,7 @@ def mdconvert(fobj):
 def serve_image():
     path = urllib.parse.unquote(request.args.get('path', '/', type=str))
     with irods_manager.session() as session:
-        obj = fs_irods(session).getfile(path)
+        obj = fs_irods(session=session).getfile(path)
         imagefile = obj.open('r')
     return send_file(imagefile, download_name=os.path.split(path)[1],
                      as_attachment=False)

@@ -53,12 +53,6 @@ class file_irods(fsobject_base):
     def isfile(self):
         return True
 
-    def _getfile(self, path):
-        return session.data_objects.get( path)
-        #with obj.open('r+') as f:
-        #    for line in f:
-        #        print(line)
-
     def open(self, mode):
         return self.irods_object.open(mode)
 
