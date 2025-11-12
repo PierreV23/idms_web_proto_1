@@ -4,7 +4,7 @@ import jsonavu
 from flask import Blueprint, render_template, request, jsonify, url_for
 from flask_login import current_user
 from app import iqry
-from app.constants import ATTR_UISCHEMA
+from app.constants import ATTR_UISCHEMA, SCHEMATA_PATH
 from app.upload import getSchemataForProject
 from app.irodssessions import irods_manager
 from irods.models import CollectionMeta
@@ -14,8 +14,7 @@ bp = Blueprint('metaedit', __name__, url_prefix='/metaedit')
 PROJECT_ATTRS = ['user::upload::settings::projectID']
 SCHEMA_ATTR = 'user::upload::schemafile'
 ATTR_UPLOADPREFIX = 'user::upload::meta::'
-# TODO: Get this from the zone config?
-SCHEMATA_PATH = 'system/schemata'
+
 
 def schemapath_abs(schemapath_rel):
     """ Translate relative to absolute schemapath:
