@@ -41,7 +41,7 @@ $(document).on('click', '.projectname', function() {
     processgroup: "{{ processgroup }}"
   }, function(data) {
     $('#details').html(data);
-    $("a[id='{{ pp }}-tab']").trigger('click')
+    $("a[id='{{ activetabname }}-tab']").trigger('click')
   });
 });
 
@@ -51,7 +51,7 @@ $(window).on('load', function() {
   }, 20)
 });
 
-// Some functions for the processgroup graphs 
+// Some functions for the processgroup graphs
 
 $(document).on('click', '#select_input_button', function(){
     if (mode != 'select_input') {
@@ -60,7 +60,7 @@ $(document).on('click', '#select_input_button', function(){
     } else {
         mode = 'display'
     }
-    
+
     load_pgpage();
 })
 

@@ -61,7 +61,7 @@ bp = Blueprint('upload', __name__, url_prefix='/upload')
 
 def collection_basename(coll):
     """Return the basename of a colletion without the path, and without the numeric suffix
-    
+
     So /rivmZone_acc_01/projects/ngslab/output/230911_NB502001_0032_AHTFHKAFX3_0000
     returns 230911_NB502001_0032_AHTFHKAFX3
     assuming sys::suffixlength == 4
@@ -101,7 +101,7 @@ def unique_coll(base_coll, prefix=None, use_date=False):
             fullprefix = f'{fullprefix}_{datestr}'
         else:
             fullprefix = f'{datestr}'
-    
+
     if not fullprefix:
         collname = os.path.join(base_coll,'0000')
     else:
@@ -130,7 +130,7 @@ def show_uploads():
 
 
 # TODO: use the irods_helper instead (role irods_cronjobs)
-def getmetaitem(irods_obj, attr, default=None): 
+def getmetaitem(irods_obj, attr, default=None):
     try:
         value = irods_obj.metadata.get_one(attr).value
     except KeyError:
@@ -182,7 +182,7 @@ def upload_settings():
     FIELDS = {
         'projectID':   'Project',
         'collection':  'Collection name',
-        'description': 'Description' 
+        'description': 'Description'
     }
     if request.method == 'GET':
         coll = request.args.get('coll')
@@ -211,8 +211,8 @@ def upload_settings():
 
 
 def getSchemataForProject( projectId ):
-    """Return list of schemas for a project
-       and the default schemas
+    """Return list of schemata for a project
+       and the default schemata
        as a dictionary:
        {
         schema-name : schema-location
@@ -234,7 +234,6 @@ def getSchemataForProject( projectId ):
                 schemaColl = session.collections.get( os.path.join('/', current_user.irods_zone, 'system/schemata', schemaLocation))
             except CollectionDoesNotExist:
                 continue
-            print('UPDATE')
             result.update(getSchemataInColl(schemaColl))
     return result
 
@@ -261,7 +260,6 @@ def get_schema():
                     except:
                         pass
     return { 'schema': content, 'uiSchema': uiSchema }
-    
 
 
 @bp.route('_uploadmeta', methods=['GET', 'POST'])
@@ -287,9 +285,9 @@ def upload_meta():
 #         unset_upload_meta(collection)
 #         avus = jsonavu.json2avu(record.get('data', {}), "cat")
 #         for avu in avus:
-#             iqry.scollmetaval(collection, f'{ATTR_UPLOADMETA}{avu["a"]}', avu["v"], unit=avu["u"] )    
+#             iqry.scollmetaval(collection, f'{ATTR_UPLOADMETA}{avu["a"]}', avu["v"], unit=avu["u"] )
 #         selectedSchema = record.get('selectedSchema')
-#         iqry.scollmetaval(collection, f'{ATTR_UPLOADMETASCHEMA}', selectedSchema)              
+#         iqry.scollmetaval(collection, f'{ATTR_UPLOADMETASCHEMA}', selectedSchema)
 #         return jsonify({'status': 'OK' }), 200
 
 def unset_upload_meta(collection):
@@ -343,13 +341,11 @@ def upload_actions():
     return redirect(url_for('upload.upload_settings', coll=coll))
 
 
-
-
 @bp.route('newupload')
 def new_upload():
     # Create an upload-collection
     # First generate a unique upload name
-    unique = False 
+    unique = False
     while not unique:
         name = randomname.get_name()
         with irods_manager.session() as session:
@@ -361,7 +357,7 @@ def new_upload():
     # Now generate a collection for the upload
     coll = unique_coll(os.path.join('/', current_user.irods_zone, 'home', current_user.username), prefix=name)
     with irods_manager.session() as session:
-        collobj = session.collections.get(coll)   
+        collobj = session.collections.get(coll)
         get_or_set_uid(collobj)
         iqry.scollmetaval(coll, ATTR_UPLOADNAME, name)
         iqry.scollmetaval(coll, ATTR_UPLOAD, UploadType.Pending)

@@ -74,22 +74,22 @@ def show_projects():
 
     url params:
         project: switch to projects page and show <project>
-        process: switch to processes page and show <processid> 
+        process: switch to processes page and show <processid>
     """
     # TODO: refactor passing of arguments
     page = request.args.get('page', 'projects')
 
     project = request.args.get('project', '')
     process = request.args.get('process', '')
-    pp = request.args.get('pp', '')
+    activetabname = request.args.get('activetabname', '')
     processgroup = request.args.get('processgroup', '')
     processlist = get_process2list()
     if page == 'processes':
         return render_template('processes.html', processes=processlist, process=process)
     else:
         projectlist = get_projectlist()
-        return render_template('projects.html', projects=projectlist, processes=processlist, 
-            project=project, process=process, pp=pp, processgroup=processgroup)
+        return render_template('projects.html', projects=projectlist, processes=processlist,
+            project=project, process=process, activetabname=activetabname, processgroup=processgroup)
 
 
 @bp.route('/details')
@@ -99,8 +99,8 @@ def show_projectdetails():
     """
     projectnaam = request.args.get('name', '', type=str)
     processnaam = request.args.get('process', '', type=str)
-    processgroup = request.args.get('processgroup', 'default', type=str) 
-   
+    processgroup = request.args.get('processgroup', 'default', type=str)
+
     projectdetails, result = rest_call('GET', 'projects/{}'.format(projectnaam))
 
     # Retrieve groups associated with project
@@ -113,7 +113,7 @@ def show_projectdetails():
     projectdetails['groups'] = groups
 
     processing = iso2dt(projectdetails.get('last_updated', EPOCH)) > iso2dt(projectdetails.get('last_verified', EPOCH))
-    return render_template('projectdetails.html', PD=projectdetails, processing=processing,
+    return render_template('projectdetails.html', projectdetails=projectdetails, processing=processing,
                            processnaam=processnaam, processgroup=processgroup, project_permissions=project_permissions(projectnaam))
 
 @bp.route('_projectcolls')
@@ -136,7 +136,7 @@ def projectcolls():
     if 'displayname' in filters:
         qc_filters.append(Criterion('like', Collection.name, f'%{filters["displayname"]}%'))
 
-# Get item counts 
+# Get item counts
     qc_count = irods_session.query(Collection.id)
     for qc_filter in qc_filters:
         qc_count = qc_count.filter(qc_filter)
@@ -152,7 +152,7 @@ def projectcolls():
     try:
         colls = q1.execute()
         for coll in colls:
-            objdict = { 
+            objdict = {
                 'displayname': datafield('irods_collection', coll[Collection.name], 'irods_collection').collentry,
                 'path': coll[Collection.name],
                 'object': 'collection',
@@ -193,7 +193,7 @@ def show_processdetails():
 def update_projectsettings():
     """
     Called when changing project settings from the web interface
-    The request contains an <action> variable that specifiec the kind of update
+    The request contains an <action> variable that specifies the kind of update
     that is requested
     """
     requestdata = request.form.to_dict()
@@ -222,21 +222,28 @@ def update_projectsettings():
         if project and name:
             data = {'name' : name }
             response, result = rest_call('POST', f'projects/{project}/processgroups', data=data)
-        location=f'project={project}&pp=processgroups&processgroup={name}'
+        location=f'project={project}&activetabname=processgroups&processgroup={name}'
     elif action == 'rename_processgroup':
         oldname = requestdata.get('oldname')
         newname = requestdata.get('name')
         if project and oldname and newname:
             data = {'name' : newname }
             response, result = rest_call('PUT', f'projects/{project}/processgroups/{oldname}', data=data)
-        location=f'project={project}&pp=processgroups&processgroup={newname}'
+        location=f'project={project}&activetabname=processgroups&processgroup={newname}'
     elif action == 'remove_processgroup':
         name = requestdata.get('name')
         if project and name:
             data = {'name' : name }
             response, result = rest_call('DELETE', f'projects/{project}/processgroups/{name}', data=data)
-        location=f'project={project}&pp=processgroups'               
+        location=f'project={project}&activetabname=processgroups'
     elif action == 'update_project':
+        data = { 'pipelines': '0', 'public': '0' }
+        for attr in ['description', 'default_collection', 'service_account', 'pipelines', 'public']:
+            if attr in requestdata:
+                data[attr] = requestdata[attr]
+        rest_call('PUT', 'projects/{}'.format(project), data=data)
+        location=f'project={project}'
+    elif action == 'update_project_meta':
         data = { 'pipelines': '0', 'public': '0' }
         for attr in ['description', 'default_collection', 'service_account', 'pipelines', 'public']:
             if attr in requestdata:
@@ -247,7 +254,7 @@ def update_projectsettings():
         response, result = rest_call('POST', 'projects'.format(project), data={'name': project})
         if result == 202:
             location=f'project={project}'
-        else:            
+        else:
             flash(response.get('message', 'Unknown error'), 'error')
             location='page=projects'
     elif action == 'remove_project':
@@ -288,7 +295,7 @@ def my_projects():
     pl, result = rest_call('GET', 'projects')
     if result == 200:
         projectdetails = { project['name'] : project['default_collection'] for project in pl if project['name'] in projectlist }
-    return projectdetails    
+    return projectdetails
 
 @bp.route('_myprojectview', methods=['GET'])
 def my_projectview():
@@ -343,7 +350,7 @@ def pgaction():
         pl, result = rest_call('GET', f'projects/{project}/processgroups/{group}/processes')
         if result == 200:
             for procref in pl:
-                _, result = rest_call('PUT', f'projects/{project}/processgroups/{group}/processes/{procref.get("id")}', 
+                _, result = rest_call('PUT', f'projects/{project}/processgroups/{group}/processes/{procref.get("id")}',
                     data = { 'lsf_queue': lsf_queue })
     elif action == 'delete_process':
         process = request.args.get('process')
@@ -351,7 +358,7 @@ def pgaction():
     elif action == 'set_input':
         process = request.args.get('process')
         input = request.args.get('input')
-        pl, result = rest_call('PUT', 
+        pl, result = rest_call('PUT',
             f'projects/{project}/processgroups/{group}/processes/{process}',
             { 'input': input})
     elif action == 'add_dependency':
@@ -385,7 +392,7 @@ def process_list_refdata():
 def process_add_referencedataversion():
     referencedataid = request.args.get('referencedataid')
     referencedataversionid = request.args.get('referencedataversionid')
-    processid = request.args.get('processid') 
+    processid = request.args.get('processid')
     label = request.args.get('label')
     result, r = rest_call('POST', f'/processes/{processid}/referencedataversion',
                                 { "referencedataid": referencedataid ,
@@ -395,7 +402,7 @@ def process_add_referencedataversion():
 
 @bp.route('_process_del_referencedataversion', methods=['GET'])
 def process_del_referencedataversion():
-    processid = request.args.get('processid') 
+    processid = request.args.get('processid')
     referencedataid = request.args.get('referencedataid')
     result, r = rest_call('DELETE', f'/processes/{processid}/referencedataversion/{referencedataid}' )
     return result
@@ -405,10 +412,10 @@ def process_del_referencedataversion():
 def process_set_referencedataversion():
     referencedataid = request.args.get('referencedataid')
     referencedataversionid = request.args.get('referencedataversionid')
-    processid = request.args.get('processid') 
+    processid = request.args.get('processid')
     result, r = rest_call('PUT', f'/processes/{processid}/referencedataversion/{referencedataid}',
                                 { "referencedataversionid": referencedataversionid } )
-    return result               
+    return result
 
 @bp.route('_referencedataversions', methods=['GET'])
 def referencedataversions():
@@ -431,16 +438,16 @@ def pg_list_processref_refdata():
     for refdataFP in refdatasForProcess:
         id = refdataFP["id"]
         refdataid = refdataFP["referencedataid"]
-        versions, code = rest_call('GET', f'reference/{refdataid}/versions')    
+        versions, code = rest_call('GET', f'reference/{refdataid}/versions')
         if code != 200:
-            return[] 
+            return[]
         else:
             refdataFP["versions"] = versions
-   
-    refdatasForProcessRef, code = rest_call('GET', f'/projects/{project}/processgroups/{group}/processes/{process_ref}/referencedataversion')   
+
+    refdatasForProcessRef, code = rest_call('GET', f'/projects/{project}/processgroups/{group}/processes/{process_ref}/referencedataversion')
     refdatasForProcessRefByRDFBID = {}
     if code != 200:
-        return [] 
+        return []
     for refdataFPR in refdatasForProcessRef:
         refdataFP_id = refdataFPR["processdefault"]["id"]
         refdatasForProcessRefByRDFBID[refdataFP_id] = refdataFPR
@@ -476,7 +483,7 @@ def pg_set_referencedataversion():
             #a new entry needs to be created via POST
             result, code = rest_call('POST', f'/projects/{project}/processgroups/{group}/processes/{process_ref}/referencedataversion',
                                     {
-                                        "supersedingversionid": supersedingversionid, 
+                                        "supersedingversionid": supersedingversionid,
                                         "processdefaultid": processdefaultid
                                     } )
     return result
@@ -494,7 +501,7 @@ def pg_add_referencedataversions():
 
 
 @bp.route('_pg_list_referencedataversions',  methods=['GET'])
-def pg_list_referencedataversions(): 
+def pg_list_referencedataversions():
     project = request.args.get('project')
     group = request.args.get('group')
     process = request.args.get('process')
@@ -594,11 +601,11 @@ def pg_details():
         message = f'Please select input for process {selected_processref}'
     elif mode == 'add_dependency':
         message =f'Please select a required process for {selected_processref}'
-    return render_template('pg_details.html', project=project, group=group, 
+    return render_template('pg_details.html', project=project, group=group,
         all_processes=all_processes, pg_processes=pl, selected_details=selected_details,
         selected_tags = selected_tags, selected_process=selected_process,
-        dependencies=dependency_names, 
-        all_reference_datasets=all_reference_datasets, connected_reference_datasets=connected_reference_datasets , 
+        dependencies=dependency_names,
+        all_reference_datasets=all_reference_datasets, connected_reference_datasets=connected_reference_datasets ,
         message=message, project_permissions=project_permissions(project))
 
 @bp.route('processgroups', methods=['GET'])

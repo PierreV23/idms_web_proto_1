@@ -36,7 +36,7 @@ $(document).on('click', '.referencename', function() {
     processgroup: "{{ processgroup }}"
   }, function(data) {
     $('#details').html(data);
-    $("button[id='{{ pp }}-tab']").trigger('click')
+    $("button[id='{{ activetabname }}-tab']").trigger('click')
   });
 });
 

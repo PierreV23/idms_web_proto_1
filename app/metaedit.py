@@ -39,17 +39,14 @@ def schemapath_rel(schemapath_abs):
 
 @bp.route('/')
 def metadata_editor():
-    schema_endpoint = url_for('metaedit.schemas_for_collection', collection='/rivmZone_acc_01/home/wierinve/burning-point')
-    print(url_for('metaedit.schemas_for_collection', metadata=schema_endpoint))
+    schema_endpoint = url_for('metaedit.schemata', collection='/rivmZone_acc_01/home/wierinve/burning-point')
+    print(url_for('metaedit.schemata', metadata=schema_endpoint))
     return render_template('metadata_editor.html', **request.args)
 
-@bp.route('_schemas_for_collection')
-def schemas_for_collection():
-    """Return a list of schemas for a collection
+@bp.route('_schemata')
+def schemata():
+    """Return a list of schemata 
 
-       Primary aimed at upload collections, since
-       those are the only ones where we edit metadata currently.
-       But could easily be extended as a generic metadata editor.
        request parameter is the upload path
        Return structure is a bootstraptable data structure like:
        {
@@ -61,7 +58,12 @@ def schemas_for_collection():
             ]
        }
     """
+    
+    # TODO make search path por specific object type
+    objecttype = request.args.get('objecttype')
     collection_name = request.args.get('collection')
+    project_name = request.args.get('project')
+    
     if not collection_name:
         return jsonify({})
 
@@ -70,23 +72,24 @@ def schemas_for_collection():
     for project_attr in PROJECT_ATTRS:
         project = iqry.qcollmetaval(collection_name, project_attr)
         if not project is None:
+            objecttype = 'project'
             break
     if project is None:
         return jsonify({})
+    
+    # Retrieve schemata for this project
+    schemata = { k: schemapath_rel(v) for k, v in getSchemataForProject(project).items() }
 
-    # Retrieve schemas for this project
-    schemata = { k: schemapath_rel(v) for k,v in getSchemataForProject(project).items() }
-
-    # Get schemas in use for the collection
+    # Get schemata in use for the collection
     schemata_in_use = [ a[CollectionMeta.value] for a in iqry.qcollmetavals(collection_name, SCHEMA_ATTR)]
     print(f'{schemata_in_use=}')
 
 
     print(f"{schemata=}")
-    rows = [      
+    rows = [
         {'schema': k, 'selected': v in schemata_in_use, 'schemapath': v} for k, v in schemata.items()
     ]
-    return jsonify({'rows': rows})
+    return jsonify({'rows': rows, 'objecttype': objecttype})
 
 @bp.route('_store_metadata', methods=['POST'])
 def store_metadata():
@@ -100,14 +103,14 @@ def store_metadata():
         return jsonify({}), 500
     store_collection_metadata_structured(collection, data, schemapath)
     return jsonify({'result': 'OK'}), 200
-    
+
 
 @bp.route('_set_schemata_for_collection', methods=['POST'])
 def set_schemata_for_collection():
     """ Store the schemata used on the collection with
         key SCHEMA_ATTR
         There can be multiple schemata
-        
+
         args:
             collection: collection path
             schemapath: path to the schema dataobject
@@ -128,7 +131,7 @@ def set_schemata_for_collection():
 
 @bp.route('_get_schema_and_data', methods=['GET'])
 def get_schema_and_data():
-    """ Retrieve a metadata schema, the uiSchema 
+    """ Retrieve a metadata schema, the uiSchema
         and the already existing metadata for the schema
 
         Params:
@@ -186,19 +189,11 @@ def store_collection_metadata_structured(collection, data, schemapath):
 
         Use jsonavu package to create metadata structure
 
-        Does not modify data from other schemas 
-    """    
+        Does not modify data from other schemata
+    """
     existing_data = get_collection_metadata_structured(collection)
     existing_data[schemapath] = data
     jsonavu_metadata = jsonavu.json2avu(existing_data, '0')
     remove_collection_metadata(collection, ATTR_UPLOADPREFIX)
     for avu in jsonavu_metadata:
         iqry.scollmetaval(collection, f"{ATTR_UPLOADPREFIX}{avu['a']}", avu['v'], avu['u'])
-
-
-
-
-
-    
-    
-
