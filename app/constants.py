@@ -33,7 +33,10 @@ DATA_KEY_MAP = {
     'owner_name': DataObject.owner_name
 }
 
-# Constansts that define the JOB VIEW
+# iRODS path to store metadata schemata
+SCHEMATA_PATH = 'system/schemata'
+
+# Constants that define the JOB VIEW
 JOB_PAGE_SIZE = 25
 
 # Border colors of shapes
