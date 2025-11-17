@@ -18,7 +18,7 @@ from flask_login import current_user, login_required
 import uuid
 from app import projects, iqry
 from app.datafield import datafield
-from app.constants import ATTR_UISCHEMA, SCHEMATA_PATH
+from app.constants import ATTR_UISCHEMA, SCHEMATA_BASE_PATH, DATASETS_SCHEMATA_PATH, PROJECTS_SCHEMATA_PATH
 import randomname
 import json
 import re
@@ -230,7 +230,7 @@ def getSchemataForProject( projectId ):
     with irods_manager.session() as session:
         for schemaLocation in ('', projectId):
             try:
-                schemaColl = session.collections.get(os.path.join('/', current_user.irods_zone, SCHEMATA_PATH, schemaLocation))
+                schemaColl = session.collections.get(os.path.join('/', current_user.irods_zone, SCHEMATA_BASE_PATH, schemaLocation))
             except CollectionDoesNotExist:
                 continue
             result.update(getSchemataInColl(schemaColl))

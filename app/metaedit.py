@@ -4,7 +4,7 @@ import jsonavu
 from flask import Blueprint, render_template, request, jsonify, url_for
 from flask_login import current_user
 from app import iqry
-from app.constants import ATTR_UISCHEMA, SCHEMATA_PATH
+from app.constants import ATTR_UISCHEMA, SCHEMATA_BASE_PATH
 from app.upload import getSchemataForProject
 from app.irodssessions import irods_manager
 from irods.models import CollectionMeta
@@ -23,7 +23,7 @@ def schemapath_abs(schemapath_rel):
         input: salm/default
         output: /rivmZone/system/schemata/salm/default.json
     """
-    return f"{os.path.join('/', current_user.irods_zone, SCHEMATA_PATH, schemapath_rel)}.json"
+    return f"{os.path.join('/', current_user.irods_zone, SCHEMATA_BASE_PATH, schemapath_rel)}.json"
 
 def schemapath_rel(schemapath_abs):
     """ Translate absolute to relative schemapath:
@@ -32,7 +32,7 @@ def schemapath_rel(schemapath_abs):
         input: /rivmZone/system/schemata/salm/default.json
         output: salm/default.json
     """
-    base = os.path.join('/', current_user.irods_zone, SCHEMATA_PATH)
+    base = os.path.join('/', current_user.irods_zone, SCHEMATA_BASE_PATH)
     result, _ = os.path.splitext(os.path.relpath(schemapath_abs, start=base))
     return result
 
@@ -58,7 +58,7 @@ def schemata():
        }
     """
     
-    # TODO make search path por specific object type
+    # TODO make search path for a specific object type
     objecttype = request.args.get('objecttype')
     collection_name = request.args.get('collection')
     project_name = request.args.get('project')

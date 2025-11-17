@@ -203,7 +203,7 @@ function update_process(sourceElem, destElem) {
           <div class="card-header">
             <div class="card-title">Schemata for project</div>
           </div>
-          <table id="project-schemata-table" data-toggle='table' data-url="{{ url_for('metaedit.schemata', collection=coll)}}"
+          <table id="schemata-table" data-toggle='table' data-url="{{ url_for('metaedit.schemata', collection=coll)}}"
             data-checkbox-header="false">
             <thead>
               <TR>
@@ -478,25 +478,6 @@ function update_process(sourceElem, destElem) {
     });
   }
   
-    // Install bootstraptable event handlers
-  $('#project-schemata-table').bootstrapTable({
-    onCheck: function (row, $element) {
-      toggleRow(row.schemapath, 'add')
-    },
-    onUncheck: function (row, $element) {
-      toggleRow(row.schemapath, 'remove')
-    },
-    onClickRow: function (row, $element, field) {
-      if (row.selected == false) {
-        // Disabled schema cannot be loaded
-        return
-      }
-      // TODO: There should be a warning if the current schema is unsaved
-      loadSchema(row.schemapath)
-      $('#project-schemata-table tr').removeClass('highlight')
-      $element.addClass('highlight')
-    }
-  })
 
     // dataset metadata schemata
     function load_datasetmeta() {
@@ -510,25 +491,6 @@ function update_process(sourceElem, destElem) {
     });
   }
   
-    // Install bootstraptable event handlers
-  $('#project-schemata-table').bootstrapTable({
-    onCheck: function (row, $element) {
-      toggleRow(row.schemapath, 'add')
-    },
-    onUncheck: function (row, $element) {
-      toggleRow(row.schemapath, 'remove')
-    },
-    onClickRow: function (row, $element, field) {
-      if (row.selected == false) {
-        // Disabled schema cannot be loaded
-        return
-      }
-      // TODO: There should be a warning if the current schema is unsaved
-      loadSchema(row.schemapath)
-      $('#project-schemata-table tr').removeClass('highlight')
-      $element.addClass('highlight')
-    }
-  })
   
   
   $('#project-settings-form').on('submit', function (event) {
