@@ -35,9 +35,9 @@ DATA_KEY_MAP = {
 
 # iRODS path to store metadata schemata
 SCHEMATA_BASE_PATH = 'system/schemata'
-DATASETS_SCHEMATA_PATH = '/datasets'
-PROJECTS_SCHEMATA_PATH = '/projects'
-REFERENCE_DATA_SCHEMATA_PATH = '/referencedata'
+DATASET_SCHEMATA_PATH = '/dataset'
+PROJECT_SCHEMATA_PATH = '/project'
+REFERENCE_DATASET_SCHEMATA_PATH = '/referencedata'
 
 # Constants that define the JOB VIEW
 JOB_PAGE_SIZE = 25

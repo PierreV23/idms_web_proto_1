@@ -4,17 +4,18 @@ import jsonavu
 from flask import Blueprint, render_template, request, jsonify, url_for
 from flask_login import current_user
 from app import iqry
-from app.constants import ATTR_UISCHEMA, SCHEMATA_BASE_PATH
-from app.upload import getSchemataForProject
+from app.constants import ATTR_UISCHEMA, SCHEMATA_BASE_PATH, DATASET_SCHEMATA_PATH, PROJECT_SCHEMATA_PATH, REFERENCE_DATASET_SCHEMATA_PATH
 from app.irodssessions import irods_manager
 from irods.models import CollectionMeta
+from irods.exception import CollectionDoesNotExist
+from pathlib import Path
+
 
 bp = Blueprint('metaedit', __name__, url_prefix='/metaedit')
 
 PROJECT_ATTRS = ['user::upload::settings::projectID']
-SCHEMA_ATTR = 'user::upload::schemafile'
-ATTR_UPLOADPREFIX = 'user::upload::meta::'
-
+SCHEMA_ATTR = 'user::schemafile'
+ATTR_UPLOADPREFIX = 'user::meta::'
 
 def schemapath_abs(schemapath_rel):
     """ Translate relative to absolute schemapath:
@@ -36,14 +37,65 @@ def schemapath_rel(schemapath_abs):
     result, _ = os.path.splitext(os.path.relpath(schemapath_abs, start=base))
     return result
 
+
+def get_schemata( schema_collection ):
+    """Return list of all schemata from the leaf down to the base collection
+       as a dictionary:
+       {
+        schema-name : schema-location
+        TODO: what if the same name is on different levels
+       }
+    """
+    def get_schemata_in_coll( coll ):
+        result = {}
+        for obj in coll.data_objects:
+            
+            schemaId = Path(obj.name).stem
+            path = f"{coll.path}/{obj.name}"
+            result[ schemaId ] = path
+        return result
+
+    result = {}
+    
+    schema_collection_path = Path('/', current_user.irods_zone, schema_collection)
+    
+    with irods_manager.session() as session:
+        while schema_collection_path != '/' and schema_collection_path != Path('/', current_user.irods_zone, SCHEMATA_BASE_PATH).parent: 
+            try:
+                schemaColl = session.collections.get(str(schema_collection_path))
+                result.update(get_schemata_in_coll(schemaColl)) 
+            except Exception as e:
+                continue
+            finally:
+                schema_collection_path = schema_collection_path.parent
+               
+    return result
+
 @bp.route('/')
 def metadata_editor():
-    schema_endpoint = url_for('metaedit.schemata', collection='/rivmZone_acc_01/home/wierinve/burning-point')
+    schema_endpoint = url_for('metaedit.schemata')
     print(url_for('metaedit.schemata', metadata=schema_endpoint))
     return render_template('metadata_editor.html', **request.args)
 
-@bp.route('_schemata')
-def schemata():
+@bp.route('/schemata_project')
+def schemata_for_project():
+    project_name = request.args.get('project')
+    objecttype = 'project'
+    return schemata(project_name, objecttype)
+
+@bp.route('/schemata_collection')
+def schemata_for_dataset():
+    collection_name = request.args.get('collection')
+    objecttype = 'dataset'
+    return schemata(collection_name, objecttype)
+
+@bp.route('/schemata_reference')
+def schemata_for_reference_dataset():
+    collection_name = request.args.get('collection')
+    objecttype = 'reference_dataset'
+    return schemata(collection_name, objecttype)
+
+def schemata(collection :str, objecttype :str):
     """Return a list of schemata 
 
        request parameter is the upload path
@@ -57,34 +109,36 @@ def schemata():
             ]
        }
     """
-    
-    # TODO make search path for a specific object type
-    objecttype = request.args.get('objecttype')
-    collection_name = request.args.get('collection')
-    project_name = request.args.get('project')
-    
-    if not collection_name:
+    if not collection:
         return jsonify({})
-
-    # Retrieve project from the collection
-    project = None
-    for project_attr in PROJECT_ATTRS:
-        project = iqry.qcollmetaval(collection_name, project_attr)
-        if not project is None:
-            objecttype = 'project'
-            break
-    if project is None:
-        return jsonify({})
+    
+    leaf_collection = SCHEMATA_BASE_PATH
+    
+    if objecttype == 'project':
+        leaf_collection += PROJECT_SCHEMATA_PATH
+        # Retrieve project from the collection
+        project_name = collection.split('/')[-1]
+        leaf_collection += '/' + project_name
+    elif objecttype == 'reference_dataset':
+        leaf_collection += REFERENCE_DATASET_SCHEMATA_PATH
+        # Retrieve project from the collection
+        refdata_name = collection.split('/')[-1]
+        leaf_collection += '/' + refdata_name
+    elif objecttype == 'dataset':
+        leaf_collection += DATASET_SCHEMATA_PATH
+        # Retrieve project from the collection
+        dataset_name = collection.split('/')[-1]
+        leaf_collection += '/' + dataset_name
     
     # Retrieve schemata for this project
-    schemata = { k: schemapath_rel(v) for k, v in getSchemataForProject(project).items() }
+    schemata = get_schemata(leaf_collection)
 
     # Get schemata in use for the collection
-    schemata_in_use = [ a[CollectionMeta.value] for a in iqry.qcollmetavals(collection_name, SCHEMA_ATTR)]
+    schemata_in_use = [ a[CollectionMeta.value] for a in iqry.qcollmetavals(collection, SCHEMA_ATTR)]
+    
     print(f'{schemata_in_use=}')
-
-
     print(f"{schemata=}")
+    
     rows = [
         {'schema': k, 'selected': v in schemata_in_use, 'schemapath': v} for k, v in schemata.items()
     ]

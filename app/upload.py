@@ -18,14 +18,15 @@ from flask_login import current_user, login_required
 import uuid
 from app import projects, iqry
 from app.datafield import datafield
-from app.constants import ATTR_UISCHEMA, SCHEMATA_BASE_PATH, DATASETS_SCHEMATA_PATH, PROJECTS_SCHEMATA_PATH
+from app.metaedit import get_schemata
+from app.constants import ATTR_UISCHEMA, SCHEMATA_BASE_PATH, DATASET_SCHEMATA_PATH, PROJECT_SCHEMATA_PATH
 import randomname
 import json
 import re
 from irods.models import Collection, CollectionMeta
 from irods.column import Criterion
 from irods.meta import iRODSMeta
-from irods.exception import CollectionDoesNotExist
+
 from app.irodssessions import irods_manager
 from ast import literal_eval
 from fs_irods import fs_irods
@@ -210,32 +211,6 @@ def upload_settings():
 
 
 
-def getSchemataForProject( projectId ):
-    """Return list of schemata for a project
-       and the default schemata
-       as a dictionary:
-       {
-        schema-name : schema-location
-       }
-    """
-    def getSchemataInColl( coll ):
-        result = {}
-        for obj in coll.data_objects:
-            schemaId = Path(obj.name).stem
-            path = f"{coll.path}/{obj.name}"
-            result[ schemaId ] = path
-        return result
-
-    result = {}
-    with irods_manager.session() as session:
-        for schemaLocation in ('', projectId):
-            try:
-                schemaColl = session.collections.get(os.path.join('/', current_user.irods_zone, SCHEMATA_BASE_PATH, schemaLocation))
-            except CollectionDoesNotExist:
-                continue
-            result.update(getSchemataInColl(schemaColl))
-    return result
-
 #POST (not very RESTful, but doesnt show up in history)
 @bp.route('_getschema', methods=['POST'])
 def get_schema():
@@ -270,7 +245,7 @@ def upload_meta():
             return redirect(url_for('upload.show_uploads'))
         schemata={}
         projectId = iqry.qcollmetaval(collection, f'{ATTR_UPLOADSETTINGS}projectID')
-        schemata = getSchemataForProject( projectId )
+        schemata = get_schemata( projectId )
         metadata = iqry.qcollmeta(collection) #the typed version tries reading the unit field as a python type
         metadict = iqry.qcollmetadict(collection)
         avudata = [ { 'a': avu[CollectionMeta.name][len(ATTR_UPLOADMETA):], 'v': avu[CollectionMeta.value], 'u': avu[CollectionMeta.units] } for avu in metadata if avu[CollectionMeta.name].startswith(ATTR_UPLOADMETA) ]

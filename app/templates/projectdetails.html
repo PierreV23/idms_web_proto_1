@@ -23,16 +23,17 @@ function load_colls() {
 }
 
 function load_project_meta() {
-  $.get( "{{ url_for('metaedit.metadata_editor') }}", {
+  $.get( "{{ url_for('metaedit.schemata_for_project') }}", {
     project: "{{ projectdetails.name }}"
   }, function(data) {
-     $('#projectmeta').html(data);
+     console.log(data)
+     $('#projectmeta').html(JSON.stringify(data));
      console.log('load the metadata editor ...')
   });
 }
 
 function load_dataset_meta() {
-  $.get( "{{ url_for('metaedit.metadata_editor') }}", {
+  $.get( "{{ url_for('metaedit.schemata_for_dataset') }}", {
     project: "{{ projectdetails.name }}"
   }, function(data) {
      $('#dataset-metadata').html(data);
@@ -40,17 +41,21 @@ function load_dataset_meta() {
   });
 }
 
-$('.nav2').on('shown.bs.tab', function(event){
-  target = event.target.getAttribute('href')
-  activetab = target
-  if (target == "#processgroups") {
-    load_pg();
-  }
-  if (target == "#collections") {
-    load_colls();
-  }
-  console.log(target)
-})
+// $('.nav2').on('shown.bs.tab', function(event){
+//   target = event.target.getAttribute('href')
+//   activetab = target
+//   if (target == "#processgroups") {
+//     load_pg();
+//   }
+//   if (target == "#collections") {
+//     load_colls();
+//   }
+//   // if (target == "#projectmeta") {
+//   //   alert('hi');
+//   //   load_project_meta();
+//   // }
+//   console.log(target)
+// })
 
 $(document).on('click', '.path-change', function () {
     collection = $(this).data('path');
@@ -203,7 +208,7 @@ function update_process(sourceElem, destElem) {
           <div class="card-header">
             <div class="card-title">Schemata for project</div>
           </div>
-          <table id="schemata-table" data-toggle='table' data-url="{{ url_for('metaedit.schemata', collection=coll)}}"
+          <table id="schemata-table" data-toggle='table' data-url="{{ url_for('metaedit.schemata_for_project', collection=coll)}}"
             data-checkbox-header="false">
             <thead>
               <TR>
@@ -240,7 +245,7 @@ function update_process(sourceElem, destElem) {
           <div class="card-header">
             <div class="card-title">Schemata for datasets in project</div>
           </div>
-          <table id="schemata-table" data-toggle='table' data-url="{{ url_for('metaedit.schemata', collection=coll)}}"
+          <table id="schemata-table" data-toggle='table' data-url="{{ url_for('metaedit.schemata_for_dataset', collection=coll)}}"
             data-checkbox-header="false">
             <thead>
               <TR>
@@ -445,7 +450,7 @@ function update_process(sourceElem, destElem) {
   }
 
   // Load the correct schema form when a schema is selected
-  const loadSchema = function (schemapath) {
+  const loadSchema = function(schemapath) {
     console.log('Load schema ' + schemapath)
     $.ajax({
       method: "GET",
@@ -466,22 +471,22 @@ function update_process(sourceElem, destElem) {
   }
 
   
-  // project metadata schemata
-    function load_projectmeta() {
-    $.get("{{ url_for('metaedit.schemata') }}", {
-      object: '{{ projectdetails.name }}',
-      objecttype: 'projects'
-    }, function(data) {
+  // // project metadata schemata
+  //   function load_projectmeta() {
+  //   $.get("{{ url_for('metaedit.schemata_for_project') }}", {
+  //     object: '{{ projectdetails.name }}',
+  //     objecttype: 'projects'
+  //   }, function(data) {
 
-      $('#projectmeta').removeClass('pending')
-      $('#projectmeta').html(data);
-    });
-  }
+  //     $('#projectmeta').removeClass('pending')
+  //     $('#projectmeta').html(data);
+  //   });
+  // }
   
 
     // dataset metadata schemata
     function load_datasetmeta() {
-    $.get("{{ url_for('metaedit.schemata') }}", {
+    $.get("{{ url_for('metaedit.schemata_for_dataset') }}", {
       object: '{{ projectdetails.name }}',
       objecttype: 'dataset'
     }, function(data) {
