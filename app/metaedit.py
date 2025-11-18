@@ -83,11 +83,11 @@ def schemata_for_project():
     objecttype = 'project'
     return schemata(project_name, objecttype)
 
-@bp.route('/schemata_collection')
+@bp.route('/schemata_dataset')
 def schemata_for_dataset():
-    collection_name = request.args.get('collection')
+    project_name = request.args.get('project_name')
     objecttype = 'dataset'
-    return schemata(collection_name, objecttype)
+    return schemata(project_name, objecttype)
 
 @bp.route('/schemata_reference')
 def schemata_for_reference_dataset():
@@ -126,8 +126,8 @@ def schemata(object :str, objecttype :str):
     elif objecttype == 'dataset':
         leaf_collection += DATASET_SCHEMATA_PATH
         # Retrieve project from the collection
-        dataset_name = object.split('/')[-1]
-        leaf_collection += '/' + dataset_name
+        # dataset_name = object.split('/')[-1]
+        leaf_collection += '/' + object
     
     # Retrieve schemata for this project
     schemata = get_schemata(leaf_collection)

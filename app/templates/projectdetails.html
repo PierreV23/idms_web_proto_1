@@ -252,7 +252,7 @@ function update_process(sourceElem, destElem) {
           <div class="card-header">
             <div class="card-title">Schemata for datasets in project</div>
           </div>
-          <table id="schemata-table" data-toggle='table' data-url="{{ url_for('metaedit.schemata_for_dataset', collection=coll)}}"
+          <table id="schemata-table" data-toggle='table' data-url="{{ url_for('metaedit.schemata_for_dataset', collection=coll, project_name=projectdetails.name)}}"
             data-checkbox-header="false">
             <thead>
               <TR>
