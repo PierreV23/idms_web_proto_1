@@ -79,7 +79,7 @@ def metadata_editor():
 
 @bp.route('/schemata_project')
 def schemata_for_project():
-    project_name = request.args.get('project')
+    project_name = request.args.get('project_name')
     objecttype = 'project'
     return schemata(project_name, objecttype)
 
@@ -95,7 +95,7 @@ def schemata_for_reference_dataset():
     objecttype = 'reference_dataset'
     return schemata(collection_name, objecttype)
 
-def schemata(collection :str, objecttype :str):
+def schemata(object :str, objecttype :str):
     """Return a list of schemata 
 
        request parameter is the upload path
@@ -109,32 +109,31 @@ def schemata(collection :str, objecttype :str):
             ]
        }
     """
-    if not collection:
+    if not object:
         return jsonify({})
     
     leaf_collection = SCHEMATA_BASE_PATH
     
     if objecttype == 'project':
         leaf_collection += PROJECT_SCHEMATA_PATH
-        # Retrieve project from the collection
-        project_name = collection.split('/')[-1]
-        leaf_collection += '/' + project_name
+        # Retrieve project from the collection, object is project_name
+        leaf_collection += '/' + object
     elif objecttype == 'reference_dataset':
         leaf_collection += REFERENCE_DATASET_SCHEMATA_PATH
         # Retrieve project from the collection
-        refdata_name = collection.split('/')[-1]
+        refdata_name = object.split('/')[-1]
         leaf_collection += '/' + refdata_name
     elif objecttype == 'dataset':
         leaf_collection += DATASET_SCHEMATA_PATH
         # Retrieve project from the collection
-        dataset_name = collection.split('/')[-1]
+        dataset_name = object.split('/')[-1]
         leaf_collection += '/' + dataset_name
     
     # Retrieve schemata for this project
     schemata = get_schemata(leaf_collection)
 
     # Get schemata in use for the collection
-    schemata_in_use = [ a[CollectionMeta.value] for a in iqry.qcollmetavals(collection, SCHEMA_ATTR)]
+    schemata_in_use = [ a[CollectionMeta.value] for a in iqry.qcollmetavals(object, SCHEMA_ATTR)]
     
     print(f'{schemata_in_use=}')
     print(f"{schemata=}")

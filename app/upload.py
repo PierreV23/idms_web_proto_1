@@ -210,7 +210,6 @@ def upload_settings():
             return redirect(url_for('upload.upload_settings', coll=coll))
 
 
-
 #POST (not very RESTful, but doesnt show up in history)
 @bp.route('_getschema', methods=['POST'])
 def get_schema():
@@ -245,7 +244,8 @@ def upload_meta():
             return redirect(url_for('upload.show_uploads'))
         schemata={}
         projectId = iqry.qcollmetaval(collection, f'{ATTR_UPLOADSETTINGS}projectID')
-        schemata = get_schemata( projectId )
+        project_schemata_path = f'/{current_user.irods_zone}/{SCHEMATA_BASE_PATH}/datasets/{projectId}'
+        schemata = get_schemata( collection )
         metadata = iqry.qcollmeta(collection) #the typed version tries reading the unit field as a python type
         metadict = iqry.qcollmetadict(collection)
         avudata = [ { 'a': avu[CollectionMeta.name][len(ATTR_UPLOADMETA):], 'v': avu[CollectionMeta.value], 'u': avu[CollectionMeta.units] } for avu in metadata if avu[CollectionMeta.name].startswith(ATTR_UPLOADMETA) ]
