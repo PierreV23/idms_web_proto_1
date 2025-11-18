@@ -215,7 +215,7 @@ function update_process(sourceElem, destElem) {
           <div class="card-header">
             <div class="card-title">Schemata for project</div>
           </div>
-          <table id="schemata-table" data-toggle='table' data-url="{{ url_for('metaedit.schemata_for_project', project_name=projectdetails.name)}}"
+          <table id="project-schemata-table" data-toggle='table' data-url="{{ url_for('metaedit.schemata_for_project', project_name=projectdetails.name)}}"
             data-checkbox-header="false">
             <thead>
               <TR>
@@ -252,7 +252,7 @@ function update_process(sourceElem, destElem) {
           <div class="card-header">
             <div class="card-title">Schemata for datasets in project</div>
           </div>
-          <table id="schemata-table" data-toggle='table' data-url="{{ url_for('metaedit.schemata_for_dataset', collection=coll, project_name=projectdetails.name)}}"
+          <table id="dataset-schemata-table" data-toggle='table' data-url="{{ url_for('metaedit.schemata_for_dataset', collection=coll, project_name=projectdetails.name)}}"
             data-checkbox-header="false">
             <thead>
               <TR>
@@ -448,20 +448,60 @@ function update_process(sourceElem, destElem) {
 
   // Update the collection when a schema is enabled or disabled
   const toggleRow = function (schemapath, schema_action) {
-    console.log('TOGGLE', '{{ coll }}', schemapath, schema_action )
+    console.log('TOGGLE', '{{ projectdetails.default_collection }}', schemapath, schema_action )
     $.ajax({
       method: "POST",
       url: "{{ url_for('metaedit.set_schemata_for_collection')}}",
       contentType: "application/json; charset=utf-8",
       dataType: "json",      
       data: JSON.stringify({
-        collection: "{{ coll }}",
+        collection: "{{ projectdetails.default_collection }}",
         schemapath: schemapath,
         action: schema_action
       })
     })
   }
-
+  
+  // Install bootstraptable event handlers
+  $('#project-schemata-table').bootstrapTable({
+    onCheck: function (row, $element) {
+      toggleRow(row.schemapath, 'add')
+    },
+    onUncheck: function (row, $element) {
+      toggleRow(row.schemapath, 'remove')
+    },
+    onClickRow: function (row, $element, field) {
+      if (row.selected == false) {
+        // Disabled schema cannot be loaded
+        return
+      }
+      // TODO: There should be a warning if the current schema is unsaved
+      loadSchema(row.schemapath)
+      $('#project-schemata-table tr').removeClass('highlight')
+      $element.addClass('highlight')
+    }
+  })
+  
+  // Install bootstraptable event handlers
+  $('#dataset-schemata-table').bootstrapTable({
+    onCheck: function (row, $element) {
+      toggleRow(row.schemapath, 'add')
+    },
+    onUncheck: function (row, $element) {
+      toggleRow(row.schemapath, 'remove')
+    },
+    onClickRow: function (row, $element, field) {
+      if (row.selected == false) {
+        // Disabled schema cannot be loaded
+        return
+      }
+      // TODO: There should be a warning if the current schema is unsaved
+      loadSchema(row.schemapath)
+      $('#dataset-schemata-table tr').removeClass('highlight')
+      $element.addClass('highlight')
+    }
+  })
+  
   // Load the correct schema form when a schema is selected
   const loadSchema = function(schemapath) {
     console.log('Load schema ' + schemapath)

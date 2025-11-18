@@ -179,7 +179,7 @@ def set_schemata_for_collection():
     if action == 'remove':
         # TODO: Remove the related metadata
         iqry.delcollmeta(collection, SCHEMA_ATTR, schemapath)
-    return jsonify({ 'result': 'OK'}), 200
+    return jsonify({ 'result': 'OK' }), 200
 
 @bp.route('_get_schema_and_data', methods=['GET'])
 def get_schema_and_data():
