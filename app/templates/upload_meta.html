@@ -28,15 +28,16 @@ menuname='upload_meta'
 <div class="selectgrid h-100">
   <div class="card selectlist">
     <div class="card-header">
-      <div class="card-title">Available schemata for datasets in project</div>
+      <div class="card-title">Available schemata for dataset uploads in project: <b>{{ project_name }}</b></div>
     </div>
-    <table id="schemata-table" data-toggle='table'
+    <table id="dataset-schemata-table" data-toggle='table' data-multi-sort="true" data-sort-name="order" data-sort-order="asc"
       data-url="{{ url_for('metaedit.schemata_for_dataset', collection=coll, project_name=project_name)}}" data-checkbox-header="false">
       <thead>
         <TR>
-          <TH data-field="selected" data-checkbox="true"></TH>
-          <TH data-field="schema" data-sortable="true">Schema</TH>
+          <TH data-field="selected" data-checkbox="true" title="Check the box first, then select field to display the form"></TH>
+          <TH data-field="schema" data-sortable="true">Schema Name</TH>
           <TH data-field="schemapath" data-visible="false"></TH>
+          <TH data-field="order" data-visible="false"></TH>
         </TR>
       </thead>
     </table>

@@ -207,15 +207,16 @@ function update_process(sourceElem, destElem) {
       <div class="selectgrid h-100">
         <div class="card selectlist">
           <div class="card-header">
-            <div class="card-title">Available schemata for project</div>
+            <div class="card-title">Available schemata for project: <b>{{ project_name }}</b></div>
           </div>
           <table id="project-schemata-table" data-toggle='table' data-url="{{ url_for('metaedit.schemata_for_project', project_name=projectdetails.name)}}"
-            data-checkbox-header="false">
+            data-checkbox-header="false" data-sort-name="order" data-sort-order="asc">
             <thead>
               <TR>
-                <TH data-field="selected" data-checkbox="true"></TH>
-                <TH data-field="schema" data-sortable="true">Schema</TH>
-                <TH data-field="schemapath" data-visible="false"></TH>
+          <TH data-field="selected" data-checkbox="true" title="Check the box first, then select field to display the form"></TH>
+          <TH data-field="schema" data-sortable="true">Schema Name</TH>
+          <TH data-field="schemapath" data-visible="false"></TH>
+          <TH data-field="order" data-visible="false"></TH>
               </TR>
             </thead>
           </table>
@@ -244,15 +245,16 @@ function update_process(sourceElem, destElem) {
       <div class="selectgrid h-100">
         <div class="card selectlist">
           <div class="card-header">
-            <div class="card-title">Available schemata for datasets in project</div>
+            <div class="card-title">Available schemata for datasets in project: <b>{{ project_name }}</b></div>
           </div>
           <table id="dataset-schemata-table" data-toggle='table' data-url="{{ url_for('metaedit.schemata_for_dataset', collection=coll, project_name=projectdetails.name)}}"
-            data-checkbox-header="false">
+            data-checkbox-header="false" data-sort-name="order" data-sort-order="asc">
             <thead>
               <TR>
-                <TH data-field="selected" data-checkbox="true"></TH>
-                <TH data-field="schema" data-sortable="true">Schema</TH>
-                <TH data-field="schemapath" data-visible="false"></TH>
+          <TH data-field="selected" data-checkbox="true" title="Check the box first, then select field to display the form"></TH>
+          <TH data-field="schema" data-sortable="true">Schema Name</TH>
+          <TH data-field="schemapath" data-visible="false"></TH>
+          <TH data-field="order" data-visible="false"></TH>
               </TR>
             </thead>
           </table>

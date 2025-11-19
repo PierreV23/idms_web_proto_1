@@ -142,7 +142,7 @@ def schemata(object :str, objecttype :str):
     print(f"{schemata=}")
     
     rows = [
-        {'schema': k, 'selected': v in schemata_in_use, 'schemapath': v} for k, v in schemata.items()
+        {'schema': k, 'selected': v in schemata_in_use, 'schemapath': v, 'order': v.count('/')} for k, v in schemata.items()
     ]
     return jsonify({'rows': rows})
 
