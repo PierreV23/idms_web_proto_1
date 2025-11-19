@@ -97,28 +97,28 @@ def show_projectdetails():
     """
     Shows page with project settings and processes belonging to a project
     """
-    projectnaam = request.args.get('name', '', type=str)
-    processnaam = request.args.get('process', '', type=str)
+    projectname = request.args.get('name', '', type=str)
+    processname = request.args.get('process', '', type=str)
     processgroup = request.args.get('processgroup', 'default', type=str)
 
-    projectdetails, result = rest_call('GET', 'projects/{}'.format(projectnaam))
+    projectdetails, result = rest_call('GET', 'projects/{}'.format(projectname))
 
     # Retrieve groups associated with project
     with irods_manager.session() as session:
         query = session.query(User.name).filter(
             Criterion('!=', User.type, "rodsuser")).filter(
                 Criterion('=', UserMeta.name, "projectID")).filter(
-                    Criterion('=', UserMeta.value, projectnaam)).order_by(User.name)
+                    Criterion('=', UserMeta.value, projectname)).order_by(User.name)
         groups = [u[User.name] for u in query]
     projectdetails['groups'] = groups
 
     processing = iso2dt(projectdetails.get('last_updated', EPOCH)) > iso2dt(projectdetails.get('last_verified', EPOCH))
     return render_template('projectdetails.html', projectdetails=projectdetails, processing=processing,
-                           processnaam=processnaam, processgroup=processgroup, project_permissions=project_permissions(projectnaam))
+                           processname=processname, processgroup=processgroup, project_permissions=project_permissions(projectname))
 
 @bp.route('_projectcolls')
 def projectcolls():
-    projectnaam = request.args.get('project', '', type=str)
+    projectname = request.args.get('project', '', type=str)
     offset = request.args.get('offset', 0, type=int)
     limit = request.args.get('limit', 999, type=int)
     filterstr = request.args.get('filter', '{}')
@@ -132,7 +132,7 @@ def projectcolls():
 
 # Create collection and data filters
     filters = json.loads(filterstr)
-    qc_filters = [Criterion('=', CollectionMeta.name, 'projectID'), Criterion('=', CollectionMeta.value, projectnaam)]
+    qc_filters = [Criterion('=', CollectionMeta.name, 'projectID'), Criterion('=', CollectionMeta.value, projectname)]
     if 'displayname' in filters:
         qc_filters.append(Criterion('like', Collection.name, f'%{filters["displayname"]}%'))
 
@@ -169,13 +169,13 @@ def projectcolls():
 
 @bp.route('_projectcolltable')
 def projectcolltable():
-    projectnaam = request.args.get('project', '', type=str)
+    projectname = request.args.get('project', '', type=str)
     options = {
         'download_btn': False,
         'view_btn': False,
         'delete_btn': False
     }
-    path=f"/{current_user.irods_zone}/projects/{projectnaam}"
+    path=f"/{current_user.irods_zone}/projects/{projectname}"
     return render_template('colltable.html', path=path, display_field=None, options=options)
 
 
@@ -184,8 +184,8 @@ def show_processdetails():
     """
     Shows page with process settings
     """
-    processnaam = request.args.get('name', '', type=str)
-    pl, result = rest_call('GET', f'processes/{processnaam}')
+    processname = request.args.get('name', '', type=str)
+    pl, result = rest_call('GET', f'processes/{processname}')
     return render_template('processdetails.html', details=pl)
 
 

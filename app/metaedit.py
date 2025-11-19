@@ -60,6 +60,7 @@ def get_schemata( schema_collection ):
     schema_collection_path = Path('/', current_user.irods_zone, schema_collection)
     
     with irods_manager.session() as session:
+        
         while schema_collection_path != '/' and schema_collection_path != Path('/', current_user.irods_zone, SCHEMATA_BASE_PATH).parent: 
             try:
                 schemaColl = session.collections.get(str(schema_collection_path))
@@ -67,15 +68,16 @@ def get_schemata( schema_collection ):
             except Exception as e:
                 continue
             finally:
+                # go up one level in the collection tree
                 schema_collection_path = schema_collection_path.parent
                
     return result
 
 @bp.route('/')
-def metadata_editor():
-    schema_endpoint = url_for('metaedit.schemata')
-    print(url_for('metaedit.schemata', metadata=schema_endpoint))
-    return render_template('metadata_editor.html', **request.args)
+# def metadata_editor():
+#     schema_endpoint = url_for('metaedit.schemata')
+#     print(url_for('metaedit.schemata', metadata=schema_endpoint))
+#     return render_template('metadata_editor.html', **request.args)
 
 @bp.route('/schemata_project')
 def schemata_for_project():
@@ -112,6 +114,7 @@ def schemata(object :str, objecttype :str):
     if not object:
         return jsonify({})
     
+    # Start looking for schemata in base_path
     leaf_collection = SCHEMATA_BASE_PATH
     
     if objecttype == 'project':
@@ -133,7 +136,7 @@ def schemata(object :str, objecttype :str):
     schemata = get_schemata(leaf_collection)
 
     # Get schemata in use for the collection
-    schemata_in_use = [ a[CollectionMeta.value] for a in iqry.qcollmetavals(object, SCHEMA_ATTR)]
+    schemata_in_use = [a[CollectionMeta.value] for a in iqry.qcollmetavals(object, SCHEMA_ATTR)]
     
     print(f'{schemata_in_use=}')
     print(f"{schemata=}")
@@ -141,7 +144,7 @@ def schemata(object :str, objecttype :str):
     rows = [
         {'schema': k, 'selected': v in schemata_in_use, 'schemapath': v} for k, v in schemata.items()
     ]
-    return jsonify({'rows': rows, 'objecttype': objecttype})
+    return jsonify({'rows': rows})
 
 @bp.route('_store_metadata', methods=['POST'])
 def store_metadata():

@@ -61,7 +61,7 @@ class UploadType:
 bp = Blueprint('upload', __name__, url_prefix='/upload')
 
 def collection_basename(coll):
-    """Return the basename of a colletion without the path, and without the numeric suffix
+    """Return the basename of a collection without the path, and without the numeric suffix
 
     So /rivmZone_acc_01/projects/ngslab/output/230911_NB502001_0032_AHTFHKAFX3_0000
     returns 230911_NB502001_0032_AHTFHKAFX3
@@ -243,15 +243,18 @@ def upload_meta():
         if collection is None:
             return redirect(url_for('upload.show_uploads'))
         schemata={}
-        projectId = iqry.qcollmetaval(collection, f'{ATTR_UPLOADSETTINGS}projectID')
-        project_schemata_path = f'/{current_user.irods_zone}/{SCHEMATA_BASE_PATH}/datasets/{projectId}'
-        schemata = get_schemata( collection )
+        project_name = iqry.qcollmetaval(collection, f'{ATTR_UPLOADSETTINGS}projectID')
+        
+        # schemata for datasets in this project are here:
+        project_schemata_path = f'/{current_user.irods_zone}/{SCHEMATA_BASE_PATH}{DATASET_SCHEMATA_PATH}/{project_name}'
+        
+        schemata = get_schemata( project_schemata_path )
         metadata = iqry.qcollmeta(collection) #the typed version tries reading the unit field as a python type
         metadict = iqry.qcollmetadict(collection)
         avudata = [ { 'a': avu[CollectionMeta.name][len(ATTR_UPLOADMETA):], 'v': avu[CollectionMeta.value], 'u': avu[CollectionMeta.units] } for avu in metadata if avu[CollectionMeta.name].startswith(ATTR_UPLOADMETA) ]
         data = jsonavu.avu2json(avudata, "cat")
         selectedSchema = metadict.get(ATTR_UPLOADMETASCHEMA, None)
-        return render_template('upload_meta.html', coll=collection, project=projectId, name=name, schemata=schemata, selectedSchema=selectedSchema, data=data)
+        return render_template('upload_meta.html', coll=collection, project_name=project_name, name=name, schemata=schemata, selectedSchema=selectedSchema, data=data)
 #     if request.method == 'POST':
 #         record = request.json
 #         collection = record.get('coll')

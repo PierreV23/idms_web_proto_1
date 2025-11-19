@@ -28,10 +28,10 @@ menuname='upload_meta'
 <div class="selectgrid h-100">
   <div class="card selectlist">
     <div class="card-header">
-      <div class="card-title">Schemata for project</div>
+      <div class="card-title">Available schemata for datasets in project</div>
     </div>
     <table id="schemata-table" data-toggle='table'
-      data-url="{{ url_for('metaedit.schemata', collection=coll)}}" data-checkbox-header="false">
+      data-url="{{ url_for('metaedit.schemata_for_dataset', collection=coll, project_name=project_name)}}" data-checkbox-header="false">
       <thead>
         <TR>
           <TH data-field="selected" data-checkbox="true"></TH>
@@ -98,7 +98,7 @@ menuname='upload_meta'
   }
 
   // Install bootstraptable event handlers
-  $('#schemata-table').bootstrapTable({
+  $('#dataset-schemata-table').bootstrapTable({
     onCheck: function (row, $element) {
       toggleRow(row.schemapath, 'add')
     },
@@ -112,7 +112,7 @@ menuname='upload_meta'
       }
       // TODO: There should be a warning if the current schema is unsaved
       loadSchema(row.schemapath)
-      $('#schemata-table tr').removeClass('highlight')
+      $('#dataset-schemata-table tr').removeClass('highlight')
       $element.addClass('highlight')
     }
   })

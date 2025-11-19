@@ -1,11 +1,5 @@
-<!--                 unpkg.com/:package@:version/:file  -->
-
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css"
-  integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
-
-
 <script>
-  var formaction = 'default';
+var formaction = 'default';
 
 processgroup = '{{ processgroup }}'
 
@@ -213,7 +207,7 @@ function update_process(sourceElem, destElem) {
       <div class="selectgrid h-100">
         <div class="card selectlist">
           <div class="card-header">
-            <div class="card-title">Schemata for project</div>
+            <div class="card-title">Available schemata for project</div>
           </div>
           <table id="project-schemata-table" data-toggle='table' data-url="{{ url_for('metaedit.schemata_for_project', project_name=projectdetails.name)}}"
             data-checkbox-header="false">
@@ -250,7 +244,7 @@ function update_process(sourceElem, destElem) {
       <div class="selectgrid h-100">
         <div class="card selectlist">
           <div class="card-header">
-            <div class="card-title">Schemata for datasets in project</div>
+            <div class="card-title">Available schemata for datasets in project</div>
           </div>
           <table id="dataset-schemata-table" data-toggle='table' data-url="{{ url_for('metaedit.schemata_for_dataset', collection=coll, project_name=projectdetails.name)}}"
             data-checkbox-header="false">
@@ -404,12 +398,6 @@ function update_process(sourceElem, destElem) {
     </div>
 </div>
 
-<script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
-<!--script src="https://unpkg.com/@rjsf/core/dist/react-jsonschema-form.js"></script-->
-<!--script src="https://unpkg.com/@rjsf/core/dist/core.cjs.production.min.js" crossorigin></script-->
-<script src="https://unpkg.com/react-jsonschema-form@1.8.1/dist/react-jsonschema-form.js" crossorigin></script>
-<script src="{{ url_for('static', filename='js/bootstrap-table.min.js') }}"></script>
 <script>
 
   function load_users() {
@@ -523,19 +511,17 @@ function update_process(sourceElem, destElem) {
     })
   }
 
-  
-  // // project metadata schemata
-  //   function load_projectmeta() {
-  //   $.get("{{ url_for('metaedit.schemata_for_project') }}", {
-  //     object: '{{ projectdetails.name }}',
-  //     objecttype: 'projects'
-  //   }, function(data) {
+  // project metadata schemata
+    function load_projectmeta() {
+    $.get("{{ url_for('metaedit.schemata_for_project') }}", {
+      object: '{{ projectdetails.name }}',
+      objecttype: 'project'
+    }, function(data) {
 
-  //     $('#projectmeta').removeClass('pending')
-  //     $('#projectmeta').html(data);
-  //   });
-  // }
-  
+      $('#projectmeta').removeClass('pending')
+      $('#projectmeta').html(data);
+    });
+  }
 
     // dataset metadata schemata
     function load_datasetmeta() {
@@ -550,8 +536,7 @@ function update_process(sourceElem, destElem) {
   }
   
   
-  
-  $('#project-settings-form').on('submit', function (event) {
+  $('#project-settings-form').on('submit', function(event) {
     $('#settings').addClass('pending')
   })
 
@@ -582,7 +567,5 @@ function update_process(sourceElem, destElem) {
     })
     omit_check()
   })
-
-
 
 </script>
