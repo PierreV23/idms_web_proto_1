@@ -577,33 +577,30 @@ function load_users() {
   //   });
   // }
   //   // End of local function
-  
-  
+   
+  // // project metadata schemata
+  //   function load_projectmeta() {
+  //   $.get("{{ url_for('metaedit.schemata_for_project') }}", {
+  //     object: '{{ projectdetails.name }}',
+  //     objecttype: 'project'
+  //   }, function(data) {
 
-  
-  // project metadata schemata
-    function load_projectmeta() {
-    $.get("{{ url_for('metaedit.schemata_for_project') }}", {
-      object: '{{ projectdetails.name }}',
-      objecttype: 'project'
-    }, function(data) {
+  //     $('#projectmeta').removeClass('pending')
+  //     $('#projectmeta').html(data);
+  //   });
+  // }
 
-      $('#projectmeta').removeClass('pending')
-      $('#projectmeta').html(data);
-    });
-  }
+  //   // dataset metadata schemata
+  //   function load_datasetmeta() {
+  //   $.get("{{ url_for('metaedit.schemata_for_dataset') }}", {
+  //     object: '{{ projectdetails.name }}',
+  //     objecttype: 'dataset'
+  //   }, function(data) {
 
-    // dataset metadata schemata
-    function load_datasetmeta() {
-    $.get("{{ url_for('metaedit.schemata_for_dataset') }}", {
-      object: '{{ projectdetails.name }}',
-      objecttype: 'dataset'
-    }, function(data) {
-
-      $('#datasetmeta').removeClass('pending')
-      $('#datasetmeta').html(data);
-    });
-  }
+  //     $('#datasetmeta').removeClass('pending')
+  //     $('#datasetmeta').html(data);
+  //   });
+  // }
   
   
   $('#project-settings-form').on('submit', function(event) {
@@ -647,14 +644,12 @@ function load_users() {
   };
 
   const projectCollection = "{{ projectdetails.default_collection }}";
-  const datasetCollection = "{{ collection }}";
+  const datasetCollection = "{{ metadata_collection }}";
   const metadataCollection = "{{ metadata_collection }}";
 
-  //
   // ─────────────────────────────────────────────────────────────
   //  PROJECT SCHEMATA TABLE
   // ─────────────────────────────────────────────────────────────
-  //
   $('#project-schemata-table').bootstrapTable({
     onCheck: (row) => {
       toggleRow(projectCollection, row.schemapath, "add");
@@ -672,11 +667,9 @@ function load_users() {
     },
   });
 
-  //
   // ─────────────────────────────────────────────────────────────
-  //  DATASET SCHEMATA TABLE (THE PART YOU SAID IS MISSING)
+  //  DATASET SCHEMATA TABLE 
   // ─────────────────────────────────────────────────────────────
-  //
   $('#dataset-schemata-table').bootstrapTable({
     onCheck: (row) => {
       toggleRow(datasetCollection, row.schemapath, "add");
@@ -694,11 +687,9 @@ function load_users() {
     },
   });
 
-  //
   // ─────────────────────────────────────────────────────────────
-  //  PROJECT CLICK HANDLING (unchanged)
+  //  PROJECT CLICK HANDLING 
   // ─────────────────────────────────────────────────────────────
-  //
   $(document).on("click", ".projectname", function () {
     const project = $(this).data("projectname");
 
@@ -710,7 +701,7 @@ function load_users() {
     $("#details").html(
       '<center><img src="{{ url_for("static", filename="img/loading.gif") }}" width="30%"></center>'
     );
-
+    console.log("Active_tab: {{ activetabname }}")
     $.get(
       "{{ url_for('projects.show_projectdetails') }}",
       {

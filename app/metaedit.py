@@ -111,9 +111,7 @@ def schemata(object :str, objecttype :str):
             ]
        }
     """
-    # if not object:
-    #     return jsonify({})
-    
+
     # Start looking for schemata in base_path
     leaf_collection = SCHEMATA_BASE_PATH
     
@@ -131,8 +129,7 @@ def schemata(object :str, objecttype :str):
         # Retrieve project from the collection
         if object:
             leaf_collection += '/' + object
-    else:
-        print('ṕufffff')
+
     # Retrieve schemata for this project
     schemata = get_schemata(leaf_collection)
 

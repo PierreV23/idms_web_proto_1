@@ -18,11 +18,11 @@
 
   // Load schema + data + render form
   window.loadSchema = function (schemapath, collection) {
-    console.log("Load schema", schemapath);
+    console.log("Load schema", schemapath, collection);
 
     $.ajax({
       method: "GET",
-      url: window.URLS.metaedit_get_schema_and_data,
+      url: window.URL.metaedit_get_schema_and_data,
       data: {
         schemapath,
         collection,
