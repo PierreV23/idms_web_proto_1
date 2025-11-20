@@ -17,7 +17,7 @@
   };
 
   // Load schema + data + render form
-  window.loadSchemaProject = function (schemapath, collection) {
+  window.loadSchema = function (schemapath, collection) {
     console.log("Load schema", schemapath);
 
     $.ajax({
@@ -43,7 +43,7 @@
   };
 
   // Add/remove schema from collection
-  window.toggleRowProject = function (collection, schemapath, action) {
+  window.toggleRow = function (collection, schemapath, action) {
     console.log("TOGGLE", collection, schemapath, action);
 
     $.ajax({

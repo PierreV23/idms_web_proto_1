@@ -467,7 +467,7 @@ function load_users() {
   //   const log = (type) => console.log.bind(console, type);
   //   let metaForm;
   //   // Load the correct schema form when a schema is selected
-  //   const loadSchemaProject = function(schemapath) {
+  //   const loadSchema = function(schemapath) {
   //     console.log('Load schema ' + schemapath)
   //     $.ajax({
   //       method: "GET",
@@ -501,7 +501,7 @@ function load_users() {
   //         return
   //       }
   //       // TODO: There should be a warning if the current schema is unsaved
-  //       loadSchemaProject(row.schemapath)
+  //       loadSchema(row.schemapath)
   //       $('#project-schemata-table tr').removeClass('highlight')
   //       $element.addClass('highlight')
   //     }
@@ -521,7 +521,7 @@ function load_users() {
   //         return
   //       }
   //       // TODO: There should be a warning if the current schema is unsaved
-  //       loadSchemaProject(row.schemapath)
+  //       loadSchema(row.schemapath)
   //       $('#dataset-schemata-table tr').removeClass('highlight')
   //       $element.addClass('highlight')
   //     }
@@ -657,15 +657,15 @@ function load_users() {
   //
   $('#project-schemata-table').bootstrapTable({
     onCheck: (row) => {
-      toggleRowProject(projectCollection, row.schemapath, "add");
+      toggleRow(projectCollection, row.schemapath, "add");
     },
     onUncheck: (row) => {
-      toggleRowProject(projectCollection, row.schemapath, "remove");
+      toggleRow(projectCollection, row.schemapath, "remove");
     },
     onClickRow: (row, $element) => {
       if (!row.selected) return;
 
-      loadSchemaProject(row.schemapath, metadataCollection);
+      loadSchema(row.schemapath, metadataCollection);
 
       $('#project-schemata-table tr').removeClass('highlight');
       $element.addClass('highlight');
@@ -679,15 +679,15 @@ function load_users() {
   //
   $('#dataset-schemata-table').bootstrapTable({
     onCheck: (row) => {
-      toggleRowProject(datasetCollection, row.schemapath, "add");
+      toggleRow(datasetCollection, row.schemapath, "add");
     },
     onUncheck: (row) => {
-      toggleRowProject(datasetCollection, row.schemapath, "remove");
+      toggleRow(datasetCollection, row.schemapath, "remove");
     },
     onClickRow: (row, $element) => {
       if (!row.selected) return;
 
-      loadSchemaProject(row.schemapath, metadataCollection);
+      loadSchema(row.schemapath, metadataCollection);
 
       $('#dataset-schemata-table tr').removeClass('highlight');
       $element.addClass('highlight');
