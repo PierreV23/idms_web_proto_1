@@ -29,7 +29,6 @@ $(document).on('click', '.projectname', function() {
   position = $(this).position().top - $('.fixed-table-body').height() / 2
   $('.fixed-table-body').animate({scrollTop: position}, 500)
 
-
   project=$(this).data('projectname');
   $('.projectname').removeClass('highlight')
   $('.processname').removeClass('highlight')
@@ -37,7 +36,7 @@ $(document).on('click', '.projectname', function() {
   $(this).addClass("highlight")
   $('#details').html('<center><IMG SRC="{{ url_for('static', filename='img/loading.gif') }}" width="30%"></IMG><center>')
   $.get('{{ url_for('projects.show_projectdetails') }}', {
-    name: project,
+    project_name: project,
     processgroup: "{{ processgroup }}"
   }, function(data) {
     $('#details').html(data);

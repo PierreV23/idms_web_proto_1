@@ -63,7 +63,7 @@ menuname='upload_meta'
 
   // Update the collection when a schema is enabled or disabled
   const toggleRow = function (schemapath, schema_action) {
-    console.log('TOGGLE', '{{ coll }}', schemapath, schema_action )
+    console.log('TOGGLE', '{{ collection }}', schemapath, schema_action )
     $.ajax({
       method: "POST",
       url: "{{ url_for('metaedit.set_schemata_for_collection')}}",

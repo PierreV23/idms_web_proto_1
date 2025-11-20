@@ -1,3 +1,14 @@
+
+  
+<script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+<!--script src="https://unpkg.com/@rjsf/core/dist/react-jsonschema-form.js"></script-->
+<!--script src="https://unpkg.com/@rjsf/core/dist/core.cjs.production.min.js" crossorigin></script-->
+<script src="https://unpkg.com/react-jsonschema-form@1.8.1/dist/react-jsonschema-form.js" crossorigin></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css"
+  integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">  
+<script src="{{ url_for('static', filename='js/bootstrap-table.min.js') }}"></script>
+
 <script>
 var formaction = 'default';
 
@@ -207,7 +218,7 @@ function update_process(sourceElem, destElem) {
       <div class="selectgrid h-100">
         <div class="card selectlist">
           <div class="card-header">
-            <div class="card-title">Available schemata for project: <b>{{ project_name }}</b></div>
+            <div class="card-title">Available schemata for project: <b>{{ projectdetails.name }}</b></div>
           </div>
           <table id="project-schemata-table" data-toggle='table' data-url="{{ url_for('metaedit.schemata_for_project', project_name=projectdetails.name)}}"
             data-checkbox-header="false" data-sort-name="order" data-sort-order="asc">
@@ -245,7 +256,7 @@ function update_process(sourceElem, destElem) {
       <div class="selectgrid h-100">
         <div class="card selectlist">
           <div class="card-header">
-            <div class="card-title">Available schemata for datasets in project: <b>{{ project_name }}</b></div>
+            <div class="card-title">Available schemata for datasets in project: <b>{{ projectdetails.name }}</b></div>
           </div>
           <table id="dataset-schemata-table" data-toggle='table' data-url="{{ url_for('metaedit.schemata_for_dataset', collection=coll, project_name=projectdetails.name)}}"
             data-checkbox-header="false" data-sort-name="order" data-sort-order="asc">
@@ -402,7 +413,7 @@ function update_process(sourceElem, destElem) {
 
 <script>
 
-  function load_users() {
+function load_users() {
     usertype = $("ul#projecttabs li a.active").data('usertype')
     $.get("{{ url_for('projects.usermanager') }}", {
       object: '{{ projectdetails.name }}',
@@ -433,86 +444,154 @@ function update_process(sourceElem, destElem) {
     load_contacts();
   });
   
-  
-  var selectedSchema = "";
+  // wrap this part in an local function to prevent duplicate declaration of variables
+  (() => {
+      // Enable or disable a schema for a collection
+    const toggleRow = (schemapath, schema_action) => {
+      console.log(
+        "TOGGLE",
+        "{{ projectdetails.default_collection }}",
+        schemapath,
+        schema_action
+      );
 
-  // Update the collection when a schema is enabled or disabled
-  const toggleRow = function (schemapath, schema_action) {
-    console.log('TOGGLE', '{{ projectdetails.default_collection }}', schemapath, schema_action )
+      $.ajax({
+        method: "POST",
+        url: "{{ url_for('metaedit.set_schemata_for_collection')}}",
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        data: JSON.stringify({
+          collection: "{{ projectdetails.default_collection }}",
+          schemapath,
+          action: schema_action,
+        }),
+      })
+        .done((response) => {
+          console.log("Schema updated successfully:", response);
+        })
+        .fail((jqXHR, textStatus, errorThrown) => {
+          console.error("Error updating schema:", textStatus, errorThrown);
+        });
+    };
+    
+    const Form = JSONSchemaForm.default;
+    const log = (type) => console.log.bind(console, type);
+    let metaForm;
+    // Load the correct schema form when a schema is selected
+    const loadSchemaProject = function(schemapath) {
+      console.log('Load schema ' + schemapath)
+      $.ajax({
+        method: "GET",
+        url: '{{ url_for("metaedit.get_schema_and_data") }}',
+        data: {
+          schemapath: schemapath,
+          collection: "{{ metadata_collection }}"
+        },
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        success: function (result) {
+          console.log('Result', result)
+          selectedSchemaProject = schemapath;
+          //        fd = (schemaId == selectedSchemaProject) ? formdata : {}
+          renderFormFunction(JSON.parse(result.schema), JSON.parse(result.uiSchema), JSON.parse(result.data), 'reactform');
+        }
+      })
+    }
+    
+    // Install bootstraptable event handlers
+    $('#project-schemata-table').bootstrapTable({
+      onCheck: function (row, $element) {
+        toggleRow(row.schemapath, 'add')
+      },
+      onUncheck: function (row, $element) {
+        toggleRow(row.schemapath, 'remove')
+      },
+      onClickRow: function (row, $element, field) {
+        if (row.selected == false) {
+          // Disabled schema cannot be loaded
+          return
+        }
+        // TODO: There should be a warning if the current schema is unsaved
+        loadSchemaProject(row.schemapath)
+        $('#project-schemata-table tr').removeClass('highlight')
+        $element.addClass('highlight')
+      }
+    })
+    
+    // Install bootstraptable event handlers
+    $('#dataset-schemata-table').bootstrapTable({
+      onCheck: function (row, $element) {
+        toggleRow(row.schemapath, 'add')
+      },
+      onUncheck: function (row, $element) {
+        toggleRow(row.schemapath, 'remove')
+      },
+      onClickRow: function (row, $element, field) {
+        if (row.selected == false) {
+          // Disabled schema cannot be loaded
+          return
+        }
+        // TODO: There should be a warning if the current schema is unsaved
+        loadSchemaProject(row.schemapath)
+        $('#dataset-schemata-table tr').removeClass('highlight')
+        $element.addClass('highlight')
+      }
+    })
+
+
+  function renderFormFunction(schema, uiSchema, data, element) {
+    ReactDOM.render(
+      React.createElement(
+        Form,
+        {
+          id: "metaForm",
+          schema: schema,
+          uiSchema: uiSchema,
+          formData: data,
+          onChange: function () {
+            $('.formsubmit').removeAttr('disabled');
+          },
+          onSubmit: formSubmit,
+          ref: form => metaForm = form,
+          onError: log("errors")
+        },
+        React.createElement("div", null)
+      ),
+      document.getElementById(element));
+  }
+
+  $('.formsubmit').on('click', function () {
+    formaction = $(this).attr('name');
+  })
+
+  function formSubmit(e, d) {
+    data = {
+      data: e.formData,
+      collection: "{{ coll }}",
+      schemapath: selectedSchema,
+      action: formaction
+    }
     $.ajax({
       method: "POST",
-      url: "{{ url_for('metaedit.set_schemata_for_collection')}}",
-      contentType: "application/json; charset=utf-8",
-      dataType: "json",      
-      data: JSON.stringify({
-        collection: "{{ projectdetails.default_collection }}",
-        schemapath: schemapath,
-        action: schema_action
-      })
-    })
-  }
-  
-  // Install bootstraptable event handlers
-  $('#project-schemata-table').bootstrapTable({
-    onCheck: function (row, $element) {
-      toggleRow(row.schemapath, 'add')
-    },
-    onUncheck: function (row, $element) {
-      toggleRow(row.schemapath, 'remove')
-    },
-    onClickRow: function (row, $element, field) {
-      if (row.selected == false) {
-        // Disabled schema cannot be loaded
-        return
-      }
-      // TODO: There should be a warning if the current schema is unsaved
-      loadSchema(row.schemapath)
-      $('#project-schemata-table tr').removeClass('highlight')
-      $element.addClass('highlight')
-    }
-  })
-  
-  // Install bootstraptable event handlers
-  $('#dataset-schemata-table').bootstrapTable({
-    onCheck: function (row, $element) {
-      toggleRow(row.schemapath, 'add')
-    },
-    onUncheck: function (row, $element) {
-      toggleRow(row.schemapath, 'remove')
-    },
-    onClickRow: function (row, $element, field) {
-      if (row.selected == false) {
-        // Disabled schema cannot be loaded
-        return
-      }
-      // TODO: There should be a warning if the current schema is unsaved
-      loadSchema(row.schemapath)
-      $('#dataset-schemata-table tr').removeClass('highlight')
-      $element.addClass('highlight')
-    }
-  })
-  
-  // Load the correct schema form when a schema is selected
-  const loadSchema = function(schemapath) {
-    console.log('Load schema ' + schemapath)
-    $.ajax({
-      method: "GET",
-      url: '{{ url_for("metaedit.get_schema_and_data") }}',
-      data: {
-        schemapath: schemapath,
-        collection: "{{ coll }}"
-      },
+      url: '{{ url_for("metaedit.store_metadata") }}',
+      data: JSON.stringify(data),
+      collection: "{{ coll }}",
       contentType: "application/json; charset=utf-8",
       dataType: "json",
-      success: function (result) {
-        console.log('Result', result)
-        selectedSchema = schemapath;
-        //        fd = (schemaId == selectedSchema) ? formdata : {}
-        renderFormFunction(JSON.parse(result.schema), JSON.parse(result.uiSchema), JSON.parse(result.data), 'reactform');
+      success: function () {
+        if (formaction == 'save') {
+          location.reload();
+        } else {
+          window.location.replace('{{ url_for("upload.upload_data", coll=coll) }}')
+        }
       }
-    })
+    });
   }
+    // End of local function
+  
+  
 
+  
   // project metadata schemata
     function load_projectmeta() {
     $.get("{{ url_for('metaedit.schemata_for_project') }}", {
@@ -532,8 +611,8 @@ function update_process(sourceElem, destElem) {
       objecttype: 'dataset'
     }, function(data) {
 
-      $('#projectmeta').removeClass('pending')
-      $('#projectmeta').html(data);
+      $('#datasetmeta').removeClass('pending')
+      $('#datasetmeta').html(data);
     });
   }
   
@@ -569,5 +648,5 @@ function update_process(sourceElem, destElem) {
     })
     omit_check()
   })
-
+})();
 </script>

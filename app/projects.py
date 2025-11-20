@@ -97,12 +97,10 @@ def show_projectdetails():
     """
     Shows page with project settings and processes belonging to a project
     """
-    projectname = request.args.get('name', '', type=str)
+    projectname = request.args.get('project_name', '', type=str)
     processname = request.args.get('process', '', type=str)
     processgroup = request.args.get('processgroup', 'default', type=str)
-
     projectdetails, result = rest_call('GET', 'projects/{}'.format(projectname))
-
     # Retrieve groups associated with project
     with irods_manager.session() as session:
         query = session.query(User.name).filter(
@@ -114,7 +112,8 @@ def show_projectdetails():
 
     processing = iso2dt(projectdetails.get('last_updated', EPOCH)) > iso2dt(projectdetails.get('last_verified', EPOCH))
     return render_template('projectdetails.html', projectdetails=projectdetails, processing=processing,
-                           processname=processname, processgroup=processgroup, project_permissions=project_permissions(projectname))
+                           processname=processname, processgroup=processgroup, project_permissions=project_permissions(projectname),
+                           metadata_collection=projectdetails['default_collection'])
 
 @bp.route('_projectcolls')
 def projectcolls():

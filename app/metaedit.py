@@ -65,7 +65,7 @@ def get_schemata( schema_collection ):
             try:
                 schemaColl = session.collections.get(str(schema_collection_path))
                 result.update(get_schemata_in_coll(schemaColl)) 
-            except Exception as e:
+            except CollectionDoesNotExist as e:
                 continue
             finally:
                 # go up one level in the collection tree
@@ -111,8 +111,8 @@ def schemata(object :str, objecttype :str):
             ]
        }
     """
-    if not object:
-        return jsonify({})
+    # if not object:
+    #     return jsonify({})
     
     # Start looking for schemata in base_path
     leaf_collection = SCHEMATA_BASE_PATH
@@ -129,9 +129,10 @@ def schemata(object :str, objecttype :str):
     elif objecttype == 'dataset':
         leaf_collection += DATASET_SCHEMATA_PATH
         # Retrieve project from the collection
-        # dataset_name = object.split('/')[-1]
-        leaf_collection += '/' + object
-    
+        if object:
+            leaf_collection += '/' + object
+    else:
+        print('ṕufffff')
     # Retrieve schemata for this project
     schemata = get_schemata(leaf_collection)
 
@@ -201,7 +202,7 @@ def get_schema_and_data():
     if not (schemapath and collection):
         return jsonify({}), 500
     with irods_manager.session() as session:
-        obj = session.data_objects.get(schemapath_abs(schemapath))
+        obj = session.data_objects.get(schemapath)
         with obj.open('r') as f:
             content = f.read().decode('UTF-8')
         uiSchemaFile = obj.metadata.get_all(ATTR_UISCHEMA)
