@@ -5,7 +5,7 @@ from marshmallow import Schema, fields, validate
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy import ForeignKey, create_engine, Column, Integer, String, TIMESTAMP, func, text
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.exc import OperationalError, ArgumentError
+from sqlalchemy.exc import OperationalError, ArgumentError, MultipleResultsFound, NoResultFound
 from sqlalchemy.ext.hybrid import hybrid_property
 from irods.models import Collection, CollectionMeta, User
 from irods.column import Criterion
@@ -544,5 +544,112 @@ def get_ngs_barcodes_disabled(flowcell):
     """
     env = request.args.get('env', None)
     ngsrun = db.session(env).query(NGSRunView).filter(NGSRunView.flowcell == flowcell).one_or_none()
+    barcodes = db.session(env).query(NGSBarcode).filter(NGSBarcode.ngsrun == ngsrun.id).filter(NGSBarcode.enabled == 'false').all()
+    return jsonify(barcodes_schema.dump(barcodes))
+
+@bp.route('/api/v2/runs', methods=['GET'])
+def get_v2_ngs_runs():
+    """Retrieve a list of all ngs runs
+    """
+    env = request.args.get('env', None)
+    all_runs = db.session(env).query(NGSRunView).all()
+    dump = ngsruns_schema.dump(all_runs)
+    return jsonify(dump)
+
+@bp.route('/api/v2/runs/flowcell/<flowcell>', methods=['GET'])
+def get_v2_ngs_runs_by_flowcell(flowcell):
+    """Retrieve ngs runs by flowcell
+    """
+    env = request.args.get('env', None)
+    ngsruns = db.session(env).query(NGSRunView).filter(NGSRunView.flowcell == flowcell).all()
+    return jsonify(ngsruns_schema.dump(ngsruns))
+
+@bp.route('/api/v2/runs/id/<runid>', methods=['GET'])
+def get_v2_ngs_runs_by_id(runid):
+    """Retrieve ngs runs by id
+    """
+    env = request.args.get('env', None)
+    try:
+        ngsrun = db.session(env).query(NGSRunView).filter(NGSRunView.id == runid).one()
+    except NoResultFound:
+        return jsonify({'Error': f'Run id {runid} not found'}), 404
+    return jsonify(ngsrun_schema.dump(ngsrun))
+
+@bp.route('/api/v2/runs/flowcell/<flowcell>/barcodes', methods=['GET'])
+def get_v2_ngs_barcodes_by_flowcell(flowcell):
+    """Retrieve all barcodes for a single ngs run
+    """
+    env = request.args.get('env', None)
+    try:
+        ngsrun = db.session(env).query(NGSRunView).filter(NGSRunView.flowcell == flowcell).one()
+    except MultipleResultsFound:
+        return jsonify({'Error': f'Multiple results found for flowcell {flowcell}'}), 400
+    except NoResultFound:
+        return jsonify({'Error': f'Flowcell {flowcell} not found'}), 404
+    barcodes = db.session(env).query(NGSBarcode).filter(NGSBarcode.ngsrun == ngsrun.id).all()
+    return jsonify(barcodes_schema.dump(barcodes))
+
+@bp.route('/api/v2/runs/flowcell/<flowcell>/barcodes/enabled', methods=['GET'])
+def get_v2_ngs_barcodes_by_flowcell_enabled(flowcell):
+    """Retrieve all enabled barcodes for a single ngs run
+    """
+    env = request.args.get('env', None)
+    try:
+        ngsrun = db.session(env).query(NGSRunView).filter(NGSRunView.flowcell == flowcell).one()
+    except MultipleResultsFound:
+        return jsonify({'Error': f'Multiple results found for flowcell {flowcell}'}), 400
+    except NoResultFound:
+        return jsonify({'Error': f'Flowcell {flowcell} not found'}), 404
+    barcodes = db.session(env).query(NGSBarcode).filter(NGSBarcode.ngsrun == ngsrun.id).filter(NGSBarcode.enabled == 'true').all()
+    return jsonify(barcodes_schema.dump(barcodes))
+
+@bp.route('/api/v2/runs/flowcell/<flowcell>/barcodes/disabled', methods=['GET'])
+def get_v2_ngs_barcodes_by_flowcell_disabled(flowcell):
+    """Retrieve all disabled barcodes for a single ngs run
+    """
+    env = request.args.get('env', None)
+    try:
+        ngsrun = db.session(env).query(NGSRunView).filter(NGSRunView.flowcell == flowcell).one()
+    except MultipleResultsFound:
+        return jsonify({'Error': f'Multiple results found for flowcell {flowcell}'}), 400
+    except NoResultFound:
+        return jsonify({'Error': f'Flowcell {flowcell} not found'}), 404
+    barcodes = db.session(env).query(NGSBarcode).filter(NGSBarcode.ngsrun == ngsrun.id).filter(NGSBarcode.enabled == 'false').all()
+    return jsonify(barcodes_schema.dump(barcodes))
+
+
+@bp.route('/api/v2/runs/id/<runid>/barcodes', methods=['GET'])
+def get_v2_ngs_barcodes_by_id(runid):
+    """Retrieve all barcodes for a single ngs run
+    """
+    env = request.args.get('env', None)
+    try:
+        ngsrun = db.session(env).query(NGSRunView).filter(NGSRunView.id == runid).one()
+    except NoResultFound:
+        return jsonify({'Error': f'Run id {runid} not found'}), 404
+    barcodes = db.session(env).query(NGSBarcode).filter(NGSBarcode.ngsrun == ngsrun.id).all()
+    return jsonify(barcodes_schema.dump(barcodes))
+
+@bp.route('/api/v2/runs/id/<runid>/barcodes/enabled', methods=['GET'])
+def get_v2_ngs_barcodes_by_id_enabled(runid):
+    """Retrieve all enabled barcodes for a single ngs run
+    """
+    env = request.args.get('env', None)
+    try:
+        ngsrun = db.session(env).query(NGSRunView).filter(NGSRunView.id == runid).one()
+    except NoResultFound:
+        return jsonify({'Error': f'Run id {runid} not found'}), 404
+    barcodes = db.session(env).query(NGSBarcode).filter(NGSBarcode.ngsrun == ngsrun.id).filter(NGSBarcode.enabled == 'true').all()
+    return jsonify(barcodes_schema.dump(barcodes))
+
+@bp.route('/api/v2/runs/id/<runid>/barcodes/disabled', methods=['GET'])
+def get_v2_ngs_barcodes_by_id_disabled(runid):
+    """Retrieve all disabled barcodes for a single ngs run
+    """
+    env = request.args.get('env', None)
+    try:
+        ngsrun = db.session(env).query(NGSRunView).filter(NGSRunView.id == runid).one()
+    except NoResultFound:
+        return jsonify({'Error': f'Run id {runid} not found'}), 404
     barcodes = db.session(env).query(NGSBarcode).filter(NGSBarcode.ngsrun == ngsrun.id).filter(NGSBarcode.enabled == 'false').all()
     return jsonify(barcodes_schema.dump(barcodes))
