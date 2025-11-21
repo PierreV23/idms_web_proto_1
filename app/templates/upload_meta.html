@@ -31,7 +31,7 @@ menuname='upload_meta'
       <div class="card-title">Available schemata for dataset uploads in project: <b>{{ project_name }}</b></div>
     </div>
     <table id="dataset-schemata-table" data-toggle='table' data-multi-sort="true" data-sort-name="order" data-sort-order="asc"
-      data-url="{{ url_for('metaedit.schemata_for_dataset', collection=coll, project_name=project_name)}}" data-checkbox-header="false">
+      data-url="{{ url_for('metaedit.schemata_for_dataset', collection=collection, project_name=project_name)}}" data-checkbox-header="false">
       <thead>
         <TR>
           <TH data-field="selected" data-checkbox="true" title="Check the box first, then select field to display the form"></TH>
@@ -70,9 +70,10 @@ menuname='upload_meta'
       contentType: "application/json; charset=utf-8",
       dataType: "json",      
       data: JSON.stringify({
-        collection: "{{ coll }}",
+        collection: "{{ collection }}",
         schemapath: schemapath,
-        action: schema_action
+        action: schema_action,
+        attr_type: 'user::schema_in_use'
       })
     })
   }

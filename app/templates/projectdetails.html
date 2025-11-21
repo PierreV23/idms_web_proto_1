@@ -106,7 +106,7 @@ function update_process(sourceElem, destElem) {
       <li class="nav-item mx-2">
         <A class="nav-link datasetmeta" id="datasetmeta-tab"
         data-toggle="tab" href="#datasetmeta" role="tab"
-        aria-controls="datasetmeta" aria-selected="false">Dataset Metadata</A>
+        aria-controls="datasetmeta" aria-selected="false">Dataset Default Metadata</A>
       </li>
       {% if current_user.feature('jobs') and projectdetails.pipelines %}
       <li class="nav-item mx-2">
@@ -240,7 +240,7 @@ function update_process(sourceElem, destElem) {
       </div>
     </div>
     
-    <!-- Dataset Metadata -->
+    <!-- Dataset Default Metadata -->
     <div class="tab-pane h-100 scroll" id="datasetmeta" role="tabpanel" aria-labelledby="datasetmeta-tab">
       <div class="selectgrid h-100">
         <div class="card selectlist">

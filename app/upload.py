@@ -254,7 +254,7 @@ def upload_meta():
         avudata = [ { 'a': avu[CollectionMeta.name][len(ATTR_UPLOADMETA):], 'v': avu[CollectionMeta.value], 'u': avu[CollectionMeta.units] } for avu in metadata if avu[CollectionMeta.name].startswith(ATTR_UPLOADMETA) ]
         data = jsonavu.avu2json(avudata, "cat")
         selectedSchema = metadict.get(ATTR_UPLOADMETASCHEMA, None)
-        return render_template('upload_meta.html', coll=collection, project_name=project_name, name=name, selectedSchema=selectedSchema, data=data)
+        return render_template('upload_meta.html', collection=collection, project_name=project_name, name=name, selectedSchema=selectedSchema, data=data)
 #     if request.method == 'POST':
 #         record = request.json
 #         collection = record.get('coll')
