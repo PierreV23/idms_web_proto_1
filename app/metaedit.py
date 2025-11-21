@@ -159,7 +159,7 @@ def store_metadata():
     """Stores the metadata provided by the data structure
        under the schema <schemapath> on the upload collection
     """
-    collection =  request.json.get('collection')
+    collection = request.json.get('collection')
     data = request.json.get('data')
     schemapath = request.json.get('schemapath')
     if not (collection and data and schemapath):
@@ -260,6 +260,6 @@ def store_collection_metadata_structured(collection, data, schemapath):
     existing_data = get_collection_metadata_structured(collection)
     existing_data[schemapath] = data
     jsonavu_metadata = jsonavu.json2avu(existing_data, '0')
-    remove_collection_metadata(collection, ATTR_UPLOADPREFIX)
+    remove_collection_metadata(collection, ATTR_UPLOAD_PREFIX)
     for avu in jsonavu_metadata:
-        iqry.scollmetaval(collection, f"{ATTR_UPLOADPREFIX}{avu['a']}", avu['v'], avu['u'])
+        iqry.scollmetaval(collection, f"{ATTR_UPLOAD_PREFIX}{avu['a']}", avu['v'], avu['u'])

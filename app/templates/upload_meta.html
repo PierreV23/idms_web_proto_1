@@ -151,7 +151,7 @@ menuname='upload_meta'
   function formSubmit(e, d) {
     data = {
       data: e.formData,
-      collection: "{{ coll }}",
+      collection: "{{ collection }}",
       schemapath: selectedSchema,
       action: formaction
     }
@@ -159,14 +159,14 @@ menuname='upload_meta'
       method: "POST",
       url: '{{ url_for("metaedit.store_metadata") }}',
       data: JSON.stringify(data),
-      collection: "{{ coll }}",
+      collection: "{{ collection }}",
       contentType: "application/json; charset=utf-8",
       dataType: "json",
       success: function () {
         if (formaction == 'save') {
           location.reload();
         } else {
-          window.location.replace('{{ url_for("upload.upload_data", coll=coll) }}')
+          window.location.replace('{{ url_for("upload.upload_data", coll=collection) }}')
         }
       }
     });
