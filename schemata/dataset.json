@@ -1,0 +1,21 @@
+{
+    "title": "test dataset schema generic",
+    "description": "test dataset schema generic",
+    "type": "object",
+    "required": [],
+    "properties": {
+        "dataset::description": {
+            "type": "string",
+            "description": "Omschrijving van de dataset.",
+            "title": "Dataset Omschrijving"
+        },
+        "dataset::keyword": {
+            "title": "Trefwoorden",
+            "description": "Belangrijke termen die de dataset beschrijven.",
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        }
+    }
+}

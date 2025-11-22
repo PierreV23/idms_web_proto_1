@@ -10,7 +10,6 @@ from irods.models import CollectionMeta
 from irods.exception import CollectionDoesNotExist
 from pathlib import Path
 
-
 bp = Blueprint('metaedit', __name__, url_prefix='/metaedit')
 
 PROJECT_ATTRS = ['user::upload::settings::projectID']
@@ -20,34 +19,38 @@ ATTR_UPLOAD_PREFIX = 'user::meta::'
 ATTR_UPLOAD_DEFAULT_PREFIX = 'user::default_meta::'
 
 def schemapath_abs(schemapath_rel):
-    """ Translate relative to absolute schemapath:
+    ''' 
+        Translate relative to absolute schemapath
 
-        ex:
-        input: salm/default
-        output: /rivmZone/system/schemata/salm/default.json
-    """
+        example:
+            input: salm/default
+            output: /rivmZone/system/schemata/salm/default.json
+    '''
     return f"{os.path.join('/', current_user.irods_zone, SCHEMATA_BASE_PATH, schemapath_rel)}.json"
 
-def schemapath_rel(schemapath_abs):
-    """ Translate absolute to relative schemapath:
 
-        ex:
-        input: /rivmZone/system/schemata/salm/default.json
-        output: salm/default.json
-    """
+def schemapath_rel(schemapath_abs):
+    ''' 
+        Translate absolute to relative schemapath:
+
+        example:
+            input: /rivmZone/system/schemata/salm/default.json
+            output: salm/default.json
+    '''
     base = os.path.join('/', current_user.irods_zone, SCHEMATA_BASE_PATH)
     result, _ = os.path.splitext(os.path.relpath(schemapath_abs, start=base))
     return result
 
 
 def get_schemata( schema_collection ):
-    """Return list of all schemata from the leaf down to the base collection
-       as a dictionary:
-       {
-        schema-name : schema-location
-        TODO: what if the same name is on different levels
-       }
-    """
+    '''
+        Return list of all schemata from the leaf down to the base collection
+        as a dictionary:
+        {
+            schema-name : schema-location
+            TODO: what if the same name is on different levels
+        }
+    '''
     def get_schemata_in_coll( coll ):
         result = {}
         for obj in coll.data_objects:
@@ -71,9 +74,9 @@ def get_schemata( schema_collection ):
                 continue
             finally:
                 # go up one level in the collection tree
-                schema_collection_path = schema_collection_path.parent
-               
+                schema_collection_path = schema_collection_path.parent        
     return result
+
 
 @bp.route('/')
 # def metadata_editor():
@@ -81,16 +84,24 @@ def get_schemata( schema_collection ):
 #     print(url_for('metaedit.schemata', metadata=schema_endpoint))
 #     return render_template('metadata_editor.html', **request.args)
 
+
 @bp.route('/schemata_project')
 def schemata_for_project():
+    '''
+        Schemata for a project
+    '''
     meta_schemata_collection = request.args.get('project_name')
     meta_values_collection = request.args.get('collection')
     meta_default_values_collection = request.args.get('collection')
     objecttype = 'project'
     return schemata(meta_schemata_collection, meta_values_collection, meta_default_values_collection, objecttype)
 
+
 @bp.route('/schemata_dataset')
 def schemata_for_dataset():
+    '''
+        Schemata for a dataset, in a project or in the users home directory
+    '''
     meta_schemata_collection_name = request.args.get('project_name')
     meta_schemata_collection = Path('/', current_user.irods_zone, SCHEMATA_BASE_PATH, DATASET_SCHEMATA_PATH, meta_schemata_collection_name)
     meta_values_collection = request.args.get('collection')
@@ -99,66 +110,57 @@ def schemata_for_dataset():
     objecttype = 'dataset'
     return schemata(meta_schemata_collection, meta_values_collection, meta_default_values_collection, objecttype)
 
+
 @bp.route('/schemata_reference')
 def schemata_for_reference_dataset():
+    '''
+        Schemata for a reference dataset, so not linked to a project
+    '''
     meta_schemata_collection = request.args.get('collection')
     meta_values_collection = request.args.get('collection')
     meta_default_values_collection = request.args.get('collection')
     objecttype = 'reference_dataset'
     return schemata(meta_schemata_collection, meta_values_collection, meta_default_values_collection, objecttype)
 
+
 def schemata(meta_schemata_collection :str, meta_values_collection :str, meta_default_values_collection :str, objecttype :str):
-    """Return a list of schemata 
+    '''
+        Returns a list of schemata
 
-       request parameter is the upload path
-       Return structure is a bootstraptable data structure like:
-       {
-            'rows': [
-                    {'schema': 'schemaname,
-                    'selected: True
-                    },
-                    ...
+        Request parameter is the upload path
+        Returns a bootstraptable data structure like:
+        {
+        'rows': [
+                    {'schema': <schemaname>,
+                    'selected: True or False,
+                    'schemapath': <schemapath>,
+                    'order': order to display the schemata
+                }, {...}
             ]
-       }
-    """
-
-    # # Start looking for schemata in base_path
-    # leaf_collection = SCHEMATA_BASE_PATH
-    
-    # if objecttype == 'project':
-    #     leaf_collection += PROJECT_SCHEMATA_PATH
-    #     # Retrieve project from the collection, object is project_name
-    #     leaf_collection += '/' + meta_schemata_collection
-    # elif objecttype == 'reference_dataset':
-    #     leaf_collection += REFERENCE_DATASET_SCHEMATA_PATH
-    #     # Retrieve project from the collection
-    #     refdata_name = meta_schemata_collection.split('/')[-1]
-    #     leaf_collection += '/' + refdata_name
-    # elif objecttype == 'dataset':
-    #     leaf_collection += DATASET_SCHEMATA_PATH
-    #     # Retrieve project from the collection
-    #     if meta_schemata_collection:
-    #         leaf_collection += '/' + meta_schemata_collection
+        }
+    '''
 
     # Retrieve schemata for this project
     schemata = get_schemata(meta_schemata_collection)
 
     # Get schemata in use for the collection
     schemata_in_use = [a[CollectionMeta.value] for a in iqry.qcollmetavals(meta_values_collection, ATTR_SCHEMA_IN_USE)]
-    
+
     print(f'{schemata_in_use=}')
     print(f"{schemata=}")
-    
+
     rows = [
         {'schema': k, 'selected': v in schemata_in_use, 'schemapath': v, 'order': v.count('/')} for k, v in schemata.items()
     ]
     return jsonify({'rows': rows})
 
+
 @bp.route('_store_metadata', methods=['POST'])
 def store_metadata():
-    """Stores the metadata provided by the data structure
-       under the schema <schemapath> on the upload collection
-    """
+    '''
+        Stores the metadata provided by the data structure
+        under the schema <schemapath> on a collection
+    '''
     collection = request.json.get('collection')
     data = request.json.get('data')
     schemapath = request.json.get('schemapath')
@@ -170,7 +172,8 @@ def store_metadata():
 
 @bp.route('_set_schemata_for_collection', methods=['POST'])
 def set_schemata_for_collection():
-    """ Store the schemata used on the collection with
+    ''' 
+        Store the schemata used on the collection with
         key SCHEMA_ATTR
         There can be multiple schemata
 
@@ -179,7 +182,7 @@ def set_schemata_for_collection():
             collection: collection path
             schemapath: path to the schema dataobject
             action(str): add or remove
-    """
+    '''
     attr_type = request.json.get('attr_type')
     collection = request.json.get('collection')
     schemapath = request.json.get('schemapath')
@@ -194,22 +197,24 @@ def set_schemata_for_collection():
         iqry.delcollmeta(collection, attr_type, schemapath)
     return jsonify({ 'result': 'OK' }), 200
 
+
 @bp.route('_get_schema_and_data', methods=['GET'])
 def get_schema_and_data():
-    """ Retrieve a metadata schema, the uiSchema
+    ''' 
+        Retrieve a metadata schema, the uiSchema
         and the already existing metadata for the schema
 
         Params:
             schemapath: path to the schema dataobject
             collection: path to the collection
-    """
+    '''
     content = "{}"
     uiSchema = "{}"
     data = "{}"
     schemapath = request.args.get('schemapath')
-    meta_default_values_collection = request.args.get('schemapath')
+    meta_default_values_collection = '/'.join(schemapath.split('/')[:-1])
     meta_values_collection = request.args.get('collection')
-    if not (schemapath and meta_default_values_collection):
+    if not (schemapath):
         return jsonify({}), 500
     with irods_manager.session() as session:
         obj = session.data_objects.get(schemapath)
@@ -227,11 +232,15 @@ def get_schema_and_data():
     data = get_collection_metadata_structured(meta_values_collection).get(schemapath, {})
     return { 'schema': content, 'uiSchema': uiSchema, 'data': json.dumps(data) }
 
-def get_collection_metadata_structured(collection):
-    """ Get schema metadata from a collection
+
+def get_collection_metadata_structured(collection :str) -> dict:
+    ''' 
+        Get schema metadata from a collection
+        
         Removes the ATTR_UPLOADPREFIX prefix from attribute name
+        
         Use jsonavu package to retrieve metadata structure
-    """
+    '''
     start = len(ATTR_UPLOAD_PREFIX)
     collection_metadata = iqry.qcollmeta(collection)
     jsonavu_metadata = [
@@ -244,19 +253,25 @@ def get_collection_metadata_structured(collection):
     data = jsonavu.avu2json(jsonavu_metadata, '0') or {}
     return data
 
+
 def remove_collection_metadata(collection, prefix):
+    '''
+        Remove metadata from collection    
+    '''
     metadata = iqry.qcollmeta(collection)
     for record in metadata:
         if record[CollectionMeta.name].startswith(prefix):
             iqry.delcollmeta(collection, record[CollectionMeta.name])
 
+
 def store_collection_metadata_structured(collection, data, schemapath):
-    """ Store schema metadata from a collection
+    ''' 
+        Store schema metadata from a collection
 
         Use jsonavu package to create metadata structure
 
         Does not modify data from other schemata
-    """
+    '''
     existing_data = get_collection_metadata_structured(collection)
     existing_data[schemapath] = data
     jsonavu_metadata = jsonavu.json2avu(existing_data, '0')

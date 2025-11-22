@@ -86,7 +86,7 @@ menuname='upload_meta'
       url: '{{ url_for("metaedit.get_schema_and_data") }}',
       data: {
         schemapath: schemapath,
-        collection: "{{ coll }}"
+        collection: "{{ collection }}"
       },
       contentType: "application/json; charset=utf-8",
       dataType: "json",
@@ -166,7 +166,7 @@ menuname='upload_meta'
         if (formaction == 'save') {
           location.reload();
         } else {
-          window.location.replace('{{ url_for("upload.upload_data", coll=collection) }}')
+          window.location.replace('{{ url_for("upload.upload_data", collection=collection) }}')
         }
       }
     });
