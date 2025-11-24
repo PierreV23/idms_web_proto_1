@@ -20,6 +20,7 @@ from app import projects, iqry
 from app.datafield import datafield
 from app.metaedit import get_schemata
 from app.constants import ATTR_UISCHEMA, SCHEMATA_BASE_PATH, DATASET_SCHEMATA_PATH, PROJECT_SCHEMATA_PATH
+from app.projectdb_api import rest_call
 import randomname
 import json
 import re
@@ -245,8 +246,11 @@ def upload_meta():
         # schemata={}
         project_name = iqry.qcollmetaval(collection, f'{ATTR_UPLOADSETTINGS}projectID')
         
+        meta_default_values_collection = None
         # schemata for datasets in this project are here:
-        # project_schemata_path = f'/{current_user.irods_zone}/{SCHEMATA_BASE_PATH}{DATASET_SCHEMATA_PATH}/{project_name}'
+        if project_name:
+            project_details, _ = rest_call('GET', 'projects/{}'.format(project_name))
+            meta_default_values_collection = project_details['default_collection']
         
         #schemata = get_schemata( project_schemata_path )
         metadata = iqry.qcollmeta(collection) #the typed version tries reading the unit field as a python type
@@ -254,7 +258,7 @@ def upload_meta():
         avudata = [ { 'a': avu[CollectionMeta.name][len(ATTR_UPLOADMETA):], 'v': avu[CollectionMeta.value], 'u': avu[CollectionMeta.units] } for avu in metadata if avu[CollectionMeta.name].startswith(ATTR_UPLOADMETA) ]
         data = jsonavu.avu2json(avudata, "cat")
         selectedSchema = metadict.get(ATTR_UPLOADMETASCHEMA, None)
-        return render_template('upload_meta.html', collection=collection, project_name=project_name, name=name, selectedSchema=selectedSchema, data=data)
+        return render_template('upload_meta.html', collection=collection, meta_default_values_collection = meta_default_values_collection, project_name=project_name, name=name, selectedSchema=selectedSchema, data=data)
 #     if request.method == 'POST':
 #         record = request.json
 #         collection = record.get('coll')

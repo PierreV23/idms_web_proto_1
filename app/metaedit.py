@@ -100,15 +100,13 @@ def schemata_for_project():
 @bp.route('/schemata_dataset')
 def schemata_for_dataset():
     '''
-        Schemata for a dataset, in a project or in the users home directory
+        Schemata for a dataset, in a project or in the home directory of current user
     '''
-    meta_schemata_collection_name = request.args.get('project_name')
+    meta_schemata_collection_name = request.args.get('project_name', '')
     meta_schemata_collection = Path('/', current_user.irods_zone, SCHEMATA_BASE_PATH, DATASET_SCHEMATA_PATH, meta_schemata_collection_name)
     meta_values_collection = request.args.get('collection')
-    meta_default_values_collection_name = request.args.get('project_name')
-    meta_default_values_collection = Path('/', current_user.irods_zone, SCHEMATA_BASE_PATH, DATASET_SCHEMATA_PATH, meta_default_values_collection_name)
     objecttype = 'dataset'
-    return schemata(meta_schemata_collection, meta_values_collection, meta_default_values_collection, objecttype)
+    return schemata(meta_schemata_collection, meta_values_collection, objecttype)
 
 
 @bp.route('/schemata_reference')
@@ -123,7 +121,7 @@ def schemata_for_reference_dataset():
     return schemata(meta_schemata_collection, meta_values_collection, meta_default_values_collection, objecttype)
 
 
-def schemata(meta_schemata_collection :str, meta_values_collection :str, meta_default_values_collection :str, objecttype :str):
+def schemata(meta_schemata_collection :str, meta_values_collection :str, objecttype :str):
     '''
         Returns a list of schemata
 
@@ -195,6 +193,8 @@ def set_schemata_for_collection():
     if action == 'remove':
         # TODO: Remove the related metadata
         iqry.delcollmeta(collection, attr_type, schemapath)
+        store_collection_metadata_structured(collection, None, schemapath)
+        remove_collection_metadata(collection, ATTR_UPLOAD_PREFIX+schemapath)
     return jsonify({ 'result': 'OK' }), 200
 
 
@@ -212,7 +212,8 @@ def get_schema_and_data():
     uiSchema = "{}"
     data = "{}"
     schemapath = request.args.get('schemapath')
-    meta_default_values_collection = '/'.join(schemapath.split('/')[:-1])
+    # find collection where project metadata is located
+    meta_default_values_collection = request.args.get('meta_default_values_collection')
     meta_values_collection = request.args.get('collection')
     if not (schemapath):
         return jsonify({}), 500
@@ -229,7 +230,13 @@ def get_schema_and_data():
                     uiSchema = f.read().decode('UTF-8')
             except:
                 pass
-    data = get_collection_metadata_structured(meta_values_collection).get(schemapath, {})
+    default_data = {}
+    if meta_default_values_collection:
+        default_data = get_collection_metadata_structured(meta_default_values_collection).get(schemapath, {})
+    
+    used_data = get_collection_metadata_structured(meta_values_collection).get(schemapath, {})
+    # first take all values from default, then add or overwrite values from used data
+    data = default_data | used_data
     return { 'schema': content, 'uiSchema': uiSchema, 'data': json.dumps(data) }
 
 

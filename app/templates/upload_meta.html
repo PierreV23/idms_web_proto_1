@@ -73,6 +73,7 @@ menuname='upload_meta'
         collection: "{{ collection }}",
         schemapath: schemapath,
         action: schema_action,
+        meta_default_values_collection: "{{ meta_default_values_collection }}",
         attr_type: 'user::schema_in_use'
       })
     })
@@ -86,7 +87,8 @@ menuname='upload_meta'
       url: '{{ url_for("metaedit.get_schema_and_data") }}',
       data: {
         schemapath: schemapath,
-        collection: "{{ collection }}"
+        collection: "{{ collection }}",
+        meta_default_values_collection: "{{ meta_default_values_collection }}",
       },
       contentType: "application/json; charset=utf-8",
       dataType: "json",
