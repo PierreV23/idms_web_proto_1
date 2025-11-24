@@ -16,7 +16,7 @@ PROJECT_ATTRS = ['user::upload::settings::projectID']
 ATTR_SCHEMA_IN_USE = 'user::schema_in_use'
 ATTR_SCHEMA_DEFAULT = 'user::schema_default'
 ATTR_UPLOAD_PREFIX = 'user::meta::'
-ATTR_UPLOAD_DEFAULT_PREFIX = 'user::default_meta::'
+ATTR_UPLOAD_DEFAULT_PREFIX = 'user::default_metadata::'
 
 def schemapath_abs(schemapath_rel):
     ''' 
@@ -233,7 +233,7 @@ def get_schema_and_data():
                 pass
     default_data = {}
     if meta_default_values_collection:
-        default_data = get_collection_metadata_structured(meta_default_values_collection, prefix).get(schemapath, {})
+        default_data = get_collection_metadata_structured(meta_default_values_collection, ATTR_UPLOAD_DEFAULT_PREFIX).get(schemapath, {})
     
     used_data = get_collection_metadata_structured(meta_values_collection, prefix).get(schemapath, {})
     # first take all values from default, then add or overwrite values from used data
