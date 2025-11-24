@@ -204,7 +204,19 @@ function update_process(sourceElem, destElem) {
 
     <!-- Project Metadata -->
     <div class="tab-pane h-100 scroll" id="projectmeta" role="tabpanel" aria-labelledby="projectmeta-tab">
-      <div class="selectgrid h-100">
+      {% import 'components/metadata.html' as metadata_widget %}
+
+
+      {{ metadata_widget.render_metadata_editor(
+          id="comp_project_metadata_"+projectdetails.name,
+          prefix="user::metadata::",
+          project_name=projectdetails.name, 
+          collection=projectdetails.default_collection, 
+          meta_default_values_collection='',
+          schemata_data_url=url_for('metaedit.schemata_for_project', collection=projectdetails.default_collection, project_name=projectdetails.name)
+      ) }}
+
+      <!--div class="selectgrid h-100">
         <div class="card selectlist">
           <div class="card-header">
             <div class="card-title">Available schemata for project: <b>{{ projectdetails.name }}</b></div>
@@ -237,12 +249,27 @@ function update_process(sourceElem, destElem) {
               Continue</button>
           </div>
         </div>
-      </div>
+      </div-->
     </div>
     
     <!-- Dataset Default Metadata -->
     <div class="tab-pane h-100 scroll" id="datasetmeta" role="tabpanel" aria-labelledby="datasetmeta-tab">
-      <div class="selectgrid h-100">
+      {% import 'components/metadata.html' as metadata_widget %}
+
+
+      {{ 
+        metadata_widget.render_metadata_editor(
+            id="comp_default_dataset_metadata_"+projectdetails.name,
+            prefix="user::default_metadata::",
+            project_name=projectdetails.name, 
+            collection=projectdetails.default_collection, 
+            meta_default_values_collection='',
+            schemata_data_url=url_for('metaedit.schemata_for_dataset', collection=projectdetails.default_collection, project_name=projectdetails.name)
+          ) 
+        }}
+
+
+      <!--div class="selectgrid h-100">
         <div class="card selectlist">
           <div class="card-header">
             <div class="card-title">Available schemata for datasets in project: <b>{{ projectdetails.name }}</b></div>
@@ -275,7 +302,7 @@ function update_process(sourceElem, destElem) {
               Continue</button>
           </div>
         </div>
-      </div>
+      </div-->
     </div>
 
     <!-- Contacts -->
@@ -433,175 +460,7 @@ function load_users() {
     load_contacts();
   });
   
-  // // wrap this part in an local function to prevent duplicate declaration of variables
-  // (() => {
-  //     // Enable or disable a schema for a collection
-  //   const toggleRow = (schemapath, schema_action) => {
-  //     console.log(
-  //       "TOGGLE",
-  //       "{{ projectdetails.default_collection }}",
-  //       schemapath,
-  //       schema_action
-  //     );
 
-  //     $.ajax({
-  //       method: "POST",
-  //       url: "{{ url_for('metaedit.set_schemata_for_collection')}}",
-  //       contentType: "application/json; charset=utf-8",
-  //       dataType: "json",
-  //       data: JSON.stringify({
-  //         collection: "{{ projectdetails.default_collection }}",
-  //         schemapath,
-  //         action: schema_action,
-  //       }),
-  //     })
-  //       .done((response) => {
-  //         console.log("Schema updated successfully:", response);
-  //       })
-  //       .fail((jqXHR, textStatus, errorThrown) => {
-  //         console.error("Error updating schema:", textStatus, errorThrown);
-  //       });
-  //   };
-    
-  //   const Form = JSONSchemaForm.default;
-  //   const log = (type) => console.log.bind(console, type);
-  //   let metaForm;
-  //   // Load the correct schema form when a schema is selected
-  //   const loadSchema = function(schemapath) {
-  //     console.log('Load schema ' + schemapath)
-  //     $.ajax({
-  //       method: "GET",
-  //       url: '{{ url_for("metaedit.get_schema_and_data") }}',
-  //       data: {
-  //         schemapath: schemapath,
-  //         collection: "{{ metadata_collection }}"
-  //       },
-  //       contentType: "application/json; charset=utf-8",
-  //       dataType: "json",
-  //       success: function (result) {
-  //         console.log('Result', result)
-  //         selectedSchemaProject = schemapath;
-  //         //        fd = (schemaId == selectedSchemaProject) ? formdata : {}
-  //         renderFormFunction(JSON.parse(result.schema), JSON.parse(result.uiSchema), JSON.parse(result.data), 'reactform');
-  //       }
-  //     })
-  //   }
-    
-  //   // Install bootstraptable event handlers
-  //   $('#project-schemata-table').bootstrapTable({
-  //     onCheck: function (row, $element) {
-  //       toggleRow(row.schemapath, 'add')
-  //     },
-  //     onUncheck: function (row, $element) {
-  //       toggleRow(row.schemapath, 'remove')
-  //     },
-  //     onClickRow: function (row, $element, field) {
-  //       if (row.selected == false) {
-  //         // Disabled schema cannot be loaded
-  //         return
-  //       }
-  //       // TODO: There should be a warning if the current schema is unsaved
-  //       loadSchema(row.schemapath)
-  //       $('#project-schemata-table tr').removeClass('highlight')
-  //       $element.addClass('highlight')
-  //     }
-  //   })
-    
-  //   // Install bootstraptable event handlers
-  //   $('#dataset-schemata-table').bootstrapTable({
-  //     onCheck: function (row, $element) {
-  //       toggleRow(row.schemapath, 'add')
-  //     },
-  //     onUncheck: function (row, $element) {
-  //       toggleRow(row.schemapath, 'remove')
-  //     },
-  //     onClickRow: function (row, $element, field) {
-  //       if (row.selected == false) {
-  //         // Disabled schema cannot be loaded
-  //         return
-  //       }
-  //       // TODO: There should be a warning if the current schema is unsaved
-  //       loadSchema(row.schemapath)
-  //       $('#dataset-schemata-table tr').removeClass('highlight')
-  //       $element.addClass('highlight')
-  //     }
-  //   })
-
-
-  // function renderFormFunction(schema, uiSchema, data, element) {
-  //   ReactDOM.render(
-  //     React.createElement(
-  //       Form,
-  //       {
-  //         id: "metaForm",
-  //         schema: schema,
-  //         uiSchema: uiSchema,
-  //         formData: data,
-  //         onChange: function () {
-  //           $('.formsubmit').removeAttr('disabled');
-  //         },
-  //         onSubmit: formSubmit,
-  //         ref: form => metaForm = form,
-  //         onError: log("errors")
-  //       },
-  //       React.createElement("div", null)
-  //     ),
-  //     document.getElementById(element));
-  // }
-
-  // $('.formsubmit').on('click', function () {
-  //   formaction = $(this).attr('name');
-  // })
-
-  // function formSubmit(e, d) {
-  //   data = {
-  //     data: e.formData,
-  //     collection: "{{ coll }}",
-  //     schemapath: selectedSchema,
-  //     action: formaction
-  //   }
-  //   $.ajax({
-  //     method: "POST",
-  //     url: '{{ url_for("metaedit.store_metadata") }}',
-  //     data: JSON.stringify(data),
-  //     collection: "{{ coll }}",
-  //     contentType: "application/json; charset=utf-8",
-  //     dataType: "json",
-  //     success: function () {
-  //       if (formaction == 'save') {
-  //         location.reload();
-  //       } else {
-  //         window.location.replace('{{ url_for("upload.upload_data", coll=coll) }}')
-  //       }
-  //     }
-  //   });
-  // }
-  //   // End of local function
-   
-  // // project metadata schemata
-  //   function load_projectmeta() {
-  //   $.get("{{ url_for('metaedit.schemata_for_project') }}", {
-  //     object: '{{ projectdetails.name }}',
-  //     objecttype: 'project'
-  //   }, function(data) {
-
-  //     $('#projectmeta').removeClass('pending')
-  //     $('#projectmeta').html(data);
-  //   });
-  // }
-
-  //   // dataset metadata schemata
-  //   function load_datasetmeta() {
-  //   $.get("{{ url_for('metaedit.schemata_for_dataset') }}", {
-  //     object: '{{ projectdetails.name }}',
-  //     objecttype: 'dataset'
-  //   }, function(data) {
-
-  //     $('#datasetmeta').removeClass('pending')
-  //     $('#datasetmeta').html(data);
-  //   });
-  // }
-  
   
   $('#project-settings-form').on('submit', function(event) {
     $('#settings').addClass('pending')
@@ -635,61 +494,10 @@ function load_users() {
     omit_check()
   });
 
-// Wrap in a local function to prevent reloading of variables
-(() => {
-  // Make backend URLs available globally (read by metaedit.js)
-  window.URLS = {
-    metaedit_get_schema_and_data: "{{ url_for('metaedit.get_schema_and_data') }}",
-    metaedit_set_schemata_for_collection: "{{ url_for('metaedit.set_schemata_for_collection') }}"
-  };
-
-  const projectCollection = "{{ projectdetails.default_collection }}";
-  const datasetCollection = "{{ metadata_collection }}";
-  const metadataCollection = "{{ metadata_collection }}";
-
-  // ─────────────────────────────────────────────────────────────
-  //  PROJECT SCHEMATA TABLE
-  // ─────────────────────────────────────────────────────────────
-  $('#project-schemata-table').bootstrapTable({
-    onCheck: (row) => {
-      toggleRow(projectCollection, row.schemapath, "add");
-    },
-    onUncheck: (row) => {
-      toggleRow(projectCollection, row.schemapath, "remove");
-    },
-    onClickRow: (row, $element) => {
-      if (!row.selected) return;
-
-      loadSchema(row.schemapath, metadataCollection);
-
-      $('#project-schemata-table tr').removeClass('highlight');
-      $element.addClass('highlight');
-    },
-  });
-
-  // ─────────────────────────────────────────────────────────────
-  //  DATASET SCHEMATA TABLE 
-  // ─────────────────────────────────────────────────────────────
-  $('#dataset-schemata-table').bootstrapTable({
-    onCheck: (row) => {
-      toggleRow(datasetCollection, row.schemapath, "add");
-    },
-    onUncheck: (row) => {
-      toggleRow(datasetCollection, row.schemapath, "remove");
-    },
-    onClickRow: (row, $element) => {
-      if (!row.selected) return;
-
-      loadSchema(row.schemapath, metadataCollection);
-
-      $('#dataset-schemata-table tr').removeClass('highlight');
-      $element.addClass('highlight');
-    },
-  });
-
   // ─────────────────────────────────────────────────────────────
   //  PROJECT CLICK HANDLING 
   // ─────────────────────────────────────────────────────────────
+  //(() => {
   $(document).on("click", ".projectname", function () {
     const project = $(this).data("projectname");
 
@@ -715,6 +523,6 @@ function load_users() {
       }
     );
   });
-})();
+//})();
 </script>
 

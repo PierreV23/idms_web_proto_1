@@ -90,11 +90,11 @@ def schemata_for_project():
     '''
         Schemata for a project
     '''
-    meta_schemata_collection = request.args.get('project_name')
+    project_name = request.args.get('project_name')
+    meta_schemata_collection = Path('/', current_user.irods_zone, SCHEMATA_BASE_PATH, PROJECT_SCHEMATA_PATH, project_name)
     meta_values_collection = request.args.get('collection')
-    meta_default_values_collection = request.args.get('collection')
     objecttype = 'project'
-    return schemata(meta_schemata_collection, meta_values_collection, meta_default_values_collection, objecttype)
+    return schemata(meta_schemata_collection, meta_values_collection, objecttype)
 
 
 @bp.route('/schemata_dataset')
@@ -102,8 +102,8 @@ def schemata_for_dataset():
     '''
         Schemata for a dataset, in a project or in the home directory of current user
     '''
-    meta_schemata_collection_name = request.args.get('project_name', '')
-    meta_schemata_collection = Path('/', current_user.irods_zone, SCHEMATA_BASE_PATH, DATASET_SCHEMATA_PATH, meta_schemata_collection_name)
+    project_name = request.args.get('project_name', '')
+    meta_schemata_collection = Path('/', current_user.irods_zone, SCHEMATA_BASE_PATH, DATASET_SCHEMATA_PATH, project_name)
     meta_values_collection = request.args.get('collection')
     objecttype = 'dataset'
     return schemata(meta_schemata_collection, meta_values_collection, objecttype)
@@ -116,9 +116,8 @@ def schemata_for_reference_dataset():
     '''
     meta_schemata_collection = request.args.get('collection')
     meta_values_collection = request.args.get('collection')
-    meta_default_values_collection = request.args.get('collection')
     objecttype = 'reference_dataset'
-    return schemata(meta_schemata_collection, meta_values_collection, meta_default_values_collection, objecttype)
+    return schemata(meta_schemata_collection, meta_values_collection, objecttype)
 
 
 def schemata(meta_schemata_collection :str, meta_values_collection :str, objecttype :str):
@@ -162,9 +161,10 @@ def store_metadata():
     collection = request.json.get('collection')
     data = request.json.get('data')
     schemapath = request.json.get('schemapath')
-    if not (collection and data and schemapath):
+    prefix = request.json.get('prefix')
+    if not (collection and data and schemapath and prefix):
         return jsonify({}), 500
-    store_collection_metadata_structured(collection, data, schemapath)
+    store_collection_metadata_structured(collection, data, schemapath, prefix)
     return jsonify({'result': 'OK'}), 200
 
 
@@ -211,6 +211,7 @@ def get_schema_and_data():
     content = "{}"
     uiSchema = "{}"
     data = "{}"
+    prefix = request.args.get('prefix')
     schemapath = request.args.get('schemapath')
     # find collection where project metadata is located
     meta_default_values_collection = request.args.get('meta_default_values_collection')
@@ -232,15 +233,15 @@ def get_schema_and_data():
                 pass
     default_data = {}
     if meta_default_values_collection:
-        default_data = get_collection_metadata_structured(meta_default_values_collection).get(schemapath, {})
+        default_data = get_collection_metadata_structured(meta_default_values_collection, prefix).get(schemapath, {})
     
-    used_data = get_collection_metadata_structured(meta_values_collection).get(schemapath, {})
+    used_data = get_collection_metadata_structured(meta_values_collection, prefix).get(schemapath, {})
     # first take all values from default, then add or overwrite values from used data
     data = default_data | used_data
     return { 'schema': content, 'uiSchema': uiSchema, 'data': json.dumps(data) }
 
 
-def get_collection_metadata_structured(collection :str) -> dict:
+def get_collection_metadata_structured(collection :str, prefix :str) -> dict:
     ''' 
         Get schema metadata from a collection
         
@@ -248,14 +249,14 @@ def get_collection_metadata_structured(collection :str) -> dict:
         
         Use jsonavu package to retrieve metadata structure
     '''
-    start = len(ATTR_UPLOAD_PREFIX)
+    start = len(prefix)
     collection_metadata = iqry.qcollmeta(collection)
     jsonavu_metadata = [
         {
             'a': record[CollectionMeta.name][start:],
             'v': record[CollectionMeta.value],
             'u': record[CollectionMeta.units]
-        } for record in collection_metadata if record[CollectionMeta.name].startswith(ATTR_UPLOAD_PREFIX)
+        } for record in collection_metadata if record[CollectionMeta.name].startswith(prefix)
     ]
     data = jsonavu.avu2json(jsonavu_metadata, '0') or {}
     return data
@@ -271,7 +272,7 @@ def remove_collection_metadata(collection, prefix):
             iqry.delcollmeta(collection, record[CollectionMeta.name])
 
 
-def store_collection_metadata_structured(collection, data, schemapath):
+def store_collection_metadata_structured(collection, data, schemapath, prefix):
     ''' 
         Store schema metadata from a collection
 
@@ -279,9 +280,9 @@ def store_collection_metadata_structured(collection, data, schemapath):
 
         Does not modify data from other schemata
     '''
-    existing_data = get_collection_metadata_structured(collection)
+    existing_data = get_collection_metadata_structured(collection, prefix)
     existing_data[schemapath] = data
-    jsonavu_metadata = jsonavu.json2avu(existing_data, '0')
-    remove_collection_metadata(collection, ATTR_UPLOAD_PREFIX)
+    jsonavu_metadata = jsonavu.json2avu(existing_data, '0')  # Why 0?
+    remove_collection_metadata(collection, prefix)
     for avu in jsonavu_metadata:
-        iqry.scollmetaval(collection, f"{ATTR_UPLOAD_PREFIX}{avu['a']}", avu['v'], avu['u'])
+        iqry.scollmetaval(collection, f"{prefix}{avu['a']}", avu['v'], avu['u'])
