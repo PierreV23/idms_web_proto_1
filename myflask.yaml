@@ -1,8 +1,6 @@
 name: myflask
 channels:
   - conda-forge
-  - bioconda
-  - defaults
 dependencies:
   - _libgcc_mutex=0.1
   - _openmp_mutex=4.5
@@ -120,7 +118,7 @@ dependencies:
   - markupsafe=3.0.3
   - marshmallow=4.1.0
   - marshmallow-sqlalchemy=1.4.2
-  - msgspec=0.19.0
+  - msgspec=0.20.0
   - ncurses=6.5
   - openldap=2.6.10
   - openssl=3.6.0
