@@ -12,11 +12,13 @@ from pathlib import Path
 
 bp = Blueprint('metaedit', __name__, url_prefix='/metaedit')
 
-PROJECT_ATTRS = ['user::upload::settings::projectID']
+#PROJECT_ATTRS = ['user::upload::settings::projectID']
 ATTR_SCHEMA_IN_USE = 'user::schema_in_use'
-ATTR_SCHEMA_DEFAULT = 'user::schema_default'
-ATTR_UPLOAD_PREFIX = 'user::meta::'
-ATTR_UPLOAD_DEFAULT_PREFIX = 'user::default_metadata::'
+
+#ATTR_UPLOAD_PREFIX = 'user::metadata::'
+
+#THIS HAS TO BE THE SAME AS IN PROJECTDETAIL.HTML WHERE WE RENDER THE COMPONENT TO SET DEFAULT-METADATA!!!!
+ATTR_UPLOAD_DEFAULT_PREFIX = 'default_metadata::'
 
 def schemapath_abs(schemapath_rel):
     ''' 
@@ -185,7 +187,8 @@ def set_schemata_for_collection():
     collection = request.json.get('collection')
     schemapath = request.json.get('schemapath')
     action = request.json.get('action')
-    print(collection, schemapath, action)
+    prefix = request.json.get('prefix')
+    print(collection, schemapath, action, prefix)
     if not (collection and schemapath and action):
         return jsonify({}), 500
     if action == 'add':
@@ -193,8 +196,8 @@ def set_schemata_for_collection():
     if action == 'remove':
         # TODO: Remove the related metadata
         iqry.delcollmeta(collection, attr_type, schemapath)
-        store_collection_metadata_structured(collection, None, schemapath)
-        remove_collection_metadata(collection, ATTR_UPLOAD_PREFIX+schemapath)
+        store_collection_metadata_structured(collection, None, schemapath, prefix) #ATTR_UPLOAD_PREFIX)
+        remove_collection_metadata(collection, prefix+schemapath)
     return jsonify({ 'result': 'OK' }), 200
 
 

@@ -1,3 +1,5 @@
+
+{% import 'components/metadata.html' as metadata_widget %}
 <script>
 var formaction = 'default';
 
@@ -203,13 +205,12 @@ function update_process(sourceElem, destElem) {
     </div>
 
     <!-- Project Metadata -->
-    <div class="tab-pane h-100 scroll" id="projectmeta" role="tabpanel" aria-labelledby="projectmeta-tab">
-      {% import 'components/metadata.html' as metadata_widget %}
+    <div class="tab-pane" id="projectmeta" role="tabpanel" aria-labelledby="projectmeta-tab">
 
 
       {{ metadata_widget.render_metadata_editor(
           id="comp_project_metadata_"+projectdetails.name,
-          prefix="user::metadata::",
+          prefix="metadata::",
           project_name=projectdetails.name, 
           collection=projectdetails.default_collection, 
           meta_default_values_collection='',
@@ -219,14 +220,13 @@ function update_process(sourceElem, destElem) {
     </div>
     
     <!-- Dataset Default Metadata -->
-    <div class="tab-pane h-100 scroll" id="datasetmeta" role="tabpanel" aria-labelledby="datasetmeta-tab">
-      {% import 'components/metadata.html' as metadata_widget %}
+    <div class="tab-pane" id="datasetmeta" role="tabpanel" aria-labelledby="datasetmeta-tab">
 
 
       {{ 
         metadata_widget.render_metadata_editor(
             id="comp_default_dataset_metadata_"+projectdetails.name,
-            prefix="user::default_metadata::",
+            prefix="default_metadata::",
             project_name=projectdetails.name, 
             collection=projectdetails.default_collection, 
             meta_default_values_collection='',
