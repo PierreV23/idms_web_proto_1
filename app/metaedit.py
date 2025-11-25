@@ -9,16 +9,10 @@ from app.irodssessions import irods_manager
 from irods.models import CollectionMeta
 from irods.exception import CollectionDoesNotExist
 from pathlib import Path
+from app.constants import * 
 
 bp = Blueprint('metaedit', __name__, url_prefix='/metaedit')
 
-#PROJECT_ATTRS = ['user::upload::settings::projectID']
-ATTR_SCHEMA_IN_USE = 'user::schema_in_use'
-
-#ATTR_UPLOAD_PREFIX = 'user::metadata::'
-
-#THIS HAS TO BE THE SAME AS IN PROJECTDETAIL.HTML WHERE WE RENDER THE COMPONENT TO SET DEFAULT-METADATA!!!!
-ATTR_UPLOAD_DEFAULT_PREFIX = 'default_metadata::'
 
 def schemapath_abs(schemapath_rel):
     ''' 
@@ -186,6 +180,7 @@ def set_schemata_for_collection():
     attr_type = request.json.get('attr_type')
     collection = request.json.get('collection')
     schemapath = request.json.get('schemapath')
+    prefix = ATTR_UPLOAD_PREFIX
     action = request.json.get('action')
     prefix = request.json.get('prefix')
     print(collection, schemapath, action, prefix)
@@ -196,8 +191,8 @@ def set_schemata_for_collection():
     if action == 'remove':
         # TODO: Remove the related metadata
         iqry.delcollmeta(collection, attr_type, schemapath)
-        store_collection_metadata_structured(collection, None, schemapath, prefix) #ATTR_UPLOAD_PREFIX)
-        remove_collection_metadata(collection, prefix+schemapath)
+        store_collection_metadata_structured(collection, None, schemapath, prefix)
+        remove_collection_metadata(collection, prefix + schemapath)
     return jsonify({ 'result': 'OK' }), 200
 
 

@@ -1,5 +1,5 @@
 
-{% import 'components/metadata.html' as metadata_widget %}
+{% import 'components/metadata_editor.html' as metadata_widget %}
 <script>
 var formaction = 'default';
 
@@ -163,49 +163,49 @@ function update_process(sourceElem, destElem) {
       {% endif %}
       <form id="project-settings-form" action="update_project" method="post">
         <input type="hidden" id="action" name="action" value="update_project">
-        <input type="hidden" id="project" name="project" value="{{projectdetails.name}}">
+        <input type="hidden" id="project" name="project" value="{{ projectdetails.name }}">
         <div class="form-group">
-          <label for="project_desc_{{projectdetails.name}}">Description</label>
-          <input type="text" class="form-control" name="description" id="project_desc_{{projectdetails.name}}" placeholder="Description"
+          <label for="project_desc_{{ projectdetails.name }}">Description</label>
+          <input type="text" class="form-control" name="description" id="project_desc_{{ projectdetails.name }}" placeholder="Description"
             value="{{ projectdetails.description }}" {% if not project_permissions.managers %}disabled{% endif %}>
         </div>
 
         <div class="form-group">
-          <label for="default_collection_{{projectdetails.name}}">Default Collection</label>
-          <input type="text" class="form-control" name="default_collection" id="default_collection_{{projectdetails.name}}"
+          <label for="default_collection_{{ projectdetails.name }}">Default Collection</label>
+          <input type="text" class="form-control" name="default_collection" id="default_collection_{{ projectdetails.name }}"
             placeholder="Default collection" value="{{ projectdetails.default_collection }}" {% if not project_permissions.managers
             %}disabled{% endif %}>
         </div>
 
         <div class="form-check">
-          <input type="checkbox" class="form-check-input" name="public" id="public_{{projectdetails.name}}" placeholder="Public Data"
+          <input type="checkbox" class="form-check-input" name="public" id="public_{{ projectdetails.name }}" placeholder="Public Data"
             value="1" {% if projectdetails.public %}checked {% endif %} {% if not project_permissions.managers %}disabled{% endif %}>
-          <label for="public_{{projectdetails.name}}">Public Data</label>
+          <label class="form-check-label" for="public_{{ projectdetails.name }}">Public Data</label>
         </div>
-        <div class="form-check">
+        <div class="form-check mb-3">
           <input type="checkbox" class="form-check-input" data-enable="input-svc" name="pipelines"
-            id="pipelines_{{projectdetails.name}}" placeholder="Use pipelines" value="1" {% if projectdetails.pipelines %}checked {% endif %} {% if
+            id="pipelines_{{ projectdetails.name }}" placeholder="Use pipelines" value="1" {% if projectdetails.pipelines %}checked {% endif %} {% if
             not project_permissions.managers %}disabled{% endif %}>
-          <label for="pipelines_{{projectdetails.name}}">Use Pipelines</label>
+          <label class="form-check-label" for="pipelines_{{ projectdetails.name }}">Use Pipelines</label>
         </div>
 
         <div class="form-group input-svc" {% if not projectdetails.pipelines %} hidden {% endif %}>
-          <label for="service_account_{{projectdetails.name}}">Service Account (generated automatically)</label>
-          <input type="text" class="form-control" name="service_account" id="service_account_{{projectdetails.name}}"
+          <label for="service_account_{{ projectdetails.name }}">Service Account (generated automatically)</label>
+          <input type="text" class="form-control" name="service_account" id="service_account_{{ projectdetails.name }}"
             placeholder="Service Account" value="{{ projectdetails.service_account }}" disabled>
         </div>
         <hr>
         {% if project_permissions.managers%}
         <button type="submit" class="btn btn-primary">Submit</button>
         {% endif %}
-        <!-- <button type="button" class="btn btn-primary" data-href="/remove_project?name={{projectdetails.name}}" data-toggle="modal" data-target="#confirm-delete">
+        <!-- <button type="button" class="btn btn-primary" data-href="/remove_project?name={{ projectdetails.name }}" data-toggle="modal" data-target="#confirm-delete">
               Remove project
             </button> -->
       </form>
     </div>
 
     <!-- Project Metadata -->
-    <div class="tab-pane" id="projectmeta" role="tabpanel" aria-labelledby="projectmeta-tab">
+    <div class="tab-pane h-100 scroll" id="projectmeta" role="tabpanel" aria-labelledby="projectmeta-tab">
 
 
       {{ metadata_widget.render_metadata_editor(
@@ -220,7 +220,7 @@ function update_process(sourceElem, destElem) {
     </div>
     
     <!-- Dataset Default Metadata -->
-    <div class="tab-pane" id="datasetmeta" role="tabpanel" aria-labelledby="datasetmeta-tab">
+    <div class="tab-pane h-100 scroll" id="datasetmeta" role="tabpanel" aria-labelledby="datasetmeta-tab">
 
 
       {{ 
@@ -344,12 +344,12 @@ function update_process(sourceElem, destElem) {
                 Remove project
             </div>
             <div class="modal-body">
-                Are you sure you want to remove project {{projectdetails.name}}
+                Are you sure you want to remove project {{ projectdetails.name }}
             </div>
             <div class="modal-footer">
                 <form method="post" action="update_project">
                 <input type="hidden" id="action_remove_project" name="action" value="remove_project">
-                <input type="hidden" id="project" name="project" value="{{projectdetails.name}}">
+                <input type="hidden" id="project" name="project" value="{{ projectdetails.name }}">
                 <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                 <button type="submit" class="btn btn-danger btn-ok">Delete</a>
                 </form>
