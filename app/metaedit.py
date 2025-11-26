@@ -253,7 +253,7 @@ def remove_collection_metadata(collection, prefix):
         if record[CollectionMeta.name].startswith(prefix):
             iqry.delcollmeta(collection, record[CollectionMeta.name])
 
-s
+
 def store_collection_metadata_structured(collection, data, schemapath, prefix):
     """ Store schema metadata from a collection
 
