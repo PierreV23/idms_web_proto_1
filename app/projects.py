@@ -94,13 +94,14 @@ def show_projects():
 
 @bp.route('/details')
 def show_projectdetails():
-    """
-    Shows page with project settings and processes belonging to a project
+    """ 
+    Shows page with project settings, metadata and processes belonging to a project
     """
     projectname = request.args.get('project_name', '', type=str)
     processname = request.args.get('process', '', type=str)
     processgroup = request.args.get('processgroup', 'default', type=str)
     projectdetails, result = rest_call('GET', 'projects/{}'.format(projectname))
+    
     # Retrieve groups associated with project
     with irods_manager.session() as session:
         query = session.query(User.name).filter(
@@ -109,14 +110,24 @@ def show_projectdetails():
                     Criterion('=', UserMeta.value, projectname)).order_by(User.name)
         groups = [u[User.name] for u in query]
     projectdetails['groups'] = groups
-
+    
+    # to prevent break if no projectdetails available yet 
+    try:
+        metadata_collection=projectdetails['default_collection']
+    except Exception as e:
+        print(e)
+        metadata_collection=''
+    
     processing = iso2dt(projectdetails.get('last_updated', EPOCH)) > iso2dt(projectdetails.get('last_verified', EPOCH))
     return render_template('projectdetails.html', projectdetails=projectdetails, processing=processing,
                            processname=processname, processgroup=processgroup, project_permissions=project_permissions(projectname),
-                           metadata_collection=projectdetails['default_collection'])
+                           metadata_collection=metadata_collection)
+
 
 @bp.route('_projectcolls')
 def projectcolls():
+    """
+    """
     projectname = request.args.get('project', '', type=str)
     offset = request.args.get('offset', 0, type=int)
     limit = request.args.get('limit', 999, type=int)
@@ -129,20 +140,20 @@ def projectcolls():
 
     c_sortkey = COLL_KEY_MAP.get(sortkey, 'coll_name')
 
-# Create collection and data filters
+    # Create collection and data filters
     filters = json.loads(filterstr)
     qc_filters = [Criterion('=', CollectionMeta.name, 'projectID'), Criterion('=', CollectionMeta.value, projectname)]
     if 'displayname' in filters:
         qc_filters.append(Criterion('like', Collection.name, f'%{filters["displayname"]}%'))
 
-# Get item counts
+    # Get item counts
     qc_count = irods_session.query(Collection.id)
     for qc_filter in qc_filters:
         qc_count = qc_count.filter(qc_filter)
     coll_count = next(qc_count.count(Collection.id).get_results())[Collection.id]
 
-    results = { 'total': coll_count , 'rows': []}
-# Query for collection subcollections
+    results = { 'total': coll_count, 'rows': []}
+    # Query for collection subcollections
 
     q1 = irods_session.query(Collection)
     for qc_filter in qc_filters:
@@ -168,6 +179,8 @@ def projectcolls():
 
 @bp.route('_projectcolltable')
 def projectcolltable():
+    """
+    """
     projectname = request.args.get('project', '', type=str)
     options = {
         'download_btn': False,
@@ -242,13 +255,6 @@ def update_projectsettings():
                 data[attr] = requestdata[attr]
         rest_call('PUT', 'projects/{}'.format(project), data=data)
         location=f'project={project}'
-    elif action == 'update_project_meta':
-        data = { 'pipelines': '0', 'public': '0' }
-        for attr in ['description', 'default_collection', 'service_account', 'pipelines', 'public']:
-            if attr in requestdata:
-                data[attr] = requestdata[attr]
-        rest_call('PUT', 'projects/{}'.format(project), data=data)
-        location=f'project={project}'
     elif action == 'add_project':
         response, result = rest_call('POST', 'projects'.format(project), data={'name': project})
         if result == 202:
@@ -264,6 +270,8 @@ def update_projectsettings():
 
 @bp.route('/_updateproc', methods=['POST'])
 def update_process():
+    """
+    """
     requestdata = request.form.to_dict()
     data = {}
     procid = requestdata.get('procid')
@@ -456,11 +464,11 @@ def pg_list_processref_refdata():
 
 @bp.route('_pg_set_referencedataversion', methods=['GET'])
 def pg_set_referencedataversion():
-    #None or Id of the entry in table refdataversion2processref, that contains the superseeding versionid
+    #None or Id of the entry in table refdataversion2processref, that contains the superseding versionid
     refdataversion2processrefid = request.args.get('refdataversion2processrefid')
-    #either -2 (remove superseedig entry), -1 (convert to null) or the id of a version that will superseeed the process-default
+    #either -2 (remove superseding entry), -1 (convert to null) or the id of a version that will superseed the process-default
     supersedingversionid = int(request.args.get('supersedingversionid'))
-    #the entry-id in refdataversio2processref that defines the default version to use, which will be superseeded by a pg-specific entry
+    #the entry-id in refdataversio2processref that defines the default version to use, which will be superseded by a pg-specific entry
     processdefaultid = request.args.get('processdefaultid')
     project = request.args.get('project')
     group = request.args.get('group')
@@ -510,18 +518,19 @@ def pg_list_referencedataversions():
 
 @bp.route('_pggraph', methods=['GET'])
 def pg_graph():
-    """Generate a graph of process flow
+    """
+    Generate a graph of process flow
 
         Node names:
             name: 'out,<id>', with id being the id from pgprocess
             label: 'out,name', with name being the name from pgprocess
                 if id==0, label='DATA'
-            id: 'out,id,name'
+            id: 'out, id, name'
 
         Process names:
             name: 'proc,<id>', with id being the id from pgprocess
             label: '<name>', with name being the name from pgprocess
-            id: 'proc,id,name'
+            id: 'proc, id, name'
     """
     def add_process(name, procid, selected):
         extra_settings = {}
