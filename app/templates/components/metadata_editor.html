@@ -69,7 +69,8 @@
         schemapath: schemapath,
         action: schema_action,
         meta_default_values_collection: "{{ meta_default_values_collection }}",
-        attr_type: 'user::schema_in_use'
+        attr_type: 'user::schema_in_use',
+        prefix: "{{ prefix }}"
       })
     })
   }
