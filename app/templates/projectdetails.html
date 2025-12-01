@@ -1,5 +1,9 @@
 
 {% import 'components/metadata_editor.html' as metadata_widget %}
+<!--This version of bootstrap is needed to get the metadata forms working-->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css"
+  integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"> 
+
 <script>
 var formaction = 'default';
 
@@ -52,8 +56,7 @@ function load_dataset_meta() {
 //   }
 //   if (target == "#collections") {
 //     load_colls();
-//   }
-//   // if (target == "#projectmeta") {
+//
 //   //   alert('hi');
 //   //   load_project_meta();
 //   // }
@@ -180,13 +183,13 @@ function update_process(sourceElem, destElem) {
         <div class="form-check">
           <input type="checkbox" class="form-check-input" name="public" id="public_{{ projectdetails.name }}" placeholder="Public Data"
             value="1" {% if projectdetails.public %}checked {% endif %} {% if not project_permissions.managers %}disabled{% endif %}>
-          <label class="form-check-label" for="public_{{ projectdetails.name }}">Public Data</label>
+          <label class="form-check-label m-1 ml-4" for="public_{{ projectdetails.name }}">Public Data</label>
         </div>
         <div class="form-check mb-3">
           <input type="checkbox" class="form-check-input" data-enable="input-svc" name="pipelines"
             id="pipelines_{{ projectdetails.name }}" placeholder="Use pipelines" value="1" {% if projectdetails.pipelines %}checked {% endif %} {% if
             not project_permissions.managers %}disabled{% endif %}>
-          <label class="form-check-label" for="pipelines_{{ projectdetails.name }}">Use Pipelines</label>
+          <label class="form-check-label m-1 ml-4" for="pipelines_{{ projectdetails.name }}">Use Pipelines</label>
         </div>
 
         <div class="form-group input-svc" {% if not projectdetails.pipelines %} hidden {% endif %}>
