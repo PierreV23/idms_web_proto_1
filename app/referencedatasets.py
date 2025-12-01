@@ -117,12 +117,16 @@ def show_reference_details():
     if r != 200:
         available_tags = []
 
+
+    collection = f"/{current_user.irods_zone}/{current_user.refdata_coll}/{reference_details['name']}"
+
     return render_template('reference_details.html', 
                            RD=reference_details, 
                            all_references=all_references, 
                            reference_versions=reference_versions, 
                            import_state=import_state,
-                           available_tags=available_tags)
+                           available_tags=available_tags,
+                           collection=collection)
 
 
 @bp.route('/activate_reference', methods=['GET', 'POST'])

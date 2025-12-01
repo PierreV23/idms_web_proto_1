@@ -84,8 +84,7 @@ def schemata_for_project():
     project_name = request.args.get('project_name')
     meta_schemata_collection = Path('/', current_user.irods_zone, SCHEMATA_BASE_PATH, PROJECT_SCHEMATA_PATH, project_name)
     meta_values_collection = request.args.get('collection')
-    objecttype = 'project'
-    return schemata(meta_schemata_collection, meta_values_collection, objecttype)
+    return schemata(meta_schemata_collection, meta_values_collection)
 
 
 @bp.route('/schemata_dataset')
@@ -95,21 +94,20 @@ def schemata_for_dataset():
     project_name = request.args.get('project_name', '')
     meta_schemata_collection = Path('/', current_user.irods_zone, SCHEMATA_BASE_PATH, DATASET_SCHEMATA_PATH, project_name)
     meta_values_collection = request.args.get('collection')
-    objecttype = 'dataset'
-    return schemata(meta_schemata_collection, meta_values_collection, objecttype)
+    return schemata(meta_schemata_collection, meta_values_collection)
 
 
 @bp.route('/schemata_reference')
 def schemata_for_reference_dataset():
     """ Schemata for a reference dataset, so not linked to a project
     """
-    meta_schemata_collection = request.args.get('collection')
+    refdata_name = request.args.get('refdata_name', '')
+    meta_schemata_collection = Path('/', current_user.irods_zone, SCHEMATA_BASE_PATH, REFERENCE_DATASET_SCHEMATA_PATH, refdata_name)
     meta_values_collection = request.args.get('collection')
-    objecttype = 'reference_dataset'
-    return schemata(meta_schemata_collection, meta_values_collection, objecttype)
+    return schemata(meta_schemata_collection, meta_values_collection)
 
 
-def schemata(meta_schemata_collection :str, meta_values_collection :str, objecttype :str):
+def schemata(meta_schemata_collection :str, meta_values_collection :str):
     """ Returns a list of schemata
 
         Request parameter is the upload path
