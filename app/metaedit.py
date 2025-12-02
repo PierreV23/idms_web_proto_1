@@ -204,11 +204,11 @@ def get_schema_and_data():
         obj = session.data_objects.get(schemapath)
         with obj.open('r') as f:
             content = f.read().decode('UTF-8')
-        uiSchemaFile = obj.metadata.get_all(ATTR_UISCHEMA)
-        if uiSchemaFile:
+        # Find the path to a ui schema file, and check for existing ones (ui_ + file_name)
+        uiSchemaPath = os.path.dirname(schemapath) + '/ui/ui_' + os.path.basename(schemapath)
+        if uiSchemaPath:
             try:
-                uiSchemaPath = uiSchemaFile[0].value
-                uiObj =  session.data_objects.get(uiSchemaPath)
+                uiObj = session.data_objects.get(uiSchemaPath)
                 with uiObj.open('r') as f:
                     uiSchema = f.read().decode('UTF-8')
             except:
@@ -219,6 +219,7 @@ def get_schema_and_data():
     
     used_data = get_collection_metadata_structured(meta_values_collection, prefix).get(schemapath, {})
     # first take all values from default, then add or overwrite values from used data
+    #     
     data = default_data | used_data
     return { 'schema': content, 'uiSchema': uiSchema, 'data': json.dumps(data) }
 
