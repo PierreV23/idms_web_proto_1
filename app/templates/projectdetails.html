@@ -48,20 +48,16 @@ function load_dataset_meta() {
   });
 }
 
-// $('.nav2').on('shown.bs.tab', function(event){
-//   target = event.target.getAttribute('href')
-//   activetab = target
-//   if (target == "#processgroups") {
-//     load_pg();
-//   }
-//   if (target == "#collections") {
-//     load_colls();
-//
-//   //   alert('hi');
-//   //   load_project_meta();
-//   // }
-//   console.log(target)
-// })
+$('.nav2').on('shown.bs.tab', function(event){
+  target = event.target.getAttribute('href')
+  activetab = target
+  if (target == "#processgroups") {
+    load_pg();
+  }
+  if (target == "#collections") {
+    load_colls();
+  }
+})
 
 $(document).on('click', '.path-change', function () {
     collection = $(this).data('path');

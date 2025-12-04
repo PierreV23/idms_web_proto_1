@@ -31,8 +31,8 @@
             "items": {
                 "type": "string",
                 "enum": [
-                    "en",
-                    "nl"
+                    "English",
+                    "Dutch"
                 ]
             },
             "minItems": 1,
@@ -161,7 +161,8 @@
             "type": "array",
             "items": {
                 "type": "string"
-            }
+            },
+            "minItems": 3
         },
         "distribution_date": {
             "title": "Distributiedatum",
@@ -760,7 +761,7 @@
             "items": {
                 "type": "string"
             },
-            "minItems": 1,
+            "minItems": 0,
             "maxItems": 1
         },
         "source": {
@@ -801,13 +802,13 @@
     },
     "required": [
         "title",
-        "identifier",
         "metadata_language",
         "author",
         "description",
         "subject",
         "keyword",
         "access_rights",
+		"license",
         "publish_to_external",
         "contact"
     ],

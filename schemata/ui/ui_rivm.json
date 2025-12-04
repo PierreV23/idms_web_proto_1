@@ -1,0 +1,93 @@
+
+{
+  "distribution_date": {
+    "ui:widget": "text",
+    "ui:placeholder": "jjjj-mm-dd"
+  },
+	"time_period": {
+    "items": {
+      "start": {
+        "ui:widget": "text",
+        "ui:placeholder": "jjjj-mm-dd"
+      },
+      "end": {
+        "ui:widget": "text",
+        "ui:placeholder": "jjjj-mm-dd"
+      }
+    }
+  },
+  "modification_date": {
+    "ui:widget": "hidden",
+    "ui:placeholder": "jjjj-mm-dd"
+  },
+	"version":{
+  	"date": {
+    	"ui:widget": "text",
+   	 	"ui:placeholder": "jjjj-mm-dd"
+  	}
+	},
+	"retention_information":{
+	  "start": {
+	    "ui:widget": "text",
+	    "ui:placeholder": "jjjj-mm-dd"
+	  }
+
+	},
+	"process_information":{
+	  "retention_processcategory": {
+	    "ui:widget": "hidden"
+	  }
+
+	},
+  "depositor": {
+    "ui:widget": "hidden"
+  },
+  "legislation": {
+    "ui:widget": "hidden"
+  },
+  "hvd_category_url": {
+    "ui:widget": "hidden"
+  },
+  "hvd_category": {
+    "ui:widget": "hidden"
+  },
+  "download_url": {
+    "ui:widget": "hidden"
+  },
+  "distribution_title": {
+    "ui:widget": "hidden"
+  },
+  "byte_size": {
+    "ui:widget": "hidden"
+  },
+  "format": {
+    "ui:widget": "hidden"
+  },
+  "availability": {
+    "ui:widget": "hidden"
+  },
+  "external_connection_inspire": {
+    "ui:widget": "hidden"
+  },
+  "external_connection_donl": {
+    "ui:widget": "hidden"
+  },
+  "external_connection_ngr": {
+    "ui:widget": "hidden"
+  },
+  "source": {
+    "ui:widget": "hidden"
+  },
+  "metadata_location": {
+    "ui:widget": "hidden"
+  },
+  "skip_review": {
+    "ui:widget": "hidden"
+  },
+  "allow_skip_review": {
+    "ui:widget": "hidden"
+  },
+  "identifier": {
+    "ui:widget": "hidden"
+  }
+}
