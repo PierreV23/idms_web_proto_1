@@ -194,7 +194,7 @@
             "description": "Het geografische gebied waar de data in de dataset over gaat.",
             "type": "array",
             "items": {
-                "type": "object"
+                "type": "string"
             }
         },
         "time_period": {
