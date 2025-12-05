@@ -71,18 +71,22 @@ Use the <A HREF="{{ url_for('ngsruns.run_form')}}">New run</A> menu item to crea
 
    <div class="card border-primary col-md-8 d-nonxe h-100" id="barcodes">
       <div class="card-header d-none" id="barcode-title">
-         <h2 class="alignleft">
-            Barcodes in run <b class="runname"></b> on project
-            <span class="projectname"></span> (<span class="flowcellname"></span><span class="rundescription"></span>)
-         </h2>
-         <button type="button" class="btn btn-danger alignright" id="delete1" data-toggle="modal" data-target="#confirm-delete">Delete</button>
-         <button type="button" class="btn btn-primary alignright" id="edit1">Edit</button>
-       </div>
-       <div class="scroll card-body" id="barcodepane">
+         <div class="alignleft">
+            <h2>
+               Barcodes in run with Run ID <b class="runid"></b>
+            </h2>
+            (Name: <b class="runname"></b>, Flowcell: <b class="flowcellname"></b><span
+                  class="rundescription"></span>)
+         </div>
 
-       </div>
+         <button type="button" class="btn btn-danger alignright" id="delete1" data-toggle="modal"
+            data-target="#confirm-delete">Delete</button>
+         <button type="button" class="btn btn-primary alignright" id="edit1">Edit</button>
+      </div>
+      <div class="scroll card-body" id="barcodepane">
+
+      </div>
    </div>
-</div>
 
 <div id="confirm-delete" class="modal fade" role="dialog">
    <div class="modal-dialog">
@@ -128,6 +132,7 @@ $('document').ready(function(){
          $('#delete1').prop('disabled', true);
       }
       $('#edit1').prop('disabled', (row.datacoll != '') )
+      $('.runid').html(row.id);
       $('.runname').html(row.name);
       $('.flowcellname').html(row.flowcell);
       var row_display = ''
