@@ -53,12 +53,14 @@ $('.unitvalues').css('display', unit);
                 Value Formatted
             </label>
         </div>
+        {% if current_user.feature('metadataunits') %}
         <div class="form-check d-flex align-items-center">
             <input class="form-check-input ml-2" type="checkbox" value="" onchange='avu_table()' id="unittoggle">
             <label class="form-check-label ms-auto" id="unittext" for='unittoggle'>
                 Show Unit
             </label>
         </div>
+        {% endif %}
     </div>
     {% if current_user.settings.get('sysmeta', 'true') == 'false' %}
     <div class="small-bar"><i>System metadata is not shown (<a href="{{ url_for('settings') }}">settings</a>)</i>
@@ -72,7 +74,9 @@ $('.unitvalues').css('display', unit);
                 <tr>
                     <th>Attribute</th>
                     <th>Value</th>
+                    {% if current_user.feature('metadataunits') %}
                     <th class="unitvalues"  style="display:none;">Unit</th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody>
@@ -82,7 +86,9 @@ $('.unitvalues').css('display', unit);
                 <td> {{ entry.name }} </td>
                 <td class="rawvalues" style="display:none;">{{ entry.value }}</td>
                 <td class="formatvalues"> {{ entry.htmlstring|safe }} </td>
+                {% if current_user.feature('metadataunits') %}
                 <td class="unitvalues" style="display:none;"> {{ entry.datatype or '' }} </td>
+                {% endif %}
             </tr>
         {% endfor %}
             </tbody>
@@ -95,7 +101,9 @@ $('.unitvalues').css('display', unit);
                 <tr>
                     <th>Attribute</th>
                     <th>Value</th>
+                    {% if current_user.feature('metadataunits') %}
                     <th class="unitvalues" style="display:none;">Unit</th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody>
@@ -104,7 +112,9 @@ $('.unitvalues').css('display', unit);
                 <td> {{ entry.name }} </td>
                 <td class="rawvalues" style="display:none;">{{ entry.value }}</td>
                 <td class="formatvalues"> {{ entry.htmlstring|safe }} </td>
+                {% if current_user.feature('metadataunits') %}
                 <td class="unitvalues" style="display:none;"> {{ entry.datatype or '' }} </td>
+                {% endif %}
             </tr>
         {% endfor %}
             </tbody>
