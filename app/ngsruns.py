@@ -177,10 +177,6 @@ class Kits(Base):
         self.kit = kit
         if end_date:
             self.end_date = end_date
-class NGSRunsSchema(ma.Schema):
-    id = fields.Integer(dump_only=True)
-    name = fields.String(required=True, validate=validate.Length(1))
-    flowcell = fields.String(required=True)
 
 class NGSRunSchema(ma.Schema):
     id = fields.Integer(dump_only=True)
@@ -204,7 +200,7 @@ class KitsSchema(ma.Schema):
     kit = fields.String(required=True, validate=validate.Length(1))
 
 ngsrun_schema = NGSRunSchema()
-ngsruns_schema = NGSRunsSchema(many=True)
+ngsruns_schema = NGSRunSchema(many=True)
 barcodes_schema = NGSBarcodesSchema(many=True)
 kits_schema = KitsSchema()
 
