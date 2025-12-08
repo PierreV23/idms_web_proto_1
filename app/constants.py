@@ -15,7 +15,8 @@ FEATURES = {
     'reference': ('Show reference data configuration', 'false'),
     'sharing': ('Configure datasets that need to be shared externally', 'false'),
     'minilims': ('Show ONT samplesheet configuration interface', 'false'),
-    'treeview': ('Use treeview in collection browser instead of project list', 'false')
+    'treeview': ('Use treeview in collection browser instead of project list', 'false'),
+    'metadataunits': ('Show option to display unit column in metadata table', 'false')
 }
 
 COLL_KEY_MAP = {

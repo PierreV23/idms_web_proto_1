@@ -268,18 +268,6 @@ menuname='collectionbrowser'
     })
   }
 
-  function avu_table() {
-    if ( $("#metatoggle").is(':checked') ) {
-      d2 = 'table-cell';
-      d1 = 'none'
-    } else {
-      d1 = 'table-cell';
-      d2 = 'none'
-    }
-    $('.rawvalues').css('display', d1);
-    $('.formatvalues').css('display', d2);
-  }
-
   function build_title() {
     path_elem_list = collection.split('/')
     title_object = selected_object.split('/').pop()
