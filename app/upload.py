@@ -214,31 +214,6 @@ def upload_settings():
             return redirect(url_for('upload.upload_settings', coll=coll))
 
 
-#POST (not very RESTful, but doesnt show up in history)
-@bp.route('_getschema', methods=['POST'])
-def get_schema():
-    content = "{}"
-    uiSchema = "{}"
-    if request.method == 'POST':
-        schemaFile = request.data.decode('UTF-8')
-        print(f'GET {schemaFile}')
-        if schemaFile:
-            with irods_manager.session() as session:
-                obj = session.data_objects.get( schemaFile )
-                with obj.open('r') as f:
-                    content = f.read().decode('UTF-8')
-                uiSchemaFile = obj.metadata.get_all(ATTR_UISCHEMA)
-                if uiSchemaFile:
-                    try:
-                        uiSchemaPath = uiSchemaFile[0].value
-                        uiObj =  session.data_objects.get(uiSchemaPath)
-                        with uiObj.open('r') as f:
-                            uiSchema = f.read().decode('UTF-8')
-                    except:
-                        pass
-    return { 'schema': content, 'uiSchema': uiSchema }
-
-
 @bp.route('_uploadmeta', methods=['GET', 'POST'])
 def upload_meta():
     if request.method == 'GET':
