@@ -398,26 +398,6 @@ function load_users() {
     })
   });
 
-
-  function omit_check() {
-    console.log("Check")
-    if ($('input[name="do_bringonline"]').is(":checked")) {
-      $('input[name="do_staging').prop('disabled', false)
-    } else {
-      $('input[name="do_staging').prop('disabled', true).prop('checked', false)
-    }
-  }
-
-  $('input[name="do_bringonline"]').on('click', omit_check );
-
-  $('document').ready( function() {
-    $('.form-check-input').on('change', function() {
-      classname = $(this).data('enable')
-      $('.' + classname).attr('hidden', !$(this).prop('checked'))
-    })
-    omit_check()
-  });
-
   // ─────────────────────────────────────────────────────────────
   //  PROJECT CLICK HANDLING 
   // ─────────────────────────────────────────────────────────────

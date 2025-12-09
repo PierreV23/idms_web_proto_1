@@ -180,12 +180,12 @@
     load_refdata();
   });
 
-
+  // Disable checkbox 'Download data from iRODS to input directory' in Processes
   function omit_check() {
     if ($('input[name="do_bringonline"]').is(":checked")) {
-      $('input[name="do_staging').prop('disabled', false)
+      $('input[name="do_staging"]').prop('disabled', false)
     } else {
-      $('input[name="do_staging').prop('disabled', true).prop('checked', false)
+      $('input[name="do_staging"]').prop('disabled', true).prop('checked', false)
     }
   }
 
