@@ -150,20 +150,21 @@
       ),
       document.getElementById(element),
       () => {
-        // 🔒 Disable form entries when edit not allowed
+        // Disable form entries when editing is not allowed
         {% if edit_allowed == 'false' %}
         const frm = $("#{{ id }}-metaForm");
         frm.find("input, select, textarea, button").prop("disabled", true);
+        // Disable submit button
         $('.formsubmit').prop("disabled", true);
         {% endif %}
       }
     );
   }
   
-  // Disable checkbox in schemata list
+  // Disable checkbox in schemata list when edit not allowed
   {% if edit_allowed == 'false' %}
-  $('#{{id}}-schemata-table').on('post-body.bs.table', function() {
-      $('#{{id}}-schemata-table .bs-checkbox input').addClass('disabled-checkbox').prop('disabled', true);
+  $('#{{ id }}-schemata-table').on('post-body.bs.table', function() {
+      $('#{{ id }}-schemata-table .bs-checkbox input').addClass('disabled-checkbox').prop('disabled', true);
   });
   {% endif %}
   
