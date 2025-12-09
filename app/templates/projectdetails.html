@@ -398,35 +398,5 @@ function load_users() {
     })
   });
 
-  // ─────────────────────────────────────────────────────────────
-  //  PROJECT CLICK HANDLING 
-  // ─────────────────────────────────────────────────────────────
-  //(() => {
-  $(document).on("click", ".projectname", function () {
-    const project = $(this).data("projectname");
-
-    $(".projectname").removeClass("highlight");
-    $(".processname").removeClass("highlight");
-    $(".activeproject").html(project);
-    $(this).addClass("highlight");
-
-    $("#details").html(
-      '<center><img src="{{ url_for("static", filename="img/loading.gif") }}" width="30%"></center>'
-    );
-    console.log("Active_tab: {{ activetabname }}")
-    $.get(
-      "{{ url_for('projects.show_projectdetails') }}",
-      {
-        name: project,
-        project_name: project,
-        processgroup: "{{ processgroup }}",
-      },
-      function (data) {
-        $("#details").html(data);
-        $("a[id='{{ activetabname }}-tab']").trigger("click");
-      }
-    );
-  });
-//})();
 </script>
 
