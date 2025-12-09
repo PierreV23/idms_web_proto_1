@@ -17,7 +17,7 @@ from irods.column import Criterion
 from app.datafield import datafield
 from graphviz import Digraph
 from . import iqry
-from app.constants import COLL_KEY_MAP
+from app.constants import COLL_KEY_MAP, ATTR_UPLOAD_DEFAULT_PREFIX, ATTR_METADATA
 from app.irodssessions import irods_manager
 from .projectdb_api import EPOCH, iso2dt, search, rest_call, add_checkbox
 
@@ -65,7 +65,6 @@ def get_process2list():
     return processes
 
 
-
 @bp.route('/')
 @login_required
 def show_projects():
@@ -101,6 +100,9 @@ def show_projectdetails():
     processname = request.args.get('process', '', type=str)
     processgroup = request.args.get('processgroup', 'default', type=str)
     projectdetails, result = rest_call('GET', 'projects/{}'.format(projectname))
+    # Set metadata and default metadata upload prefix
+    metadata_prefix = ATTR_METADATA
+    upload_default_prefix = ATTR_UPLOAD_DEFAULT_PREFIX
     
     # Retrieve groups associated with project
     with irods_manager.session() as session:
@@ -121,8 +123,8 @@ def show_projectdetails():
     processing = iso2dt(projectdetails.get('last_updated', EPOCH)) > iso2dt(projectdetails.get('last_verified', EPOCH))
     return render_template('projectdetails.html', projectdetails=projectdetails, processing=processing,
                            processname=processname, processgroup=processgroup, project_permissions=project_permissions(projectname),
-                           metadata_collection=metadata_collection)
-
+                           metadata_collection=metadata_collection, 
+                           metadata_prefix=metadata_prefix, upload_default_prefix=upload_default_prefix)
 
 @bp.route('_projectcolls')
 def projectcolls():

@@ -4,12 +4,17 @@ import jsonavu
 from flask import Blueprint, render_template, request, jsonify, url_for
 from flask_login import current_user
 from app import iqry
-from app.constants import ATTR_UISCHEMA, SCHEMATA_BASE_PATH, DATASET_SCHEMATA_PATH, PROJECT_SCHEMATA_PATH, REFERENCE_DATASET_SCHEMATA_PATH
+from app.constants import (SCHEMATA_BASE_PATH, 
+                            DATASET_SCHEMATA_PATH, 
+                            PROJECT_SCHEMATA_PATH, 
+                            REFERENCE_DATASET_SCHEMATA_PATH,
+                            ATTR_SCHEMA_IN_USE, 
+                            ATTR_UPLOAD_DEFAULT_PREFIX, 
+                            ATTR_UPLOAD_PREFIX)
 from app.irodssessions import irods_manager
 from irods.models import CollectionMeta
 from irods.exception import CollectionDoesNotExist
 from pathlib import Path
-from app.constants import * 
 
 bp = Blueprint('metaedit', __name__, url_prefix='/metaedit')
 

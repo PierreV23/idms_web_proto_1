@@ -15,7 +15,7 @@ from irods.column import Criterion
 from app.datafield import datafield
 from graphviz import Digraph
 from . import iqry
-from app.constants import COLL_KEY_MAP
+from app.constants import COLL_KEY_MAP, ATTR_METADATA
 from app.irodssessions import irods_manager
 from .projectdb_api import EPOCH, iso2dt, search, rest_call, add_checkbox
 from datetime import datetime
@@ -116,8 +116,10 @@ def show_reference_details():
     available_tags, r = rest_call('GET', f'reference/{reference_id}/tags')
     if r != 200:
         available_tags = []
-
-
+    
+    # Set prefix for metadata
+    metadata_prefix = ATTR_METADATA
+    
     collection = f"/{current_user.irods_zone}/{current_user.refdata_coll}/{reference_details['name']}"
 
     return render_template('reference_details.html', 
@@ -126,7 +128,8 @@ def show_reference_details():
                            reference_versions=reference_versions, 
                            import_state=import_state,
                            available_tags=available_tags,
-                           collection=collection)
+                           collection=collection,
+                           prefix=metadata_prefix)
 
 
 @bp.route('/activate_reference', methods=['GET', 'POST'])

@@ -41,12 +41,9 @@ REFERENCE_DATASET_SCHEMATA_PATH = 'referencedata'
 # attributes used for metadata 
 PROJECT_ATTRS = ['user::upload::settings::projectID']
 ATTR_SCHEMA_IN_USE = 'user::schema_in_use'
-ATTR_SCHEMA_DEFAULT = 'user::schema_default'
 ATTR_UPLOAD_PREFIX = 'user::metadata::'
-
-#THIS HAS TO BE THE SAME AS IN PROJECTDETAIL.HTML WHERE WE RENDER THE COMPONENT TO SET DEFAULT-METADATA!!!!
 ATTR_UPLOAD_DEFAULT_PREFIX = 'default_metadata::'
-
+ATTR_METADATA = "metadata::"
 
 # Constants that define the JOB VIEW
 JOB_PAGE_SIZE = 25

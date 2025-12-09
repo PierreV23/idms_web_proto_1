@@ -200,7 +200,7 @@
 
       {{ metadata_widget.render_metadata_editor(
           id="comp_refdata_metadata_"+RD.name,
-          prefix="metadata::",
+          prefix=metadata_prefix,
           project_name=RD.name, 
           collection=collection, 
           meta_default_values_collection='',

@@ -205,34 +205,30 @@ function update_process(sourceElem, destElem) {
 
     <!-- Project Metadata -->
     <div class="tab-pane h-100 scroll" id="projectmeta" role="tabpanel" aria-labelledby="projectmeta-tab">
-
-
-      {{ metadata_widget.render_metadata_editor(
+      {{ 
+        metadata_widget.render_metadata_editor(
           id="comp_project_metadata_"+projectdetails.name,
-          prefix="metadata::",
+          prefix=metadata_prefix,
           project_name=projectdetails.name, 
           collection=projectdetails.default_collection, 
           meta_default_values_collection='',
           schemata_data_url=url_for('metaedit.schemata_for_project', collection=projectdetails.default_collection, project_name=projectdetails.name)
-      ) }}
-
+          ) 
+      }}
     </div>
     
     <!-- Dataset Default Metadata -->
     <div class="tab-pane h-100 scroll" id="datasetmeta" role="tabpanel" aria-labelledby="datasetmeta-tab">
-
-
       {{ 
         metadata_widget.render_metadata_editor(
             id="comp_default_dataset_metadata_"+projectdetails.name,
-            prefix="default_metadata::",
+            prefix=upload_default_prefix,
             project_name=projectdetails.name, 
             collection=projectdetails.default_collection, 
             meta_default_values_collection='',
             schemata_data_url=url_for('metaedit.schemata_for_dataset', collection=projectdetails.default_collection, project_name=projectdetails.name)
           ) 
         }}
-
     </div>
 
     <!-- Contacts -->
@@ -278,7 +274,7 @@ function update_process(sourceElem, destElem) {
     <div class="tab-pane" id="users" role="tabpanel" aria-labelledby="users-tab">
     </div>
 
-    <!-- Users -->
+    <!-- Info -->
     {% if current_user.is_admin %}
     <div class="tab-pane h-100 scrollbar-y" id="info" role="tabpanel" aria-labelledby="info-tab">
       <h2>Project system info</h2>
@@ -389,9 +385,7 @@ function load_users() {
     $('#contacts').addClass('pending')
     load_contacts();
   });
-  
-
-  
+    
   $('#project-settings-form').on('submit', function(event) {
     $('#settings').addClass('pending')
   })
