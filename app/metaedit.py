@@ -134,7 +134,7 @@ def store_metadata():
         store_collection_metadata_structured(collection, data, schemapath, prefix)
         return jsonify({'result': 'OK'}), 200
     except Exception as e:
-        logging(f'Not allowed to edit this metadata: {e}')
+        logging.error(f'Not allowed to edit this metadata: {e}')
         return jsonify({}), 500
 
 @bp.route('_set_schemata_for_collection', methods=['POST'])
@@ -163,7 +163,7 @@ def set_schemata_for_collection():
             iqry.addcollmetaval(collection, attr_type, schemapath)
             return jsonify({ 'result': 'OK' }), 200
         except Exception as e:
-            logging(f'Not allowed to add schemata: {e}')
+            logging.error(f'Not allowed to add schemata: {e}')
             return jsonify({}), 500
     if action == 'remove':
         # Remove the related metadata
@@ -173,7 +173,7 @@ def set_schemata_for_collection():
             remove_collection_metadata(collection, prefix + schemapath)
             return jsonify({ 'result': 'OK' }), 200
         except Exception as e:
-            logging(f'Not allowed to remove schemata: {e}')
+            logging.error(f'Not allowed to remove schemata: {e}')
             return jsonify({}), 500
 
 @bp.route('_get_schema_and_data', methods=['GET'])
