@@ -204,7 +204,7 @@ function update_process(sourceElem, destElem) {
     </div>
 
     <!-- Project Metadata -->
-    <div class="tab-pane h-100 scroll" id="projectmeta" role="tabpanel" aria-labelledby="projectmeta-tab">
+    <div class="tab-pane h-100" id="projectmeta" role="tabpanel" aria-labelledby="projectmeta-tab">
       {{ 
         metadata_widget.render_metadata_editor(
           id="comp_project_metadata_"+projectdetails.name,
@@ -219,7 +219,7 @@ function update_process(sourceElem, destElem) {
     </div>
     
     <!-- Dataset Default Metadata -->
-    <div class="tab-pane h-100 scroll" id="datasetmeta" role="tabpanel" aria-labelledby="datasetmeta-tab">
+    <div class="tab-pane h-100" id="datasetmeta" role="tabpanel" aria-labelledby="datasetmeta-tab">
       {{ 
         metadata_widget.render_metadata_editor(
             id="comp_default_dataset_metadata_"+projectdetails.name,
