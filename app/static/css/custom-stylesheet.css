@@ -81,3 +81,9 @@ th.rotated-text > div > span {
 .selectgrid .card .card-footer {
   flex-shrink: 0;
 }
+
+.disabled-checkbox {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;  
+}

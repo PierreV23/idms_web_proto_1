@@ -25,6 +25,7 @@ menuname='projects'
 <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
 <script src="https://unpkg.com/react-jsonschema-form@1.8.1/dist/react-jsonschema-form.js" crossorigin></script>
 <script src="{{ url_for('static', filename='js/bootstrap-table.min.js') }}"></script>
+
 <script>
 
 $(document).on('click', '.projectname', function() {
@@ -39,6 +40,7 @@ $(document).on('click', '.projectname', function() {
   $(this).addClass("highlight")
   $('#details').html('<center><IMG SRC="{{ url_for('static', filename='img/loading.gif') }}" width="30%"></IMG><center>')
   $.get('{{ url_for('projects.show_projectdetails') }}', {
+    name: project,
     project_name: project,
     processgroup: "{{ processgroup }}"
   }, function(data) {
@@ -62,7 +64,6 @@ $(document).on('click', '#select_input_button', function(){
     } else {
         mode = 'display'
     }
-
     load_pgpage();
 })
 

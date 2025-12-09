@@ -1,7 +1,8 @@
 import os
 import json
 import jsonavu
-from flask import Blueprint, render_template, request, jsonify, url_for
+import logging
+from flask import Blueprint, render_template, request, jsonify
 from flask_login import current_user
 from app import iqry
 from app.constants import (SCHEMATA_BASE_PATH, 
@@ -63,7 +64,7 @@ def get_schemata( schema_collection ):
 def schemata_for_project():
     """ Schemata for a project
     """
-    project_name = request.args.get('project_name')
+    project_name = request.args.get('project_name', '')
     meta_schemata_collection = Path('/', current_user.irods_zone, SCHEMATA_BASE_PATH, PROJECT_SCHEMATA_PATH, project_name)
     meta_values_collection = request.args.get('collection')
     return schemata(meta_schemata_collection, meta_values_collection)
@@ -126,11 +127,15 @@ def store_metadata():
     data = request.json.get('data')
     schemapath = request.json.get('schemapath')
     prefix = request.json.get('prefix')
+   
     if not (collection and data and schemapath and prefix):
         return jsonify({}), 500
-    store_collection_metadata_structured(collection, data, schemapath, prefix)
-    return jsonify({'result': 'OK'}), 200
-
+    try:
+        store_collection_metadata_structured(collection, data, schemapath, prefix)
+        return jsonify({'result': 'OK'}), 200
+    except Exception as e:
+        logging(f'Not allowed to edit this metadata: {e}')
+        return jsonify({}), 500
 
 @bp.route('_set_schemata_for_collection', methods=['POST'])
 def set_schemata_for_collection():
@@ -154,14 +159,22 @@ def set_schemata_for_collection():
     if not (collection and schemapath and action):
         return jsonify({}), 500
     if action == 'add':
-        iqry.addcollmetaval(collection, attr_type, schemapath)
+        try:
+            iqry.addcollmetaval(collection, attr_type, schemapath)
+            return jsonify({ 'result': 'OK' }), 200
+        except Exception as e:
+            logging(f'Not allowed to add schemata: {e}')
+            return jsonify({}), 500
     if action == 'remove':
-        # TODO: Remove the related metadata
-        iqry.delcollmeta(collection, attr_type, schemapath)
-        store_collection_metadata_structured(collection, None, schemapath, prefix)
-        remove_collection_metadata(collection, prefix + schemapath)
-    return jsonify({ 'result': 'OK' }), 200
-
+        # Remove the related metadata
+        try:
+            iqry.delcollmeta(collection, attr_type, schemapath)
+            store_collection_metadata_structured(collection, None, schemapath, prefix)
+            remove_collection_metadata(collection, prefix + schemapath)
+            return jsonify({ 'result': 'OK' }), 200
+        except Exception as e:
+            logging(f'Not allowed to remove schemata: {e}')
+            return jsonify({}), 500
 
 @bp.route('_get_schema_and_data', methods=['GET'])
 def get_schema_and_data():

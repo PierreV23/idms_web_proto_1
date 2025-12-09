@@ -194,7 +194,7 @@ function update_process(sourceElem, destElem) {
             placeholder="Service Account" value="{{ projectdetails.service_account }}" disabled>
         </div>
         <hr>
-        {% if project_permissions.managers%}
+        {% if project_permissions.managers %}
         <button type="submit" class="btn btn-primary">Submit</button>
         {% endif %}
         <!-- <button type="button" class="btn btn-primary" data-href="/remove_project?name={{ projectdetails.name }}" data-toggle="modal" data-target="#confirm-delete">
@@ -212,6 +212,7 @@ function update_process(sourceElem, destElem) {
           project_name=projectdetails.name, 
           collection=projectdetails.default_collection, 
           meta_default_values_collection='',
+          edit_allowed=project_permissions.managers,
           schemata_data_url=url_for('metaedit.schemata_for_project', collection=projectdetails.default_collection, project_name=projectdetails.name)
           ) 
       }}
@@ -226,6 +227,7 @@ function update_process(sourceElem, destElem) {
             project_name=projectdetails.name, 
             collection=projectdetails.default_collection, 
             meta_default_values_collection='',
+            edit_allowed=project_permissions.managers,
             schemata_data_url=url_for('metaedit.schemata_for_dataset', collection=projectdetails.default_collection, project_name=projectdetails.name)
           ) 
         }}

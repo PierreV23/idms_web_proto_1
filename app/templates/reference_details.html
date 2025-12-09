@@ -196,17 +196,15 @@
 
 <!-- Metadata -->
 <div class="tab-pane h-100 scroll" id="refdatameta" role="tabpanel" aria-labelledby="refdatameta-tab">
-
-
       {{ metadata_widget.render_metadata_editor(
           id="comp_refdata_metadata_"+RD.name,
           prefix=metadata_prefix,
           project_name=RD.name, 
           collection=collection, 
           meta_default_values_collection='',
+          edit_allowed='true',
           schemata_data_url=url_for('metaedit.schemata_for_reference_dataset', collection=collection, refdata_name=RD.name)
       ) }}
-
 </div>
 
 <!-- Versions -->
