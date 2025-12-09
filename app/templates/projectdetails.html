@@ -29,25 +29,6 @@ function load_colls() {
   });
 }
 
-function load_project_meta() {
-  $.get( "{{ url_for('metaedit.schemata_for_project') }}", {
-    project: "{{ projectdetails.name }}"
-  }, function(data) {
-     console.log(data)
-     $('#projectmeta').html(JSON.stringify(data));
-     console.log('load the metadata editor ...')
-  });
-}
-
-function load_dataset_meta() {
-  $.get( "{{ url_for('metaedit.schemata_for_dataset') }}", {
-    project: "{{ projectdetails.name }}"
-  }, function(data) {
-     $('#dataset-metadata').html(data);
-     console.log('load the metadata editor ...')
-  });
-}
-
 $('.nav2').on('shown.bs.tab', function(event){
   target = event.target.getAttribute('href')
   activetab = target
@@ -90,7 +71,7 @@ function update_process(sourceElem, destElem) {
 
 <br>
 
-<!-- PROJECT SETTINGS -->
+<!-- Tabs -->
 <div id="project-tabs" class="card h-100">
   <div class="card-header">
     <ul class="nav nav-tabs" id="projecttabs">
