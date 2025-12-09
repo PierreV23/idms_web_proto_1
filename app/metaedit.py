@@ -18,29 +18,6 @@ from pathlib import Path
 
 bp = Blueprint('metaedit', __name__, url_prefix='/metaedit')
 
-
-def schemapath_abs(schemapath_rel):
-    """ Translate relative to absolute schemapath
-
-        example:
-            input: salm/default
-            output: /rivmZone/system/schemata/salm/default.json
-    """
-    return f"{os.path.join('/', current_user.irods_zone, SCHEMATA_BASE_PATH, schemapath_rel)}.json"
-
-
-def schemapath_rel(schemapath_abs):
-    """ Translate absolute to relative schemapath:
-
-        example:
-            input: /rivmZone/system/schemata/salm/default.json
-            output: salm/default.json
-    """
-    base = os.path.join('/', current_user.irods_zone, SCHEMATA_BASE_PATH)
-    result, _ = os.path.splitext(os.path.relpath(schemapath_abs, start=base))
-    return result
-
-
 def get_schemata( schema_collection ):
     """ Return list of all schemata from the leaf down to the base collection
         as a dictionary:
