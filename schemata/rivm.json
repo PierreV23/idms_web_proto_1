@@ -1,8 +1,14 @@
 {
-    "version_info": "1.2.4",
+    "schema_version": "1.2.4",
     "description": "* : Verplichte velden.",
     "type": "object",
     "properties": {
+        "schema_version": {
+            "title": "Metadata schema versie",
+            "description": "De schema versie van de metadata template.",
+            "type": "string",
+            "default": "1.2.4"
+        },
         "title": {
             "title": "Titel dataset",
             "description": "Een titel die duidelijk maakt waar je dataset over gaat.",
@@ -35,7 +41,6 @@
                     "Dutch"
                 ]
             },
-            "minItems": 1,
             "maxItems": 1
         },
         "language": {
@@ -48,8 +53,7 @@
                     "English",
                     "Dutch"
                 ]
-            },
-            "minItems": 1
+            }
         },
         "author": {
             "title": "Auteur",
