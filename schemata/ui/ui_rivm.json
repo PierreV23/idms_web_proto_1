@@ -1,54 +1,70 @@
-
 {
+  "version_info": "1.2.4",
+  "title": {},
+  "metadata_identifier": {
+    "ui:widget": "hidden"
+  },
+  "identifier": {
+    "ui:widget": "hidden"
+  },
+  "metadata_language": {
+    "ui:widget": "hidden"
+  },
+  "language": {},
+  "author": {
+      "name": {},
+      "affiliation": {},
+      "identifier": {},
+      "id_type": {}
+  },
+  "contact": {
+      "name": {},
+      "email": {}
+  },
+  "description": {},
+  "subject": {},
+  "keyword": {},
   "distribution_date": {
-    "ui:widget": "text",
-    "ui:placeholder": "jjjj-mm-dd"
-  },
-	"time_period": {
-    "items": {
-      "start": {
-        "ui:widget": "text",
-        "ui:placeholder": "jjjj-mm-dd"
-      },
-      "end": {
-        "ui:widget": "text",
-        "ui:placeholder": "jjjj-mm-dd"
-      }
-    }
-  },
-  "modification_date": {
     "ui:widget": "hidden",
     "ui:placeholder": "jjjj-mm-dd"
   },
-	"version":{
-  	"date": {
-    	"ui:widget": "text",
-   	 	"ui:placeholder": "jjjj-mm-dd"
-  	}
-	},
-	"retention_information":{
-	  "start": {
-	    "ui:widget": "text",
-	    "ui:placeholder": "jjjj-mm-dd"
-	  }
-
-	},
-	"process_information":{
-	  "retention_processcategory": {
-	    "ui:widget": "hidden"
-	  }
-
-	},
   "depositor": {
     "ui:widget": "hidden"
   },
+  "authority": {
+    "ui:widget": "hidden"
+  },
+  "geographic_coverage": {},
+  "time_period": {
+      "items": {
+        "start": {
+          "ui:widget": "text",
+          "ui:placeholder": "jjjj-mm-dd"
+        },
+        "end": {
+          "ui:widget": "text",
+          "ui:placeholder": "jjjj-mm-dd"
+        }
+      }
+  },
+  "series": {},
+  "other_identifier": {},
+  "landing_page": {
+    "ui:widget": "hidden"
+  },
+  "documentation": {},
+  "related_resource": {},
+  "funding_information": {},
+  "access_rights": {},
+  "license": {},
+  "terms_of_use": {},
   "legislation": {
     "ui:widget": "hidden"
   },
-  "hvd_category_url": {
+  "hvd_category": {
     "ui:widget": "hidden"
   },
-  "hvd_category": {
+  "hvd_category_url": {
     "ui:widget": "hidden"
   },
   "download_url": {
@@ -61,33 +77,62 @@
     "ui:widget": "hidden"
   },
   "format": {
-    "ui:widget": "hidden"
+      "ui:widget": "hidden",
+      "name": {},
+      "version": {},
+      "specification": {}
+  },
+  "version": {
+      "number": {},
+      "date": {
+        "ui:widget": "text",
+        "ui:placeholder": "jjjj-mm-dd"
+      }
+  },
+  "status": {},
+  "modification_date": {
+    "ui:widget": "hidden",
+    "ui:placeholder": "jjjj-mm-dd"
   },
   "availability": {
     "ui:widget": "hidden"
   },
-  "external_connection_inspire": {
+  "url_selection_list": {
     "ui:widget": "hidden"
   },
-  "external_connection_donl": {
-    "ui:widget": "hidden"
+  "process_information": {
+      "retention_processcategory": {
+        "ui:widget": "hidden"
+        },
+      "retention_process": {}
   },
+  "retention_information": {
+      "period": {},
+      "trigger": {},
+      "start": {
+        "ui:widget": "text",
+        "ui:placeholder": "jjjj-mm-dd"
+      }
+  },
+  "publish_to_external": {},
   "external_connection_ngr": {
-    "ui:widget": "hidden"
-  },
-  "source": {
-    "ui:widget": "hidden"
-  },
+        "ui:widget": "hidden"
+        },
+  "external_connection_inspire": {
+        "ui:widget": "hidden"
+        },
   "metadata_location": {
-    "ui:widget": "hidden"
-  },
-  "skip_review": {
-    "ui:widget": "hidden"
-  },
+        "ui:widget": "hidden"
+        },
+  "dataset_location": {
+        "ui:widget": "hidden"
+        },
+  "source": {
+        "ui:widget": "hidden"
+        },
+  "metadata_author": {},
+  "skip_review": {},
   "allow_skip_review": {
-    "ui:widget": "hidden"
-  },
-  "identifier": {
     "ui:widget": "hidden"
   }
 }
