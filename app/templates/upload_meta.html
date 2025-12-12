@@ -19,7 +19,7 @@ menuname='upload_meta'
           project_name=project_name, 
           collection=collection, 
           meta_default_values_collection=meta_default_values_collection,
-          edit_allowed=project_permissions.managers,
+          edit_allowed='true',
           schemata_data_url=url_for('metaedit.schemata_for_dataset', collection=collection, project_name=project_name)
       ) }}
 
