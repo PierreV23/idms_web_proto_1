@@ -304,19 +304,29 @@ def pgaction():
     project = request.args.get('project')
     group = request.args.get('group')
     action = request.args.get('action')
+
+    # Set the default results for success and error 
+    action_result = { 'success': True }
+    action_result_ERROR = { 'success': False,
+                            'message': "Unknown error",
+                            'category': "error" }
+    
     if action == 'add_process':
         process = request.args.get('process')
         name = request.args.get('name')
         # Check if the process exists:
         pr, r2 = rest_call('GET', f'processes/{process}')
         if r2 != 200:
-            # TODO: some error message???
-            return 'FAILED'
+            action_result = action_result_ERROR
+            action_result['message'] = "Can't get processes"
+            return action_result
         if name == "":
             # Auto-generate a name based on the process name
             all_pgprocs, r3 = rest_call('GET', f'projects/{project}/processgroups/{group}/processes')
             if r3 != 200:
-                return 'FAILED'
+                action_result = action_result_ERROR
+                action_result['message'] = "Can't get processes in processgroup"
+                return action_result
             names = [ p.get('name') for p in all_pgprocs ]
             index = 1
             while True:
@@ -329,7 +339,7 @@ def pgaction():
             'name': name,
             'processid': pr.get('id')
         }
-        pl, result = rest_call('POST', f'projects/{project}/processgroups/{group}/processes', new_process)
+        pl, status_code = rest_call('POST', f'projects/{project}/processgroups/{group}/processes', new_process)
     elif action == 'update_process':
         process = request.args.get('process')
         data = {}
@@ -337,35 +347,41 @@ def pgaction():
             value = request.args.get(attr)
             if value:
                 data[attr] = value
-        pl, result = rest_call('PUT', f'projects/{project}/processgroups/{group}/processes/{process}', data = data)
+        pl, status_code = rest_call('PUT', f'projects/{project}/processgroups/{group}/processes/{process}', data = data)
     elif action == 'update_processes':
         lsf_queue = request.args.get('lsf_queue')
-        pl, result = rest_call('GET', f'projects/{project}/processgroups/{group}/processes')
-        if result == 200:
+        pl, status_code = rest_call('GET', f'projects/{project}/processgroups/{group}/processes')
+        if status_code == 200:
             for procref in pl:
-                _, result = rest_call('PUT', f'projects/{project}/processgroups/{group}/processes/{procref.get("id")}', 
+                _, status_code = rest_call('PUT', f'projects/{project}/processgroups/{group}/processes/{procref.get("id")}', 
                     data = { 'lsf_queue': lsf_queue })
     elif action == 'delete_process':
         process = request.args.get('process')
-        pl, result = rest_call('DELETE', f'projects/{project}/processgroups/{group}/processes/{process}')
+        pl, status_code = rest_call('DELETE', f'projects/{project}/processgroups/{group}/processes/{process}')
     elif action == 'set_input':
         process = request.args.get('process')
         input = request.args.get('input')
-        pl, result = rest_call('PUT', 
+        pl, status_code = rest_call('PUT', 
             f'projects/{project}/processgroups/{group}/processes/{process}',
             { 'input': input})
     elif action == 'add_dependency':
         process = request.args.get('process')
         depend = request.args.get('depend')
-        pl, result = rest_call('POST',
+        pl, status_code = rest_call('POST',
             f'projects/{project}/processgroups/{group}/processes/{process}/dependencies',
             { 'depends_on': depend })
     elif action == 'delete_dependency':
         process = request.args.get('process')
         depend = request.args.get('depend')
-        pl, result = rest_call('DELETE',
+        pl, status_code = rest_call('DELETE',
             f'projects/{project}/processgroups/{group}/processes/{process}/dependencies/{depend}')
-    return "OK"
+
+    #return the success/error state
+    if status_code != 200:
+        action_result = action_result_ERROR
+        if pl and 'message' in pl:
+            action_result["message"] = pl['message']
+    return action_result
 
 
 @BP.route('_process_list_refdata', methods=['GET'])
@@ -450,11 +466,11 @@ def pg_list_processref_refdata():
 
 @BP.route('_pg_set_referencedataversion', methods=['GET'])
 def pg_set_referencedataversion():
-    #None or Id of the entry in table refdataversion2processref, that contains the superseeding versionid
+    #None or Id of the entry in table refdataversion2processref, that contains the superseding versionid
     refdataversion2processrefid = request.args.get('refdataversion2processrefid')
-    #either -2 (remove superseedig entry), -1 (convert to null) or the id of a version that will superseeed the process-default
+    #either -2 (remove superseding entry), -1 (convert to null) or the id of a version that will superseed the process-default
     supersedingversionid = int(request.args.get('supersedingversionid'))
-    #the entry-id in refdataversio2processref that defines the default version to use, which will be superseeded by a pg-specific entry
+    #the entry-id in refdataversion2processref that defines the default version to use, which will be superseded by a pg-specific entry
     processdefaultid = request.args.get('processdefaultid')
     project = request.args.get('project')
     group = request.args.get('group')
