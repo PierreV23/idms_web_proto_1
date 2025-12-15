@@ -109,7 +109,7 @@ function pgadd_process() {
         name: $('#process_name').val()
     }, function(data) {
         selected_processref = data.selected_processref;
-        load_pgpage();
+        load_pgpage( data );
     });
 }
 
@@ -129,7 +129,7 @@ $('#update_allprocs_button').on('click', function(){
         action: 'update_processes',
         lsf_queue: $('#lsf_queue').val()    
     }, function(data) {
-        load_pgpage();        
+        load_pgpage( data );        
     });
 })
 
@@ -141,7 +141,7 @@ $('#update_process_button').on('click', function(){
         process: selected_processref,
         lsf_queue: $('#lsf_queue').val()    
     }, function(data) {
-        load_pgpage();
+        load_pgpage( data );
     });
 })
 
@@ -153,7 +153,7 @@ $('#update_processtag_button').on('click', function(){
         process: selected_processref,
         tag: $('#git_tag option:selected').text()    
     }, function(data) {
-        load_pgpage();
+        load_pgpage( data );
     });
 })
 
@@ -164,8 +164,9 @@ $('#delete_process_button').on('click', function(){
         action: 'delete_process',
         process: selected_processref      
     }, function(data) {
+        
         selected_processref = null
-        load_pgpage();
+        load_pgpage( data );
     });
 })
 
@@ -192,7 +193,7 @@ $('#del_dep').on('click', function() {
         action: 'delete_dependency',
         depend: $('.select-dep.active').text()
     }, function(data) {
-        load_pgpage();
+        load_pgpage( data );
     });
 })
 
@@ -274,10 +275,7 @@ function build_line( p_ref_data, default_version, versions, selected_version ) {
     if( default_version ) {
         defaultversionstr = default_version.version
     }
-    //alert(JSON.stringify(p_ref_data.label))
-    //alert(JSON.stringify(p_ref_data.referencedata))  // This are reference-data-entries, e.g. "ïs_active", we actually need 'slots'
-                                                       // as defined for the process 
-    //html = '<tr id="refdata-row-'+id +'"><th scope="row"></th><th>' + p_ref_data.referencedata.name + '<br>']
+
     html = '<tr id="refdata-row-'+id +'"><th colspan=2>' + p_ref_data.label + '</th></tr>'
     html += '<tr><td colspan=2>' + p_ref_data.referencedata.name + '</td></tr>'
 

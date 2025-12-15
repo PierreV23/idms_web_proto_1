@@ -9,7 +9,7 @@ function load_pg() {
   }, function(data) {
      $('#processgroups').html(data);
      console.log('load the contents...')
-     load_pgpage();
+     load_pgpage( data );
   });
 }
 
@@ -34,7 +34,7 @@ $('.nav2').on('shown.bs.tab', function(event){
   console.log(target)
 })
 
-$(document).on('click', '.path-change', function () {
+$(document).on('click', '.path-change', function() {
     collection = $(this).data('path');
     if (typeof collection == 'undefined') {
       collection = $(this).attr('id')
