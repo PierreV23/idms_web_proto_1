@@ -64,7 +64,7 @@
     console.log('TOGGLE', '{{ collection }}', schemapath, schema_action )
     $.ajax({
       method: "POST",
-      url: "{{ url_for('metaedit.set_schemata_for_collection')}}",
+      url: "{{ url_for('metaedit.set_schemata_for_collection') }}",
       contentType: "application/json; charset=utf-8",
       dataType: "json",      
       data: JSON.stringify({
@@ -93,7 +93,6 @@
       contentType: "application/json; charset=utf-8",
       dataType: "json",
       success: function (result) {
-        console.log('Result', result)
         selectedSchema = schemapath;
 //        fd = (schemaId == selectedSchema) ? formdata : {}
         renderFormFunction(JSON.parse(result.schema), JSON.parse(result.uiSchema), JSON.parse(result.data), '{{ id }}-reactform');
@@ -176,7 +175,7 @@
       data: e.formData,
       collection: "{{ collection }}",
       schemapath: selectedSchema,
-      prefix: "{{prefix}}",
+      prefix: "{{ prefix }}",
       action: formaction
     },
     $.ajax({
@@ -198,6 +197,7 @@
   }
 
 })()
+
 </script>
 
 {% endmacro %}

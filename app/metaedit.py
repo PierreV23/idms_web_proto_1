@@ -176,6 +176,41 @@ def set_schemata_for_collection():
             logging.error(f'Not allowed to remove schemata: {e}')
             return jsonify({}), 500
 
+
+def remove_required(schema_json :dict):
+    '''
+    Recursively remove all `required` constraints from a JSON Schema.
+    Also set minItems to 0.
+    Works for nested objects, as well as the root required field.
+    For use in default schemata, where no fields should be required
+    
+    input: json schema
+    output: json schema without required fields and with minItems = 0
+    '''
+    
+    # check keys on top level
+    if isinstance(schema_json, dict):
+        for key, value in schema_json.items():
+            if key == "required" and isinstance(value, list):
+                schema_json[key] = []
+            if key == "minItems" and isinstance(value, int):
+                schema_json[key] = 0
+            else:
+                # check lower level items (nested)
+                remove_required(value)
+    
+    # check items in a list, and inspect them separately            
+    elif isinstance(schema_json, list):
+        for item in schema_json:
+            remove_required(item)
+    
+    # Use for testing, writes the json to a file
+    # with open(Path(__file__).resolve().parent + "/schemata/_schema_development/rivm_test_clean.json", "w", encoding="utf-8") as f:
+    #    f.write(json.dumps(schema_json))
+    
+    return schema_json
+
+
 @bp.route('_get_schema_and_data', methods=['GET'])
 def get_schema_and_data():
     """ Retrieve a metadata schema, the uiSchema
@@ -185,11 +220,12 @@ def get_schema_and_data():
             schemapath: path to the schema dataobject
             collection: path to the collection
     """
-    content = "{}"
+    schema = "{}"
     uiSchema = "{}"
     data = "{}"
     prefix = request.args.get('prefix')
     schemapath = request.args.get('schemapath')
+    
     # find collection where project metadata is located
     meta_default_values_collection = request.args.get('meta_default_values_collection')
     meta_values_collection = request.args.get('collection')
@@ -198,7 +234,14 @@ def get_schema_and_data():
     with irods_manager.session() as session:
         obj = session.data_objects.get(schemapath)
         with obj.open('r') as f:
-            content = f.read().decode('UTF-8')
+            schema = f.read().decode('UTF-8')
+            
+            # remove required fields from schema, first turn into json.
+            if prefix==ATTR_UPLOAD_DEFAULT_PREFIX:
+                schema_json = json.loads(schema)
+                schema_clean = remove_required(schema_json)
+                schema = json.dumps(schema_clean)
+        
         # Find the path to a ui schema file, and check for existing ones (ui_ + file_name)
         uiSchemaPath = os.path.dirname(schemapath) + '/ui/ui_' + os.path.basename(schemapath)
         if uiSchemaPath:
@@ -216,7 +259,7 @@ def get_schema_and_data():
     # first take all values from default, then add or overwrite values from used data
     #     
     data = default_data | used_data
-    return { 'schema': content, 'uiSchema': uiSchema, 'data': json.dumps(data) }
+    return { 'schema': schema, 'uiSchema': uiSchema, 'data': json.dumps(data) }
 
 
 def get_collection_metadata_structured(collection :str, prefix :str) -> dict:
