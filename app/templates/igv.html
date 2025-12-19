@@ -295,8 +295,10 @@
                         if (!response.ok) {
                             throw new Error("Index lookup failed");
                         }
+                        console.log('Index response:' , response)
                         return response.json();
                     });
+                    
             }
             
             // Initialize an IGV viewer
@@ -312,7 +314,7 @@
                 options.genome = {
                     'fastaURL': "{{ url_for('docviewer.serve_file') }}" + "?path=" + browse_coll + "/" + obj,
                 }
-                fetchIndexPath("{{ path }}")
+                fetchIndexPath(browse_coll + "/" + obj)
                         .then(data => {
                             if (data.exists) {
                                 options.genome.indexURL =
