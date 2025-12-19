@@ -225,13 +225,20 @@
 
         <script>
             var igvDiv = document.getElementById("igv-div");
-            var MainTrack = {
+            var MainTrack = {   
                         "name": "{{ name }}"
                         , "url": "{{ url_for('docviewer.serve_file', path=path) }}"
-                        , "indexURL": "{{ url_for('docviewer.serve_file', path=index) }}"
                         , "format": "{{ format }}"
                         , "type": "alignment"
                     }
+            fetchIndexPath("{{ path }}")
+                        .then(data => {
+                            if (data.exists) {
+                                MainTrack.indexURL =
+                                    "{{ url_for('docviewer.serve_file') }}" +
+                                    "?path=" + encodeURIComponent(data.index_path);
+                            }
+                        });
             var options = {
                 tracks: [MainTrack]
                 }
@@ -240,8 +247,16 @@
             {% elif reftype == 'object' %}
             options.genome = {
                 'fastaURL': "{{ url_for('docviewer.serve_file') }}" + "?path={{ ref_object }}",
-                'indexURL': "{{ url_for('docviewer.serve_file') }}" + "?path={{ ref_object }}.fai"
             }
+            fetchIndexPath("{{ ref_object }}")
+                        .then(data => {
+                            if (data.exists) {
+                                options.genome.indexURL =
+                                    "{{ url_for('docviewer.serve_file') }}" +
+                                    "?path=" + encodeURIComponent(data.index_path);
+                            }
+                        });
+                        
             {% endif %};
             
             createIGV(igv, options)
@@ -270,6 +285,20 @@
                 } 
             });
             
+            function fetchIndexPath(filePath) {
+                const url =
+                    "{{ url_for('docviewer.check_index') }}" +
+                    "?path=" + encodeURIComponent(filePath);
+
+                return fetch(url)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error("Index lookup failed");
+                        }
+                        return response.json();
+                    });
+            }
+            
             // Initialize an IGV viewer
             function createIGV() {
                 igv.removeAllBrowsers()
@@ -282,8 +311,16 @@
             function handleIrodsGenomeSelection(obj) {
                 options.genome = {
                     'fastaURL': "{{ url_for('docviewer.serve_file') }}" + "?path=" + browse_coll + "/" + obj,
-                    'indexURL': "{{ url_for('docviewer.serve_file') }}" + "?path=" + browse_coll + "/" + obj + ".fai"
                 }
+                fetchIndexPath("{{ path }}")
+                        .then(data => {
+                            if (data.exists) {
+                                options.genome.indexURL =
+                                    "{{ url_for('docviewer.serve_file') }}" +
+                                    "?path=" + encodeURIComponent(data.index_path);
+                            }
+                        });
+    
                 $.post('{{ url_for("userinfo.usersetting") }}', {
                     attr: 'igv::reftype',
                     value: 'object'
@@ -297,23 +334,29 @@
             
             // Handle selection of additional tracks (format and type are inferred!)
             function handleIrodsTrackSelection(obj) {
-                const newTrack =  {
-                            "name": obj,
-                            "url": "{{ url_for('docviewer.serve_file') }}" + "?path=" + browse_coll + "/" + obj,
-                            "displayMode": "EXPANDED",
-                            "order": Number.MAX_VALUE // place at bottom
-                        };
-                browser.loadTrack(newTrack);
-            }
-            // Handle selection of additional tracks (format and type are inferred!)
-            function handleIrodsTrackSelection(obj) {
+                const track_extension = obj.split('.').pop().toLowerCase();
                 const newTrack = {
                     name: obj,
                     url: "{{ url_for('docviewer.serve_file') }}" + "?path=" + browse_coll + "/" + obj,
                     displayMode: "EXPANDED",
+                    format: track_extension,
                     order: Number.MAX_VALUE // place at bottom
                 };
+                if (track_extension === "bam" || track_extension === "cram") {
+                    newTrack.type = "alignment";
+                    fetchIndexPath(browse_coll + "/" + obj)
+                        .then(data => {
+                            if (data.exists) {
+                                newTrack.indexURL =
+                                    "{{ url_for('docviewer.serve_file') }}" +
+                                    "?path=" + encodeURIComponent(data.index_path);
+                            }
 
+                            browser.loadTrack(newTrack);
+                        });
+
+                    return; 
+                }
                 // Show spinner
                 showSpinner();
 

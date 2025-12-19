@@ -9,12 +9,16 @@ import os
 import csv
 import ctypes
 import markdown
-from flask import Blueprint, Response, render_template, request, url_for, send_file, jsonify, abort
+from flask import Blueprint, Response, render_template, request, url_for, send_file, jsonify, abort, flash
 from flask_login import current_user, login_required
 import urllib.parse
 from irods.exception import CAT_NO_ACCESS_PERMISSION, SYS_FILE_DESC_OUT_OF_RANGE
 from app.irodssessions import irods_manager
 from fs_irods import fs_irods
+
+INDEX_FORMATS = { 'fasta': 'fai',
+                'bam': 'bai', 
+                'cram': 'crai'}
 
 BP = Blueprint('docviewer', __name__, url_prefix='/docviewer')
 
@@ -65,6 +69,7 @@ def download_object():
                          as_attachment=True)
     return AA
 
+
 @BP.route('/serve_file')
 def serve_file():
     """ Serve any iRODS dataobject
@@ -80,7 +85,9 @@ def serve_file():
         try:
             obj = fs_irods(session=session).getfile(path)
         except:
+            flash('No index file found')
             abort(404, description="Dataobject not found")
+
         file_size = obj.filesize()
         if not range_header:
         # If no Range header, send the entire file
@@ -126,6 +133,38 @@ def serve_file():
         return response
 
 
+def find_index():
+    '''
+    finds an index file for a file, by checking the existence of:
+    filename.extension.index_extension or filename.index_extension
+    in the location of the original file
+    '''
+    path = urllib.parse.unquote(request.args.get('path', '/', type=str))
+    filename, file_extension = os.path.splitext(path.lower())
+    format = file_extension.strip(".")
+    index_format = INDEX_FORMATS[format]
+    
+    with irods_manager.session() as session:
+
+        # Handle IGV extensions        
+        if format in INDEX_FORMATS:
+            
+            # Search for index files, both with and without the original extension
+            index_path = None
+            for index_path in [f'{path}.{index_format}', f'{os.path.splitext(path)[0]}.{index_format}']:
+                if fs_irods(session=session).fileexists(index_path):
+                    break
+            return {"exists": True, "index_path": index_path}
+
+    return {"exists": False, "index_path": None}
+
+
+@BP.route("/check_index")
+def check_index():
+    result = find_index()
+    return jsonify(result)
+
+
 @BP.route('/serve_object')
 def serve_object():
     path = urllib.parse.unquote(request.args.get('path', '/', type=str))
@@ -134,15 +173,11 @@ def serve_object():
     with irods_manager.session() as session:
 
         # Handle IGV extensions        
-        if file_extension in [".bam", ".cram"]:
+        if file_extension in [".bam", ".cram", ".fasta"]:
             format=file_extension.strip(".")
-            index_format = format[:-1]+ 'i'
             
-            # Search for index files
-            index_path = None
-            for index_path in [f'{path}.{index_format}', f'{os.path.splitext(path)[0]}.{index_format}']:
-                if fs_irods(session=session).fileexists(index_path):
-                    break
+            # Search for index files (None if not available)
+            index_path = find_index()["index_path"]
 
             # Get user settings for reference genome
             hosted_genome = None
@@ -153,12 +188,8 @@ def serve_object():
             elif reftype == 'object':
                 ref_object = current_user.settings.get('igv::fasta')
             
-            return render_template('igv.html', coll=coll, path=path, index=index_path, name=dataobject, format=format,
-                reftype=reftype, ref_object=ref_object, genome=hosted_genome)
-
-        # TODO: Is opening fasta files with igv required?
-        #if file_extension in [".fasta"]:
-        #    return render_template('igv.html', path=path, name=dataobject, format=None, index=f'{ path }.fai')     
+            return render_template('igv.html', coll=coll, path=path, index_path=index_path, name=dataobject, format=format,
+                reftype=reftype, ref_object=ref_object, genome=hosted_genome)  
 
         obj = fs_irods(session=session).getfile(path)
         objectfile = obj.open('r')
