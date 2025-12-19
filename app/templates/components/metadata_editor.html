@@ -58,7 +58,23 @@
 
 (() => {
   var selectedSchema = "";
-
+  let isFormChanged = false; 
+  
+  function formChange(e) { 
+    isFormChanged = true; 
+    setSaveDisabled(false); 
+  }
+  
+  function confirmIfChanged() {
+    if (isFormChanged) {
+      const proceed = confirm(
+        'You have unsaved changes. If you continue, those changes will be lost. Continue?'
+      );
+      if (!proceed) return false;
+    }
+    return true;
+  }
+  
   // Update the collection when a schema is enabled or disabled
   const toggleRow = function (schemapath, schema_action) {
     // console.log('TOGGLE', '{{ collection }}', schemapath, schema_action )
@@ -114,9 +130,29 @@
   
   // Install bootstraptable event handlers
   $('#{{ id }}-schemata-table').bootstrapTable({
-    onCheck: function (row, $element) {
-      toggleRow(row.schemapath, 'add')
+    // On Row Click
+    onClickRow: function (row, $element, field) {
+      if (row.selected === false) return;
+      if (!confirmIfChanged()) return;
+      isFormChanged = false;
+      unmountSchemaForm();
+      loadSchema(row.schemapath);
+      $('#{{ id }}-schemata-table tr').removeClass('highlight');
+      $element.addClass('highlight');
     },
+    // On Check
+    onCheck: function (row, $element) {
+      if (!confirmIfChanged()) {
+        $('#{{ id }}-schemata-table').bootstrapTable('uncheckBy', {
+          field: 'schemapath',
+          values: [row.schemapath]
+        });
+        return;
+      }
+      isFormChanged = false;
+      toggleRow(row.schemapath, 'add');
+    },
+    // On UnCheck
     onUncheck: function (row) {
       if (!confirm('Unchecking the select box will also delete metadata in this form. Do you want to proceed?')) {
         $('#{{ id }}-schemata-table').bootstrapTable('checkBy', {
@@ -130,16 +166,6 @@
       if (selectedSchema === row.schemapath) {
         unmountSchemaForm();
       }
-    },
-    onClickRow: function (row, $element, field) {
-      if (row.selected == false) {
-        // Disabled schema cannot be loaded
-        return
-      }
-      // TODO: There should be a warning if the current schema is unsaved
-      loadSchema(row.schemapath)
-      $('#{{ id }}-schemata-table tr').removeClass('highlight')
-      $element.addClass('highlight')
     }
   })
 
@@ -157,6 +183,9 @@
           uiSchema: uiSchema,
           formData: data,
           onChange: function () {
+            // Mark the form as changed
+            isFormChanged = true;
+            // Enable the Save button
             $('.formsubmit').removeAttr('disabled');
           },
           onSubmit: formSubmit,
@@ -190,6 +219,10 @@
   })
 
   function formSubmit(e, d) {
+    const submitButton = e.nativeEvent.submitter;
+    if (submitButton) {
+      submitButton.disabled = true;
+    }
     data = {
       data: e.formData,
       collection: "{{ collection }}",
@@ -198,19 +231,24 @@
       action: formaction
     },
     $.ajax({
-      method: "POST",
-      url: '{{ url_for("metaedit.store_metadata") }}',
-      data: JSON.stringify(data),
-      collection: "{{ collection }}",
-      contentType: "application/json; charset=utf-8",
-      dataType: "json",
-      success: function () {
-        if (formaction == 'save') {
-          location.reload();
-        } 
+    method: "POST",
+    url: '{{ url_for("metaedit.store_metadata") }}',
+    contentType: "application/json; charset=utf-8",
+    dataType: "json",
+    data: JSON.stringify(data),
+    success: function () {
+      isFormChanged = false; // Clear changed-flag
+      if (formaction === 'save') {
+        location.reload();
       }
-    });
-  }
+    },
+    error: function () {
+      if (submitButton) {
+        submitButton.disabled = false;
+      }
+    }
+  });
+}
 
 })()
 
