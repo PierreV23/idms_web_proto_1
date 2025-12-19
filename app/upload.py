@@ -282,8 +282,8 @@ def upload_actions():
     coll = request.args.get('coll')
     if action == 'finalize':
         # show error message when metadata schema is not selected
-        list_of_used_schemata = [key for key in iqry.qcollmetadict(coll).keys() if key.startswith(ATTR_UPLOADMETA) ]
-        if list_of_used_schemata == 0:
+        list_of_used_schemata = [key for key in iqry.qcollmetadict(coll).keys() if key.startswith(ATTR_UPLOADMETA)]
+        if len(list_of_used_schemata) == 0:
             flash(f'No metadata schema was selected.', 'error')
             return redirect(url_for('upload.upload_meta', coll=coll))
         iqry.scollmetaval(coll, ATTR_UPLOAD, UploadType.Ready)
