@@ -61,7 +61,7 @@
 
   // Update the collection when a schema is enabled or disabled
   const toggleRow = function (schemapath, schema_action) {
-    console.log('TOGGLE', '{{ collection }}', schemapath, schema_action )
+    // console.log('TOGGLE', '{{ collection }}', schemapath, schema_action )
     $.ajax({
       method: "POST",
       url: "{{ url_for('metaedit.set_schemata_for_collection') }}",
@@ -94,7 +94,6 @@
       dataType: "json",
       success: function (result) {
         selectedSchema = schemapath;
-//        fd = (schemaId == selectedSchema) ? formdata : {}
         renderFormFunction(JSON.parse(result.schema), JSON.parse(result.uiSchema), JSON.parse(result.data), '{{ id }}-reactform');
       },
       error: function(request, status, error) {
@@ -103,14 +102,34 @@
       
     })
   }
-
+  // currently displayed form
+  const reactFormContainer = document.getElementById('{{ id }}-reactform');
+  // Unmount current form
+  const unmountSchemaForm = function () {
+    if (reactFormContainer) {
+      ReactDOM.unmountComponentAtNode(reactFormContainer);
+    }
+    selectedSchema = null;
+  };
+  
   // Install bootstraptable event handlers
   $('#{{ id }}-schemata-table').bootstrapTable({
     onCheck: function (row, $element) {
       toggleRow(row.schemapath, 'add')
     },
-    onUncheck: function (row, $element) {
-      toggleRow(row.schemapath, 'remove')
+    onUncheck: function (row) {
+      if (!confirm('Unchecking the select box will also delete metadata in this form. Do you want to proceed?')) {
+        $('#{{ id }}-schemata-table').bootstrapTable('checkBy', {
+          field: 'schemapath',
+          values: [row.schemapath]
+        });
+        return;
+      }
+      toggleRow(row.schemapath, 'remove');
+      // Only hide the form if the unchecked schema is the one currently displayed
+      if (selectedSchema === row.schemapath) {
+        unmountSchemaForm();
+      }
     },
     onClickRow: function (row, $element, field) {
       if (row.selected == false) {
@@ -188,10 +207,7 @@
       success: function () {
         if (formaction == 'save') {
           location.reload();
-        } //else {
-          //alert
-          //window.location.replace('{{ url_for("upload.upload_data", collection=collection) }}')
-       //}
+        } 
       }
     });
   }
