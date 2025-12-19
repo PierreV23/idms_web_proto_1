@@ -9,16 +9,13 @@ import os
 import csv
 import ctypes
 import markdown
-from flask import Blueprint, Response, render_template, request, url_for, send_file, jsonify, abort, flash
+from flask import Blueprint, Response, render_template, request, url_for, send_file, jsonify, abort
 from flask_login import current_user, login_required
 import urllib.parse
 from irods.exception import CAT_NO_ACCESS_PERMISSION, SYS_FILE_DESC_OUT_OF_RANGE
 from app.irodssessions import irods_manager
 from fs_irods import fs_irods
-
-INDEX_FORMATS = { 'fasta': 'fai',
-                'bam': 'bai', 
-                'cram': 'crai'}
+from app.constants import INDEX_FORMATS
 
 BP = Blueprint('docviewer', __name__, url_prefix='/docviewer')
 
@@ -172,7 +169,7 @@ def serve_object():
     with irods_manager.session() as session:
 
         # Handle IGV extensions        
-        if file_extension in [".bam", ".cram", ".fasta"]:
+        if file_extension in [".bam", ".cram"]:
             format=file_extension.strip(".")
             
             # Search for index files (None if not available)
