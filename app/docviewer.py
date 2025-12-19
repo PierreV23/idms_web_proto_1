@@ -85,7 +85,6 @@ def serve_file():
         try:
             obj = fs_irods(session=session).getfile(path)
         except:
-            flash('No index file found')
             abort(404, description="Dataobject not found")
 
         file_size = obj.filesize()
@@ -188,7 +187,7 @@ def serve_object():
             elif reftype == 'object':
                 ref_object = current_user.settings.get('igv::fasta')
             
-            return render_template('igv.html', coll=coll, path=path, index_path=index_path, name=dataobject, format=format,
+            return render_template('igv.html', coll=coll, path=path, name=dataobject, format=format,
                 reftype=reftype, ref_object=ref_object, genome=hosted_genome)  
 
         obj = fs_irods(session=session).getfile(path)

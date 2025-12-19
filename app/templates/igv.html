@@ -295,7 +295,6 @@
                         if (!response.ok) {
                             throw new Error("Index lookup failed");
                         }
-                        console.log('Index response:' , response)
                         return response.json();
                     });
                     
