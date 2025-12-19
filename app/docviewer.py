@@ -138,13 +138,12 @@ def find_index():
     path = urllib.parse.unquote(request.args.get('path', '/', type=str))
     filename, file_extension = os.path.splitext(path.lower())
     format = file_extension.strip(".")
-    index_format = INDEX_FORMATS[format]
     
     with irods_manager.session() as session:
 
         # Handle IGV extensions        
-        if format in INDEX_FORMATS:
-            
+        if format in INDEX_FORMATS:           
+            index_format = INDEX_FORMATS[format]
             # Search for index files, both with and without the original extension
             index_path = None
             for index_path in [f'{path}.{index_format}', f'{os.path.splitext(path)[0]}.{index_format}']:
@@ -171,9 +170,6 @@ def serve_object():
         # Handle IGV extensions        
         if file_extension in [".bam", ".cram"]:
             format=file_extension.strip(".")
-            
-            # Search for index files (None if not available)
-            index_path = find_index()["index_path"]
 
             # Get user settings for reference genome
             hosted_genome = None
