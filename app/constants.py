@@ -731,3 +731,8 @@ LAYOUT = {    # ordered like in jobengine queue (errors 50+)
         PENWIDTH: '2',
     },
 }
+
+# index file extensions used in the igv viewer.
+INDEX_FORMATS = { 'fasta': 'fai',
+                'bam': 'bai', 
+                'cram': 'crai'}
