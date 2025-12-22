@@ -17,7 +17,7 @@ from app.irodssessions import irods_manager
 from fs_irods import fs_irods
 from app.constants import INDEX_FORMATS
 
-BP = Blueprint('docviewer', __name__, url_prefix='/docviewer')
+bp = Blueprint('docviewer', __name__, url_prefix='/docviewer')
 
 csv.field_size_limit(int(ctypes.c_ulong(-1).value // 2))
 
@@ -33,7 +33,7 @@ def csvconvert(fobj):
 def mdconvert(fobj):
     return markdown.markdown(fobj.read().decode('utf-8'))
 
-@BP.route('/serve_image')
+@bp.route('/serve_image')
 def serve_image():
     path = urllib.parse.unquote(request.args.get('path', '/', type=str))
     with irods_manager.session() as session:
@@ -42,7 +42,7 @@ def serve_image():
     return send_file(imagefile, download_name=os.path.split(path)[1],
                      as_attachment=False)
 
-@BP.route('_access')
+@bp.route('_access')
 def test_access():
     path = urllib.parse.unquote(request.args.get('path', '/', type=str))
     with irods_manager.session() as session:
@@ -57,7 +57,7 @@ def test_access():
         'access': access
     })
     
-@BP.route('/download_object')
+@bp.route('/download_object')
 def download_object():
     path = urllib.parse.unquote(request.args.get('path', '/', type=str))
     with irods_manager.session() as session:
@@ -66,8 +66,7 @@ def download_object():
                          as_attachment=True)
     return AA
 
-
-@BP.route('/serve_file')
+@bp.route('/serve_file')
 def serve_file():
     """ Serve any iRODS dataobject
         
@@ -154,13 +153,13 @@ def find_index():
     return {"exists": False, "index_path": None}
 
 
-@BP.route("/check_index")
+@bp.route("/check_index")
 def check_index():
     result = find_index()
     return jsonify(result)
 
 
-@BP.route('/serve_object')
+@bp.route('/serve_object')
 def serve_object():
     path = urllib.parse.unquote(request.args.get('path', '/', type=str))
     filename, file_extension = os.path.splitext(path.lower())

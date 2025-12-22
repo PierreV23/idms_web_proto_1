@@ -11,19 +11,23 @@ import shutil
 import sys
 import logging
 import time
+import jsonavu
 from flask import Blueprint, render_template, redirect, request, url_for, session, current_app, flash
 from flask import jsonify
 from flask_login import current_user, login_required
 import uuid
 from app import projects, iqry
 from app.datafield import datafield
+from app.metaedit import get_schemata
+from app.constants import ATTR_UISCHEMA, SCHEMATA_BASE_PATH, DATASET_SCHEMATA_PATH, PROJECT_SCHEMATA_PATH
+from app.projectdb_api import rest_call
 import randomname
 import json
 import re
 from irods.models import Collection, CollectionMeta
 from irods.column import Criterion
 from irods.meta import iRODSMeta
-from irods.exception import CollectionDoesNotExist
+
 from app.irodssessions import irods_manager
 from ast import literal_eval
 from fs_irods import fs_irods
@@ -34,9 +38,12 @@ ATTR_UPLOADNAME = f'{ATTR_UPLOAD}::name'
 ATTR_UPLOADPARENT = f'{ATTR_UPLOAD}::parent'
 ATTR_DATASETID = 'sys::dataset_id'
 ATTR_UPLOADSETTINGS = 'user::upload::settings::'
-ATTR_UPLOADMETA = 'user::upload::meta::'
+
+ATTR_UPLOADMETA = 'user::upload::metadata::'
 ATTR_UPLOADMETASCHEMA = 'user::upload::schemafile'
+
 META_SUFFIX = 'SYS::suffixlength'
+
 
 # remove spacial characters, but there is no need to only allow [a-zA-Z_], quotes, paranthesis, "@" are all valid characters
 # for AVU keys a stronger sanitazition might be desired, allowing only [0-9a-Z_:-]
@@ -58,8 +65,8 @@ class UploadType:
 bp = Blueprint('upload', __name__, url_prefix='/upload')
 
 def collection_basename(coll):
-    """Return the basename of a colletion without the path, and without the numeric suffix
-    
+    """Return the basename of a collection without the path, and without the numeric suffix
+
     So /rivmZone_acc_01/projects/ngslab/output/230911_NB502001_0032_AHTFHKAFX3_0000
     returns 230911_NB502001_0032_AHTFHKAFX3
     assuming sys::suffixlength == 4
@@ -99,7 +106,7 @@ def unique_coll(base_coll, prefix=None, use_date=False):
             fullprefix = f'{fullprefix}_{datestr}'
         else:
             fullprefix = f'{datestr}'
-    
+
     if not fullprefix:
         collname = os.path.join(base_coll,'0000')
     else:
@@ -128,7 +135,7 @@ def show_uploads():
 
 
 # TODO: use the irods_helper instead (role irods_cronjobs)
-def getmetaitem(irods_obj, attr, default=None): 
+def getmetaitem(irods_obj, attr, default=None):
     try:
         value = irods_obj.metadata.get_one(attr).value
     except KeyError:
@@ -180,7 +187,7 @@ def upload_settings():
     FIELDS = {
         'projectID':   'Project',
         'collection':  'Collection name',
-        'description': 'Description' 
+        'description': 'Description'
     }
     if request.method == 'GET':
         coll = request.args.get('coll')
@@ -207,40 +214,6 @@ def upload_settings():
             return redirect(url_for('upload.upload_settings', coll=coll))
 
 
-
-def getSchemataForProject( projectId ):
-    def getSchemataInColl( coll ):
-        result = {}
-        for obj in coll.data_objects:
-            schemaId = Path(obj.name).stem
-            path = f"{coll.path}/{obj.name}"
-            result[ schemaId ] = path
-        return result
-
-    with irods_manager.session() as session:
-        try:
-            schemaColl = session.collections.get( f'/{current_user.irods_zone}/system/schemata/{projectId}' )
-        except CollectionDoesNotExist:
-            schemaColl = session.collections.get( f'/{current_user.irods_zone}/system/schemata' )
-        result = getSchemataInColl( schemaColl )
-           #Alternatv: if we want always to offer a minimum standard as "default"
-           #result.update( defaultSchemata )
-    return result
-
-#POST (not very RESTful, but doesnt show up in history)
-@bp.route('_getschema', methods=['POST'])
-def get_schema():
-    if request.method == 'POST':
-        schemaFile = request.data.decode('UTF-8')
-        if schemaFile:
-            with irods_manager.session() as session:
-               obj = session.data_objects.get( schemaFile )
-               with obj.open('r') as f:
-                   content = f.read()
-                   return content
-    return {}   
-
-
 @bp.route('_uploadmeta', methods=['GET', 'POST'])
 def upload_meta():
     if request.method == 'GET':
@@ -248,29 +221,28 @@ def upload_meta():
         name = os.path.basename(collection)
         if collection is None:
             return redirect(url_for('upload.show_uploads'))
-        schemata={}
-        projectId = iqry.qcollmetaval(collection, f'{ATTR_UPLOADSETTINGS}projectID')
-        schemata = getSchemataForProject( projectId )
-        metadata = iqry.qcollmetadict_typed(collection) #the typed version tries reading the unit field as a python type
-        data = { k[len(ATTR_UPLOADMETA):]: v for k, v in metadata.items() if k.startswith(ATTR_UPLOADMETA) }
-        selectedSchema = metadata.get(ATTR_UPLOADMETASCHEMA, None)
-        return render_template('upload_meta.html', coll=collection, project=projectId, name=name, schemata=schemata, selectedSchema=selectedSchema, data=data)
-    if request.method == 'POST':
-        record = request.json
-        collection = record.get('coll')
-        metadata = iqry.qcollmetadict(collection)
-        unset_upload_meta(collection)
-        for k, v in record.get('data', {}).items():
-            key = sanitize(k, True)
-            type_name = type(v).__name__  # gives us just int,str, etc, which we can search in builtins
-            value = sanitize(str(v))    
-            if not value:
-                #AVUs without value will not be set
-                continue
-            iqry.scollmetaval(collection, f'{ATTR_UPLOADMETA}{key}', value, type_name )    
-        selectedSchema = record.get('selectedSchema')
-        iqry.scollmetaval(collection, f'{ATTR_UPLOADMETASCHEMA}', selectedSchema)              
-        return jsonify({'status': 'OK' }), 200
+        project_name = iqry.qcollmetaval(collection, f'{ATTR_UPLOADSETTINGS}projectID')
+        
+        meta_default_values_collection = None
+        # schemata for datasets in this project are here:
+        if project_name:
+            project_details, _ = rest_call('GET', 'projects/{}'.format(project_name))
+            meta_default_values_collection = project_details['default_collection']
+        
+        metadata = iqry.qcollmeta(collection) #the typed version tries reading the unit field as a python type
+        metadict = iqry.qcollmetadict(collection)
+        avudata = [ { 'a': avu[CollectionMeta.name][len(ATTR_UPLOADMETA):], 'v': avu[CollectionMeta.value], 'u': avu[CollectionMeta.units] } for avu in metadata if avu[CollectionMeta.name].startswith(ATTR_UPLOADMETA) ]
+        data = jsonavu.avu2json(avudata, "cat")
+        selectedSchema = metadict.get(ATTR_UPLOADMETASCHEMA, None)
+        return render_template('upload_meta.html',
+                                coll=collection,   #This is for the menu! Just so we dont loose which collection we are working on when we switch inside the menu between upload_settings, upload_meta and upload_data
+                                collection=collection, #Same collection, but the meta-edit-component expects the collection to be called 'collection'
+                                meta_default_values_collection = meta_default_values_collection, 
+                                project_name=project_name, 
+                                name=name, #basename of the collection, usually the autogenerated 'cold-fractal' temporary collection
+                                selectedSchema=selectedSchema, 
+                                data=data)
+
 
 def unset_upload_meta(collection):
     metadata = iqry.qcollmetadict(collection)
@@ -310,12 +282,16 @@ def upload_actions():
     coll = request.args.get('coll')
     if action == 'finalize':
         # show error message when metadata schema is not selected
-        if not ATTR_UPLOADMETASCHEMA in iqry.qcollmetadict(coll):
+        list_of_used_schemata = [key for key in iqry.qcollmetadict(coll).keys() if key.startswith(ATTR_UPLOADMETA) ]
+        if list_of_used_schemata == 0:
             flash(f'No metadata schema was selected.', 'error')
             return redirect(url_for('upload.upload_meta', coll=coll))
         iqry.scollmetaval(coll, ATTR_UPLOAD, UploadType.Ready)
         return redirect(url_for('upload.show_uploads'))
     elif action == 'cancel':
+        if not coll.startswith( os.path.join( '/', current_user.irods_zone, 'home', current_user.username ) ):
+            flash(f'Unauthorized action!', 'error')
+            return redirect(url_for('upload.show_uploads'))
         with irods_manager.session() as session:
             fs_irods(session=session).rmdir(coll, recurse=True, force=True)
         return redirect(url_for('upload.show_uploads'))
@@ -323,13 +299,11 @@ def upload_actions():
     return redirect(url_for('upload.upload_settings', coll=coll))
 
 
-
-
 @bp.route('newupload')
 def new_upload():
     # Create an upload-collection
     # First generate a unique upload name
-    unique = False 
+    unique = False
     while not unique:
         name = randomname.get_name()
         with irods_manager.session() as session:
@@ -341,7 +315,7 @@ def new_upload():
     # Now generate a collection for the upload
     coll = unique_coll(os.path.join('/', current_user.irods_zone, 'home', current_user.username), prefix=name)
     with irods_manager.session() as session:
-        collobj = session.collections.get(coll)   
+        collobj = session.collections.get(coll)
         get_or_set_uid(collobj)
         iqry.scollmetaval(coll, ATTR_UPLOADNAME, name)
         iqry.scollmetaval(coll, ATTR_UPLOAD, UploadType.Pending)

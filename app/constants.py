@@ -6,6 +6,7 @@ ATTR_RESOURCE_ENABLED = 'sys::resource::enabled'
 ATTR_RESOURCE_AVAILABLE = 'sys::resource::available'
 ATTR_RESOURCE_TAR = 'sys::resource::tar'
 ATTR_RESOURCE_ONLINE = 'sys::resource::online'
+ATTR_UISCHEMA = 'sys::uischema'
 
 FEATURES = {
     'actions': ('Show actions pane', 'true'),
@@ -33,7 +34,19 @@ DATA_KEY_MAP = {
     'owner_name': DataObject.owner_name
 }
 
-# Constansts that define the JOB VIEW
+# iRODS path to store metadata schemata
+SCHEMATA_BASE_PATH = 'system/schemata'
+DATASET_SCHEMATA_PATH = 'datasets'
+PROJECT_SCHEMATA_PATH = 'projects'
+REFERENCE_DATASET_SCHEMATA_PATH = 'referencedata'
+# attributes used for metadata 
+PROJECT_ATTRS = ['user::upload::settings::projectID']
+ATTR_SCHEMA_IN_USE = 'user::schema_in_use'
+ATTR_UPLOAD_PREFIX = 'user::metadata::'
+ATTR_UPLOAD_DEFAULT_PREFIX = 'default_metadata::'
+ATTR_METADATA = "metadata::"
+
+# Constants that define the JOB VIEW
 JOB_PAGE_SIZE = 25
 
 # Border colors of shapes

@@ -61,7 +61,7 @@
           </label>
         </div>
 
-        <div class="form-check check-margin10">
+        <div class="form-check">
           <input class="form-check-input" type="checkbox" name="do_staging" value="true" {% if details['omit_staging']
             !=1 %}checked{% endif %} id="do_staging_{{process}}">
           <label class="form-check-label" for="do_staging_{{process}}">
@@ -180,12 +180,12 @@
     load_refdata();
   });
 
-
+  // Disable checkbox 'Download data from iRODS to input directory' in Processes
   function omit_check() {
     if ($('input[name="do_bringonline"]').is(":checked")) {
-      $('input[name="do_staging').prop('disabled', false)
+      $('input[name="do_staging"]').prop('disabled', false)
     } else {
-      $('input[name="do_staging').prop('disabled', true).prop('checked', false)
+      $('input[name="do_staging"]').prop('disabled', true).prop('checked', false)
     }
   }
 
