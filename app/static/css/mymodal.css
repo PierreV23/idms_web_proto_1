@@ -153,6 +153,7 @@ body {
 
 .selectdetail {
   grid-area: selectdetail;
+  height: 100%;
 }
 
 .browsergrid {

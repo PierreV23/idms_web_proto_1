@@ -18,17 +18,20 @@ menuname='projects'
   </a>
 </li>
 
-
 {% endblock %}
 
 {% block content %}
+<script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-jsonschema-form@1.8.1/dist/react-jsonschema-form.js" crossorigin></script>
+<script src="{{ url_for('static', filename='js/bootstrap-table.min.js') }}"></script>
+
 <script>
 
 $(document).on('click', '.projectname', function() {
   // Scroll to project, in case this is triggered programmatically
   position = $(this).position().top - $('.fixed-table-body').height() / 2
   $('.fixed-table-body').animate({scrollTop: position}, 500)
-
 
   project=$(this).data('projectname');
   $('.projectname').removeClass('highlight')
@@ -38,10 +41,11 @@ $(document).on('click', '.projectname', function() {
   $('#details').html('<center><IMG SRC="{{ url_for('static', filename='img/loading.gif') }}" width="30%"></IMG><center>')
   $.get('{{ url_for('projects.show_projectdetails') }}', {
     name: project,
+    project_name: project,
     processgroup: "{{ processgroup }}"
   }, function(data) {
     $('#details').html(data);
-    $("a[id='{{ pp }}-tab']").trigger('click')
+    $("a[id='{{ activetabname }}-tab']").trigger('click')
   });
 });
 
@@ -51,7 +55,7 @@ $(window).on('load', function() {
   }, 20)
 });
 
-// Some functions for the processgroup graphs 
+// Some functions for the processgroup graphs
 
 $(document).on('click', '#select_input_button', function(){
     if (mode != 'select_input') {
@@ -60,7 +64,6 @@ $(document).on('click', '#select_input_button', function(){
     } else {
         mode = 'display'
     }
-    
     load_pgpage();
 })
 

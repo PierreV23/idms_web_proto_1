@@ -1,10 +1,17 @@
+
+{% import 'components/metadata_editor.html' as metadata_widget %}
+<!--This version of bootstrap is needed to get the metadata forms working-->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css"
+  integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"> 
+
 <script>
+var formaction = 'default';
 
 processgroup = '{{ processgroup }}'
 
 function load_pg() {
   $.get("{{ url_for('projects.processgroups') }}", {
-    project: "{{ PD.name }}",
+    project: "{{ projectdetails.name }}",
     group: processgroup
   }, function(data) {
      $('#processgroups').html(data);
@@ -15,7 +22,7 @@ function load_pg() {
 
 function load_colls() {
   $.get( "{{ url_for('projects.projectcolltable') }}", {
-    project: "{{ PD.name }}"
+    project: "{{ projectdetails.name }}"
   }, function(data) {
      $('#collections').html(data);
      console.log('load the collection list ...')
@@ -31,7 +38,6 @@ $('.nav2').on('shown.bs.tab', function(event){
   if (target == "#collections") {
     load_colls();
   }
-  console.log(target)
 })
 
 $(document).on('click', '.path-change', function() {
@@ -45,8 +51,8 @@ $(document).on('click', '.path-change', function() {
 function update_process(sourceElem, destElem) {
     $.post("{{ url_for('projects.get_process') }}",
     { project: $(sourceElem+" option:selected").text() },
-        function(response) { 
-            select = $(destElem) 
+        function(response) {
+            select = $(destElem)
             if(select.prop) {
                 var options = select.prop('options');
             }
@@ -57,62 +63,72 @@ function update_process(sourceElem, destElem) {
             $.each(response, function(index, val) {
                 options[options.length] = new Option(val, val);
             });
-        }    
-    );    
+        }
+    );
 }
 
 </script>
 
 <br>
 
-<!-- PROJECT SETTINGS -->
+<!-- Tabs -->
 <div id="project-tabs" class="card h-100">
   <div class="card-header">
-    <ul class="nav nav-tabs nav2" id="projecttabs">
+    <ul class="nav nav-tabs" id="projecttabs">
       <li class="nav-item mx-2">
-        <A class="nav-link active" id="settings-tab" 
-        data-toggle="tab" href="#settings" role="tab" 
+        <A class="nav-link active" id="settings-tab"
+        data-toggle="tab" href="#settings" role="tab"
         aria-controls="settings" aria-selected="false">Settings</A>
       </li>
-      {% if current_user.feature('jobs') and PD.pipelines %}
       <li class="nav-item mx-2">
-        <A class="nav-link contactmanager" id="contacts-tab" 
-        data-toggle="tab" href="#contacts" role="tab" 
+        <A class="nav-link projectmeta" id="projectmeta-tab"
+        data-toggle="tab" href="#projectmeta" role="tab"
+        aria-controls="projectmeta" aria-selected="false">Project Metadata</A>
+      </li>
+      <li class="nav-item mx-2">
+        <A class="nav-link datasetmeta" id="datasetmeta-tab"
+        data-toggle="tab" href="#datasetmeta" role="tab"
+        aria-controls="datasetmeta" aria-selected="false">Dataset Default Metadata</A>
+      </li>
+      {% if current_user.feature('jobs') and projectdetails.pipelines %}
+      <li class="nav-item mx-2">
+        <A class="nav-link contactmanager" id="contacts-tab"
+        data-toggle="tab" href="#contacts" role="tab"
         aria-controls="contacts" aria-selected="false">Contacts</A>
       </li>
       <li class="nav-item mx-2">
-        <A class="nav-link" id="processgroups-tab" 
-        data-toggle="tab" href="#processgroups" role="tab" 
+        <A class="nav-link nav2" id="processgroups-tab"
+        data-toggle="tab" href="#processgroups" role="tab"
         aria-controls="processgroups" aria-selected="false">Processgroups</A>
       </li>
       {% endif %}
       <li class="nav-item mx-2">
-        <A class="nav-link" id="collections-tab" 
-        data-toggle="tab" href="#collections" role="tab" 
+        <A class="nav-link nav2" id="collections-tab"
+        data-toggle="tab" href="#collections" role="tab"
         aria-controls="collections" aria-selected="false">Collections</A>
       </li>
       <li class="nav-item mx-2">
-        <A class="nav-link usermanager" data-usertype="users" id="users-tab" 
-        data-toggle="tab" href="#users" role="tab" 
+        <A class="nav-link usermanager" data-usertype="users" id="users-tab"
+        data-toggle="tab" href="#users" role="tab"
         aria-controls="users" aria-selected="false">Users</A>
       </li>
       <li class="nav-item mx-2">
-        <A class="nav-link usermanager" data-usertype="managers" id="managers-tab" 
-        data-toggle="tab" href="#managers" role="tab" 
+        <A class="nav-link usermanager" data-usertype="managers" id="managers-tab"
+        data-toggle="tab" href="#managers" role="tab"
         aria-controls="managers" aria-selected="false">Managers</A>
       </li>
       <li class="nav-item mx-2">
-        <A class="nav-link" id="groups-tab" 
-        data-toggle="tab" href="#groups" role="tab" 
+        <A class="nav-link" id="groups-tab"
+        data-toggle="tab" href="#groups" role="tab"
         aria-controls="groups" aria-selected="false">Groups</A>
       </li>
       {% if current_user.is_admin %}
       <li class="nav-item mx-2">
-        <A class="nav-link" id="info-tab" 
-        data-toggle="tab" href="#info" role="tab" 
+        <A class="nav-link" id="info-tab"
+        data-toggle="tab" href="#info" role="tab"
         aria-controls="info" aria-selected="false">System Info</A>
       </li>
-      {% endif %}  
+      {% endif %}
     </ul>
   </div>
 <div class="card-body tab-content h-100">
@@ -127,38 +143,75 @@ function update_process(sourceElem, destElem) {
       {% endif %}
       <form id="project-settings-form" action="update_project" method="post">
         <input type="hidden" id="action" name="action" value="update_project">
-        <input type="hidden" id="project" name="project" value="{{PD.name}}">
+        <input type="hidden" id="project" name="project" value="{{ projectdetails.name }}">
         <div class="form-group">
-          <label for="project_desc_{{PD.name}}">Description</label>
-          <input type="text" class="form-control" name="description" id="project_desc_{{PD.name}}" placeholder="Description" value="{{ PD.description }}" {% if not project_permissions.managers %}disabled{% endif %}>
+          <label for="project_desc_{{ projectdetails.name }}">Description</label>
+          <input type="text" class="form-control" name="description" id="project_desc_{{ projectdetails.name }}" placeholder="Description"
+            value="{{ projectdetails.description }}" {% if not project_permissions.managers %}disabled{% endif %}>
         </div>
-      
-        <div class="form-group">
-          <label for="default_collection_{{PD.name}}">Default Collection</label>
-          <input type="text" class="form-control" name="default_collection" id="default_collection_{{PD.name}}" placeholder="Default collection" value="{{ PD.default_collection }}" {% if not project_permissions.managers %}disabled{% endif %}>
-        </div>
-      
-        <div class="form-check">
-          <input type="checkbox" class="form-check-input" name="public" id="public_{{PD.name}}" placeholder="Public Data" value="1" {% if PD.public %}checked {% endif %} {% if not project_permissions.managers %}disabled{% endif %}>
-          <label for="public_{{PD.name}}">Public Data</label>
-        </div>
-        <div class="form-check">
-          <input type="checkbox" class="form-check-input" data-enable="input-svc" name="pipelines" id="pipelines_{{PD.name}}" placeholder="Use pipelines" value="1" {% if PD.pipelines %}checked {% endif %} {% if not project_permissions.managers %}disabled{% endif %}>
-          <label for="pipelines_{{PD.name}}">Use Pipelines</label>
-        </div>        
 
-        <div class="form-group input-svc" {% if not PD.pipelines %} hidden {% endif %}>
-          <label for="service_account_{{PD.name}}">Service Account (generated automatically)</label>
-          <input type="text" class="form-control" name="service_account" id="service_account_{{PD.name}}" placeholder="Service Account" value="{{ PD.service_account }}" disabled>
-        </div>        
-<hr>
-        {% if project_permissions.managers%}
+        <div class="form-group">
+          <label for="default_collection_{{ projectdetails.name }}">Default Collection</label>
+          <input type="text" class="form-control" name="default_collection" id="default_collection_{{ projectdetails.name }}"
+            placeholder="Default collection" value="{{ projectdetails.default_collection }}" {% if not project_permissions.managers
+            %}disabled{% endif %}>
+        </div>
+
+        <div class="form-check">
+          <input type="checkbox" class="form-check-input" name="public" id="public_{{ projectdetails.name }}" placeholder="Public Data"
+            value="1" {% if projectdetails.public %}checked {% endif %} {% if not project_permissions.managers %}disabled{% endif %}>
+          <label class="form-check-label m-1 ml-4" for="public_{{ projectdetails.name }}">Public Data</label>
+        </div>
+        <div class="form-check mb-3">
+          <input type="checkbox" class="form-check-input" data-enable="input-svc" name="pipelines"
+            id="pipelines_{{ projectdetails.name }}" placeholder="Use pipelines" value="1" {% if projectdetails.pipelines %}checked {% endif %} {% if
+            not project_permissions.managers %}disabled{% endif %}>
+          <label class="form-check-label m-1 ml-4" for="pipelines_{{ projectdetails.name }}">Use Pipelines</label>
+        </div>
+
+        <div class="form-group input-svc" {% if not projectdetails.pipelines %} hidden {% endif %}>
+          <label for="service_account_{{ projectdetails.name }}">Service Account (generated automatically)</label>
+          <input type="text" class="form-control" name="service_account" id="service_account_{{ projectdetails.name }}"
+            placeholder="Service Account" value="{{ projectdetails.service_account }}" disabled>
+        </div>
+        <hr>
+        {% if project_permissions.managers %}
         <button type="submit" class="btn btn-primary">Submit</button>
         {% endif %}
-        <!-- <button type="button" class="btn btn-primary" data-href="/remove_project?name={{PD.name}}" data-toggle="modal" data-target="#confirm-delete">
-          Remove project
-        </button> -->
+        <!-- <button type="button" class="btn btn-primary" data-href="/remove_project?name={{ projectdetails.name }}" data-toggle="modal" data-target="#confirm-delete">
+              Remove project
+            </button> -->
       </form>
+    </div>
+
+    <!-- Project Metadata -->
+    <div class="tab-pane h-100" id="projectmeta" role="tabpanel" aria-labelledby="projectmeta-tab">
+      {{ 
+        metadata_widget.render_metadata_editor(
+          id="comp_project_metadata_"+projectdetails.name,
+          prefix=metadata_prefix,
+          project_name=projectdetails.name, 
+          collection=projectdetails.default_collection, 
+          meta_default_values_collection='',
+          edit_allowed=project_permissions.managers,
+          schemata_data_url=url_for('metaedit.schemata_for_project', collection=projectdetails.default_collection, project_name=projectdetails.name)
+          ) 
+      }}
+    </div>
+    
+    <!-- Dataset Default Metadata -->
+    <div class="tab-pane h-100" id="datasetmeta" role="tabpanel" aria-labelledby="datasetmeta-tab">
+      {{ 
+        metadata_widget.render_metadata_editor(
+            id="comp_default_dataset_metadata_"+projectdetails.name,
+            prefix=upload_default_prefix,
+            project_name=projectdetails.name, 
+            collection=projectdetails.default_collection, 
+            meta_default_values_collection='',
+            edit_allowed=project_permissions.managers,
+            schemata_data_url=url_for('metaedit.schemata_for_dataset', collection=projectdetails.default_collection, project_name=projectdetails.name)
+          ) 
+        }}
     </div>
 
     <!-- Contacts -->
@@ -183,7 +236,7 @@ function update_process(sourceElem, destElem) {
           </TR>
         </thead>
         <tbody>
-          {% for group in PD.groups %}
+          {% for group in projectdetails.groups %}
             <tr>
               <td>
                 <a href="/userinfo/groupdetails?group={{group}}">
@@ -204,7 +257,7 @@ function update_process(sourceElem, destElem) {
     <div class="tab-pane" id="users" role="tabpanel" aria-labelledby="users-tab">
     </div>
 
-    <!-- Users -->
+    <!-- Info -->
     {% if current_user.is_admin %}
     <div class="tab-pane h-100 scrollbar-y" id="info" role="tabpanel" aria-labelledby="info-tab">
       <h2>Project system info</h2>
@@ -238,7 +291,7 @@ function update_process(sourceElem, destElem) {
       <h3>Project details</h3>
       <TABLE class="table">
         <TR><TH>Attr</TH><TH>Value</TH></TR>
-      {% for k, v in PD.items() %}
+      {% for k, v in projectdetails.items() %}
         <TR><TD>{{ k }}</TD><TD>{{ formatvar(v) }}</TD></TR>
       {% endfor %}
       </TABLE>
@@ -256,9 +309,9 @@ function update_process(sourceElem, destElem) {
         <TR><TD>is_admin</TD><TD>{{ current_user.is_admin }}</TD></TR>
         <TR><TD>projects</TD><TD>{{ formatvar(current_user.projects()) }}</TD></TR>
         <TR><TD>username</TD><TD>{{ current_user.username }}</TD></TR>
-        </TABLE>      
+        </TABLE>
     </div>
-    {% endif %}  
+    {% endif %}
 
 <!-- PROJECT DELETE CONFIMATION DIALOG -->
 
@@ -269,12 +322,12 @@ function update_process(sourceElem, destElem) {
                 Remove project
             </div>
             <div class="modal-body">
-                Are you sure you want to remove project {{PD.name}}
+                Are you sure you want to remove project {{ projectdetails.name }}
             </div>
             <div class="modal-footer">
                 <form method="post" action="update_project">
                 <input type="hidden" id="action_remove_project" name="action" value="remove_project">
-                <input type="hidden" id="project" name="project" value="{{PD.name}}">
+                <input type="hidden" id="project" name="project" value="{{ projectdetails.name }}">
                 <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
                 <button type="submit" class="btn btn-danger btn-ok">Delete</a>
                 </form>
@@ -285,10 +338,10 @@ function update_process(sourceElem, destElem) {
 
 <script>
 
-  function load_users() {
+function load_users() {
     usertype = $("ul#projecttabs li a.active").data('usertype')
     $.get("{{ url_for('projects.usermanager') }}", {
-      object: '{{ PD.name }}',
+      object: '{{ projectdetails.name }}',
       objecttype: 'projects',
       usertype: usertype
     }, function(data) {
@@ -302,7 +355,7 @@ function update_process(sourceElem, destElem) {
 
   function load_contacts() {
     $.get("{{ url_for('contacts.contactmanager') }}", {
-      object: '{{ PD.name }}',
+      object: '{{ projectdetails.name }}',
       objecttype: 'projects'
     }, function(data) {
 
@@ -315,9 +368,8 @@ function update_process(sourceElem, destElem) {
     $('#contacts').addClass('pending')
     load_contacts();
   });
-
-
-  $('#project-settings-form').on('submit', function (event) {
+    
+  $('#project-settings-form').on('submit', function(event) {
     $('#settings').addClass('pending')
   })
 
@@ -329,26 +381,5 @@ function update_process(sourceElem, destElem) {
     })
   });
 
-
-  function omit_check() {
-    console.log("Check")
-    if ($('input[name="do_bringonline"]').is(":checked")) {
-      $('input[name="do_staging').prop('disabled', false)
-    } else {
-      $('input[name="do_staging').prop('disabled', true).prop('checked', false)
-    }
-  }
-
-  $('input[name="do_bringonline"]').on('click', omit_check );
-
-  $('document').ready( function() {
-    $('.form-check-input').on('change', function() {
-      classname = $(this).data('enable')
-      $('.' + classname).attr('hidden', !$(this).prop('checked'))
-    })
-    omit_check()
-  })
-
-
-
 </script>
+

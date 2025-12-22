@@ -1,0 +1,203 @@
+{% macro render_metadata_editor(id, prefix, project_name, collection, meta_default_values_collection, edit_allowed, schemata_data_url) %}
+
+<script>
+  var formaction = 'default';
+</script>
+
+<!-- for testing, uncomment these 
+<h5>ID: {{ id }}</h5>
+<h5>Prefix for metadata: {{ prefix }}</h5>
+<h5>Project Name: {{ project_name }}</h5>
+<h5>Collection to store values on: {{ collection }}</h5>
+<h5>Collection to read default values from: {{ meta_default_values_collection }}</h5>
+<h5>edit_allowed: {{ edit_allowed }}</h5>
+<h5>data url to get schemata: {{schemata_data_url}}</h5> -->
+
+<div class="selectgrid h-100">
+  <div class="card selectlist">
+    <div class="card-header">
+      <div class="card-title">Available schemata for: <b>{{ project_name }}</b></div>
+    </div>
+    <table id="{{ id }}-schemata-table" data-toggle='table' data-multi-sort="true" data-sort-name="order" data-sort-order="asc"
+      data-url="{{ schemata_data_url }}" data-checkbox-header="false">
+      <thead>
+        <TR>
+          <TH data-field="selected" data-checkbox="true" title="Check the box first, then select field to display the form"></TH>
+          <TH data-field="schema" data-sortable="true">Schema Name</TH>
+          <TH data-field="schemapath" data-visible="false"></TH>
+          <TH data-field="order" data-visible="false"></TH>
+        </TR>
+      </thead>
+    </table>
+  </div>
+  <div class="card selectdetail">
+    <div class="card-header">
+      <div class="card-title">Metadata editor</div>
+    </div>
+    <div class="card-body autoscroll">
+      <div id="{{ id }}-reactform"><CENTER>SELECT A SCHEMA FILE...</CENTER></div>
+    </div>
+
+    <div class="card-footer">    
+      <button class="btn btn-primary formsubmit" type="submit" name="save" form="{{ id }}-metaForm" disabled>Save</button>
+      <!--button class="btn btn-primary formsubmit" type="submit" name="continue" form="{{ id }}-metaForm" disabled>Save & Continue</button-->
+    </div>
+  </div>
+</div>
+
+<!---------------------------------------------------------------------------------------------------------->
+
+<script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-jsonschema-form@1.8.1/dist/react-jsonschema-form.js" crossorigin></script>
+<script src="{{ url_for('static', filename='js/bootstrap-table.min.js') }}"></script>
+
+<script>
+// edit_allowed can be a string or a boolean, for uniform handling:
+{% set edit_allowed = edit_allowed|string|lower %}
+
+(() => {
+  var selectedSchema = "";
+
+  // Update the collection when a schema is enabled or disabled
+  const toggleRow = function (schemapath, schema_action) {
+    console.log('TOGGLE', '{{ collection }}', schemapath, schema_action )
+    $.ajax({
+      method: "POST",
+      url: "{{ url_for('metaedit.set_schemata_for_collection')}}",
+      contentType: "application/json; charset=utf-8",
+      dataType: "json",      
+      data: JSON.stringify({
+        collection: "{{ collection }}",
+        schemapath: schemapath,
+        action: schema_action,
+        meta_default_values_collection: "{{ meta_default_values_collection }}",
+        attr_type: 'user::schema_in_use',
+        prefix: "{{ prefix }}"
+      })
+    })
+  }
+
+  // Load the correct schema form when a schema is selected
+  const loadSchema = function(schemapath) {
+    console.log('Load schema ' + schemapath)
+    $.ajax({
+      method: "GET",
+      url: '{{ url_for("metaedit.get_schema_and_data") }}',
+      data: {
+        schemapath: schemapath,
+        collection: "{{ collection }}",
+        meta_default_values_collection: "{{ meta_default_values_collection }}",
+        prefix: "{{ prefix }}"
+      },
+      contentType: "application/json; charset=utf-8",
+      dataType: "json",
+      success: function (result) {
+        console.log('Result', result)
+        selectedSchema = schemapath;
+//        fd = (schemaId == selectedSchema) ? formdata : {}
+        renderFormFunction(JSON.parse(result.schema), JSON.parse(result.uiSchema), JSON.parse(result.data), '{{ id }}-reactform');
+      },
+      error: function(request, status, error) {
+        console.log(status)
+      }
+      
+    })
+  }
+
+  // Install bootstraptable event handlers
+  $('#{{ id }}-schemata-table').bootstrapTable({
+    onCheck: function (row, $element) {
+      toggleRow(row.schemapath, 'add')
+    },
+    onUncheck: function (row, $element) {
+      toggleRow(row.schemapath, 'remove')
+    },
+    onClickRow: function (row, $element, field) {
+      if (row.selected == false) {
+        // Disabled schema cannot be loaded
+        return
+      }
+      // TODO: There should be a warning if the current schema is unsaved
+      loadSchema(row.schemapath)
+      $('#{{ id }}-schemata-table tr').removeClass('highlight')
+      $element.addClass('highlight')
+    }
+  })
+
+  const Form = JSONSchemaForm.default;
+  const log = (type) => console.log.bind(console, type);
+  let metaForm;
+
+  function renderFormFunction(schema, uiSchema, data, element) {
+    ReactDOM.render(
+      React.createElement(
+        Form,
+        {
+          id: "{{ id }}-metaForm",
+          schema: schema,
+          uiSchema: uiSchema,
+          formData: data,
+          onChange: function () {
+            $('.formsubmit').removeAttr('disabled');
+          },
+          onSubmit: formSubmit,
+          ref: form => metaForm = form,
+          onError: log("errors")
+        },
+        React.createElement("div", null)
+      ),
+      document.getElementById(element),
+      () => {
+        // Disable form entries when editing is not allowed
+        {% if edit_allowed == 'false' %}
+        const frm = $("#{{ id }}-metaForm");
+        frm.find("input, select, textarea, button").prop("disabled", true);
+        // Disable submit button
+        $('.formsubmit').prop("disabled", true);
+        {% endif %}
+      }
+    );
+  }
+  
+  // Disable checkbox in schemata list when edit not allowed
+  {% if edit_allowed == 'false' %}
+  $('#{{ id }}-schemata-table').on('post-body.bs.table', function() {
+      $('#{{ id }}-schemata-table .bs-checkbox input').addClass('disabled-checkbox').prop('disabled', true);
+  });
+  {% endif %}
+  
+  $('#{{ id }}-metaForm.formsubmit').on('click', function () {
+    formaction = $(this).attr('name');
+  })
+
+  function formSubmit(e, d) {
+    data = {
+      data: e.formData,
+      collection: "{{ collection }}",
+      schemapath: selectedSchema,
+      prefix: "{{prefix}}",
+      action: formaction
+    },
+    $.ajax({
+      method: "POST",
+      url: '{{ url_for("metaedit.store_metadata") }}',
+      data: JSON.stringify(data),
+      collection: "{{ collection }}",
+      contentType: "application/json; charset=utf-8",
+      dataType: "json",
+      success: function () {
+        if (formaction == 'save') {
+          location.reload();
+        } //else {
+          //alert
+          //window.location.replace('{{ url_for("upload.upload_data", collection=collection) }}')
+       //}
+      }
+    });
+  }
+
+})()
+</script>
+
+{% endmacro %}

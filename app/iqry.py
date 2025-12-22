@@ -1,3 +1,4 @@
+import json
 import sys
 import os
 import time
@@ -28,9 +29,12 @@ def qusermetadict(user):
     q = qusermeta(user)
     return {r[UserMeta.name]: r[UserMeta.value] for r in q}
 
-def qusermetaval(user, attr, default=None):
-    m = qusermetadict(user)
-    return m.get(attr, default)
+def qusermetaval(user, attr, default=None, unit=None):
+    d = [ m for m in qusermeta(user) if m[UserMeta.name] == attr and m[UserMeta.units] == unit ]
+    if d:
+        return d[0][UserMeta.value]
+    else:
+        return default
 
 def susermetaval(user, attr, value, unit=None):
     with irods_manager.session() as session:
@@ -46,6 +50,7 @@ def qresmeta(resource):
         result = [r for r in q]
     return result
 
+# TODO: This is not useable if units are used
 def qresmetadict(resource):
     q = qresmeta(resource)
     return {r[ResourceMeta.name]: r[ResourceMeta.value] for r in q}
@@ -60,12 +65,12 @@ def qcollmeta(collection):
 
 def scollmetaval(coll, attr, value, unit=None):
     if value == '':
-        raise ValueError( 'Empty-string not allowed as value of AVU!')
-    if qcollmetaval(coll, attr) == value:
+        raise ValueError( 'Empty-string not allowed as value of AVU!') 
+    if unit is None and qcollmetaval(coll, attr) == value:
         return
     with irods_manager.session() as session:
         u = session.collections.get(coll)
-        old_avus = [ m for m in u.metadata.items() if m.name == attr ]
+        old_avus = [ iRODSMeta(m[CollectionMeta.name], m[CollectionMeta.value], m[CollectionMeta.units]) for m in qcollmeta(coll) if m[CollectionMeta.name] == attr and m[CollectionMeta.units] == unit ]
         new_avu = iRODSMeta(attr, value, unit)
 
         # The atomic metadata operations are preferred, but require a higher permission level
@@ -107,29 +112,41 @@ def delcollmeta(coll, attr, value=None, unit=None):
                         u.metadata.remove(m[CollectionMeta.name], m[CollectionMeta.value], m[CollectionMeta.units])
     flaskcache.cache.delete_memoized(qcollmeta, coll)
 
-def restore_type( str_value, type_name=None ):
-    if type_name:
-        try:
-            # https://stackoverflow.com/questions/11775460/lexical-cast-from-string-to-type
-            #t = getattr(__builtins__, type_name)
-            t = __builtins__[type_name]
-            if not isinstance( t, type):
-                raise ValueError( f"the unit: '{type_name}' is not a type!")
-            value = t(str_value)
-            return value
-        except Exception as e:
-            print( f"for value: {str_value} and type: {type_name} got Exception {e}" )
-    return str_value
-
-
+# def restore_type( str_value, type_name=None ):
+#     if type_name:
+#         try:
+#             if type_name == 'list':         
+#                 return json.loads(str_value)
+            
+#             # https://stackoverflow.com/questions/11775460/lexical-cast-from-string-to-type
+#             #t = getattr(__builtins__, type_name)
+#             t = __builtins__[type_name]
+#             if not isinstance( t, type):
+#                 raise ValueError( f"the unit: '{type_name}' is not a type!")
+#             value = t(str_value)
+#             return value
+#         except Exception as e: 
+#             print( f"for value: {str_value} and type: {type_name} got Exception {e}" )
+#     return str_value
+     
+# TODO: This does not work if units are used
 def qcollmetadict(collection):
     q = qcollmeta(collection)
     return {r[CollectionMeta.name]: r[CollectionMeta.value] for r in q}
 
-def qcollmetadict_typed(collection):
-    q = qcollmeta(collection)
-    return {r[CollectionMeta.name]: restore_type(r[CollectionMeta.value], r[CollectionMeta.units]) for r in q}
+# def qcollmetadict_typed(collection):
+#     q = qcollmeta(collection)
+#     result = {}
+#     for r in q:
+#         try:
+#             v = json.loads(r[CollectionMeta.value])
+#         except:
+#             v = restore_type(r[CollectionMeta.value], r[CollectionMeta.units])
+#         result[r[CollectionMeta.name]] = v
+#     return result
 
+def scollmetaval_typed(coll, attr, value, unit=None):
+    scollmetaval(coll, attr, json.dumps(value), unit)
 
 @flaskcache.cache.memoize(timeout=300, make_name=flaskcache.dep_zone)
 def qcollchildren(collection):
@@ -158,30 +175,32 @@ def qcollbymetaattr(attr):
     return result
 
 @flaskcache.cache.memoize(timeout=120, make_name=flaskcache.dep_zone)
-def qcollbymeta(attr, value):
+def qcollbymeta(attr, value, unit=None):
     with irods_manager.session() as session:
         q = session.query(Collection).filter(
             Criterion('=', CollectionMeta.name, attr)).filter(
             Criterion('=', CollectionMeta.value, value))
+        if unit:
+            q = q.filter(Criterion('=', CollectionMeta.units, unit))            
         result = [r for r in q]
     return result
-
 
 @flaskcache.cache.memoize(timeout=86400, make_name=flaskcache.dep_zone, response_filter=lambda arg: bool(arg))
-def qcollbystaticmeta(attr, value):
+def qcollbystaticmeta(attr, value, unit=None):
     with irods_manager.session() as session:
         q = session.query(Collection).filter(
             Criterion('=', CollectionMeta.name, attr)).filter(
             Criterion('=', CollectionMeta.value, value))
+        if unit:
+            q = q.filter(Criterion('=', CollectionMeta.units, unit))
         result = [r for r in q]
     return result
 
-
-def qcollmetavals(collection, attr):
+def qcollmetavals(collection, attr, unit=None):
     q = qcollmeta(collection)
-    return [r for r in q if r[CollectionMeta.name] == attr]
+    return [r for r in q if r[CollectionMeta.name] == attr and r[CollectionMeta.units] == unit ]
 
-
+# TODO: Adjust for unit
 def qcollmetavals_with_placeholder(collection, attr, placeholder='[0]'):
     result = []
     q = qcollmeta(collection)
@@ -197,16 +216,16 @@ def qcollmetavals_with_placeholder(collection, attr, placeholder='[0]'):
             return result
     return result
 
-
-def qcollmetaval(collection, attr, default=None):
-    m = qcollmetadict(collection)
-    return m.get(attr, default)
-
+def qcollmetaval(collection, attr, default=None, unit=None):
+    d = [ m for m in qcollmeta(collection) if m[CollectionMeta.name] == attr and m[CollectionMeta.units] == unit ]
+    if d == []:
+        return default
+    return d[0][CollectionMeta.value]
 
 @flaskcache.cache.memoize(timeout=86400, make_name=flaskcache.dep_zone, response_filter=lambda arg: bool(arg))
-def qcollmetavalstatic(collection, attr, default=None):
-    m = qcollmetadict(collection)
-    return m.get(attr, default)
+def qcollmetavalstatic(collection, attr, default=None, unit=None):
+    m = qcollmetaval(collection, attr, default=default, unit=unit)
+    return m
 
 @flaskcache.cache.memoize(timeout=86400, make_name=flaskcache.dep_zone)
 def qcollproperty(collection, property):

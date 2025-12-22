@@ -15,13 +15,13 @@ from irods.column import Criterion
 from app.datafield import datafield
 from graphviz import Digraph
 from . import iqry
-from app.constants import COLL_KEY_MAP
+from app.constants import COLL_KEY_MAP, ATTR_METADATA
 from app.irodssessions import irods_manager
 from .projectdb_api import EPOCH, iso2dt, search, rest_call, add_checkbox
 from datetime import datetime
 from os import path
 
-BP = Blueprint('reference', __name__, url_prefix='/reference')
+bp = Blueprint('reference', __name__, url_prefix='/reference')
 
 reference_change_allowed = [ 'description', 'synchronize_command', 'synchronization_frequency', 'repository', 'tag', 'is_active', 'execution_environment']
 
@@ -58,7 +58,7 @@ def get_referencelist():
             referencelist[ reference['name'] ] = reference 
     return referencelist
 
-@BP.route('/')
+@bp.route('/')
 @login_required
 def show_reference_datasets():
     """
@@ -76,7 +76,7 @@ def show_reference_datasets():
     reference_dataset_list = get_referencelist()
     return render_template('referencedatasets.html', referencedatasets=reference_dataset_list, reference_dataset=reference_dataset)
 
-@BP.route('/details')
+@bp.route('/details')
 @login_required
 def show_reference_details():
     """
@@ -116,16 +116,23 @@ def show_reference_details():
     available_tags, r = rest_call('GET', f'reference/{reference_id}/tags')
     if r != 200:
         available_tags = []
+    
+    # Set prefix for metadata
+    metadata_prefix = ATTR_METADATA
+    
+    collection = f"/{current_user.irods_zone}/{current_user.refdata_coll}/{reference_details['name']}"
 
     return render_template('reference_details.html', 
                            RD=reference_details, 
                            all_references=all_references, 
                            reference_versions=reference_versions, 
                            import_state=import_state,
-                           available_tags=available_tags)
+                           available_tags=available_tags,
+                           collection=collection,
+                           prefix=metadata_prefix)
 
 
-@BP.route('/activate_reference', methods=['GET', 'POST'])
+@bp.route('/activate_reference', methods=['GET', 'POST'])
 @login_required
 def activate_reference():
     requestdata = request.args.to_dict()
@@ -140,7 +147,7 @@ def activate_reference():
 
     return redirect(f'{url_for("reference.show_reference_datasets")}?{location}')
 
-@BP.route('/deactivate_reference', methods=['GET', 'POST'])
+@bp.route('/deactivate_reference', methods=['GET', 'POST'])
 @login_required
 def deactivate_reference():
     requestdata = request.args.to_dict()
@@ -156,7 +163,7 @@ def deactivate_reference():
     return redirect(f'{url_for("reference.show_reference_datasets")}?{location}')
 
 
-@BP.route('/update_reference', methods=['GET', 'POST'])
+@bp.route('/update_reference', methods=['GET', 'POST'])
 @login_required
 def update_reference_settings():
     """
@@ -199,7 +206,7 @@ def update_reference_settings():
     return redirect(f'{url_for("reference.show_reference_datasets")}?{location}')
 
 
-@BP.route('/changeVersionName', methods=['GET', 'POST'])
+@bp.route('/changeVersionName', methods=['GET', 'POST'])
 @login_required
 def change_version_name():
     requestdata = request.values.to_dict()
@@ -210,7 +217,7 @@ def change_version_name():
     return (response, result)
 
 
-@BP.route('/versions')
+@bp.route('/versions')
 @login_required
 def versions_table():
     reference_id = request.args.get('id', '', type=str)
@@ -273,7 +280,7 @@ def versions_table():
 
 
 
-@BP.route('/import_state')
+@bp.route('/import_state')
 @login_required
 def import_state():
     reference_id = request.args.get('name', '', type=str)
@@ -282,7 +289,7 @@ def import_state():
     return render_template('colltable.html', path=path, display_field=None)
 
 
-@BP.route('contactmanager', methods=['GET'])
+@bp.route('contactmanager', methods=['GET'])
 def contactmanager():
     objectname = request.args.get('object')
     objecttype = request.args.get('objecttype')
