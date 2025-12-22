@@ -46,3 +46,44 @@ th.rotated-text > div > span {
   white-space: wrap;     
   text-overflow: ellipsis;   /* adds ... if too long */
 }
+
+.selectgrid {
+  display: flex;
+  gap: 1rem;
+  height: calc(100vh - 220px);
+}
+
+/* LEFT card: natural width + 20% */
+.selectgrid .selectlist {
+  flex: 0 0 auto;
+  width: calc(max-content + 20%);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* RIGHT card fills all remaining space */
+.selectgrid .selectdetail {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Body fills vertical space + scrolls */
+.selectgrid .card .card-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* Footer stays pinned to bottom */
+.selectgrid .card .card-footer {
+  flex-shrink: 0;
+}
+
+.disabled-checkbox {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;  
+}

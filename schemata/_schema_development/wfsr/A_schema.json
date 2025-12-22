@@ -3,7 +3,7 @@
     "description": "A simple form example.",
     "type": "object",
     "required": [
-      "firstName",
+      "projectresponsible",
       "lastName"
     ],
     "properties": {

@@ -1,9 +1,11 @@
+
+{% import 'components/metadata_editor.html' as metadata_widget %}
 <br>
 
 
 <script src="{{ url_for('static', filename='js/markdown-it.min.js') }}"></script>
 
-<!-- REFERENCE SETTINGS -->
+<!-- TABS -->
 <div class="card h-100">
   <div class="card-header">
     <ul class="nav nav-pills nav2" id="referencetabs">
@@ -16,6 +18,11 @@
         <button class="btn btn-outline-primary contactmanager" id="contacts-tab" 
         data-toggle="tab" href="#contacts" role="tab" 
         aria-controls="contacts" aria-selected="false">Contacts</button>
+      </li>
+      <li class="nav-item mx-2">
+        <button class="btn btn-outline-primary" id="refdatameta-tab" 
+        data-toggle="tab" href="#refdatameta" role="tab" 
+        aria-controls="refdatameta" aria-selected="false">Metadata</button>
       </li>
       <li class="nav-item mx-2">
         <button class="btn btn-outline-primary" id="versions-tab" 
@@ -182,9 +189,21 @@
   </form>
 </div>
 
-
 <!-- Contacts -->
 <div class="tab-pane" id="contacts" role="tabpanel" aria-labelledby="contacts-tab">
+</div>
+
+<!-- Metadata -->
+<div class="tab-pane h-100" id="refdatameta" role="tabpanel" aria-labelledby="refdatameta-tab">
+      {{ metadata_widget.render_metadata_editor(
+          id="comp_refdata_metadata_"+RD.name,
+          prefix=metadata_prefix,
+          project_name=RD.name, 
+          collection=collection, 
+          meta_default_values_collection='',
+          edit_allowed='true',
+          schemata_data_url=url_for('metaedit.schemata_for_reference_dataset', collection=collection, refdata_name=RD.name)
+      ) }}
 </div>
 
 <!-- Versions -->

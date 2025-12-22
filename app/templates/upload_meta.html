@@ -1,4 +1,5 @@
 {% extends 'upload_pages.html' %}
+{% import 'components/metadata_editor.html' as metadata_widget %}
 
 {% block heading %}
 <H2>Upload metadata for: <b>{{ name }}</b></H2>
@@ -9,153 +10,17 @@ menuname='upload_meta'
 {% endblock %}
 
 {% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css"
+  integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"> 
 
-
-<!--                 unpkg.com/:package@:version/:file  -->
-<script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
-<!--script src="https://unpkg.com/@rjsf/core/dist/react-jsonschema-form.js"></script-->
-<!--script src="https://unpkg.com/@rjsf/core/dist/core.cjs.production.min.js" crossorigin></script-->
-
-<script src="https://unpkg.com/react-jsonschema-form@1.8.1/dist/react-jsonschema-form.js" crossorigin></script>
-
-
-<div id="app"></div>
-<div id="res"></div>
-<script>
-  var formaction = 'default';
-</script>
-
-
-<div class="card h-100">
-  <div class="card-header">
-    <H3>Select a metadata-schema for project <em>{{ project }}</em></H3>
-    <div id="schema-select-div" class="d-none">
-      <label for="schema-select">Schema:</label>
-      <select id="schema-select" class="form-control form-select"></select>
-    </div>    
-  </div>
-
-  <div class="card-body autoscroll">
-    <div id="schema-select-alert" class="alert alert-warning d-none">
-      <strong>No schemata found!</strong> Your project doesnt have any metainformation schemata defined.
-      We advise to define at least a minimal set of attributes!
-    </div>
-    <hr>
-    <div id="reactform"></div>
-  </div>
-  <div class="card-footer">
-    <button class="btn btn-primary formsubmit" type="submit" name="save" form="metaForm">Save</button>
-    <button class="btn btn-primary formsubmit" type="submit" name="continue" form="metaForm">Save & Continue</button>
-  </div>
-</div>
-
-<script>
-
-  const Form = JSONSchemaForm.default;
-  const schemata = {{ schemata | safe }};
-  const formdata = {{ data | safe }};
-  const selectedSchema = "{{ selectedSchema | safe }}";
-
-  const log = (type) => console.log.bind(console, type);
-  let metaForm;
-
-  function renderFormFunction( schema, fd ) {
-    //console.log( "rendering form for schema:" + schema)
-    ReactDOM.render(
-      React.createElement(
-        Form, 
-        {
-          id: "metaForm",
-          schema: schema,
-          formData: fd,
-          onChange: function () {
-            $('.formsubmit').removeAttr('disabled');
-          },
-          onSubmit: formSubmit,
-          ref: form => metaForm = form,
-          onError: log("errors")
-        },
-        React.createElement("div", null)
-      ),
-      document.getElementById("reactform"));
-  }
-
-
-  //create selectbox with available schemafiles for project
-  for( s of Object.keys( schemata )) {
-      $('#schema-select').append(new Option(s, s))
-  }
-  $('#schema-select').val(selectedSchema);
-  $('#schema-select').on('change', function(){
-    schemaId = $(this).val()
-    schemaFile = schemata[ schemaId ]
-    //AJAX call to get the content of schemafile
-    $.ajax({
-      method: "POST",
-      url: '{{ url_for("upload.get_schema") }}',
-      data: schemata[ schemaId ],
-      contentType: "application/json; charset=utf-8",
-      dataType: "json",
-      success: function (schema) {
-        fd = (schemaId == selectedSchema) ? formdata : {}
-        renderFormFunction( schema, fd );
-      }
-    })
-  })
-
-  $('.formsubmit').on('click', function () {
-    formaction = $(this).attr('name');
-  })
-
-  function formSubmit(e, d) {
-    data = {
-      data: e.formData,
-      coll: "{{ coll }}",
-      selectedSchema: $("#schema-select").val(),
-      action: formaction
-    }
-    $.ajax({
-      method: "POST",
-      url: '{{ url_for("upload.upload_meta") }}',
-      data: JSON.stringify(data),
-      contentType: "application/json; charset=utf-8",
-      dataType: "json",
-      success: function () {
-        if (formaction == 'save') {
-          location.reload();
-        } else {
-          window.location.replace('{{ url_for("upload.upload_data", coll=coll) }}')
-        }
-      }
-    });
-  }
-
-  //when DOM ready trigger initial rendering
-  $( document ).ready(function() {
-    if( Object.keys( schemata ).length > 0 ) {
-      schemaId = $('#schema-select').val()
-      //AJAX call to get the content of schemafile
-      $.ajax({
-        method: "POST",
-        url: '{{ url_for("upload.get_schema") }}',
-        data: schemata[ schemaId ],
-        contentType: "application/json; charset=utf-8",
-        dataType: "json",
-        success: function (schema) {
-          fd = (schemaId == selectedSchema) ? formdata : {}
-          renderFormFunction( schema, fd );
-          $('#schema-select-div').removeClass('d-none');
-        }
-      })
-    }
-    else {
-      $('#schema-select-alert').removeClass('d-none');
-    }
-  });
-
-
-</script>
-
+      {{ metadata_widget.render_metadata_editor(
+          id="comp_upload_metadata_",
+          prefix="user::upload::metadata::",
+          project_name=project_name, 
+          collection=collection, 
+          meta_default_values_collection=meta_default_values_collection,
+          edit_allowed='true',
+          schemata_data_url=url_for('metaedit.schemata_for_dataset', collection=collection, project_name=project_name)
+      ) }}
 
 {% endblock %}
