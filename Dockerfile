@@ -1,9 +1,15 @@
 # The build-stage image:
-FROM continuumio/miniconda3 AS build
+FROM condaforge/mambaforge AS build
+
+# test some things
+RUN conda --version
+RUN apt-get update -y
+RUN apt-get install -y iputils-ping
+RUN ping -c 1 dns.google
 
 # Install the package as normal:
 COPY myflask.yaml .
-RUN conda env create -f myflask.yaml
+RUN mamba env create -f myflask.yaml
 
 # Install conda-pack:
 RUN conda install -c conda-forge conda-pack
