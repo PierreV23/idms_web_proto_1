@@ -241,13 +241,14 @@
       <textarea rows="5" class="form-control" name="last_task-message" id="import_state_{{import_state.id}}_last_task_message" readonly>{{import_state.last_task_message }}</textarea>
        
      <label for="import_state_{{import_state.id}}_error_count">error count</label>
-    <div class="input-group mb-1">
-     <input type="text" class="form-control col-xs-2 name="import_state_error_count" id="import_state_{{import_state.id}}_error_count" value="{{import_state.error_count}}"
+    
+     <div class="input-group">
+     <input type="text" class="form-control" name="import_state_error_count" id="import_state_{{import_state.id}}_error_count" value="{{import_state.error_count}}"
       aria-describedby="import_state_{{import_state.id}}_error_count_reset" readonly>
-       <div class="input-group-append">
-       <button type="button" class="btn btn-danger" id="import_state_{{import_state.id}}_error_count_reset" 
-               {% if import_state.error_count == 0 %} disabled {% endif %}>reset</button>
-    </div>
+       <span class="input-group-btn">
+          <button type="button" class="btn btn-danger" id="import_state_{{import_state.id}}_error_count_reset" 
+                  {% if import_state.error_count == 0 %} disabled {% endif %}>reset</button>
+       </span>
     </div>
 
       <hr>
@@ -347,7 +348,12 @@ $('.contactmanager').on('shown.bs.tab', function (event) {
     load_contacts();
 });
 
-
+$( '#import_state_{{import_state.id}}_error_count_reset').on( "click", function(event){
+  $.get('{{ url_for("reference.reset_error_counter")}}', { reference_id: '{{ RD.id }}'} )
+      .done(function(data) {
+              $('#import_state_{{import_state.id}}_error_count').val('0');
+      })
+})
 
 
 seconds = +"{{ RD.synchronization_frequency }}"

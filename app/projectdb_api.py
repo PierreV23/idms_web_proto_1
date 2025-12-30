@@ -17,7 +17,8 @@ REQUESTS_METHODS = {
     'GET':   requests.get,
     'PUT':   requests.put,
     'POST':  requests.post,
-    'DELETE':requests.delete
+    'DELETE':requests.delete,
+    'PATCH': requests.patch
 }
 
 EPOCH = '1970-01-01T01:00:00'
