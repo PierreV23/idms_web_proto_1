@@ -35,28 +35,37 @@ def get_referencelist():
     referencelist_raw, status_code = rest_call('GET', 'reference')
     referencelist = {}
     if status_code == 200:
-        for reference in referencelist_raw:
-            reference["status"] = "WARNING"  #default state
-            reference["days_since_update_str"] = "N/A"
-            if reference["importer_state"]:
-                ts_last_updated = reference["importer_state"]["last_updated"]
-                #print(f"last update: {ts_last_updated}")
-                ts_now = datetime.now().timestamp()
-                if ts_last_updated > 0:
-                    delta_last_updated = ts_now - ts_last_updated
-                    reference["status"] = "OK"
-                    if delta_last_updated > (4* reference["synchronization_frequency"]):
-                        reference["status"] = "WARNING"
-                    days_since_update = int(delta_last_updated / (24*60*60))
-                    reference["days_since_update"] = days_since_update
-                    reference["days_since_update_str"] = "< 1 day"
-                    if days_since_update > 0:
-                        reference["days_since_update_str"] = f"{days_since_update} days"
-                if reference["importer_state"]["error_count"] > 0:
-                    reference["status"] = "ERROR"
+        #which kind of categories do we have?
+        categories = sorted(set(map(lambda r:r.get("category", "unknown"), referencelist_raw)))
 
-            referencelist[ reference['name'] ] = reference 
+        for category in categories:
+            refsets_in_category = [r for r in referencelist_raw if r.get("category", "unknown")==category]
+
+            for reference in refsets_in_category:
+                reference["status"] = "WARNING"  #default state
+                reference["days_since_update_str"] = "N/A"
+                if reference["importer_state"]:
+                    ts_last_updated = reference["importer_state"]["last_updated"]
+                    #print(f"last update: {ts_last_updated}")
+                    ts_now = datetime.now().timestamp()
+                    if ts_last_updated > 0:
+                        delta_last_updated = ts_now - ts_last_updated
+                        reference["status"] = "OK"
+                        if delta_last_updated > (4* reference["synchronization_frequency"]):
+                            reference["status"] = "WARNING"
+                        days_since_update = int(delta_last_updated / (24*60*60))
+                        reference["days_since_update"] = days_since_update
+                        reference["days_since_update_str"] = "< 1 day"
+                        if days_since_update > 0:
+                            reference["days_since_update_str"] = f"{days_since_update} days"
+                    if reference["importer_state"]["error_count"] > 0:
+                        reference["status"] = "ERROR"
+
+                referencelist.setdefault( category, {})
+                referencelist[category][ reference['name'] ] = reference 
+
     return referencelist
+
 
 @bp.route('/')
 @login_required
