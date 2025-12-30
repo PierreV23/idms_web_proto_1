@@ -226,6 +226,15 @@ def change_version_name():
     return (response, result)
 
 
+@bp.route('/resetErrorCount')
+@login_required
+def reset_error_counter():
+    requestdata = request.values.to_dict()
+    reference_id = requestdata.get( 'reference_id')
+    response, result = rest_call('PATCH', f'reference/{reference_id}/importer_state', data={'error_count': 0})
+    return (response, result)
+
+
 @bp.route('/versions')
 @login_required
 def versions_table():
