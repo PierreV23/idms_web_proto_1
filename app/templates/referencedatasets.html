@@ -52,20 +52,6 @@ $(window).on('load', function() {
 });
 
 
-// Some functions for the processgroup graphs 
-
-/*$(document).on('click', '#select_input_button', function(){
-    if (mode != 'select_input') {
-        mode = 'select_input';
-        console.log('Mode: select_input')
-    } else {
-        mode = 'display'
-    }
-    
-    load_pgpage();
-})
-    */
-
 </script>
 
 <div class="modal fade" id="referenceModal">
@@ -101,9 +87,18 @@ $(window).on('load', function() {
 
   <div class="card selectlist">
     <div class="card-body nopadding scroll">
-      <ul class="list-group">
-        {% for reference in referencedatasets | sort  %}
-        {%   set ref_data = referencedatasets[reference] %}
+      <table class="table-borderless" id="refdata-table" 
+               data-toggle="table" data-search="true">
+       <thead>
+          <tr>
+            <th>Datasets</th>
+          </tr>
+       </thead>
+      <tbody>
+        {% for category in referencedatasets | sort  %}
+        <tr class="bg-dark"><td>{{ category }}</td></tr>
+        {% for reference in referencedatasets[category] | sort  %}
+        {%   set ref_data = referencedatasets[category][reference] %}
         {%   set days_since_update_str = ref_data["days_since_update_str"] %}
         {%   set style = "list-group-item referencename" %}
         {%   if ref_data["is_active"] != 1 %}
@@ -116,15 +111,21 @@ $(window).on('load', function() {
         {%          set style = style + " list-group-item-danger" %}
         {%      endif %}
         {%   endif %}
-          <li class="{{ style }}" data-referencename="{{ reference  }}" >
+        <tr>
+          
+          <td class="{{ style }}" data-referencename="{{ reference  }}" >
             <div class="d-flex w-100 justify-content-between">
-               <h5 class="mb-1">{{ reference  }}</h5> <!-- {% if referencedatasets[reference]['processing'] %} <i class="fas fa-cogs "></i> {% endif %}-->
+               <h5 class="mb-1">{{ reference  }}</h5>
                <span class="badge badge-secondary badge-light">{{ ref_data["number_of_valid_versions"] }}</span>
             </div>
             <small>{{ days_since_update_str }}</small>
-          </li>
+          </td>
+        </tr>
         {% endfor %}
-        </ul>      
+        {% endfor %}
+
+        </tbody>
+        </table>    
     </div>
   </div>
 
