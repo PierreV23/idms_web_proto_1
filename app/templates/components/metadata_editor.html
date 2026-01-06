@@ -59,18 +59,17 @@
 (() => {
   var selectedSchema = "";
   let isFormChanged = false; 
+  let isFormInitialized = false;
   
-  function formChange(e) { 
-    isFormChanged = true; 
-    setSaveDisabled(false); 
-  }
-  
+  // Warning if form is changed (only when edit allowed)
   function confirmIfChanged() {
     if (isFormChanged) {
+      {% if edit_allowed == 'true' %}
       const proceed = confirm(
         'You have unsaved changes. If you continue, those changes will be lost. Continue?'
       );
       if (!proceed) return false;
+      {% endif %}
     }
     return true;
   }
@@ -154,6 +153,7 @@
     },
     // On UnCheck
     onUncheck: function (row) {
+      {% if edit_allowed == 'true' %}
       if (!confirm('Unchecking the select box will also delete metadata in this form. Do you want to proceed?')) {
         $('#{{ id }}-schemata-table').bootstrapTable('checkBy', {
           field: 'schemapath',
@@ -166,6 +166,7 @@
       if (selectedSchema === row.schemapath) {
         unmountSchemaForm();
       }
+      {% endif %}
     }
   })
 
@@ -183,6 +184,7 @@
           uiSchema: uiSchema,
           formData: data,
           onChange: function () {
+            if (!isFormInitialized) return;
             // Mark the form as changed
             isFormChanged = true;
             // Enable the Save button
@@ -196,12 +198,13 @@
       ),
       document.getElementById(element),
       () => {
+        isFormInitialized = true;
+        $('.formsubmit').prop("disabled", true);
         // Disable form entries when editing is not allowed
         {% if edit_allowed == 'false' %}
         const frm = $("#{{ id }}-metaForm");
         frm.find("input, select, textarea, button").prop("disabled", true);
         // Disable submit button
-        $('.formsubmit').prop("disabled", true);
         {% endif %}
       }
     );
@@ -218,11 +221,7 @@
     formaction = $(this).attr('name');
   })
 
-  function formSubmit(e, d) {
-    const submitButton = e.nativeEvent.submitter;
-    if (submitButton) {
-      submitButton.disabled = true;
-    }
+  function formSubmit(e) {
     data = {
       data: e.formData,
       collection: "{{ collection }}",
@@ -243,9 +242,7 @@
       }
     },
     error: function () {
-      if (submitButton) {
-        submitButton.disabled = false;
-      }
+      $('.formsubmit').prop("disabled", true);
     }
   });
 }
