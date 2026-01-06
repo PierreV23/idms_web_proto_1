@@ -1,5 +1,8 @@
 {
-  "schema_version": "1.2.4",
+  "schema_version": {
+    "value": "1.2.4",
+    "ui:widget": "hidden"
+    },
   "title": {},
   "metadata_identifier": {
     "ui:widget": "hidden"
@@ -12,21 +15,27 @@
   },
   "language": {},
   "author": {
-      "name": {},
-      "affiliation": {},
-      "identifier": {},
-      "id_type": {}
+    "name": {},
+    "affiliation": {},
+    "identifier": {},
+    "id_type": {}
   },
   "contact": {
-      "name": {},
-      "email": {}
+    "name": {},
+    "email": {}
   },
   "description": {},
   "subject": {},
   "keyword": {},
   "distribution_date": {
     "ui:widget": "hidden",
-    "ui:placeholder": "jjjj-mm-dd"
+    "ui:options": {
+      "yearsRange": [
+        1980,
+        2030
+      ],
+      "format": "YMD"
+    }
   },
   "depositor": {
     "ui:widget": "hidden"
@@ -36,16 +45,28 @@
   },
   "geographic_coverage": {},
   "time_period": {
-      "items": {
-        "start": {
-          "ui:widget": "text",
-          "ui:placeholder": "jjjj-mm-dd"
-        },
-        "end": {
-          "ui:widget": "text",
-          "ui:placeholder": "jjjj-mm-dd"
+    "items": {
+      "start": {
+        "ui:widget": "alt-date",
+        "ui:options": {
+          "yearsRange": [
+            1980,
+            2030
+          ],
+          "format": "YMD"
+        }
+      },
+      "end": {
+        "ui:widget": "alt-date",
+        "ui:options": {
+          "yearsRange": [
+            1980,
+            2030
+          ],
+          "format": "YMD"
         }
       }
+    }
   },
   "series": {},
   "other_identifier": {},
@@ -77,22 +98,34 @@
     "ui:widget": "hidden"
   },
   "format": {
-      "ui:widget": "hidden",
-      "name": {},
-      "version": {},
-      "specification": {}
+    "ui:widget": "hidden",
+    "name": {},
+    "version": {},
+    "specification": {}
   },
   "version": {
-      "number": {},
-      "date": {
-        "ui:widget": "text",
-        "ui:placeholder": "jjjj-mm-dd"
+    "number": {},
+    "date": {
+      "ui:widget": "alt-date",
+      "ui:options": {
+        "yearsRange": [
+          1980,
+          2030
+        ],
+        "format": "YMD"
       }
+    }
   },
   "status": {},
   "modification_date": {
-    "ui:widget": "hidden",
-    "ui:placeholder": "jjjj-mm-dd"
+    "ui:widget": "alt-date",
+    "ui:options": {
+      "yearsRange": [
+        1980,
+        2030
+      ],
+      "format": "YMD"
+    }
   },
   "availability": {
     "ui:widget": "hidden"
@@ -101,35 +134,41 @@
     "ui:widget": "hidden"
   },
   "process_information": {
-      "retention_processcategory": {
-        "ui:widget": "hidden"
-        },
-      "retention_process": {}
+    "retention_processcategory": {
+      "ui:widget": "hidden"
+    },
+    "retention_process": {}
   },
   "retention_information": {
-      "period": {},
-      "trigger": {},
-      "start": {
-        "ui:widget": "text",
-        "ui:placeholder": "jjjj-mm-dd"
+    "period": {},
+    "trigger": {},
+    "start": {
+      "ui:widget": "alt-date",
+      "ui:options": {
+        "yearsRange": [
+          1980,
+          2030
+        ],
+        "format": "YMD"
       }
+    }
   },
   "publish_to_external": {},
   "external_connection_ngr": {
-        "ui:widget": "hidden"
-        },
+    "ui:widget": "hidden"
+  },
   "external_connection_inspire": {
-        "ui:widget": "hidden"
-        },
+    "ui:widget": "hidden"
+  },
   "metadata_location": {
-        "ui:widget": "hidden"
-        },
+    "ui:widget": "hidden"
+  },
   "dataset_location": {
-        "ui:widget": "hidden"
-        },
+    "ui:widget": "hidden"
+  },
   "source": {
-        "ui:widget": "hidden"
-        },
+    "ui:widget": "hidden"
+  },
   "metadata_author": {},
   "skip_review": {},
   "allow_skip_review": {
