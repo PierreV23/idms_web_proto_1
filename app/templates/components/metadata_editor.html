@@ -2,6 +2,9 @@
 
 <script>
   var formaction = 'default';
+  
+  // edit_allowed can be a string or a boolean, for uniform handling:
+  {% set edit_allowed = edit_allowed|string|lower %}
 </script>
 
 <!-- for testing, uncomment these 
@@ -37,9 +40,8 @@
     <div class="card-body autoscroll">
       <div id="{{ id }}-reactform"><CENTER>SELECT A SCHEMA FILE...</CENTER></div>
     </div>
-
     <div class="card-footer">    
-      <button class="btn btn-primary formsubmit" type="submit" name="save" form="{{ id }}-metaForm" disabled>Save</button>
+      <button class="btn btn-primary formsubmit" type="submit" name="save" form="{{ id }}-metaForm" {% if edit_allowed == 'false' %}hidden{% else %}disabled{% endif %}>Save</button>
       <!--button class="btn btn-primary formsubmit" type="submit" name="continue" form="{{ id }}-metaForm" disabled>Save & Continue</button-->
     </div>
   </div>
@@ -53,8 +55,7 @@
 <script src="{{ url_for('static', filename='js/bootstrap-table.min.js') }}"></script>
 
 <script>
-// edit_allowed can be a string or a boolean, for uniform handling:
-{% set edit_allowed = edit_allowed|string|lower %}
+
 
 (() => {
   var selectedSchema = "";
@@ -161,11 +162,15 @@
         });
         return;
       }
+      isFormChanged = false;
       toggleRow(row.schemapath, 'remove');
+
       // Only hide the form if the unchecked schema is the one currently displayed
       if (selectedSchema === row.schemapath) {
         unmountSchemaForm();
       }
+      // Remove highlight
+      $('#{{ id }}-schemata-table tr').removeClass('highlight');
       {% endif %}
     }
   })
@@ -199,17 +204,19 @@
       document.getElementById(element),
       () => {
         isFormInitialized = true;
+        // Disable Save button
         $('.formsubmit').prop("disabled", true);
         // Disable form entries when editing is not allowed
         {% if edit_allowed == 'false' %}
         const frm = $("#{{ id }}-metaForm");
         frm.find("input, select, textarea, button").prop("disabled", true);
-        // Disable submit button
+        frm.find("a").addClass("disabled-link");
+
         {% endif %}
       }
     );
   }
-  
+
   // Disable checkbox in schemata list when edit not allowed
   {% if edit_allowed == 'false' %}
   $('#{{ id }}-schemata-table').on('post-body.bs.table', function() {
@@ -229,6 +236,9 @@
       prefix: "{{ prefix }}",
       action: formaction
     },
+    // disable Save button
+    $('.formsubmit').prop("disabled", true);
+    // store metadata
     $.ajax({
     method: "POST",
     url: '{{ url_for("metaedit.store_metadata") }}',
@@ -242,7 +252,6 @@
       }
     },
     error: function () {
-      $('.formsubmit').prop("disabled", true);
     }
   });
 }

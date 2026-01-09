@@ -87,3 +87,9 @@ th.rotated-text > div > span {
   cursor: not-allowed;
   pointer-events: none;  
 }
+
+.disabled-link {
+    pointer-events: none;
+    opacity: 0.5;
+    cursor: default;
+}
