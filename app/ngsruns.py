@@ -17,7 +17,7 @@ import json
 import requests
 from requests.auth import HTTPBasicAuth
 from app.projects import get_projectlist
-from app.iqry import qcollbystaticmeta
+from app.iqry import qcollbystaticmeta, qcollmetaval
 from app.irodssessions import irods_manager
 from app.settings import NGSRUN_FIELDS, BARCODE_FIELDS
 
@@ -271,7 +271,7 @@ def runs():
 
     # Count 'flowcell' to detect and label DUPLICATE records
     flowcell_list = [f.flowcell for f in ngsruns.all()]
-    flowcell_dupl = {f:' (DUPLICATE)' if flowcell_list.count(f) > 1 else '' for f in flowcell_list}
+    flowcell_dupl = [f for f in flowcell_list if flowcell_list.count(f) > 1]
 
     # Apply filters on ngsruns ('select' and 'input')
     for _, field_attrs in NGSRUN_FIELDS.items():
@@ -300,7 +300,8 @@ def runs():
             val = getattr(run, key, None)
             if key == 'flowcell' and val is not None:
                 # append (DUPLICATE) to flowcell name
-                val += flowcell_dupl.get(val)
+                if val in flowcell_dupl:
+                    val += ' (duplicate)'
             if val is not None:
                 formatted = datafield(key, val, NGSRUN_FIELDS[f]['format'])
                 record |= { key: formatted.htmlshort, f'_{key}': formatted.value }
@@ -315,11 +316,18 @@ def runs():
         colls = qcollbystaticmeta('minion::flow_cell_id', run['flowcell'])
         # sort by create_time to get first collection name
         colls = sorted(colls, key = lambda k: k[Collection.create_time])
-        # format available collection name
-        if colls:
-            run['datacoll'] = datafield('collection', colls[0][Collection.name], 'irods_collection').htmlshort
-        else:
-            run['datacoll'] = ''
+        # Find import collection. They have data type 'imported'
+        # To distinguish between raw and basecalled data, we check the ID metadata attr. 
+        # This is only present on de basecalled data collections
+        import_colls = [ c for c in colls 
+                        if qcollmetaval(c[Collection.name], 'sys::data::type') == 'imported'
+                        and qcollmetaval(c[Collection.name], 'ID') is not None ]
+        # If there are multiple collections, match the id
+        if len(import_colls) > 1:
+            reuse_import_colls = [ c for c in import_colls if qcollmetaval(c[Collection.name], 'minion::sample_id') == run.get('id') ]
+            if len(reuse_import_colls):
+                import_colls = reuse_import_colls
+        run['datacoll'] = '<p>'.join([ datafield('collection', c[Collection.name], 'irods_collection').htmlshort for c in import_colls ])              
 
     return { 'rows': result, 'filters': filters, 'total': count_runs }
 
