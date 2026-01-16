@@ -93,3 +93,15 @@ th.rotated-text > div > span {
     opacity: 0.5;
     cursor: default;
 }
+
+/* to prevent linebreaks on - or / in the runtable */
+#runtable a {
+    display: inline-block;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    direction: ltr;
+    text-align: left;
+}
