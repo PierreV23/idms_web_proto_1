@@ -113,13 +113,14 @@ $(window).on('load', function() {
         {%   endif %}
         <tr>
           
-          <td class="{{ style }}" data-referencename="{{ reference  }}" >
+          <td class="{{ style }}" data-referencename="{{ reference  }}" data-searchable="true">
             <div class="d-flex w-100 justify-content-between">
                <h5 class="mb-1">{{ reference  }}</h5>
                <span class="badge badge-secondary badge-light">{{ ref_data["number_of_valid_versions"] }}</span>
             </div>
-            <small>{{ days_since_update_str }}</small>
+            <small>{{ days_since_update_str }}</small><span class="hidden">{{ category }}</span>
           </td>
+         
         </tr>
         {% endfor %}
         {% endfor %}

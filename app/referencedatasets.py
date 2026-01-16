@@ -36,10 +36,10 @@ def get_referencelist():
     referencelist = {}
     if status_code == 200:
         #which kind of categories do we have?
-        categories = sorted(set(map(lambda r:r.get("category", "unknown"), referencelist_raw)))
+        categories = sorted(set(map(lambda r:r.get("category") or "unknown", referencelist_raw)))
 
         for category in categories:
-            refsets_in_category = [r for r in referencelist_raw if r.get("category", "unknown")==category]
+            refsets_in_category = [r for r in referencelist_raw if r.get("category", "unknown") ==category]
 
             for reference in refsets_in_category:
                 reference["status"] = "WARNING"  #default state
