@@ -1609,6 +1609,52 @@ def add_items(path, level, active):
                     result = '{}<ul id="{}">{}</ul>'.format(result, collpath, subtree)
     return(result)
 
+def get_values(fields, values):
+    from .jobs import db
+    if len(values) == 0:
+        sql = f"SELECT DISTINCT coll->'coll_meta'->>'{fields[0]}' as v0 FROM coll_json ORDER BY v0"
+    elif len(values) < len(fields):
+        l = len(values)
+        crit = ' AND '.join([f" coll->'coll_meta'->>'{fields[i]}' = '{v}' " for i, v in enumerate(values)])
+        sql = f"SELECT DISTINCT coll->'coll_meta'->>'{fields[l]}' as v0 FROM coll_json WHERE {crit} ORDER by v0"
+    else:
+        crit = ' AND '.join([f" coll->'coll_meta'->>'{fields[i]}' = '{v}' " for i, v in enumerate(values)])        
+        sql = f"SELECT DISTINCT coll->'coll_name' as v0 FROM coll_json WHERE {crit} ORDER by v0"
+    data = db.connection().sql(sql)
+    results = []
+    for d in data:
+        if d['v0'] is not None:
+            results.append(d['v0'])
+    #results = [ d['v0'] for d in data if d['v0'] is not None ]
+    return results
+        
+@bp.route('/_custom', methods=['POST'])
+#@cache.cached(timeout=1, key_prefix=key_zone)
+def customtree():
+    """Get custom browse tree grouped by metadata
+
+        input parameters:
+            base: list of metadata values leading to the base path
+            active: list of metadata values leading to the active path
+    """
+    CONFIG = [
+        'projectID',
+        'user::runinfo::name',
+        'sys::run::result'
+    ]
+
+    data = request.get_json()
+    base = data.get('base', [])
+    active = data.get('active', [])
+    print(f'BASE {base}') 
+    result = get_values(CONFIG, base)
+    rs = ''
+    for r in result:
+        rs += f'<li>{r}</li>'
+    print(rs)
+    return { 'result': '<ul>{}</ul>'.format(rs) }
+    return ('<ul>{}</ul>'.format(rs)), 200
+
 # Collection tree
 @bp.route('/_tree')
 @cache.cached(timeout=60, key_prefix=key_zone)

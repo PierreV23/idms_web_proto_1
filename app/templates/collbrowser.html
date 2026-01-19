@@ -432,10 +432,14 @@ menuname='collectionbrowser'
   }
 
   function load_leftpane() {
-    {% if current_user.feature('treeview') %}
-    load_tree()
+    {% if current_user.feature('classic') %}
+      {% if current_user.feature('treeview') %}
+      load_tree()
+      {% else %}
+      load_projects()
+      {% endif %}
     {% else %}
-    load_projects()
+    load_custom()
     {% endif %}
   }
 
@@ -474,6 +478,33 @@ menuname='collectionbrowser'
       $('#treediv').scrollTop(top)
     });
   }
+
+  function load_custom() {
+    var data = {
+        'base': [ 'vir-ont', 'R1395', 'OK' ]
+    }
+    $.ajax({
+        url: '{{ url_for('collbrowser.customtree') }}',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        dataType: 'json',
+        success: function(data) {
+          console.log('GOT DATA')
+          $('#customview').html(data.result)
+          // Move the active collection to the center of the view
+          if ($('.path-active').length !== 0) {
+            centertop = $('.path-active').offset().top
+          }
+          else {
+            centertop = 0
+          }
+          let top = centertop - $('#customdiv').height() / 2 + $('#customdiv').scrollTop()
+          $('#customdiv').scrollTop(top)
+        }
+    })
+  };
+  
 
   function tree_active() {
     $('.path-active').removeClass('path-active');
@@ -711,10 +742,17 @@ menuname='collectionbrowser'
         <b>{% if current_user.feature('treeview') %}Collection Tree{% else %}Project List{% endif %}</b>
       </div>
     </div>
+    {% if current_user.feature('classic') %}
     <div class="card-body scrollbar-y small-font h-100" id="treediv">
       <div id="treeview">
       </div>
     </div>
+    {% else %}
+    <div class="card-body scrollbar-y small-font h-100" id="customdiv">
+      <div id="customview">
+      </div>
+    </div>
+    {% endif %}
   </div>
 
   <!-- Graph Area -->
