@@ -1,11 +1,6 @@
 stages:
   - deploy
 
-variables:
-  ASSETS_TOKEN: "glpat-vbRwqqXN0DO5wAV8ecT67G86MQp1OjE4agk.01.0z0wsyla2"
-  ASSETS_REPO_URL: "https://${ASSETS_TOKEN}@gitlab.rivm.nl/bioinformatics/ngsweb_rivm_assets.git"
-  #ASSETS_REPO_URL: git@gitlab.rivm.nl:bioinformatics/ngsweb_rivm_assets.git
-
 deploy_minilims:
   stage: deploy
   script:
@@ -22,10 +17,7 @@ deploy_minilims:
 deploy_test:
   stage: deploy
   script:
-  - git clone $ASSETS_REPO_URL /tmp/temp_branding
   - sudo cp -r ${CI_PROJECT_DIR}/. /opt/ngsweb
-  - cp -rf /tmp/temp_branding/* ${CI_PROJECT_DIR}/app/
-  - rm -rf /tmp/temp_branding
   - sudo /bin/systemctl restart ngsweb.service
   only:
     refs:
