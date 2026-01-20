@@ -3,7 +3,7 @@ stages:
 
 variables:
   ASSETS_TOKEN: "glpat-vbRwqqXN0DO5wAV8ecT67G86MQp1OjE4agk.01.0z0wsyla2"
-  ASSETS_REPO_URL: "https://${ASSETS_TOKEN}@gitlab.rivm.nl:bioinformatics/ngsweb_rivm_assets.git"
+  ASSETS_REPO_URL: "https://${ASSETS_TOKEN}@gitlab.rivm.nl/bioinformatics/ngsweb_rivm_assets.git"
   #ASSETS_REPO_URL: git@gitlab.rivm.nl:bioinformatics/ngsweb_rivm_assets.git
 
 deploy_minilims:
