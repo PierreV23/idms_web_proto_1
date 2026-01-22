@@ -136,86 +136,103 @@ $('#shareButton').on('click', function(){
 
 </script>
 
-    <div class="card-header myheader">
-      <ul class="nav nav-tabs action-tabs">
-        <li class="nav-item mx-2">
-          <a class="nav-link
-              {% if coll_state.is_offline is sameas true %} bg-danger {% endif %}
-              {% if coll_state.enabled == 'false' %} bg-secondary disabled {% endif %}
-              " id="archive-tab" data-toggle="tab" href="#archive" role="tab" aria-controls="archive"
-              aria-selected="false">
-              Archive
-        </a>
-        </li>
-        {% if admin is sameas True %}
-        <li class="nav-item mx-2">
-          <a class="nav-link" id="settings-tab"
-            data-toggle="tab" href="#settings" role="tab"
-            aria-controls="settings" aria-selected="false">
-            Settings
-        </a>
-        </li>
-        {% endif %}
-        {% if current_user.feature('jobs') %}
-        {% if coll_state.is_dataset is sameas true %}
-        <li class="nav-item mx-2">
-          {% if coll_state.active_pg %}
-          <a class="nav-link bg-warning" id="pipeline-tab"
-            data-toggle="tab" href="#pipeline" role="tab"
-            aria-controls="pipeline" aria-selected="false">
-            Active Process(es)
-        </a>
-          {% else %}
-          <a class="nav-link" id="pipeline-tab"
-            data-toggle="tab" href="#pipeline" role="tab"
-            aria-controls="pipeline" aria-selected="false">
-            Processes
+{% if coll_state.is_dataset is sameas true %}
+<div class="card-header myheader">
+  <ul class="nav nav-tabs action-tabs">
+    <li class="nav-item mx-2">
+      <a class="nav-link
+          {% if coll_state.is_offline is sameas true %} bg-danger {% endif %}
+          {% if coll_state.enabled == 'false' %} bg-secondary disabled {% endif %}
+          " id="archive-tab" data-toggle="tab" href="#archive" role="tab" aria-controls="archive"
+          aria-selected="false">
+          Archive
       </a>
-          {% endif %}
-        </li>
-        {% endif %}
-        <li class="nav-item mx-2">
-          <a class="nav-link" id="validity-tab"
-            data-toggle="tab" href="#validity" role="tab"
-            aria-controls="validity" aria-selected="false">
-            Validity
-        </a>
-        </li>
-        <li class="nav-item mx-2">
-          <a class="nav-link" id="provenance-tab"
-            data-toggle="tab" href="#provenance" role="tab"
-            aria-controls="provenance" aria-selected="false">
-            Provenance
-        </a>
-        </li>
-        {% endif %}
-        {% if current_user.feature('sharing') %}
-        <li class="nav-item mx-2">
-          <a class="nav-link" id="sharing-tab"
-            data-toggle="tab" href="#sharing" role="tab"
-            aria-controls="sharing" aria-selected="false">
-            Sharing
-        </a>
-        </li>        
-        {% endif %}
-      </ul>
-    </div>
-    <div class="card-body tab-content h-100">
-      {% with messages = get_flashed_messages(category_filter=["actions_panel"]) %}
-      {% if messages %}
-        {% for message in messages %}
-          <div class="error"><b>{{ message }}</b></div>
-        {% endfor %}
+    </li>
+    {% if admin is sameas True %}
+    <li class="nav-item mx-2">
+      <a class="nav-link" id="settings-tab"
+        data-toggle="tab" href="#settings" role="tab"
+        aria-controls="settings" aria-selected="false">
+        Settings
+      </a>
+    </li>
+    {% endif %}
+    {% if current_user.feature('jobs') %}
+    <li class="nav-item mx-2">
+      {% if coll_state.active_pg %}
+      <a class="nav-link bg-warning" id="pipeline-tab"
+        data-toggle="tab" href="#pipeline" role="tab"
+        aria-controls="pipeline" aria-selected="false">
+        Active Process(es)
+      </a>
+      {% else %}
+      <a class="nav-link" id="pipeline-tab"
+        data-toggle="tab" href="#pipeline" role="tab"
+        aria-controls="pipeline" aria-selected="false">
+        Processes
+      </a>
       {% endif %}
-      {% endwith %}
-        <div class="tab-pane autoscroll-y h-100" id="archive" role="tabpanel" aria-labelledby="archive-tab"></div>
-        <div class="tab-pane h-100" id="settings" role="tabpanel" aria-labelledby="settings-tab"></div>
-        <div class="tab-pane autoscroll-y h-100" id="pipeline" role="tabpanel" aria-labelledby="pipeline-tab"></div>
-        <div class="tab-pane" id="validity" role="tabpanel" aria-labelledby="validity-tab"></div>
-        <div class="tab-pane autoscroll-y h-100" id="provenance" role="tabpanel" aria-labelledby="provenance-tab"></div>
-        <div class="tab-pane autoscroll-y h-100" id="sharing" role="tabpanel" aria-labelledby="sharing-tab"></div>
-      </div>
+    </li>
+    {% endif %}
+    <li class="nav-item mx-2">
+      <a class="nav-link" id="validity-tab"
+        data-toggle="tab" href="#validity" role="tab"
+        aria-controls="validity" aria-selected="false">
+        Validity
+      </a>
+    </li>
+    <li class="nav-item mx-2">
+      <a class="nav-link" id="provenance-tab"
+        data-toggle="tab" href="#provenance" role="tab"
+        aria-controls="provenance" aria-selected="false">
+        Provenance
+      </a>
+    </li>
+    {% if current_user.feature('sharing') %}
+    <li class="nav-item mx-2">
+      <a class="nav-link" id="sharing-tab"
+        data-toggle="tab" href="#sharing" role="tab"
+        aria-controls="sharing" aria-selected="false">
+        Sharing
+      </a>
+    </li>        
+    {% endif %}
+  </ul>
 </div>
+
+<div class="card-body tab-content h-100">
+  {% with messages = get_flashed_messages(category_filter=["actions_panel"]) %}
+  {% if messages %}
+    {% for message in messages %}
+      <div class="error"><b>{{ message }}</b></div>
+    {% endfor %}
+  {% endif %}
+  {% endwith %}
+  <div class="tab-pane autoscroll-y h-100" id="archive" role="tabpanel" aria-labelledby="archive-tab"></div>
+  <div class="tab-pane h-100" id="settings" role="tabpanel" aria-labelledby="settings-tab"></div>
+  <div class="tab-pane autoscroll-y h-100" id="pipeline" role="tabpanel" aria-labelledby="pipeline-tab"></div>
+  <div class="tab-pane" id="validity" role="tabpanel" aria-labelledby="validity-tab"></div>
+  <div class="tab-pane autoscroll-y h-100" id="provenance" role="tabpanel" aria-labelledby="provenance-tab"></div>
+  <div class="tab-pane autoscroll-y h-100" id="sharing" role="tabpanel" aria-labelledby="sharing-tab"></div>
+</div>
+{% else %}
+<div class="card-header myheader">
+  <ul class="nav nav-tabs">
+    <li class="nav-item mx-2">
+      <a class="nav-link" id="noactions-tab" data-toggle="tab" href="#noactions" role="tab" aria-controls="noactions"
+          aria-selected="false">
+          No dataset selected
+      </a>
+    </li>
+  </ul>
+</div>
+<div class="card-body">
+{% if coll_state.dataset_field %}
+<CENTER>Go to dataset:<p>{{ coll_state.dataset_field.htmlshort | safe }}</CENTER>
+{% endif %}
+</div>  
+{% endif %}
+
 
   <!-- New share form -->
   <div class="modal" id="newshare" role="dialog">
