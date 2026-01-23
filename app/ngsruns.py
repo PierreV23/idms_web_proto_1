@@ -257,6 +257,13 @@ def get_complete(field):
     data1 = [ d[field] for d in db.session().query(FIELDS[field]).filter(FIELDS[field].like('%{}%'.format(req))).distinct().all()]
     return jsonify(data1)
 
+def process_param(param, *args, **kwargs):
+# Check if the parameter is a function/lambda
+    if callable(param):
+        return param(*args, **kwargs)
+    # If not callable, treat it as a constant
+    return param    
+
 @bp.route('_runs', methods=['GET'])
 def runs():
     offset = request.args.get('offset', 0)
@@ -303,7 +310,7 @@ def runs():
                 if val in flowcell_dupl:
                     val += ' (duplicate)'
             if val is not None:
-                formatted = datafield(key, val, NGSRUN_FIELDS[f]['format'])
+                formatted = datafield(key, val, process_param(NGSRUN_FIELDS[f]['format'], key, val))
                 record |= { key: formatted.htmlshort, f'_{key}': formatted.value }
             # Check the projects in this run
         projects = projects_in_run(run.id)
