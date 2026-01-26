@@ -360,6 +360,21 @@ class CollectionState():
     @property
     def complete(self):
         return self._meta("complete", "false")
+    
+    @cached_property
+    def dataset(self):
+        if self.is_dataset:
+            return self.collection
+        if self.collection == '/':
+            return None
+        return CollectionState(os.path.dirname(self.collection)).dataset
+    
+    @cached_property
+    def dataset_field(self):
+        dataset = self.dataset
+        if dataset is None:
+            return datafield('collection', 'Not in a dataset', 'text')
+        return datafield('collection', dataset, 'irods_collection')
 
     @cached_property
     def desired_state(self):
