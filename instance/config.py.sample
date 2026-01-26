@@ -71,7 +71,8 @@ IRODS_ENVS = {
             'PROJECTS',
             'REFERENCE',
             'ACCOUNTING'
-        ]
+        ],
+        'webdav_server': 'rivm-bioir-l06p.rivm.ssc-campus.nl'
     },
     'Acceptatie':   {
         'host': 'rivm-bioir-l05a.rivm.ssc-campus.nl',
@@ -88,7 +89,9 @@ IRODS_ENVS = {
             'PROJECTS',
             'REFERENCE',
             'ACCOUNTING'
-        ]
+        ],
+        'webdav_server': 'rivm-bioir-l07a.rivm.ssc-campus.nl'
+
     },
     'Test_01':   {
         'host': 'rivm-bioir-l04t.rivm.ssc-campus.nl',
@@ -104,7 +107,8 @@ IRODS_ENVS = {
             'PROJECTS',
             'REFERENCE',
             'ACCOUNTING'
-        ]
+        ],
+        'webdav_server': 'rivm-bioir-l04t.rivm.ssc-campus.nl'
     },
     'MIL': {
         'host': 'rivm-milir-l01p.rivm.ssc-campus.nl',
