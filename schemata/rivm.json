@@ -1,6 +1,6 @@
 {
     "schema_version": "1.2.4",
-    "description": "* : Verplichte velden.",
+    "description": "RIVM metadata versie 1.2.4 (* : Verplichte velden)",
     "type": "object",
     "properties": {
         "schema_version": {
@@ -37,8 +37,8 @@
             "items": {
                 "type": "string",
                 "enum": [
-                    "English",
-                    "Dutch"
+                    "Nederlands",
+                    "Engels"
                 ]
             },
             "maxItems": 1
@@ -50,8 +50,8 @@
             "items": {
                 "type": "string",
                 "enum": [
-                    "English",
-                    "Dutch"
+                    "Nederlands",
+                    "Engels"
                 ]
             }
         },
@@ -480,7 +480,7 @@
         },
         "version": {
             "title": "Versie",
-            "description": "Versie veld voor versie sub-velden",
+            "description": "",
             "type": "object",
             "properties": {
                 "number": {
@@ -529,22 +529,22 @@
                 "Nee"
             ]
         },
-        "url_selection_list": {
-            "title": "Selectielijst URL",
-            "description": "Handleiding om te bepalen welke informatie een organisatie moet bewaren of vernietigen. Ga naar de URL om een volledige versie met alle items en uitleg in te zien of te downloaden.",
-            "type": "string",
-            "format": "uri",
-            "pattern": "^(https?|ftp)://[^\\s/$.?#].[^\\s]*$",
-            "minLength": 5,
-            "enum": [
-                "https://www.nationaalarchief.nl/archiveren/kennisbank/concernbrede-selectielijst-van-het-ministerie-van-volksgezondheid-welzijn-1"
-            ]
-        },
         "process_information": {
             "title": "Bewaartermijn",
-            "description": "Procesgegevens, informatie over het proces zoals beschreven in de VWS selectielijst https://www.nationaalarchief.nl/archiveren/kennisbank/concernbrede-selectielijst-van-het-ministerie-van-volksgezondheid-welzijn-1",
+            "description": "Procesgegevens, informatie over het proces zoals beschreven in de VWS selectielijst",
             "type": "object",
             "properties": {
+                "url_selection_list": {
+                    "title": "Selectielijst URL",
+                    "description": "Handleiding om te bepalen welke informatie een organisatie moet bewaren of vernietigen. Ga naar de URL om een volledige versie met alle items en uitleg in te zien of te downloaden.",
+                    "type": "string",
+                    "format": "uri",
+                    "pattern": "^(https?|ftp)://[^\\s/$.?#].[^\\s]*$",
+                    "minLength": 5,
+                    "enum": [
+                        "https://www.nationaalarchief.nl/archiveren/kennisbank/concernbrede-selectielijst-van-het-ministerie-van-volksgezondheid-welzijn-1"
+                    ]
+                },
                 "retention_processcategory": {
                     "title": "Bewaartermijn proces",
                     "description": "Het proces waar de dataset betrekking op heeft.",
