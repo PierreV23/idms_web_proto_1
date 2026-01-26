@@ -1,0 +1,138 @@
+
+
+
+#from logging import FileHandler
+import os
+import redis
+from flask import Flask
+from flask_login import LoginManager
+from flask_session import Session
+from cachelib.file import FileSystemCache
+from app.webuser import WebUser
+import logging.config
+from Crypto.PublicKey import RSA
+
+from . import routes, auth, collbrowser, jobs, docviewer, messages, contacts_manager
+from . import projects, cluster, admin, reports, userinfo, referencedatasets
+from . import ngsruns, upload, flaskcache, search, metaedit
+from . import oldjobs
+from .ngsruns import db as ngsruns_db
+from .jobs import db as jobs_db
+from .irodssessions import irods_manager
+
+#from app.stats import statstore
+
+# This is the default log config. It can (and should) be overruled by
+# setting LOGCONFIG in config.py
+DEFAULT_LOGCONFIG = {
+    'version': 1,
+    'formatters': {'default': {'format': '[%(asctime)s] %(levelname)s - %(module)s: %(message)s'}},
+    'handlers': {'default': {'class': 'logging.StreamHandler', 'formatter': 'default'}},
+    'root': {'level': 'DEBUG', 'handlers': ['default']}
+}
+
+
+def create_app():
+    app = Flask(__name__, instance_relative_config=True)
+
+    # Default config; N.B. values may be overridden by loading instance config.py below.
+    app.config.from_mapping(
+        SECRET_KEY='58gqh)5&^&877838-_P[43889rv4&*F$%q5',
+    #    DATABASE=os.path.join(app.instance_path, 'ngsrun.sqlite'),
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        SQLALCHEMY_DATABASE_URI='sqlite:///{}/ngsruns.sqlite'.format(app.instance_path),
+    )
+
+    app.config.from_pyfile(os.path.join(app.instance_path, 'config.py'), silent=True)
+    app.config.from_pyfile(os.path.join(app.instance_path, 'constants.py'), silent=True)
+
+    logging.config.dictConfig(app.config.get('LOGCONFIG', DEFAULT_LOGCONFIG))
+
+    # Setup session storage
+    if app.config.get('CACHE_TYPE') == 'RedisCache':
+        app.config['SESSION_TYPE'] = 'redis'
+        hostname = app.config.get('CACHE_REDIS_HOST', 'localhost')
+        app.config['SESSION_REDIS'] = redis.Redis.from_url(f'redis://{hostname}:6379')
+    else:
+        app.config['SESSION_TYPE'] = 'cachelib'
+        app.config['SESSION_CACHELIB'] = FileSystemCache(cache_dir='flask_session', threshold=500)
+    Session(app)
+
+    # When running under uwsgi, the postfork decorator is required
+    # for the database connections
+    try:
+        from uwsgidecorators import postfork
+        @postfork
+        def init_dbs_wrapper():
+           init_dbs(app)
+        init_dbs_wrapper()
+    except ModuleNotFoundError:
+        init_dbs( app )
+
+
+    try:
+        public_key = RSA.import_key(open("instance/receiver.pem").read())
+        private_key = RSA.import_key(open("instance/private.pem").read())
+    except:
+        create_keys(app)
+        public_key = RSA.import_key(open("instance/receiver.pem").read())
+        private_key = RSA.import_key(open("instance/private.pem").read())
+
+    app.config.from_mapping(
+        RSA_PRIVATE_KEY=private_key,
+        RSA_PUBLIC_KEY=public_key,
+    )
+
+    app.register_blueprint(routes.bp)
+    app.register_blueprint(auth.bp)
+    app.register_blueprint(collbrowser.bp)
+    app.register_blueprint(jobs.bp)
+    app.register_blueprint(docviewer.bp)
+    app.register_blueprint(projects.bp)
+    app.register_blueprint(referencedatasets.bp)
+    app.register_blueprint(cluster.bp)
+    app.register_blueprint(admin.bp)
+    app.register_blueprint(reports.bp)
+    app.register_blueprint(ngsruns.bp)
+    app.register_blueprint(upload.bp)
+    app.register_blueprint(userinfo.bp)
+    app.register_blueprint(oldjobs.bp)
+    app.register_blueprint(messages.bp)
+    app.register_blueprint(search.bp)
+    app.register_blueprint(metaedit.bp)
+    app.register_blueprint(contacts_manager.bp)
+
+    flaskcache.init(app)
+
+    login_manager = LoginManager()
+    login_manager.init_app(app)
+    login_manager.login_view = "auth.login"
+
+    @login_manager.user_loader
+    def load_user(userid):
+        return WebUser.retrieve(userid)
+
+    logging.info('iDMS initialized')
+    return app
+
+
+
+def init_dbs(app):
+        ngsruns_db.init_app(app)
+        jobs_db.init_app(app)
+        irods_manager.init_app(app)
+
+
+def create_keys(app):
+    key = RSA.generate(2048)
+    private_key = key.export_key()
+    file_out = open(os.path.join(app.instance_path, "private.pem"), "wb")
+    file_out.write(private_key)
+    file_out.close()
+
+    public_key = key.publickey().export_key()
+    file_out = open(os.path.join(app.instance_path, "receiver.pem"), "wb")
+    file_out.write(public_key)
+    file_out.close()
+
+
