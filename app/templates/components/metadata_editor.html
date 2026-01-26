@@ -204,14 +204,17 @@
       document.getElementById(element),
       () => {
         isFormInitialized = true;
-        // Disable Save button
+        
+        // Disable Save button for non default metadata
+        {% if prefix != 'default_metadata::' %}
         $('.formsubmit').prop("disabled", true);
+        {% endif %}
+
         // Disable form entries when editing is not allowed
         {% if edit_allowed == 'false' %}
         const frm = $("#{{ id }}-metaForm");
         frm.find("input, select, textarea, button").prop("disabled", true);
         frm.find("a").addClass("disabled-link");
-
         {% endif %}
       }
     );

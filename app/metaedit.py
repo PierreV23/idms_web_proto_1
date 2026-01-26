@@ -9,9 +9,11 @@ from app.constants import (SCHEMATA_BASE_PATH,
                             DATASET_SCHEMATA_PATH, 
                             PROJECT_SCHEMATA_PATH, 
                             REFERENCE_DATASET_SCHEMATA_PATH,
-                            ATTR_SCHEMA_IN_USE, 
+                            ATTR_SCHEMA_IN_USE,
+                            ATTR_METADATA_PREFIX, 
                             ATTR_UPLOAD_DEFAULT_PREFIX, 
-                            ATTR_UPLOAD_PREFIX)
+                            ATTR_UPLOAD_PREFIX
+                        )
 from app.irodssessions import irods_manager
 from irods.models import CollectionMeta
 from irods.exception import CollectionDoesNotExist
@@ -252,8 +254,14 @@ def get_schema_and_data():
             except:
                 pass
     default_data = {}
+    
+    # find default metadata from default values collection
     if meta_default_values_collection:
         default_data = get_collection_metadata_structured(meta_default_values_collection, ATTR_UPLOAD_DEFAULT_PREFIX).get(schemapath, {})
+    
+    # The preset default metadata for dataset upload is the project metadata
+    if meta_default_values_collection == meta_values_collection:
+        default_data = get_collection_metadata_structured(meta_default_values_collection, ATTR_METADATA_PREFIX).get(schemapath, {})
     
     used_data = get_collection_metadata_structured(meta_values_collection, prefix).get(schemapath, {})
     # first take all values from default, then add or overwrite values from used data
