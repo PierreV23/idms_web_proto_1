@@ -10,12 +10,12 @@ import json
 from flask import abort, flash, Blueprint, render_template, redirect, request, url_for
 from flask_login import current_user, login_required
 from flask import jsonify
-from irods.models import Collection, CollectionMeta, User, UserMeta
+from irods.models import Collection, CollectionMeta
 from irods.column import Criterion
 from app.datafield import datafield
 from graphviz import Digraph
 from . import iqry
-from app.constants import COLL_KEY_MAP, ATTR_METADATA
+from app.constants import ATTR_METADATA_PREFIX
 from app.irodssessions import irods_manager
 from .projectdb_api import EPOCH, iso2dt, search, rest_call, add_checkbox
 from datetime import datetime
@@ -127,7 +127,7 @@ def show_reference_details():
         available_tags = []
     
     # Set prefix for metadata
-    metadata_prefix = ATTR_METADATA
+    metadata_prefix = ATTR_METADATA_PREFIX
     
     collection = f"/{current_user.irods_zone}/{current_user.refdata_coll}/{reference_details['name']}"
 
@@ -138,7 +138,7 @@ def show_reference_details():
                            import_state=import_state,
                            available_tags=available_tags,
                            collection=collection,
-                           prefix=metadata_prefix)
+                           prefix=ATTR_METADATA_PREFIX)
 
 
 @bp.route('/activate_reference', methods=['GET', 'POST'])
