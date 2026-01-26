@@ -223,7 +223,7 @@ def minilims_authorized_for_projects(projectlist):
     """
     if current_app.config.get('MINILIMS_AUTHORS_GROUP') in current_user.groups():
         return True, []
-    unauthorized_projects = [ project for project in projectlist if not project in current_user.projects() ]
+    unauthorized_projects = [ project for project in projectlist if not project in current_user.projects() and project ]
     return not bool(unauthorized_projects), unauthorized_projects
 
 def projects_in_run(id):

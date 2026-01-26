@@ -92,10 +92,6 @@ th {
         <!-- Card Header with Run Information, Controls and Data Header-->
         <div class="card-header">
             <input type="hidden" id="id" name="id" value="{{ id }}">
-            <div class="row flash_bar bg-info">
-                Note: The project selection has been moved to the individual barcodes.
-                You can use the 'Copy Down' button if all barcodes belong to the same project.
-            </div>
             <!-- Run and Flowcell related information -->
             <div class="form-group row">
                 <label for="ngs_name" class="col-auto col-form-label text-right">Name:</label>
@@ -128,7 +124,10 @@ th {
                     <button type="button" class="btn btn-secondary selectnone" id="allbutton">None</button>
                 </div>
                 <div class="col-auto" style="width: 2.0rem;"></div>
-                <label class="col-sm-1 col-form-label"></label>
+                <label class="col-sm-1 col-form-label">
+                    <button type="button" class="btn btn-primary" id="import_button"
+                        data-toggle="modal" data-target="#import_list">Import</button>
+                </label>
                 <label class="col-sm-1 col-form-label"><button type="button" class="btn btn-secondary" id="databutton"
                         data-toggle="modal" data-target="#sampleid_list">ID List</button></label>
                 <label class="col-sm-2 col-form-label"><button type="button" class="btn btn-secondary"
@@ -409,6 +408,25 @@ th {
 
 </script>
 
+<div class="modal" id="import_list" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="import_DocTitle">Copy your samplesheet data in TSV or CSV format (no header)</h5>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <textarea class="form-control" rows="24" name="import_file" id="import_text" /></textarea>
+                </div>
+                <div class="form-group">
+                    <button type="button" class="btn btn-primary" data-dismiss="modal" id="import_modal_ok">OK</button>
+                    <button type="button" class="btn btn-default btn-primary" data-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal" id="sampleid_list" role="dialog">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -439,6 +457,43 @@ th {
         var barcode = index + 1
         var field_id = "sampleid_barcode" + ((barcode < 10) ? "0" : "") + barcode.toString()
         $('#' + field_id).val(value)
+    }
+
+    $('#import_modal_ok').click(function () {
+        var linearray = document.getElementById("import_text").value.split(/\r?\n/)
+        // Do a check on all projectids
+        projectids = new Set()
+        my_projects = new Set({{ projects | list | tojson }})
+        for (var line_id = 0; line_id < linearray.length; line_id++) {
+            projectid = linearray[line_id].split('\t')[5]
+            if (projectid) {
+                projectids.add(projectid)
+            }
+        }
+        unauth_projects = projectids.difference(my_projects)
+        if (unauth_projects.length) {
+            alert('You are not authorized for projects ' + [...unauth_projects].join(', '))
+            return
+        }
+        // Authorized for all projects. Load the data
+        linearray.forEach(copy_fields)
+    });    
+
+    function copy_fields(value, index, array) {
+        IMPORT_FIELDS = [
+            'sampleid',
+            'target',
+            'primer',
+            'kit_list',
+            'description',
+            'project'
+        ]
+        var barcode = index + 1
+        var fields = value.split(/[\t,]/) // Split on \t or ','
+        for (var field = 0; field < fields.length; field++) {
+            var field_id = IMPORT_FIELDS[field] + "_barcode" + ((barcode < 10) ? "0" : "") + barcode.toString()
+            $('#' + field_id).val(fields[field])
+        }
     }
 
     $('#databutton').click(function () {
