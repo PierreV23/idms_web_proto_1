@@ -108,7 +108,7 @@
     $('#message').modal()
     $('.msg-close').on('click', function () {
       if ($('#dontshow').is(":checked")) {
-        $.post('{{ url_for("msgconfirm") }}')
+        $.post('{{ url_for("main.msgconfirm") }}')
       }
     })
   </script>
