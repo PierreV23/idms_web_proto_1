@@ -57,7 +57,7 @@ ATTR_UPLOADSETTINGS = 'user::upload::settings::'
 ATTR_UPLOADMETA = 'user::upload::metadata::'
 ATTR_UPLOADMETASCHEMA = 'user::upload::schemafile'
 
-META_SUFFIX = 'SYS::suffixlength'
+META_SUFFIX = 'sys::suffixlength'
 
 # Constants that define the JOB VIEW
 JOB_PAGE_SIZE = 25
