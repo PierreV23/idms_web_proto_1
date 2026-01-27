@@ -388,29 +388,10 @@ def run_barcodes():
     }
     return render_template('bootstraptable.html', data=data, no_page=True)
 
-@bp.route('edit', methods=['GET'])
-@login_required
-def edit_form():
-    if current_app.config.get('MINILIMS_AUTHORS_GROUP') in current_user.groups():
-        projectlist = get_projectlist().keys()
-    else:
-        projectlist = current_user.projects()    
-    id = request.args.get('idrequest', '', type=str)
-    run = db.session().query(NGSRun).filter(NGSRun.id == id).one_or_none()
-    barcode_obj = db.session().query(NGSBarcode).filter(NGSBarcode.ngsrun == id).all()
-    #barcodes = [ f.barcode for f in barcode_obj ] # maak een list van object
-    data = { barcode : None for barcode in barcodes }
-    for f in barcode_obj:
-        data[f.barcode] = f
-    data.update({"flowcell": run.flowcell})
-    data.update({"name": run.name})
-    data.update({"description": run.description})
-    data.update({"owner": run.owner})
-    return render_template('ngsrun.html', projects=projectlist, data=data, barcodes=barcodes, id=id)
-
 @bp.route('new', methods=['GET'])
 @login_required
 def run_form():
+    action = 'new_form'
     if db.version() < 2:
         return deprecated_message(menuname='newrun')
     if current_app.config.get('MINILIMS_AUTHORS_GROUP') in current_user.groups():
@@ -420,6 +401,7 @@ def run_form():
     data = { barcode : None for barcode in barcodes }
     selected_id = int(request.args.get('id', -1))
     if selected_id > 0:
+        action = 'edit_form'
         authorized, unauthorized_projects = minilims_authorized_for_projects(projects_in_run(selected_id))
         if not authorized:
             flash(f'You are not authorized to edit a sample sheet for project(s) {",".join(unauthorized_projects)}', 'error')
@@ -435,7 +417,7 @@ def run_form():
         for f in barcode_obj:
             data[f.barcode] = f
     kits = get_kits()
-    return render_template('ngsrun.html', data=data, projects=projectlist, barcodes=barcodes, id=selected_id, default_project=current_user.settings.get('default_project', ''), kits=kits)
+    return render_template('ngsrun.html', data=data, projects=projectlist, barcodes=barcodes, id=selected_id, default_project=current_user.settings.get('default_project', ''), kits=kits, action=action)
 
 @bp.route('delete', methods=['GET'])
 def delete_ngs_run():

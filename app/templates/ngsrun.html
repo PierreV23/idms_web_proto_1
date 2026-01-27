@@ -219,9 +219,16 @@ th {
                     <select class="custom-select projectfield" name="project_{{ barcode }}" id="project_{{ barcode }}"
                         title="Select a project from the available project list.&#013If you are not a member of a project you can request access (See ? Help)."
                         data-barcode="{{ barcode }}">
-                        {% for project in projects|sort %}
-                        <option {% if project==default_project %} selected {% endif %}>{{ project }}</option>
-                        {% endfor %}
+                        {% if action == 'new_form' %}
+                            {% for project in projects|sort %}
+                            <option {% if project==default_project %} selected {% endif %}>{{ project }}</option>
+                            {% endfor %}
+                        {% endif %}
+                        {% if action == 'edit_form' %}
+                            {% for project in projects|sort %}
+                            <option {% if project==data[barcode].project %} selected {% endif %} value="{{ data[barcode].project }}" >{{ project }}</option>
+                            {% endfor %}
+                        {% endif %}
                     </select>
                 </div>
             </div>
