@@ -12,7 +12,7 @@
         data-show-toggle="false"
         data-show-columns="true"
         data-sort-name="project"
-        data-url="{{ url_for('restcall', rest_endpoint='processes/' + process + '/references' ) }}">
+        data-url="{{ url_for('main.restcall', rest_endpoint='processes/' + process + '/references' ) }}">
         <thead>
             <tr>
                 <th data-checkbox="true"></th>
@@ -42,7 +42,7 @@
     var $usageTable = $('table#usageTable')
 
     $(function() {
-        $.get("{{ url_for('restcall', rest_endpoint='processes/' + process +'/tags') }}", 
+        $.get("{{ url_for('main.restcall', rest_endpoint='processes/' + process +'/tags') }}", 
             function(data) {
                 for (var i=0; i<data.length; i++) {
                     $('#new-tag').append('<option value="' + data[i] + '">' + data[i] + '</option')
@@ -60,7 +60,7 @@
         $('#usage-content').addClass('pending')
         counter++
         $.ajax({
-                url: "{{ url_for('restcall', rest_endpoint='') }}" + entry.url.substring(9),
+                url: "{{ url_for('main.restcall', rest_endpoint='') }}" + entry.url.substring(9),
                 type: 'PUT',
                 contentType: 'application/json',
                 data: JSON.stringify({
