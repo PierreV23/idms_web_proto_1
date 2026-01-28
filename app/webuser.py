@@ -20,7 +20,7 @@ from Crypto.Cipher import PKCS1_OAEP
 from flask_login import UserMixin
 from flask import session, current_app
 from flask_login import current_user
-from irods.models import User, UserGroup, UserMeta
+from irods.models import User, Group, UserMeta
 from irods.column import Criterion
 from fs_irods import fs_irods
 from . import flaskcache
@@ -176,17 +176,17 @@ class WebUser(UserMixin):
     @flaskcache.cache.memoize(timeout=3600, make_name=flaskcache.dep_userzone)
     def groups(self):
         with irods_manager.session() as session:
-            q = session.query(UserGroup).filter( User.name == self.username )
-            result = [ r[UserGroup.name] for r in q ]
+            q = session.query(Group).filter( User.name == self.username )
+            result = [ r[Group.name] for r in q ]
         return result
 
     @flaskcache.cache.memoize(timeout=3600, make_name=flaskcache.dep_userzone)
     def projects(self):
         with irods_manager.session() as session:
-            q = session.query(UserGroup.name, UserMeta.value).filter(\
+            q = session.query(Group.name, UserMeta.value).filter(\
                 Criterion('=', UserMeta.name, 'projectID'))
             grps = self.groups()
-            usr_groups = [ r for r in q if r[UserGroup.name] in grps ]
+            usr_groups = [ r for r in q if r[Group.name] in grps ]
 
             my_projects = list(set([ r[UserMeta.value] for r in usr_groups ]))
 
