@@ -9,7 +9,7 @@ menuname='settings'
 {% endblock %}
 
 {% block content %}
-
+<div class="scroll h-100">
 {% if current_user.is_admin %}
 <div class="card">
     <div class="card-header">
@@ -60,7 +60,148 @@ menuname='settings'
     </div>
 </div>
 
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">
+            <div class="custom-control custom-switch form-check-inline">
+                <input class="custom-control-input usersetting" data-attr="use_customtree" type="checkbox" id="use_customtree"
+                    {% if current_user.settings.get("use_customtree", "true") == "true" %} checked {% endif %}>
+                <label class="custom-control-label col-form-label" for="use_customtree">Use a custom treeview</label>
+            </div>
+        </h3>
+    </div>
+    <div class="card-body">
+        <form id="attribute-form">
+            <div id="customview-rows">
+            {% for x in current_user.settings.get("customview", {}) %}
+                <div id="customview-row-{{ loop.index }}" data-rowid="{{ loop.index }}" class="form-row mb-3 align-items-center customview-row">
+                    <div class="col-md-4">
+                        <label class="sr-only">Attribute</label>
+                        <input type="text" class="form-control customview-attr" value="{{ x[0] }}" placeholder="Attribute Name">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="sr-only">Value</label>
+                        <input type="text" class="form-control customview-value" value="{{ x[1] }}" placeholder="Attribute Regex">
+                    </div>
+                    <div class="col-md-1">
+                        <button type="button" class="btn btn-outline-secondary btn-block up-button" title="Up" id="cv_up_{{ loop.index }}" {% if loop.first %}disabled{% endif %}>&#x21E7;</button>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="button" class="btn btn-outline-secondary btn-block down-button" title="Down" id="cv_down_{{ loop.index }}" {% if loop.last %}disabled{% endif %}>&#x21E9;</button>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="button" class="btn btn-outline-danger btn-block remove-button" data-rowid="{{ loop.index }}" title="Remove" id="cv_del_{{ loop.index }}">&times;</button>
+                    </div>
+                </div>
+            {% endfor %}
+            </div>
+            <hr>
+            <div class="form-row mb-4">
+                <div class="col-md-4">
+                    <input type="text" class="form-control font-italic new-data" placeholder="New Attribute..." id="new-attr">
+                </div>
+                <div class="col-md-4">
+                    <input type="text" class="form-control font-italic new-data" placeholder="New Regex (optional) ..." id="new-value">
+                </div>
+                <div class="col-md-1">
+                    <button type="button" class="btn btn-success btn-block add-button">+</button>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end">
+                <button type="submit" class="btn btn-secondary mr-2">Cancel</button>
+                <button type="button" class="btn btn-primary" onClick="save_customview()">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+</div>
 <script>
+
+function save_customview() {
+    const keys = $("input.customview-attr").map(function(){return $(this).val();}).get();
+    const values = $("input.customview-value").map(function(){return $(this).val();}).get();
+    const result = keys.reduce((obj, key, index) => {
+        if(key) obj.push([key, values[index]]);
+        return obj;
+    }, []);
+    $.ajax({
+        url: '{{ url_for('userinfo.usersetting') }}',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            'attr': 'customview',
+            'value': result
+        }),
+        dataType: 'json'
+    }).done(function(){
+        window.location.replace("{{ url_for('settings')}}");
+    })
+ 
+}
+var rowIndex = 100
+    
+    $('.add-button').on('click', function(event) {
+        $('.down-button').prop('disabled', false)
+        attr = $('#new-attr').val()
+        value = $('#new-value').val()
+        if (attr != "") {
+            const newRow = `<div id="customview-row-${rowIndex}" data-rowid="${rowIndex}" class="form-row mb-3 align-items-center customview-row">
+                    <div class="col-md-4">
+                        <label class="sr-only">Attribute</label>
+                        <input type="text" class="form-control customview-attr" value="${attr}" placeholder="Attribute Name">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="sr-only">Value</label>
+                        <input type="text" class="form-control customview-value" value="${value}" placeholder="Attribute Regex">
+                    </div>
+                    <div class="col-md-1">
+                        <button type="button" class="btn btn-outline-secondary btn-block up-button" title="Up" id="cv_up_${rowIndex}">&#x21E7;</button>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="button" class="btn btn-outline-secondary btn-block down-button" title="Down" id="cv_down_${rowIndex}" disabled>&#x21E9;</button>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="button" class="btn btn-outline-danger btn-block remove-button" data-rowid="${rowIndex}" title="Remove" id="cv_del_${rowIndex}">&times;</button>
+                    </div>
+                </div>`
+            rowIndex += 1
+            $('#customview-rows').append(newRow)
+            $('.new-data').val('')
+        }
+    })
+
+    $(document).on('click', '.remove-button', function(event) {
+        $('.customview-row[data-rowid="' + $(event.target).data('rowid') + '"]').remove()
+    })
+
+    $(document).on('click', '.up-button', function() {
+        var current = $(this).parent().parent(); 
+        var previous = current.prev();
+
+        if (previous.length !== 0) {
+            current.insertBefore(previous);
+        }
+        $('.up-button').prop('disabled', false)
+        $('.down-button').prop('disabled', false)
+        $('#customview-rows .customview-row').first().find('button.up-button').prop('disabled', true)
+        $('#customview-rows .customview-row').last().find('button.down-button').prop('disabled', true)
+    });
+
+    $(document).on('click', '.down-button', function() {
+        var current = $(this).parent().parent(); 
+        var next = current.next()
+
+        if (next.length !== 0) {
+            current.insertAfter(next);
+        }
+        $('.up-button').prop('disabled', false)
+        $('.down-button').prop('disabled', false)
+        $('#customview-rows .customview-row').first().find('button.up-button').prop('disabled', true)
+        $('#customview-rows .customview-row').last().find('button.down-button').prop('disabled', true)
+    })
+
+
     $('.usersetting').on('change', function () {
         attr = $(this).data('attr')
         value = $(this).is(':checked') ? 'true' : 'false'

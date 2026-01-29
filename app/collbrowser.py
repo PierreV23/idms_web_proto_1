@@ -33,6 +33,7 @@ import json
 from app.constants import COLL_KEY_MAP, DATA_KEY_MAP, ATTR_RESOURCE_ONLINE
 from app.auth import auth_endpoint
 from .projectdb_api import rest_call
+from .search import runsql
 from .constants import *
 from copy import deepcopy
 
@@ -1609,24 +1610,99 @@ def add_items(path, level, active):
                     result = '{}<ul id="{}">{}</ul>'.format(result, collpath, subtree)
     return(result)
 
-def get_values(fields, values):
-    from .jobs import db
+def get_values2(fields, values):
+    type = None
     if len(values) == 0:
-        sql = f"SELECT DISTINCT coll->'coll_meta'->>'{fields[0]}' as v0 FROM coll_json ORDER BY v0"
+        with irods_manager.session() as sess:
+            q = sess.query(CollectionMeta.value).filter(
+                Criterion('=', CollectionMeta.name, fields[0])
+            )
+            data = [ r[CollectionMeta.value] for r in q ]
+        type = 'link'
     elif len(values) < len(fields):
         l = len(values)
         crit = ' AND '.join([f" coll->'coll_meta'->>'{fields[i]}' = '{v}' " for i, v in enumerate(values)])
         sql = f"SELECT DISTINCT coll->'coll_meta'->>'{fields[l]}' as v0 FROM coll_json WHERE {crit} ORDER by v0"
+        type = 'link'
     else:
         crit = ' AND '.join([f" coll->'coll_meta'->>'{fields[i]}' = '{v}' " for i, v in enumerate(values)])        
         sql = f"SELECT DISTINCT coll->'coll_name' as v0 FROM coll_json WHERE {crit} ORDER by v0"
-    data = db.connection().sql(sql)
-    results = []
+        type = 'collection'
+    results = [ ] 
     for d in data:
-        if d['v0'] is not None:
-            results.append(d['v0'])
+        if d is not None:
+            if type == 'link':
+                results.append({ 'name': d, 'link': d, 'type': type })
+            else:
+                results.append({ 'name': d, 'link': datafield('collection', d, 'irods_collection').htmlshort, 'type': type })
     #results = [ d['v0'] for d in data if d['v0'] is not None ]
     return results
+
+@cache.memoize(timeout=60, make_name=dep_zone)
+def cached_sql(sql):
+    with irods_manager.session() as sess:
+        data = runsql(sess, sql)
+    return [{ 'v0': x[0] } for x in data ]
+
+def get_values(fields, values):
+    from .jobs import db
+    type = None
+    crit = ""
+    if len(values) == 0:
+        if fields[0][1] is not None:
+            crit = f"WHERE coll->'coll_meta'->>'{fields[0][0]}' ~ '{fields[0][1]}' "
+        sql = f"SELECT DISTINCT coll->'coll_meta'->>'{fields[0][0]}' as v0 FROM coll_json {crit} ORDER BY v0"
+        type = 'link'
+    elif len(values) < len(fields):
+        l = len(values)
+        crit = ' AND '.join([f" coll->'coll_meta'->>'{fields[i][0]}' = '{v}' " for i, v in enumerate(values)])
+        if fields[l][1] is not None:
+            print(f'Restrict to {fields[l][1]}')
+            crit = f"{crit} AND coll->'coll_meta'->>'{fields[l][0]}' ~ '{fields[l][1]}' "
+        sql = f"SELECT DISTINCT coll->'coll_meta'->>'{fields[l][0]}' as v0 FROM coll_json WHERE {crit} ORDER by v0"
+        type = 'link'
+    else:
+        crit = ' AND '.join([f" coll->'coll_meta'->>'{fields[i][0]}' = '{v}' " for i, v in enumerate(values)])        
+        sql = f"SELECT DISTINCT coll->'coll_name' as v0 FROM coll_json WHERE {crit} ORDER by v0"
+        type = 'collection'
+    data = cached_sql(sql)
+    results = [ ] 
+    for d in data:
+        if d['v0'] is not None:
+            if type == 'link':
+                results.append({ 'name': d['v0'], 'link': d['v0'], 'type': type })
+            else:
+                results.append({ 'name': d['v0'][1:-1], 'link': datafield('collection', d['v0'][1:-1], 'irods_collection').htmlshort, 'type': type })
+    #results = [ d['v0'] for d in data if d['v0'] is not None ]
+    return results
+
+def add_custom_items(meta_attrs, path, active_path, active_collection):
+    fields = get_values(meta_attrs, path)
+    path_prefix = ' '.join([f'data-path-{i}={v}' for i, v in enumerate(path)])
+    path_label = f'data-path-{len(path)}'
+    itemid = '_'.join(path)
+    if len(path) < len(meta_attrs):
+        rs = f'<span class="font-weight-bold">- {meta_attrs[len(path)][0]} -</span>'
+    else:
+        rs = ''
+    for r in fields:
+        if r['type'] == 'collection':
+            if r['name'] == active_collection:
+                classes = 'path-active '
+            else:
+                classes = ''
+            children = ''
+        else:
+            current_path = path + [r['name']]
+            if current_path == active_path[:len(path) + 1]:
+                classes = 'caret caret-down list-open font-weight-bold'
+                # This is the 'ACTIVE' path. Expand the tree further
+                children = '<ul>{0}</ul>'.format(add_custom_items(meta_attrs, current_path, active_path, active_collection))
+            else:    
+                classes = 'caret list-close'
+                children = ''
+        rs += f'<li><span class="{classes}" {path_prefix} {path_label}="{r['name']}" id="ID_{itemid}_{r['name']}">{r['link']}</span></li>{children}'
+    return rs
         
 @bp.route('/_custom', methods=['POST'])
 #@cache.cached(timeout=1, key_prefix=key_zone)
@@ -1637,21 +1713,18 @@ def customtree():
             base: list of metadata values leading to the base path
             active: list of metadata values leading to the active path
     """
-    CONFIG = [
-        'projectID',
-        'user::runinfo::name',
-        'sys::run::result'
-    ]
+    CONFIG = current_user.settings.get('customview', 'projectID')
 
     data = request.get_json()
-    base = data.get('base', [])
-    active = data.get('active', [])
-    print(f'BASE {base}') 
-    result = get_values(CONFIG, base)
-    rs = ''
-    for r in result:
-        rs += f'<li>{r}</li>'
-    print(rs)
+    path = data.get('path', [])
+    active_collection = data.get('active')
+    print(f'ACTIVE {active_collection}')
+    print(f'PATH {path}')
+    # Translate the active_collection to a customview attrs path:
+    meta = iqry.qcollmetadict(active_collection)
+    active_path = [meta.get(m[0]) for m in CONFIG] + [active_collection]
+    print(f'ACTIVE_PATH {active_path}')        
+    rs = add_custom_items(CONFIG, path, active_path, active_collection)
     return { 'result': '<ul>{}</ul>'.format(rs) }
     return ('<ul>{}</ul>'.format(rs)), 200
 

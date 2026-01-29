@@ -432,14 +432,14 @@ menuname='collectionbrowser'
   }
 
   function load_leftpane() {
-    {% if current_user.feature('classic') %}
+    {% if current_user.settings.get('use_customtree', 'false') == 'false' %}
       {% if current_user.feature('treeview') %}
-      load_tree()
+        load_tree()
       {% else %}
-      load_projects()
+        load_projects()
       {% endif %}
     {% else %}
-    load_custom()
+      load_custom()
     {% endif %}
   }
 
@@ -481,7 +481,8 @@ menuname='collectionbrowser'
 
   function load_custom() {
     var data = {
-        'base': [ 'vir-ont', 'R1395', 'OK' ]
+        'path': [],
+        'active': collection
     }
     $.ajax({
         url: '{{ url_for('collbrowser.customtree') }}',
@@ -490,7 +491,6 @@ menuname='collectionbrowser'
         data: JSON.stringify(data),
         dataType: 'json',
         success: function(data) {
-          console.log('GOT DATA')
           $('#customview').html(data.result)
           // Move the active collection to the center of the view
           if ($('.path-active').length !== 0) {
@@ -739,10 +739,10 @@ menuname='collectionbrowser'
   <div class="card border-primary browser-sidebar">
     <div class="card-header">
       <div class="card-title">
-        <b>{% if current_user.feature('treeview') %}Collection Tree{% else %}Project List{% endif %}</b>
+        <b>{% if current_user.feature('treeview') %}{% if current_user.settings.get('use_customtree', 'false') == 'false' %}Collection Tree{% else %}Metadata Tree{% endif %}{% else %}Project List{% endif %}</b>
       </div>
     </div>
-    {% if current_user.feature('classic') %}
+    {% if current_user.settings.get('use_customtree', 'false') == 'false' %}
     <div class="card-body scrollbar-y small-font h-100" id="treediv">
       <div id="treeview">
       </div>
@@ -1229,6 +1229,27 @@ document.addEventListener("DOMContentLoaded", () => {
 </div> <!-- browsergrid-->
 
 <script>
+   /**
+   * Extracts and sorts data attributes with numeric suffixes.
+   * @param {HTMLElement} el - The DOM element.
+   * @param {string} prefix - The prefix to look for (without 'data-' or trailing dash).
+   * @returns {Array} - An array of values ordered by the numeric suffix.
+   */
+  function getOrderedData(el, prefix) {
+    const rawEl = el instanceof jQuery ? el[0] : el;
+    return Object.keys(rawEl.dataset)
+      // 1. Match the prefix followed by numbers (e.g., path1, path2)
+      .filter(key => new RegExp(`^${prefix}\\d+$`).test(key))
+      // 2. Sort based on the numeric value
+      .sort((a, b) => {
+        const numA = parseInt(a.match(/\d+/)[0], 10);
+        const numB = parseInt(b.match(/\d+/)[0], 10);
+        return numA - numB;
+      })
+      // 3. Map to the actual values
+      .map(key => rawEl.dataset[key]);
+  }
+
   $('#treeview').on('click', '.list-close', function () {
     $(this).addClass('caret-down list-open');
     $(this).removeClass('list-close');
@@ -1247,32 +1268,46 @@ document.addEventListener("DOMContentLoaded", () => {
     sublistid = $(this).attr('id').substr(2);
     $('#' + $.escapeSelector(sublistid)).html('');
   });
+
+  $('#customview').on('click', '.list-close', function () {
+    $(this).addClass('caret-down list-open');
+    $(this).removeClass('list-close');
+    myid = $(this).attr('id')
+
+    var data = {
+        'path': getOrderedData($(this), 'path-'),
+        'active': collection
+    }
+    myid = $(this).attr('id')
+    $.ajax({
+        url: '{{ url_for('collbrowser.customtree') }}',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        dataType: 'json',
+        success: function(data) {
+          $('#' + $.escapeSelector(myid)).parent().after(data.result);
+          // Move the active collection to the center of the view
+          centertop = $('#' + $.escapeSelector(myid)).offset().top
+          let top = centertop - $('#customdiv').height() / 2 + $('#customdiv').scrollTop()
+          $('#customdiv').animate({ scrollTop: top }, 'slow')  //;scrollTop(top)
+        }
+    })
+
+//      $('#' + $.escapeSelector(myid)).parent().after(data);
+  });
+
+  $('#customview').on('click', '.list-open', function () {
+    $(this).removeClass('caret-down list-open');
+    $(this).addClass('list-close');
+    $(this).parent().next('ul').html('')
+  });
+
 </script>
 
 </nav>
 
 <div id="content">
-
-  <script>
-    $('#sidebar').on('click', '.list-close', function () {
-      $(this).addClass('caret-down list-open');
-      $(this).removeClass('list-close');
-      myid = $(this).attr('id')
-      $.get('{{ url_for('collbrowser.colltree') }}', {
-        active: '{{ path }}',
-        root: $(this).data('path')
-      }, function (data) {
-        $('#' + $.escapeSelector(myid)).parent().after(data);
-      });
-    });
-
-    $('#sidebar').on('click', '.list-open', function () {
-      $(this).removeClass('caret-down list-open');
-      $(this).addClass('list-close');
-      sublistid = $(this).attr('id').substr(2);
-      $('#' + $.escapeSelector(sublistid)).html('');
-    });
-  </script>
 
 
 <!-- Alert modal dialog -->

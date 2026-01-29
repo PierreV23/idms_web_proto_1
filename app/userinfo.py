@@ -17,11 +17,22 @@ bp = Blueprint('userinfo', __name__, url_prefix='/userinfo')
 @bp.route('/api/setting', methods=['GET', 'POST'])
 def usersetting():
     if request.method == 'POST':
-        formdata = request.form.to_dict()
-        attr = formdata.get('attr')
-        value = formdata.get('value')
+        if request.is_json:
+            attr = request.json.get('attr')
+            value = request.json.get('value')
+        else:
+            formdata = request.form.to_dict()
+            attr = formdata.get('attr')
+            value = formdata.get('value')
         current_user.settings[attr] = value
-    return { 'result': 'OK'}, 200
+        return { 'result': 'OK'}, 200
+    elif request.method == 'GET':
+        attr = request.args.get('attr')
+        value = current_user.settings.get(attr)
+        if value is None:
+            return { 'result': 'NOT FOUND' }, 400
+        else:
+            return { 'value': current_user.settings.get(attr, '') }, 200
 
 def userinfo(user):
     with irods_manager.session() as session:
