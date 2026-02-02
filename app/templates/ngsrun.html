@@ -226,7 +226,7 @@ th {
                         {% endif %}
                         {% if action == 'edit_form' %}
                             {% for project in projects|sort %}
-                            <option {% if project==data[barcode].project %} selected {% endif %} value="{{ data[barcode].project }}" >{{ project }}</option>
+                            <option {% if project==data[barcode].project %} selected {% endif %}>{{ project }}</option>
                             {% endfor %}
                         {% endif %}
                     </select>
@@ -472,7 +472,7 @@ th {
         projectids = new Set()
         my_projects = new Set({{ projects | list | tojson }})
         for (var line_id = 0; line_id < linearray.length; line_id++) {
-            projectid = linearray[line_id].split('\t')[5]
+            projectid = linearray[line_id].split(/[\t,;]/)[5];
             if (projectid) {
                 projectids.add(projectid)
             }
@@ -491,12 +491,12 @@ th {
             'sampleid',
             'target',
             'primer',
-            'kit_list',
+            'kit',
             'description',
             'project'
         ]
         var barcode = index + 1
-        var fields = value.split(/[\t,]/) // Split on \t or ','
+        var fields = value.split(/[\t,;]/) // Split on \t or ','
         for (var field = 0; field < fields.length; field++) {
             var field_id = IMPORT_FIELDS[field] + "_barcode" + ((barcode < 10) ? "0" : "") + barcode.toString()
             $('#' + field_id).val(fields[field])
