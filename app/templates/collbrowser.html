@@ -432,21 +432,20 @@ menuname='collectionbrowser'
   }
 
   function load_leftpane() {
-    {% if current_user.settings.get('use_customtree', 'false') == 'false' %}
-      {% if current_user.feature('treeview') %}
-        load_tree()
-      {% else %}
-        load_projects()
-      {% endif %}
-    {% else %}
-      load_custom()
-    {% endif %}
+    view = $('#viewselect').val()
+    if (view == 'tree') {
+      load_tree()
+    } else if (view == 'projects') {
+      load_projects()
+    } else {
+      load_custom(view)
+    }
   }
 
   function load_projects() {
     $.get('{{ url_for('projects.my_projects') }}',
       function (data) {
-        $('#treeview').empty()
+        $('#treeview').empty().removeClass('treeview').removeClass('customview')
         for (const [project, path] of Object.entries(data)) {
           const classname = selected_project == project ? "projectselect" : "projectlabel"
           selected_projectpath = selected_project == project ? path : selected_projectpath
@@ -466,7 +465,7 @@ menuname='collectionbrowser'
     $.get('{{ url_for('collbrowser.colltree') }}', {
       active: collection
     }, function (data) {
-      $('#treeview').html(data)
+      $('#treeview').html(data).addClass('treeview').removeClass('customview')
       // Move the active collection to the center of the view
       if ($('.path-active').length !== 0) {
         centertop = $('.path-active').offset().top
@@ -479,19 +478,20 @@ menuname='collectionbrowser'
     });
   }
 
-  function load_custom() {
+  function load_custom(label) {
     var data = {
         'path': [],
-        'active': collection
+        'active': collection,
+        'label': label
     }
     $.ajax({
-        url: '{{ url_for('collbrowser.customtree') }}',
+        url: '{{ url_for('collbrowser.customview') }}',
         type: 'POST',
         contentType: 'application/json',
         data: JSON.stringify(data),
         dataType: 'json',
         success: function(data) {
-          $('#customview').html(data.result)
+          $('#treeview').html(data.result).removeClass('treeview').addClass('customview')
           // Move the active collection to the center of the view
           if ($('.path-active').length !== 0) {
             centertop = $('.path-active').offset().top
@@ -499,8 +499,8 @@ menuname='collectionbrowser'
           else {
             centertop = 0
           }
-          let top = centertop - $('#customdiv').height() / 2 + $('#customdiv').scrollTop()
-          $('#customdiv').scrollTop(top)
+          let top = centertop - $('#treediv').height() / 2 + $('#treediv').scrollTop()
+          $('#treediv').scrollTop(top)
         }
     })
   };
@@ -672,7 +672,6 @@ menuname='collectionbrowser'
   // Load
   $(window).on('load', function () {
     set_path();
-    load_leftpane();
   });
 
   $(document).on('click', '.sort-change', function () {
@@ -739,20 +738,19 @@ menuname='collectionbrowser'
   <div class="card border-primary browser-sidebar">
     <div class="card-header">
       <div class="card-title">
-        <b>{% if current_user.feature('treeview') %}{% if current_user.settings.get('use_customtree', 'false') == 'false' %}Collection Tree{% else %}Metadata Tree{% endif %}{% else %}Project List{% endif %}</b>
+        <select class="form-control" id="viewselect">
+          <option value="tree" {% if customview=='tree' %}selected{% endif %}>Collection Tree</option>
+          <option value="projects" {% if customview=='projects' %}selected{% endif %}>Project List</option>
+          {% for label, name in customviews.items() %}
+          <option value="{{ label }}" {% if customview==label %}selected{% endif %}>{{ name }}</option>
+          {% endfor %}
+        </select>
       </div>
     </div>
-    {% if current_user.settings.get('use_customtree', 'false') == 'false' %}
     <div class="card-body scrollbar-y small-font h-100" id="treediv">
       <div id="treeview">
       </div>
     </div>
-    {% else %}
-    <div class="card-body scrollbar-y small-font h-100" id="customdiv">
-      <div id="customview">
-      </div>
-    </div>
-    {% endif %}
   </div>
 
   <!-- Graph Area -->
@@ -1250,7 +1248,7 @@ document.addEventListener("DOMContentLoaded", () => {
       .map(key => rawEl.dataset[key]);
   }
 
-  $('#treeview').on('click', '.list-close', function () {
+  $(document).on('click', '#treeview.treeview .list-close', function () {
     $(this).addClass('caret-down list-open');
     $(this).removeClass('list-close');
     myid = $(this).attr('id')
@@ -1262,25 +1260,23 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  $('#treeview').on('click', '.list-open', function () {
+  $(document).on('click', '#treeview.treeview .list-open', function () {
     $(this).removeClass('caret-down list-open');
     $(this).addClass('list-close');
-    sublistid = $(this).attr('id').substr(2);
-    $('#' + $.escapeSelector(sublistid)).html('');
+    $(this).parent().next('ul').empty()
   });
 
-  $('#customview').on('click', '.list-close', function () {
+  $(document).on('click', '#treeview.customview .list-close', function () {
     $(this).addClass('caret-down list-open');
     $(this).removeClass('list-close');
-    myid = $(this).attr('id')
-
     var data = {
         'path': getOrderedData($(this), 'path-'),
-        'active': collection
+        'active': collection,
+        'label': $('#viewselect').val()
     }
     myid = $(this).attr('id')
     $.ajax({
-        url: '{{ url_for('collbrowser.customtree') }}',
+        url: '{{ url_for('collbrowser.customview') }}',
         type: 'POST',
         contentType: 'application/json',
         data: JSON.stringify(data),
@@ -1293,11 +1289,9 @@ document.addEventListener("DOMContentLoaded", () => {
           $('#customdiv').animate({ scrollTop: top }, 'slow')  //;scrollTop(top)
         }
     })
-
-//      $('#' + $.escapeSelector(myid)).parent().after(data);
   });
 
-  $('#customview').on('click', '.list-open', function () {
+  $(document).on('click', '#treeview .list-open', function () {
     $(this).removeClass('caret-down list-open');
     $(this).addClass('list-close');
     $(this).parent().next('ul').html('')
@@ -1308,7 +1302,6 @@ document.addEventListener("DOMContentLoaded", () => {
 </nav>
 
 <div id="content">
-
 
 <!-- Alert modal dialog -->
   <div class="modal" id="modalAlert" role="dialog">
@@ -1404,6 +1397,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
 <script>
 var sidebarSize = 0
+
+$('#viewselect').on('change', function() {
+  $.post('{{ url_for("userinfo.usersetting") }}', {
+    attr: 'customview',
+    value: $(this).val()
+  })
+  load_leftpane()
+})
 
 $('.graphTabs').on('shown.bs.tab', function(event){
   activegraphtab = event.target.getAttribute('href')

@@ -14,7 +14,7 @@ from app.irodssessions import irods_manager
 
 bp = Blueprint('userinfo', __name__, url_prefix='/userinfo')
 
-@bp.route('/api/setting', methods=['GET', 'POST'])
+@bp.route('/api/setting', methods=['GET', 'POST', 'DELETE'])
 def usersetting():
     if request.method == 'POST':
         if request.is_json:
@@ -30,9 +30,14 @@ def usersetting():
         attr = request.args.get('attr')
         value = current_user.settings.get(attr)
         if value is None:
-            return { 'result': 'NOT FOUND' }, 400
+            return { 'result': 'NOT FOUND' }, 404
         else:
             return { 'value': current_user.settings.get(attr, '') }, 200
+    elif request.method == 'DELETE':
+        if request.is_json:
+            attr = request.json.get('attr')
+            current_user.settings.delete(attr)
+            return {'result': 'OK'}, 200
 
 def userinfo(user):
     with irods_manager.session() as session:

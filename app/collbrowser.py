@@ -1644,6 +1644,7 @@ def cached_sql(sql):
         data = runsql(sess, sql)
     return [{ 'v0': x[0] } for x in data ]
 
+@cache.memoize(timeout=60, make_name=dep_zone)
 def get_values(fields, values):
     from .jobs import db
     type = None
@@ -1672,10 +1673,10 @@ def get_values(fields, values):
             if type == 'link':
                 results.append({ 'name': d['v0'], 'link': d['v0'], 'type': type })
             else:
-                results.append({ 'name': d['v0'][1:-1], 'link': datafield('collection', d['v0'][1:-1], 'irods_collection').htmlshort, 'type': type })
-    #results = [ d['v0'] for d in data if d['v0'] is not None ]
+                results.append({ 'name': d['v0'][1:-1], 'link': datafield('collection', d['v0'][1:-1], 'irods_collection').htmlshort2(maxlen=20), 'type': type })
     return results
 
+@cache.memoize(timeout=60, make_name=dep_zone)
 def add_custom_items(meta_attrs, path, active_path, active_collection):
     fields = get_values(meta_attrs, path)
     path_prefix = ' '.join([f'data-path-{i}={v}' for i, v in enumerate(path)])
@@ -1690,7 +1691,7 @@ def add_custom_items(meta_attrs, path, active_path, active_collection):
             if r['name'] == active_collection:
                 classes = 'path-active '
             else:
-                classes = ''
+                classes = ' '
             children = ''
         else:
             current_path = path + [r['name']]
@@ -1705,28 +1706,25 @@ def add_custom_items(meta_attrs, path, active_path, active_collection):
     return rs
         
 @bp.route('/_custom', methods=['POST'])
-#@cache.cached(timeout=1, key_prefix=key_zone)
-def customtree():
+def customview():
     """Get custom browse tree grouped by metadata
 
         input parameters:
             base: list of metadata values leading to the base path
             active: list of metadata values leading to the active path
     """
-    CONFIG = current_user.settings.get('customview', 'projectID')
-
     data = request.get_json()
     path = data.get('path', [])
+    label = data.get('label')
     active_collection = data.get('active')
-    print(f'ACTIVE {active_collection}')
-    print(f'PATH {path}')
+    config = current_user.settings.get(f'customview::{label}')
+    if config is None:
+        return { 'result': 'ERROR'}, 500
     # Translate the active_collection to a customview attrs path:
     meta = iqry.qcollmetadict(active_collection)
-    active_path = [meta.get(m[0]) for m in CONFIG] + [active_collection]
-    print(f'ACTIVE_PATH {active_path}')        
-    rs = add_custom_items(CONFIG, path, active_path, active_collection)
+    active_path = [meta.get(m[0]) for m in config['attrs']] + [active_collection]
+    rs = add_custom_items(config['attrs'], path, active_path, active_collection)
     return { 'result': '<ul>{}</ul>'.format(rs) }
-    return ('<ul>{}</ul>'.format(rs)), 200
 
 # Collection tree
 @bp.route('/_tree')
@@ -1772,6 +1770,13 @@ def collbrowser():
     vertical_pos = current_user.settings.setdefault('vertical_pos', "40")
     legend_obj=current_user.settings.setdefault('legend_obj', "0")
     legend_coll=current_user.settings.setdefault('legend_coll', "0")
+    customview = current_user.settings.setdefault('customview', 'tree')
+    
+    customviews = {}
+    for item, value in current_user.settings.items():
+        if item.startswith('customview::'):
+            customviews[item[12:]] = value['name']   
+        
 
     return render_template('collbrowser.html', path=path, selected_object=selected_object,
                            graph_levels_coll=graph_levels_coll, graph_levels_obj=graph_levels_obj,
@@ -1782,7 +1787,7 @@ def collbrowser():
                            show_upstream_obj=show_upstream_obj, show_upstream_coll=show_upstream_coll,
                            show_downstream_obj=show_downstream_obj, show_downstream_coll=show_downstream_coll,
                            graph_direction_tb_obj=graph_direction_tb_obj, vertical_pos=vertical_pos,
-                           legend_obj=legend_obj, legend_coll=legend_coll)
+                           legend_obj=legend_obj, legend_coll=legend_coll, customviews=customviews, customview=customview)
 
 @bp.route('upload_file', methods=['GET', 'POST'])
 def upload_file():

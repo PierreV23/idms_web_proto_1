@@ -94,6 +94,14 @@ class data_base():
     @property
     def htmlshort(self):
         return self.htmlstring
+    
+    def htmlshort2(self, classes="", maxlen=MAXLEN):
+        l = len(self.value)
+        if l>maxlen:
+            txt = self.value[l-maxlen:]
+        else:
+            txt = self.value
+        return f'<div class="{classes}">{txt}</div>'
 
     @property
     def htmlstring(self):
@@ -247,7 +255,11 @@ class data_irods_collection(data_base):
     def htmlshort(self):
         displaystring = self.displaystring(maxlen=MAXLEN)
         return '<div class="container"><a href="{0}?path={1}" data-toggle="tooltip" title="{1}">{2}</A></div>'.format(format(url_for('collbrowser.collbrowser')), self.value, displaystring)
-
+    
+    def htmlshort2(self, classes="", maxlen=MAXLEN):
+        displaystring = self.displaystring(maxlen=maxlen)
+        return '<div class="container"><a href="{0}?path={1}" data-toggle="tooltip" title="{1}"><span class="{3}">{2}</span></A></div>'.format(format(url_for('collbrowser.collbrowser')), self.value, displaystring, classes)
+    
     @property
     def collentry(self):
         return f'<span class="path-change" data-path="{self.value}">{self.basename}</span>'
