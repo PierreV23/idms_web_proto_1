@@ -145,6 +145,7 @@ class NGSRunView(Base):
     description = Column(String(250), default='', nullable = False)
     project = Column(String(32))
     owner = Column(String(32))
+    duplicate = False
 
 class NGSBarcode(Base):
     #__bind_key__ = current_user.environment
@@ -306,9 +307,7 @@ def runs():
             key = NGSRUN_FIELDS[f]['field']
             val = getattr(run, key, None)
             if key == 'flowcell' and val is not None:
-                # append (DUPLICATE) to flowcell name
-                if val in flowcell_dupl:
-                    val += ' (duplicate)'
+                record['duplicate'] = val in flowcell_dupl
             if val is not None:
                 formatted = datafield(key, val, process_param(NGSRUN_FIELDS[f]['format'], key, val))
                 record |= { key: formatted.htmlshort, f'_{key}': formatted.value }
