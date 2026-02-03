@@ -16,11 +16,13 @@ menuname='upload_settings'
             <input type="hidden" name="coll" value="{{ coll }}">
             <div class="form-group">
                 <label for="project-select">Select project</label>
-                <select class="form-control" id="project-select" name="projectID">
-                    <option disabled selected value> -- select a project -- </option>
-                {% for project in projects | sort %}
-                    <option{% if project == data.get('projectID') %} selected{% endif %}>{{ project }}</option>
-                {% endfor %}
+                <select class="form-control" id="project-select" name="projectID" required>
+                    <option disabled selected value="">-- select a project --</option>
+                    {% for project in projects | sort %}
+                    <option value="{{ project }}" {% if project==data.get('projectID') %} selected{% endif %}>
+                        {{ project }}
+                    </option>
+                    {% endfor %}
                 </select>
             </div>
             {% for k in fields %}
@@ -32,9 +34,12 @@ menuname='upload_settings'
             {% endif %}
             {% endfor %}
             <div class="form-group float-right">
-                <button type="button" id="button-save" class="formsubmit btn btn-primary" value="save">Save</button>
-                <button type="button" id="button-save-continue" class="formsubmit btn btn-primary" value="next">Save & Continue</button>
-                <input type="hidden" id="submitbutton" name="submitbutton" value="save">
+                <button type="submit" name="submitbutton" value="save" class="btn btn-primary">
+                    Save
+                </button>
+                <button type="submit" name="submitbutton" value="next" class="btn btn-primary">
+                    Save & Continue
+                </button>
             </div>
         </form>
     </div>
@@ -92,10 +97,19 @@ $("#save-changes-button").on("click", function () {
     submitForm();
 });
 
+// To check for the project in the upload settings, which is required
+document.querySelectorAll('.formsubmit').forEach(btn => {
+    btn.addEventListener('click', function () {
+        const form = document.getElementById('upload-settings-form');
 
+        if (!form.checkValidity()) {
+            form.reportValidity(); // shows browser validation UI
+            return;
+        }
+
+        document.getElementById('submitbutton').value = this.value;
+        form.submit();
+    });
+});
 </script>
-
-
-
-
 {% endblock %}
