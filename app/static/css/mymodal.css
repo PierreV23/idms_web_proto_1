@@ -116,19 +116,6 @@ body {
   grid-area: details;
 }
 
-.selectgrid {
-  display: grid;
-  width: 100%;
-  height: 100vh;
-  column-gap: 10px;
-  row-gap: 10px;
-  align-items: stretch;
-  grid-template-columns: [left] 250px [middle] auto [right];
-  grid-template-rows: [top] 100% [bottom];
-  grid-template-areas:
-    "selectlist selectdetail"
-}
-
 .legend-overlay {
   position: absolute;
   top: 10px;
@@ -146,15 +133,7 @@ body {
   z-index: 10; /* Ensure it's on top */
 }
 
-.selectlist {
-  grid-area: selectlist;
-  height: 100%;
-}
 
-.selectdetail {
-  grid-area: selectdetail;
-  height: 100%;
-}
 
 .browsergrid {
   display: grid;
