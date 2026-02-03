@@ -56,6 +56,9 @@ Use the <A HREF="{{ url_for('ngsruns.run_form')}}">New run</A> menu item to crea
                       data-sortable="{{columns[c]['sortable']}}"
                       data-visible="{{columns[c]['visible']}}"
                       data-filter-control="{{columns[c]['filtercontrol']}}"
+                      {% if 'formatter' in columns[c] %}
+                      data-formatter="{{columns[c]['formatter']}}"
+                      {% endif %}
                       {% if columns[c]['filtercontrol']=="select" %}
                           data-filter-data='url:{{ url_for("ngsruns.filterdata", field=columns[c]["field"]) }}'
                       {% endif %}>
@@ -109,6 +112,14 @@ Use the <A HREF="{{ url_for('ngsruns.run_form')}}">New run</A> menu item to crea
 
 var selected_id = {{ idrequest }};
 
+function flowcellFormatter(value, row) {
+   if (row.duplicate){
+      return value + " (duplicate)"
+   } else {
+      return value
+   }
+}
+
 $(function () {
    $('#runtable').bootstrapTable();
    $('.bootstrap-table-filter-control-project').val('{{ default_project }}')
@@ -131,7 +142,6 @@ $('document').ready(function(){
       } else {
          $('#delete1').prop('disabled', true);
       }
-      $('#edit1').prop('disabled', (row.datacoll != '') )
       $('.runid').html(row.id);
       $('.runname').html(row.name);
       $('.flowcellname').html(row.flowcell);
