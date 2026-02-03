@@ -312,6 +312,8 @@ def update_resources():
                         else:
                             new_meta.value = new_value
                         res_obj.metadata[meta_name] = new_meta
+                elif RESOURCE_PROPS[property].get('type') == 'bool':
+                    res_obj.metadata[meta_name] = iRODSMeta(meta_name, 'false')
                 else:
                     del res_obj.metadata[meta_name]
 

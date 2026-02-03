@@ -279,7 +279,7 @@ def qpathobjecttype(path):
             # Try to get it as a DataObject
             obj = session.data_objects.get(path)
             return 'dataobject'
-        except DataObjectDoesNotExist:
+        except (CollectionDoesNotExist, DataObjectDoesNotExist):
             pass
 
         try:

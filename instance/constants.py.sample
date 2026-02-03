@@ -235,7 +235,7 @@ LSF_DEFAULT_QUEUE = 'bio'
 META_PROJECTID = 'projectID'
 META_PROCESSID = 'processID'
 ATTR_PROCESSGROUPID = 'processgroupID'
-META_SUFFIX = 'SYS::suffixlength'
+META_SUFFIX = 'sys::suffixlength'
 
 OBJ_METADATA_YML = 'metadata.yml'
 OBJ_METADATA_JSON = 'metadata.json'

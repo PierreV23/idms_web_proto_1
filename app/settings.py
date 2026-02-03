@@ -43,8 +43,8 @@ NGSRUN_FIELDS = {
     'id': {'title': 'Run ID', 'format': 'text', 'field': 'id', 'sortable': 'true', 'visible': 'true', 'align': 'center', 'filtercontrol': 'input'},
     'creation_date': {'title': 'Creation Date', 'format': 'timestamp', 'field': 'creation_date', 'sortable': 'true', 'visible': 'false'},
     'name': {'title': 'Name', 'format': 'text', 'field': 'name', 'sortable': 'true', 'visible': 'true', 'align': 'center', 'filtercontrol': 'input'},
-    'flowcell': {'title': 'Flowcell', 'format': 'text', 'field': 'flowcell', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'input'},
-    'project': {'title': 'Project', 'format': 'projectid', 'field': 'project', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
+    'flowcell': {'title': 'Flowcell', 'format': 'text', 'field': 'flowcell', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'input', 'formatter': 'flowcellFormatter'},
+    'project': {'title': 'Project', 'format': lambda k, v: 'string' if v == 'Multiple' else 'projectid', 'field': 'project', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
     'owner': {'title': 'User', 'format': 'text', 'field': 'owner', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
     'datacoll': {'title': 'Collection', 'format': 'irods_collection', 'field': 'datacoll', 'sortable': 'false', 'visible': 'true'},
     'description': {'title': 'Description', 'format': 'text', 'field': 'description', 'sortable': 'false', 'visible': 'false', 'filtercontrol': 'input'}

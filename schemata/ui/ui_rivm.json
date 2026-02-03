@@ -130,10 +130,8 @@
   "availability": {
     "ui:widget": "hidden"
   },
-  "url_selection_list": {
-    "ui:widget": "hidden"
-  },
   "process_information": {
+    "url_selection_list": {},
     "retention_processcategory": {
       "ui:widget": "hidden"
     },

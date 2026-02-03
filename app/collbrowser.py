@@ -361,6 +361,21 @@ class CollectionState():
     @property
     def complete(self):
         return self._meta("complete", "false")
+    
+    @cached_property
+    def dataset(self):
+        if self.is_dataset:
+            return self.collection
+        if self.collection == '/':
+            return None
+        return CollectionState(os.path.dirname(self.collection)).dataset
+    
+    @cached_property
+    def dataset_field(self):
+        dataset = self.dataset
+        if dataset is None:
+            return datafield('collection', 'Not in a dataset', 'text')
+        return datafield('collection', dataset, 'irods_collection')
 
     @cached_property
     def desired_state(self):
@@ -1562,7 +1577,13 @@ def add_items(path, level, active):
     colls_length = len(colls)
     if colls_length > MAX_TREEVIEW_COLLS:
         # Find the index of the active path in colls
-        active_index_list = [ i for i, c in enumerate(colls) if active.startswith(c) ]
+        active_index_list = []
+        if active.startswith(path):
+            active_parts = active.split('/')
+            for i, c in enumerate(colls):
+                coll_parts = c.split('/')
+                if active_parts[:len(coll_parts)] == coll_parts:
+                    active_index_list.append(i)            
         if active_index_list == []: ## This is not a path to the active path
             colls = colls[:MAX_TREEVIEW_COLLS]
             if colls_length > MAX_TREEVIEW_COLLS:

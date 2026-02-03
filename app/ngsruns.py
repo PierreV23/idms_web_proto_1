@@ -145,6 +145,7 @@ class NGSRunView(Base):
     description = Column(String(250), default='', nullable = False)
     project = Column(String(32))
     owner = Column(String(32))
+    duplicate = False
 
 class NGSBarcode(Base):
     #__bind_key__ = current_user.environment
@@ -223,7 +224,7 @@ def minilims_authorized_for_projects(projectlist):
     """
     if current_app.config.get('MINILIMS_AUTHORS_GROUP') in current_user.groups():
         return True, []
-    unauthorized_projects = [ project for project in projectlist if not project in current_user.projects() ]
+    unauthorized_projects = [ project for project in projectlist if not project in current_user.projects() and project ]
     return not bool(unauthorized_projects), unauthorized_projects
 
 def projects_in_run(id):
@@ -256,6 +257,13 @@ def get_complete(field):
     req = request.args.to_dict().get('q', '')
     data1 = [ d[field] for d in db.session().query(FIELDS[field]).filter(FIELDS[field].like('%{}%'.format(req))).distinct().all()]
     return jsonify(data1)
+
+def process_param(param, *args, **kwargs):
+# Check if the parameter is a function/lambda
+    if callable(param):
+        return param(*args, **kwargs)
+    # If not callable, treat it as a constant
+    return param    
 
 @bp.route('_runs', methods=['GET'])
 def runs():
@@ -299,11 +307,9 @@ def runs():
             key = NGSRUN_FIELDS[f]['field']
             val = getattr(run, key, None)
             if key == 'flowcell' and val is not None:
-                # append (DUPLICATE) to flowcell name
-                if val in flowcell_dupl:
-                    val += ' (duplicate)'
+                record['duplicate'] = val in flowcell_dupl
             if val is not None:
-                formatted = datafield(key, val, NGSRUN_FIELDS[f]['format'])
+                formatted = datafield(key, val, process_param(NGSRUN_FIELDS[f]['format'], key, val))
                 record |= { key: formatted.htmlshort, f'_{key}': formatted.value }
             # Check the projects in this run
         projects = projects_in_run(run.id)
@@ -381,29 +387,10 @@ def run_barcodes():
     }
     return render_template('bootstraptable.html', data=data, no_page=True)
 
-@bp.route('edit', methods=['GET'])
-@login_required
-def edit_form():
-    if current_app.config.get('MINILIMS_AUTHORS_GROUP') in current_user.groups():
-        projectlist = get_projectlist().keys()
-    else:
-        projectlist = current_user.projects()    
-    id = request.args.get('idrequest', '', type=str)
-    run = db.session().query(NGSRun).filter(NGSRun.id == id).one_or_none()
-    barcode_obj = db.session().query(NGSBarcode).filter(NGSBarcode.ngsrun == id).all()
-    #barcodes = [ f.barcode for f in barcode_obj ] # maak een list van object
-    data = { barcode : None for barcode in barcodes }
-    for f in barcode_obj:
-        data[f.barcode] = f
-    data.update({"flowcell": run.flowcell})
-    data.update({"name": run.name})
-    data.update({"description": run.description})
-    data.update({"owner": run.owner})
-    return render_template('ngsrun.html', projects=projectlist, data=data, barcodes=barcodes, id=id)
-
 @bp.route('new', methods=['GET'])
 @login_required
 def run_form():
+    action = 'new_form'
     if db.version() < 2:
         return deprecated_message(menuname='newrun')
     if current_app.config.get('MINILIMS_AUTHORS_GROUP') in current_user.groups():
@@ -413,6 +400,7 @@ def run_form():
     data = { barcode : None for barcode in barcodes }
     selected_id = int(request.args.get('id', -1))
     if selected_id > 0:
+        action = 'edit_form'
         authorized, unauthorized_projects = minilims_authorized_for_projects(projects_in_run(selected_id))
         if not authorized:
             flash(f'You are not authorized to edit a sample sheet for project(s) {",".join(unauthorized_projects)}', 'error')
@@ -428,7 +416,7 @@ def run_form():
         for f in barcode_obj:
             data[f.barcode] = f
     kits = get_kits()
-    return render_template('ngsrun.html', data=data, projects=projectlist, barcodes=barcodes, id=selected_id, default_project=current_user.settings.get('default_project', ''), kits=kits)
+    return render_template('ngsrun.html', data=data, projects=projectlist, barcodes=barcodes, id=selected_id, default_project=current_user.settings.get('default_project', ''), kits=kits, action=action)
 
 @bp.route('delete', methods=['GET'])
 def delete_ngs_run():

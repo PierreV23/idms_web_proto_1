@@ -43,7 +43,20 @@ PROJECT_ATTRS = ['user::upload::settings::projectID']
 ATTR_SCHEMA_IN_USE = 'user::schema_in_use'
 ATTR_UPLOAD_PREFIX = 'user::metadata::'
 ATTR_UPLOAD_DEFAULT_PREFIX = 'default_metadata::'
-ATTR_METADATA = "metadata::"
+ATTR_METADATA_PREFIX = "metadata::"
+
+# Upload related metadata attributes 
+ATTR_PROJECTID = 'projectID'
+ATTR_UPLOAD = 'user::upload'
+ATTR_UPLOADNAME = f'{ATTR_UPLOAD}::name'
+ATTR_UPLOADPARENT = f'{ATTR_UPLOAD}::parent'
+ATTR_DATASETID = 'sys::dataset_id'
+ATTR_UPLOADSETTINGS = 'user::upload::settings::'
+
+ATTR_UPLOADMETA = 'user::upload::metadata::'
+ATTR_UPLOADMETASCHEMA = 'user::upload::schemafile'
+
+META_SUFFIX = 'sys::suffixlength'
 
 # Constants that define the JOB VIEW
 JOB_PAGE_SIZE = 25

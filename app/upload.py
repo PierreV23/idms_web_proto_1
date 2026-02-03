@@ -18,8 +18,6 @@ from flask_login import current_user, login_required
 import uuid
 from app import projects, iqry
 from app.datafield import datafield
-from app.metaedit import get_schemata
-from app.constants import ATTR_UISCHEMA, SCHEMATA_BASE_PATH, DATASET_SCHEMATA_PATH, PROJECT_SCHEMATA_PATH
 from app.projectdb_api import rest_call
 import randomname
 import json
@@ -32,17 +30,17 @@ from app.irodssessions import irods_manager
 from ast import literal_eval
 from fs_irods import fs_irods
 
-ATTR_PROJECTID = 'projectID'
-ATTR_UPLOAD = 'user::upload'
-ATTR_UPLOADNAME = f'{ATTR_UPLOAD}::name'
-ATTR_UPLOADPARENT = f'{ATTR_UPLOAD}::parent'
-ATTR_DATASETID = 'sys::dataset_id'
-ATTR_UPLOADSETTINGS = 'user::upload::settings::'
-
-ATTR_UPLOADMETA = 'user::upload::metadata::'
-ATTR_UPLOADMETASCHEMA = 'user::upload::schemafile'
-
-META_SUFFIX = 'SYS::suffixlength'
+from app.constants import ( 
+        ATTR_PROJECTID,
+        ATTR_UPLOAD,
+        ATTR_UPLOADNAME,
+        ATTR_UPLOADPARENT,
+        ATTR_DATASETID,
+        ATTR_UPLOADSETTINGS ,
+        ATTR_UPLOADMETA, 
+        ATTR_UPLOADMETASCHEMA,
+        META_SUFFIX
+        )
 
 
 # remove spacial characters, but there is no need to only allow [a-zA-Z_], quotes, paranthesis, "@" are all valid characters

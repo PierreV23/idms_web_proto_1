@@ -14,7 +14,7 @@
         data-show-columns="true" 
         data-buttons-toolbar=".buttons-toolbar"
         data-sort-name="username"
-        data-url="{{ url_for('restcall', rest_endpoint=objecttype + '/' + object + '/' + usertype ) }}">
+        data-url="{{ url_for('main.restcall', rest_endpoint=objecttype + '/' + object + '/' + usertype ) }}">
         <thead>
             <tr>
                 <th data-radio="true"></th>
@@ -41,7 +41,7 @@
 
         $('.user-add').on('click', function (obj) {
             $('.usermanager').addClass('pending')
-            base_url = "{{ url_for('restcall', rest_endpoint=objecttype + '/' + object + '/' + usertype) }}"
+            base_url = "{{ url_for('main.restcall', rest_endpoint=objecttype + '/' + object + '/' + usertype) }}"
             $.ajax({
                 url: base_url,
                 type: 'POST',
@@ -59,7 +59,7 @@
 
         $('.user-delete').on('click', function (obj) {
             $('.usermanager').addClass('pending')
-            base_url = "{{ url_for('restcall', rest_endpoint=objecttype + '/' + object + '/' + usertype) }}"
+            base_url = "{{ url_for('main.restcall', rest_endpoint=objecttype + '/' + object + '/' + usertype) }}"
             $('#{{ usertype }}-userTable').bootstrapTable('getSelections').forEach(function (element) {
                 $.ajax({
                     url: base_url + '/' + element["username"],
