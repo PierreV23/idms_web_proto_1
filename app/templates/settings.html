@@ -249,7 +249,7 @@ menuname='settings'
                 dataType: 'json'
             }).done(function () {
                 // TODO: Reload not required, just insert a row in the table and select it
-                window.location.replace("{{ url_for('settings')}}");
+                window.location.replace("{{ url_for('main.settings')}}");
             })
         }
     })
