@@ -1631,34 +1631,6 @@ def add_items(path, level, active):
                     result = '{}<ul id="{}">{}</ul>'.format(result, collpath, subtree)
     return(result)
 
-def get_values2(fields, values):
-    type = None
-    if len(values) == 0:
-        with irods_manager.session() as sess:
-            q = sess.query(CollectionMeta.value).filter(
-                Criterion('=', CollectionMeta.name, fields[0])
-            )
-            data = [ r[CollectionMeta.value] for r in q ]
-        type = 'link'
-    elif len(values) < len(fields):
-        l = len(values)
-        crit = ' AND '.join([f" coll->'coll_meta'->>'{fields[i]}' = '{v}' " for i, v in enumerate(values)])
-        sql = f"SELECT DISTINCT coll->'coll_meta'->>'{fields[l]}' as v0 FROM coll_json WHERE {crit} ORDER by v0"
-        type = 'link'
-    else:
-        crit = ' AND '.join([f" coll->'coll_meta'->>'{fields[i]}' = '{v}' " for i, v in enumerate(values)])        
-        sql = f"SELECT DISTINCT coll->'coll_name' as v0 FROM coll_json WHERE {crit} ORDER by v0"
-        type = 'collection'
-    results = [ ] 
-    for d in data:
-        if d is not None:
-            if type == 'link':
-                results.append({ 'name': d, 'link': d, 'type': type })
-            else:
-                results.append({ 'name': d, 'link': datafield('collection', d, 'irods_collection').htmlshort, 'type': type })
-    #results = [ d['v0'] for d in data if d['v0'] is not None ]
-    return results
-
 @cache.memoize(timeout=60, make_name=dep_zone)
 def cached_sql(sql):
     with irods_manager.session() as sess:
