@@ -10,7 +10,11 @@ from flask_session import Session
 from cachelib.file import FileSystemCache
 from app.webuser import WebUser
 import logging.config
+import irods.exception
 from Crypto.PublicKey import RSA
+from app.webuser import AuthException
+from .ngsruns import NGSRunsDBUnavailableException
+from .jobs import JobsDBUnavailableException
 
 from . import routes, auth, collbrowser, jobs, docviewer, messages, contacts_manager
 from . import projects, cluster, admin, reports, userinfo, referencedatasets
@@ -112,9 +116,56 @@ def create_app():
     def load_user(userid):
         return WebUser.retrieve(userid)
 
+    @app.context_processor
+    def inject_header_message():
+        header_messages = messages.load_messages(category='banner', only_current=True)
+        return dict(header_messages=header_messages)
+    
+    errorhandlers(app)
+
     logging.info('iDMS initialized')
     return app
 
+def errorhandlers(app):
+    @app.errorhandler(irods.exception.PAM_AUTH_PASSWORD_FAILED)
+    def invalid_session0(e):
+        """Session may be stale. Destroy it and redirect to login page."""
+        logging.info(f"Invalid session")
+        return auth.logout()
+
+    @app.errorhandler(irods.exception.CAT_INVALID_AUTHENTICATION)
+    def invalid_session1(e):
+        """Session may be stale. Destroy it and redirect to login page."""
+        logging.info(f"Invalid session")
+        return auth.logout()
+
+    @app.errorhandler(AuthException)
+    def auth_failed(e):
+        """Destroy session and redirect to login page."""
+        logging.info(f"Auth Exception")
+        return redirect(url_for('auth.login', next=request.full_path))
+
+    @app.errorhandler(AttributeError)
+    def handle_attribute_error(e):
+        """Destroy session and redirect to login page."""
+        logging.info(f"AttributeError")
+        return redirect(url_for('auth.login', next=request.full_path))  
+
+    @app.errorhandler(NGSRunsDBUnavailableException)
+    def handle_bad_ngsruns_request(e):
+        flash('NGSRuns Database Unavailable', 'error')
+        return redirect(url_for('main.home'))
+
+    @app.errorhandler(JobsDBUnavailableException)
+    def handle_bad_jobs_request(e):
+        flash('Jobs table unavailable. Reverting to old jobs view ...', 'error')
+        return redirect(url_for('oldjobs.show_jobs'))
+    
+    @app.errorhandler(irods.exception.CAT_INVALID_USER)
+    def invalid_user(e):
+        """Connection to iRODS failing. Redirect to login page"""
+        logging.info("Invalid user")
+        return auth.logout()
 
 
 def init_dbs(app):
