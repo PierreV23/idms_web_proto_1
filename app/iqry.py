@@ -217,7 +217,10 @@ def qcollmetavals_with_placeholder(collection, attr, placeholder='[0]'):
     return result
 
 def qcollmetaval(collection, attr, default=None, unit=None):
-    d = [ m for m in qcollmeta(collection) if m[CollectionMeta.name] == attr and m[CollectionMeta.units] == unit ]
+    if unit is None:
+        d = [ m for m in qcollmeta(collection) if m[CollectionMeta.name] == attr ]
+    else:
+        d = [ m for m in qcollmeta(collection) if m[CollectionMeta.name] == attr and m[CollectionMeta.unit] == unit ]
     if d == []:
         return default
     return d[0][CollectionMeta.value]
