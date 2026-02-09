@@ -1639,7 +1639,6 @@ def cached_sql(sql):
 
 @cache.memoize(timeout=60, make_name=dep_zone)
 def get_values(fields, values):
-    from .jobs import db
     type = None
     crit = ""
     if len(values) == 0:
@@ -1767,7 +1766,7 @@ def collbrowser():
     
     customviews = {}
     for item, value in current_user.settings.items():
-        if item.startswith('customview::'):
+        if item.startswith('customview::') and len(value['attrs']) > 0:
             customviews[item[12:]] = value['name']   
         
 

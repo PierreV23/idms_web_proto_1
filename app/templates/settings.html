@@ -160,7 +160,6 @@ menuname='settings'
                 })
             }
         }
-        console.log(data)
         $('#views-table').bootstrapTable({
             data: data,
             onClickRow: function (row, $element, field) {
@@ -171,7 +170,6 @@ menuname='settings'
                     selectedViewName = row.name
                 }
                 if (field == 'delete') {
-                    console.log(row, $element.data('id'), field)
                     $.ajax({
                         url: '{{ url_for("userinfo.usersetting") }}',
                         type: 'DELETE',
@@ -227,7 +225,6 @@ menuname='settings'
     $('#add-cv-button').on('click', function() {
         name = $('#new-cv-name').val()
         tableData = $('#views-table').bootstrapTable('getData')
-        console.log(tableData)
         nextid = 0
         tableData.forEach(item => {
             if (!isNaN(item.label)) {
