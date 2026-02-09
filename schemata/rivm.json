@@ -1,6 +1,6 @@
 {
     "schema_version": "1.2.4",
-    "description": "RIVM metadata versie 1.2.4 (* : Verplichte velden)",
+    "description": "RIVM metadata versie 1.2.4 ( * : Verplichte velden )",
     "type": "object",
     "properties": {
         "schema_version": {

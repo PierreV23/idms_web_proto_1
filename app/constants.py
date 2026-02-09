@@ -4,6 +4,7 @@ ATTR_TIERING_GROUP = 'sys::tiering::group'
 ATTR_RESOURCE_PREFIX = 'sys::resource::'
 ATTR_RESOURCE_ENABLED = 'sys::resource::enabled'
 ATTR_RESOURCE_AVAILABLE = 'sys::resource::available'
+
 ATTR_RESOURCE_TAR = 'sys::resource::tar'
 ATTR_RESOURCE_ONLINE = 'sys::resource::online'
 ATTR_UISCHEMA = 'sys::uischema'
@@ -39,12 +40,17 @@ SCHEMATA_BASE_PATH = 'system/schemata'
 DATASET_SCHEMATA_PATH = 'datasets'
 PROJECT_SCHEMATA_PATH = 'projects'
 REFERENCE_DATASET_SCHEMATA_PATH = 'referencedata'
+
 # attributes used for metadata 
 PROJECT_ATTRS = ['user::upload::settings::projectID']
-ATTR_SCHEMA_IN_USE = 'user::schema_in_use'
+ATTR_SCHEMA_IN_USE = 'user::schema_in_use::'
 ATTR_UPLOAD_PREFIX = 'user::metadata::'
 ATTR_UPLOAD_DEFAULT_PREFIX = 'default_metadata::'
-ATTR_METADATA_PREFIX = "metadata::"
+ATTR_METADATA_PREFIX = 'metadata::'
+AVU2JSON_PREFIX = '0'
+ATTR_PROJECT_SUFFIX = 'project'
+ATTR_DATASET_DEFAULT_SUFFIX = 'dataset'
+ATTR_REFERENCE_SUFFIX = 'reference'
 
 # Upload related metadata attributes 
 ATTR_PROJECTID = 'projectID'
@@ -53,9 +59,8 @@ ATTR_UPLOADNAME = f'{ATTR_UPLOAD}::name'
 ATTR_UPLOADPARENT = f'{ATTR_UPLOAD}::parent'
 ATTR_DATASETID = 'sys::dataset_id'
 ATTR_UPLOADSETTINGS = 'user::upload::settings::'
-
+ATTR_UPLOAD_SUFFIX = 'upload'
 ATTR_UPLOADMETA = 'user::upload::metadata::'
-ATTR_UPLOADMETASCHEMA = 'user::upload::schemafile'
 
 META_SUFFIX = 'sys::suffixlength'
 
