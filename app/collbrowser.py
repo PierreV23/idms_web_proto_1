@@ -1639,24 +1639,33 @@ def cached_sql(sql):
 
 @cache.memoize(timeout=60, make_name=dep_zone)
 def get_values(fields, values):
+    '''
+    Docstring for get_values: Function will construct a query to get items from the document store
+    of collection metadata 'coll_meta'.
+    At the leave of the tree always collections are shown
+    
+    :param fields: fields selected from metadata to populate the custom browse tree
+    :param values: regex values to filter the fields on
+    
+    return: results to populate a level in the browse tree
+    '''
     type = None
     crit = ""
     if len(values) == 0:
         if fields[0][1] is not None:
-            crit = f"WHERE coll->'coll_meta'->>'{fields[0][0]}' ~ '{fields[0][1]}' "
-        sql = f"SELECT DISTINCT coll->'coll_meta'->>'{fields[0][0]}' as v0 FROM coll_json {crit} ORDER BY v0"
+            crit = f"WHERE coll->'coll_meta'->>'{fields[0][0]}' ~ '{fields[0][1]}'"
+        sql = f"SELECT coll->'coll_meta'->>'{fields[0][0]}' as v0 FROM coll_json {crit} GROUP BY 1 ORDER BY 1"
         type = 'link'
     elif len(values) < len(fields):
         l = len(values)
-        crit = ' AND '.join([f" coll->'coll_meta'->>'{fields[i][0]}' = '{v}' " for i, v in enumerate(values)])
+        crit = ' AND '.join([f"coll->'coll_meta'->>'{fields[i][0]}' = '{v}'" for i, v in enumerate(values)])
         if fields[l][1] is not None:
-            print(f'Restrict to {fields[l][1]}')
-            crit = f"{crit} AND coll->'coll_meta'->>'{fields[l][0]}' ~ '{fields[l][1]}' "
-        sql = f"SELECT DISTINCT coll->'coll_meta'->>'{fields[l][0]}' as v0 FROM coll_json WHERE {crit} ORDER by v0"
+            crit = f"{crit} AND coll->'coll_meta'->>'{fields[l][0]}' ~ '{fields[l][1]}'"
+        sql = f"SELECT coll->'coll_meta'->>'{fields[l][0]}' as v0 FROM coll_json WHERE {crit} GROUP BY 1 ORDER BY 1"
         type = 'link'
     else:
-        crit = ' AND '.join([f" coll->'coll_meta'->>'{fields[i][0]}' = '{v}' " for i, v in enumerate(values)])        
-        sql = f"SELECT DISTINCT coll->'coll_name' as v0 FROM coll_json WHERE {crit} ORDER by v0"
+        crit = ' AND '.join([f"coll->'coll_meta'->>'{fields[i][0]}' = '{v}'" for i, v in enumerate(values)])        
+        sql = f"SELECT coll->'coll_name' FROM coll_json WHERE {crit} GROUP BY 1 ORDER BY 1"
         type = 'collection'
     data = cached_sql(sql)
     results = [ ] 
@@ -1665,7 +1674,7 @@ def get_values(fields, values):
             if type == 'link':
                 results.append({ 'name': d['v0'], 'link': d['v0'], 'type': type })
             else:
-                results.append({ 'name': d['v0'][1:-1], 'link': datafield('collection', d['v0'][1:-1], 'irods_collection').htmlshort2(maxlen=20), 'type': type })
+                results.append({ 'name': d['v0'][1: -1], 'link': datafield('collection', d['v0'][1: -1], 'irods_collection').htmlshort2(maxlen=20), 'type': type })    
     return results
 
 @cache.memoize(timeout=60, make_name=dep_zone)
