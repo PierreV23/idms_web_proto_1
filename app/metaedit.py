@@ -10,9 +10,13 @@ from app.constants import (SCHEMATA_BASE_PATH,
                             PROJECT_SCHEMATA_PATH, 
                             REFERENCE_DATASET_SCHEMATA_PATH,
                             ATTR_SCHEMA_IN_USE,
+                            ATTR_PROJECT_SUFFIX,
+                            ATTR_DATASET_DEFAULT_SUFFIX,
+                            ATTR_REFERENCE_SUFFIX,
                             ATTR_METADATA_PREFIX, 
                             ATTR_UPLOAD_DEFAULT_PREFIX, 
-                            ATTR_UPLOAD_PREFIX
+                            ATTR_UPLOAD_PREFIX,
+                            AVU2JSON_PREFIX
                         )
 from app.irodssessions import irods_manager
 from irods.models import CollectionMeta
@@ -69,7 +73,9 @@ def schemata_for_project():
     project_name = request.args.get('project_name', '')
     meta_schemata_collection = Path('/', current_user.irods_zone, SCHEMATA_BASE_PATH, PROJECT_SCHEMATA_PATH, project_name)
     meta_values_collection = request.args.get('collection')
-    return schemata(meta_schemata_collection, meta_values_collection)
+    suffix=ATTR_PROJECT_SUFFIX
+    return schemata(meta_schemata_collection, meta_values_collection, suffix)
+
 
 
 @bp.route('/schemata_dataset')
@@ -79,7 +85,8 @@ def schemata_for_dataset():
     project_name = request.args.get('project_name', '')
     meta_schemata_collection = Path('/', current_user.irods_zone, SCHEMATA_BASE_PATH, DATASET_SCHEMATA_PATH, project_name)
     meta_values_collection = request.args.get('collection')
-    return schemata(meta_schemata_collection, meta_values_collection)
+    suffix=ATTR_DATASET_DEFAULT_SUFFIX
+    return schemata(meta_schemata_collection, meta_values_collection, suffix)
 
 
 @bp.route('/schemata_reference')
@@ -89,10 +96,11 @@ def schemata_for_reference_dataset():
     refdata_name = request.args.get('refdata_name', '')
     meta_schemata_collection = Path('/', current_user.irods_zone, SCHEMATA_BASE_PATH, REFERENCE_DATASET_SCHEMATA_PATH, refdata_name)
     meta_values_collection = request.args.get('collection')
-    return schemata(meta_schemata_collection, meta_values_collection)
+    suffix=ATTR_REFERENCE_SUFFIX
+    return schemata(meta_schemata_collection, meta_values_collection, suffix)
 
 
-def schemata(meta_schemata_collection :str, meta_values_collection :str):
+def schemata(meta_schemata_collection :str, meta_values_collection :str, suffix :str):
     """ Returns a list of schemata
 
         Request parameter is the upload path
@@ -111,8 +119,8 @@ def schemata(meta_schemata_collection :str, meta_values_collection :str):
     # Retrieve schemata for this project
     schemata = get_schemata(meta_schemata_collection)
 
-    # Get schemata in use for the collection
-    schemata_in_use = [a[CollectionMeta.value] for a in iqry.qcollmetavals(meta_values_collection, ATTR_SCHEMA_IN_USE)]
+    # Get schemata in use for the collection (specific suffix -> type)
+    schemata_in_use = [a[CollectionMeta.value] for a in iqry.qcollmetavals(meta_values_collection, ATTR_SCHEMA_IN_USE + suffix)]
 
     rows = [
         {'schema': k, 'selected': v in schemata_in_use, 'schemapath': v, 'order': v.count('/')} for k, v in schemata.items()
@@ -286,7 +294,7 @@ def get_collection_metadata_structured(collection :str, prefix :str) -> dict:
             'u': record[CollectionMeta.units]
         } for record in collection_metadata if record[CollectionMeta.name].startswith(prefix)
     ]
-    data = jsonavu.avu2json(jsonavu_metadata, '0') or {}
+    data = jsonavu.avu2json(jsonavu_metadata, AVU2JSON_PREFIX) or {}
     return data
 
 
@@ -308,7 +316,7 @@ def store_collection_metadata_structured(collection, data, schemapath, prefix):
     """
     existing_data = get_collection_metadata_structured(collection, prefix)
     existing_data[schemapath] = data
-    jsonavu_metadata = jsonavu.json2avu(existing_data, '0')  # Why 0?
+    jsonavu_metadata = jsonavu.json2avu(existing_data, AVU2JSON_PREFIX)
     remove_collection_metadata(collection, prefix)
     for avu in jsonavu_metadata:
         iqry.scollmetaval(collection, f"{prefix}{avu['a']}", avu['v'], avu['u'])

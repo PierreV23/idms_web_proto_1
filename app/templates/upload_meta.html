@@ -20,7 +20,8 @@ menuname='upload_meta'
           collection=collection, 
           meta_default_values_collection=meta_default_values_collection,
           edit_allowed='true',
-          schemata_data_url=url_for('metaedit.schemata_for_dataset', collection=collection, project_name=project_name)
+          schemata_data_url=url_for('metaedit.schemata_for_dataset', collection=collection, project_name=project_name),
+          attribute_type=attribute_type
       ) }}
 
 {% endblock %}

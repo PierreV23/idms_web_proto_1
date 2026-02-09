@@ -1,4 +1,4 @@
-{% macro render_metadata_editor(id, prefix, project_name, collection, meta_default_values_collection, edit_allowed, schemata_data_url) %}
+{% macro render_metadata_editor(id, prefix, project_name, collection, meta_default_values_collection, edit_allowed, schemata_data_url, attribute_type) %}
 
 <script>
   var formaction = 'default';
@@ -14,7 +14,9 @@
 <h5>Collection to store values on: {{ collection }}</h5>
 <h5>Collection to read default values from: {{ meta_default_values_collection }}</h5>
 <h5>edit_allowed: {{ edit_allowed }}</h5>
-<h5>data url to get schemata: {{schemata_data_url}}</h5> -->
+<h5>data url to get schemata: {{ schemata_data_url }}</h5> 
+<h5>attribute type: {{ attribute_type }}</h5> 
+-->
 
 <div class="selectgrid h-100">
   <div class="card selectlist">
@@ -88,7 +90,7 @@
         schemapath: schemapath,
         action: schema_action,
         meta_default_values_collection: "{{ meta_default_values_collection }}",
-        attr_type: 'user::schema_in_use',
+        attr_type: "{{ attribute_type }}",
         prefix: "{{ prefix }}"
       })
     })
