@@ -63,7 +63,7 @@ $('.unitvalues').css('display', unit);
         {% endif %}
     </div>
     {% if current_user.settings.get('sysmeta', 'true') == 'false' %}
-    <div class="small-bar"><i>System metadata is not shown (<a href="{{ url_for('settings') }}">settings</a>)</i>
+    <div class="small-bar"><i>System metadata is not shown (<a href="{{ url_for('main.settings') }}">settings</a>)</i>
     </div>
     {% endif %}
 </div>

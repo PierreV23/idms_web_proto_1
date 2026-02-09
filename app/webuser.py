@@ -66,6 +66,10 @@ class IRSettings:
         except KeyError:
             value = default
         return value
+    
+    def delete(self, key):
+        attr = f'{self.prefix}{key}'
+        iqry.rmallcollmetaattr(f'/{current_user.irods_zone}/home/{current_user.username}', attr)
 
     def items(self):
         meta = iqry.qcollmetadict(f'/{current_user.irods_zone}/home/{current_user.username}')
