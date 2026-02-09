@@ -6,10 +6,6 @@ from flask import flash, jsonify, redirect, render_template, request, url_for, c
 from flask_login import current_user, login_required
 import subprocess
 from app.auth import auth_endpoint
-from app.webuser import AuthException
-import irods.exception
-from .jobs import JobsDBUnavailableException
-from .ngsruns import NGSRunsDBUnavailableException
 from .irodssessions import irods_manager
 from .constants import FEATURES
 
@@ -95,62 +91,3 @@ def restcall(rest_endpoint):
         cache.delete_memoized(restcall)
     return jsonify(return_data), response.status_code    
 
-
-@bp.context_processor
-def inject_header_message():
-    header_messages = messages.load_messages(category='banner', only_current=True)
-    return dict(header_messages=header_messages)
-
-# @bp.teardown_request
-# def teardown(x):
-#     statstore.report()
-#     try:
-#         current_user.irods_session.cleanup()
-#     except:
-#         pass
-
-@bp.errorhandler(irods.exception.PAM_AUTH_PASSWORD_FAILED)
-def invalid_session0(e):
-    """Session may be stale. Destroy it and redirect to login page."""
-    logging.info(f"Invalid session")
-    return auth.logout()
-
-@bp.errorhandler(irods.exception.CAT_INVALID_AUTHENTICATION)
-def invalid_session1(e):
-    """Session may be stale. Destroy it and redirect to login page."""
-    logging.info(f"Invalid session")
-    return auth.logout()
-
-@bp.errorhandler(irods.exception.CAT_INVALID_USER)
-def invalid_user(e):
-    """Connection to iRODS failing. Redirect to login page"""
-    logging.info("Invalid user")
-    return auth.logout()
-
-# @bp.errorhandler(irods.exception.NetworkException)
-# def invalid_session2(e):
-#     """Session may be stale. Destroy it and redirect to login page."""
-#     logging.info(f"Invalid session")
-#     return auth.logout()
-
-@bp.errorhandler(AuthException)
-def auth_failed(e):
-    """Destroy session and redirect to login page."""
-    logging.info(f"Auth Exception")
-    return redirect(url_for('auth.login', next=request.full_path))
-
-@bp.errorhandler(AttributeError)
-def handle_attribute_error(e):
-    """Destroy session and redirect to login page."""
-    logging.info(f"AttributeError")
-    return redirect(url_for('auth.login', next=request.full_path))  
-
-@bp.errorhandler(NGSRunsDBUnavailableException)
-def handle_bad_ngsruns_request(e):
-    flash('NGSRuns Database Unavailable', 'error')
-    return redirect(url_for('main.home'))
-
-@bp.errorhandler(JobsDBUnavailableException)
-def handle_bad_jobs_request(e):
-    flash('Jobs table unavailable. Reverting to old jobs view ...', 'error')
-    return redirect(url_for('oldjobs.show_jobs'))

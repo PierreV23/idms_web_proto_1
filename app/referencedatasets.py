@@ -15,7 +15,7 @@ from irods.column import Criterion
 from app.datafield import datafield
 from graphviz import Digraph
 from . import iqry
-from app.constants import ATTR_METADATA_PREFIX
+from app.constants import ATTR_METADATA_PREFIX, ATTR_SCHEMA_IN_USE, ATTR_REFERENCE_SUFFIX
 from app.irodssessions import irods_manager
 from .projectdb_api import EPOCH, iso2dt, search, rest_call, add_checkbox
 from datetime import datetime
@@ -138,7 +138,8 @@ def show_reference_details():
                            import_state=import_state,
                            available_tags=available_tags,
                            collection=collection,
-                           prefix=ATTR_METADATA_PREFIX)
+                           prefix=ATTR_METADATA_PREFIX,
+                           attribute_type=ATTR_SCHEMA_IN_USE + ATTR_REFERENCE_SUFFIX)
 
 
 @bp.route('/activate_reference', methods=['GET', 'POST'])

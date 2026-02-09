@@ -48,9 +48,15 @@ th.rotated-text > div > span {
 }
 
 .selectgrid {
-  display: flex;
+  display: grid;
+  width: 100%;
+  height: 100vh;
   gap: 1rem;
-  height: calc(100vh - 220px);
+  align-items: stretch;
+  grid-template-columns: [left] 250px [middle] auto [right];
+  grid-template-rows: [top] 100% [bottom];
+  grid-template-areas:
+    "selectlist selectdetail"
 }
 
 /* LEFT card: natural width + 20% */
@@ -60,6 +66,8 @@ th.rotated-text > div > span {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  grid-area: selectlist;
+  height: 100%;  
 }
 
 /* RIGHT card fills all remaining space */
@@ -68,6 +76,8 @@ th.rotated-text > div > span {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  grid-area: selectdetail;
+  height: 100%;  
 }
 
 /* Body fills vertical space + scrolls */
