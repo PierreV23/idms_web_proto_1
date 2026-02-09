@@ -801,13 +801,6 @@ menuname='collectionbrowser'
         </button>
         <button id="sidebar-button" type="button" data-widget="control-sidebar" data-controlsidebar-slide="true"
           class="btn btn-sm btn-outline-secondary" title="Open settings menu">
-          {% if current_user.settings.get('tips', 0) | int < 1 %} 
-          <div id="tips1"
-            class="overlay position-absolute top-0 start-0 text-black d-flex align-items-center justify-content-start"
-            style="top:-120%; width: 900%; background-color: rgb(240, 247, 200); padding: 4px; padding-left: 8px; color: black;">
-            &#8601; Graph settings have moved here
-          </div>
-          {% endif %}
           <i class="fa fa-cog"></i>
         </button>
       </div>
@@ -1453,17 +1446,6 @@ $(document).on('maximized.lte.cardwidget', '#graph-card', function() {
     $('#btn-group-graph').addClass('shift-left');
   }
 })
-
-// TODO: This is inserted august 2025 and can be removed after three months
-{% if current_user.settings.get('tips', 0) | int < 1 %}
-$('#sidebar-button').on('expanded.lte.controlsidebar', function(){
-    $.post('{{ url_for("userinfo.usersetting") }}', {
-      attr: 'tips',
-      value: 1
-    });
-    $('#tips1').remove()
-})
-{% endif %}
 
 </script>
 
