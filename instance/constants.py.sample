@@ -53,7 +53,6 @@ ATTR_UPLOADNAME = f'{ATTR_UPLOAD}::name'
 ATTR_UPLOADPARENT = f'{ATTR_UPLOAD}::parent'
 ATTR_DATASETID = 'sys::dataset_id'
 ATTR_UPLOADSETTINGS = 'user::upload::settings::'
-ATTR_UPLOAD_SUFFIX = 'upload'
 ATTR_UPLOADMETA = 'user::upload::metadata::'
 
 META_SUFFIX = 'sys::suffixlength'
