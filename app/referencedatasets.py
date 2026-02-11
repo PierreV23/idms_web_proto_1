@@ -39,7 +39,7 @@ def get_referencelist():
         categories = sorted(set(map(lambda r:r.get("category") or "unknown", referencelist_raw)))
 
         for category in categories:
-            refsets_in_category = [r for r in referencelist_raw if r.get("category", "unknown") ==category]
+            refsets_in_category = [r for r in referencelist_raw if (r.get("category") or "unknown")  ==category]
 
             for reference in refsets_in_category:
                 reference["status"] = "WARNING"  #default state
