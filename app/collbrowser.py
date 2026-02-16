@@ -361,7 +361,7 @@ class CollectionState():
     @property
     def complete(self):
         return self._meta("complete", "false")
-    
+
     @cached_property
     def dataset(self):
         if self.is_dataset:
@@ -369,7 +369,7 @@ class CollectionState():
         if self.collection == '/':
             return None
         return CollectionState(os.path.dirname(self.collection)).dataset
-    
+
     @cached_property
     def dataset_field(self):
         dataset = self.dataset
@@ -751,7 +751,7 @@ def shape(key, legends=[], color='', penwidth=''):
     # deepcopy, to prevent old values getting overwritten
     layout = deepcopy(LAYOUT.get(key, DEFAULT_SHAPE))
     layout['key'] = key
-    
+
     # look for different color or penwidth
     if color != '':
         layout['color'] = color
@@ -760,19 +760,19 @@ def shape(key, legends=[], color='', penwidth=''):
         if layout['color'] == USER_INVALID_COLOR:
             layout['tooltip'] += ', User Status: Failed!'
     if penwidth != '':
-        layout['penwidth'] = penwidth    
+        layout['penwidth'] = penwidth
         if layout['penwidth'] == SELECTED_FILE_IN_COLL_PENWIDTH:
             layout['tooltip'] = 'From Collection Selected ' + layout['tooltip']
         if layout['penwidth'] == SELECTED_PENWIDTH:
             layout['tooltip'] = 'Selected ' + layout['tooltip']
-    
+
     # Deduplication check
     layout_hashable = tuple(sorted(layout.items()))
     seen = {tuple(sorted(l.items())) for l in legends}
-    
+
     if layout_hashable not in seen:
         legends.append(layout)
-        
+
     return layout, legends
 
 
@@ -783,44 +783,44 @@ def export_as_svg(layout: dict, path: str = SVG_PATH):
     # Create a new Graphviz graph for the single node
     graph = Digraph(format='svg')
     graph.graph_attr['rankdir'] = 'LR'
-        
+
     if layout['type'] in ['node', 'graph']:
-        graph.node(layout['label'], layout['label'], 
-                    shape=layout['shape'], 
-                    style=layout['style'], 
+        graph.node(layout['label'], layout['label'],
+                    shape=layout['shape'],
+                    style=layout['style'],
                     fillcolor=layout['fillcolor'], color=layout['color'],
-                    tooltip = layout['tooltip'], 
-                    width = '1', height = '0.4', margin = '0.1', 
+                    tooltip = layout['tooltip'],
+                    width = '1', height = '0.4', margin = '0.1',
                     penwidth=layout['penwidth'],
                     fontname = ATTR_GRAPH_FONT,
                     fontsize = DEFAULT_FONTSIZE_BIG)
-            
+
     if layout['type'] == 'edge':
         graph.node("n_1", layout['name'], # left blank node providing label in legend
-                style='cds', 
-                color='white', 
-                shape='none', 
-                width='0', 
-                height='0', 
+                style='cds',
+                color='white',
+                shape='none',
+                width='0',
+                height='0',
                 tooltip = layout['label'],
                 fontname = ATTR_GRAPH_FONT
                 )
         graph.node("n_2", '', # right blank node
-                style='invisible', 
-                shape='none', 
-                width='0', 
-                height='0', 
+                style='invisible',
+                shape='none',
+                width='0',
+                height='0',
                 tooltip = layout['label'])
-        graph.edge("n_1", "n_2", 
-                tooltip = layout['label'], 
-                style=layout['style'], 
-                arrowhead=layout['arrowhead'], 
+        graph.edge("n_1", "n_2",
+                tooltip = layout['label'],
+                style=layout['style'],
+                arrowhead=layout['arrowhead'],
                 fontsize = DEFAULT_FONTSIZE_BIG,
                 fontname = ATTR_GRAPH_FONT,
                 penwidth = layout['penwidth'])
-           
+
     filepath = os.path.join(path, layout['filename'])
-    
+
     # Render to file
     graph.render(filepath, cleanup=True)
 
@@ -829,40 +829,40 @@ def generate_all_svg():
     '''
     Function to generate all svg files, takes about 30 seconds now
     '''
-    
+
     # rm svgs
     for filename in os.listdir(SVG_PATH):
         file_path = os.path.join(SVG_PATH, filename)
         if os.path.isfile(file_path):
             os.remove(file_path)
-    
+
     for k, v in LAYOUT.items():
         v['key'] = k
-    
+
     #initial set
     all_layouts = deepcopy([v for k, v in LAYOUT.items()])
     all_layouts = add_filename_and_check(all_layouts)
-    
+
     # change color
     for k, v in LAYOUT.items():
         v['color'] = SYS_INVALID_COLOR
-    
+
     all_layouts_sys_red = deepcopy([v for k, v in LAYOUT.items()])
     all_layouts_sys_red = add_filename_and_check(all_layouts_sys_red)
-    
+
     # change color
     for k, v in LAYOUT.items():
         v['color'] = USER_INVALID_COLOR
-    
+
     all_layouts_user_red = deepcopy([v for k, v in LAYOUT.items()])
     all_layouts_user_red = add_filename_and_check(all_layouts_user_red)
-    
+
     # penwidth = 3
     for d in all_layouts + all_layouts_sys_red + all_layouts_user_red:
         d['penwidth'] = SELECTED_PENWIDTH
-    
+
     all_bold = add_filename_and_check(all_layouts + all_layouts_sys_red + all_layouts_user_red)
-   
+
 
 def add_filename_and_check(legends):
     '''
@@ -870,45 +870,45 @@ def add_filename_and_check(legends):
     Check if the svg files for legends exists, and generate it if not.
     '''
     for layout in legends:
-    
+
         if layout['type'] in ['node', 'graph']:
             filename = f"{layout['type']}_{layout['key']}_{layout['shape']}_{layout['fillcolor']}_{layout['color']}_{layout['penwidth']}"
         if layout['type'] == 'edge':
             filename = f"{layout['type']}_{layout['key']}_{layout['style']}_{layout['fillcolor']}_{layout['color']}_{layout['penwidth']}_{layout['arrowhead']}"
-            
+
         layout['filename'] = filename
 
         # check if svg file exists
         filepath = os.path.join(SVG_PATH, filename + '.svg')
-        
+
         if not os.path.exists(filepath):
             export_as_svg(layout)
-    
+
     return legends
 
-    
+
 def generate_legend_graph_svg(legends, generate_all = False):
     '''
     Add filename to legends, and check if file exists
     If file not exists, generate svg file
     Create a HTML snippet to ingest into the HTML
-    TODO : make better! Temp solution to generate all files from layout: set generate_all to True, and run once 
-    All svg files will be recreated. Don't forget to set back to False 
+    TODO : make better! Temp solution to generate all files from layout: set generate_all to True, and run once
+    All svg files will be recreated. Don't forget to set back to False
     '''
-    
+
     if generate_all:
         generate_all_svg()
         return
 
     legends = add_filename_and_check(legends)
-        
+
     legends = sorted(legends, key=lambda x: (
                     x.get('type', ''),
                     int(x.get('order', 0)),
                     -int(x.get('penwidth', 0))  # negative for descending sort
                     ))
-    
-    # HTML template snippet to fill for legend rows       
+
+    # HTML template snippet to fill for legend rows
     legend_html = render_template_string('''
         <table class="table table-bordered text-center align-middle">
         <thead></thead>
@@ -927,9 +927,9 @@ def generate_legend_graph_svg(legends, generate_all = False):
         {% endfor %}
         </tbody>
         </table>''', legend_items=legends)
-        
+
     return legend_html
-        
+
 class Dictlist(dict):
     """ Custom dict class that allows storing multiple values under one key
     get method will return first value, so can be used as in-place dict replacement
@@ -1215,7 +1215,7 @@ def _generate_graph_coll(coll, maxlevels, graph_simplify, show_upstream, show_do
             graph_coll.node(git_node, label, shape=n['shape'], fillcolor = n['fillcolor'], style = n['style'], URL=link.geturl(), target = "_blank", fontsize=DEFAULT_FONTSIZE)
             graph_coll.edge(git_node, node)
             processes.add(node)
-        
+
         ###################################################################
         # TODO dit logischer maken
         node_type = collmeta.get('sys::runsheet::state', 'unknown')
@@ -1226,11 +1226,11 @@ def _generate_graph_coll(coll, maxlevels, graph_simplify, show_upstream, show_do
         if node_type in ('done'):
             node_type = collmeta.get('sys::data::type', node_type)
             node_type = collmeta.get('user::data::type', node_type)
-        
+
         color = DEFAULT_COLOR
         penwidth = DEFAULT_PENWIDTH
         fontsize = DEFAULT_FONTSIZE
-        
+
         # set border/fill colors for invalid collections
         if collmeta.get('sys::data::state') == "invalid":
             color = SYS_INVALID_COLOR
@@ -1238,18 +1238,18 @@ def _generate_graph_coll(coll, maxlevels, graph_simplify, show_upstream, show_do
             color = USER_INVALID_COLOR
 
         projectid = collmeta.get('projectID', '') + '\n'
-                            
+
         # determine whether the object type is a collection or dataobject
         obj_type = iqry.qpathobjecttype(node)
-        
+
         # make object clickable
         clss = { 'class' : f'{obj_type}-change' }
-        
+
         # focus on this object and center (penwidth = SELECTED_PENWIDTH)
         if node == coll:
             penwidth = SELECTED_PENWIDTH
             clss['class'] += ' center-coll'
-            
+
         if obj_type != 'path':
             n, legends = shape('file', legends, color, penwidth)
             # make label (show filename in separate line, and maximized path length accordingly)
@@ -1293,15 +1293,15 @@ def _generate_graph_coll(coll, maxlevels, graph_simplify, show_upstream, show_do
                 dot_counter += 1
                 graph_coll.node(vect[i], '', shape='none', width='0', height='0')
         graph_coll.edge(vect[0], destnode(vect[1]), style = e['style'], arrowhead=e['arrowhead'], penwidth=e['penwidth'])
-    
+
     for s, d in multi_edges:
         e, legends = shape('dashed_crow', legends)
         graph_coll.edge(s, destnode(d), style=e['style'], arrowhead=e['arrowhead'])
 
     coll_graph = graph_coll.pipe(format='svg').decode('utf-8')
-    
+
     coll_legends = generate_legend_graph_svg(legends)
-    
+
     return jsonify({'coll_graph': coll_graph, 'coll_legends': coll_legends})
 
 
@@ -1459,13 +1459,13 @@ def _generate_graph_dataobj(coll, dataobj, maxlevels, provenance_labels, include
         filename = split_parts[-1]
         project_path = os.path.join(*split_parts[:2])
         filepath = node[len(project_path)+1:len(node) - len(filename)]
-        
+
         # Set label: default label = path and filename on separate lines, in collection show only filename
         label = shortname(filepath, max(len(filename) + 2, NAME_LENGTH_OBJ)) + '\n' + filename
         if (include_all_from_coll == 1 and node[:len(node) - len(node.split('/')[-1]) - 1] == coll) or show_collections == 1:
             label = filename
-        
-        # Set penwidth, fontsize and additional classes   
+
+        # Set penwidth, fontsize and additional classes
         color = DEFAULT_COLOR
         penwidth = DEFAULT_PENWIDTH
         fontsize = DEFAULT_FONTSIZE
@@ -1479,11 +1479,11 @@ def _generate_graph_dataobj(coll, dataobj, maxlevels, provenance_labels, include
         # make all files from selected collection bold
         elif include_all_from_coll == 1 and node[:len(node) - len(node.split('/')[-1]) - 1] == coll:
             penwidth = SELECTED_FILE_IN_COLL_PENWIDTH
-            fontsize = SELECTED_FONTSIZE  
+            fontsize = SELECTED_FONTSIZE
 
         # default node shape is file, add to legend
         n, legends = shape('file', legends, color, penwidth)
-        
+
         if include_all_from_coll == 1 and node[:len(node) - len(node.split('/')[-1]) - 1] == coll:
             # generate 1 subgraph, styled as collection for selected collection, add spacing around label.
             penwidth = '3'
@@ -1547,9 +1547,9 @@ def _generate_graph_dataobj(coll, dataobj, maxlevels, provenance_labels, include
         graph_obj.edge(vect[0], destnode(vect[1]), prov(label, destnode(vect[1])), style=e['style'], arrowhead=e['arrowhead'], penwidth=e['penwidth'])
 
     obj_graph = graph_obj.pipe(format='svg').decode('utf-8')
-    
+
     obj_legends = generate_legend_graph_svg(legends)
-    
+
     return jsonify({ 'obj_graph': obj_graph, 'obj_legends':  obj_legends})
 
 @cache.memoize(timeout=300, make_name=dep_zone)
@@ -1583,7 +1583,7 @@ def add_items(path, level, active):
             for i, c in enumerate(colls):
                 coll_parts = c.split('/')
                 if active_parts[:len(coll_parts)] == coll_parts:
-                    active_index_list.append(i)            
+                    active_index_list.append(i)
         if active_index_list == []: ## This is not a path to the active path
             colls = colls[:MAX_TREEVIEW_COLLS]
             if colls_length > MAX_TREEVIEW_COLLS:
@@ -1643,10 +1643,10 @@ def get_values(fields, values):
     Docstring for get_values: Function will construct a query to get items from the document store
     of collection metadata 'coll_meta'.
     At the leave of the tree always collections are shown
-    
+
     :param fields: fields selected from metadata to populate the custom browse tree
     :param values: regex values to filter the fields on
-    
+
     return: results to populate a level in the browse tree
     '''
     type = None
@@ -1664,17 +1664,17 @@ def get_values(fields, values):
         sql = f"SELECT coll->'coll_meta'->>'{fields[l][0]}' as v0 FROM coll_json WHERE {crit} GROUP BY 1 ORDER BY 1"
         type = 'link'
     else:
-        crit = ' AND '.join([f"coll->'coll_meta'->>'{fields[i][0]}' = '{v}'" for i, v in enumerate(values)])        
+        crit = ' AND '.join([f"coll->'coll_meta'->>'{fields[i][0]}' = '{v}'" for i, v in enumerate(values)])
         sql = f"SELECT coll->'coll_name' FROM coll_json WHERE {crit} GROUP BY 1 ORDER BY 1"
         type = 'collection'
     data = cached_sql(sql)
-    results = [ ] 
+    results = [ ]
     for d in data:
         if d['v0'] is not None:
             if type == 'link':
                 results.append({ 'name': d['v0'], 'link': d['v0'], 'type': type })
             else:
-                results.append({ 'name': d['v0'][1: -1], 'link': datafield('collection', d['v0'][1: -1], 'irods_collection').htmlshort2(maxlen=20), 'type': type })    
+                results.append({ 'name': d['v0'][1: -1], 'link': datafield('collection', d['v0'][1: -1], 'irods_collection').htmlshort2(maxlen=20), 'type': type })
     return results
 
 @cache.memoize(timeout=60, make_name=dep_zone)
@@ -1700,12 +1700,12 @@ def add_custom_items(meta_attrs, path, active_path, active_collection):
                 classes = 'caret caret-down list-open font-weight-bold'
                 # This is the 'ACTIVE' path. Expand the tree further
                 children = '<ul>{0}</ul>'.format(add_custom_items(meta_attrs, current_path, active_path, active_collection))
-            else:    
+            else:
                 classes = 'caret list-close'
                 children = ''
         rs += f'<li><span class="{classes}" {path_prefix} {path_label}="{r['name']}" id="ID_{itemid}_{r['name']}">{r['link']}</span></li>{children}'
     return rs
-        
+
 @bp.route('/_custom', methods=['POST'])
 def customview():
     """Get custom browse tree grouped by metadata
@@ -1749,7 +1749,7 @@ def collbrowser():
     # Get path from user settings or default, revert to collection when dataobject is selected
     if obj_type in ['not_found', 'dataobject']:
         path = current_user.settings.get('path', f'/{current_user.irods_zone}/projects')
-    
+
     # Store path in user settings
     current_user.settings['path'] = path
 
@@ -1768,16 +1768,23 @@ def collbrowser():
     show_downstream_obj=current_user.settings.setdefault('show_downstream_obj', "1")
     show_downstream_coll=current_user.settings.setdefault('show_downstream_coll', "1")
     graph_direction_tb_obj=current_user.settings.setdefault('graph_direction_tb_obj', "0")
-    vertical_pos = current_user.settings.setdefault('vertical_pos', "40")
+    vertical_pos_default = "40"
+    vertical_pos = current_user.settings.setdefault('vertical_pos', vertical_pos_default)
+    if vertical_pos == "NaN":
+        vertical_pos = vertical_pos_default
+    horizontal_pos_default = "40"
+    horizontal_pos = current_user.settings.setdefault('horizontal_pos', horizontal_pos_default)
+    if horizontal_pos == "NaN":
+        horizontal_pos = horizontal_pos_default
     legend_obj=current_user.settings.setdefault('legend_obj', "0")
     legend_coll=current_user.settings.setdefault('legend_coll', "0")
     customview = current_user.settings.setdefault('customview', 'tree')
-    
+
     customviews = {}
     for item, value in current_user.settings.items():
         if item.startswith('customview::') and len(value['attrs']) > 0:
-            customviews[item[12:]] = value['name']   
-        
+            customviews[item[12:]] = value['name']
+
 
     return render_template('collbrowser.html', path=path, selected_object=selected_object,
                            graph_levels_coll=graph_levels_coll, graph_levels_obj=graph_levels_obj,
@@ -1787,7 +1794,7 @@ def collbrowser():
                            include_all_from_coll=include_all_from_coll, show_collections=show_collections,
                            show_upstream_obj=show_upstream_obj, show_upstream_coll=show_upstream_coll,
                            show_downstream_obj=show_downstream_obj, show_downstream_coll=show_downstream_coll,
-                           graph_direction_tb_obj=graph_direction_tb_obj, vertical_pos=vertical_pos,
+                           graph_direction_tb_obj=graph_direction_tb_obj, vertical_pos=vertical_pos, horizontal_pos=horizontal_pos,
                            legend_obj=legend_obj, legend_coll=legend_coll, customviews=customviews, customview=customview)
 
 @bp.route('upload_file', methods=['GET', 'POST'])

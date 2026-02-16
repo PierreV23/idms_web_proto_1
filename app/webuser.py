@@ -93,13 +93,13 @@ class WebUser(UserMixin):
             username (_type_, optional): _description_. Defaults to None.
             environment (_type_, optional): _description_. Defaults to None.
             password (str, optional): _description_. Defaults to "".
-        
+
         These args can be supplied to speed up the user creation, but they are optional.
             native_password (_type_, optional): _description_. Defaults to None.
             is_authenticated (bool, optional): _description_. Defaults to False.
             is_admin (bool, optional): _description_. Defaults to False.
             fullname (_type_, optional): _description_. Defaults to None.
-        """        
+        """
         self.username = username
         self.environment = environment
         self._encrypted_password = encrypted_password
@@ -111,7 +111,7 @@ class WebUser(UserMixin):
         self._irods_env = {}
 
         self.settings = IRSettings(self.username, prefix='ngsweb::')
-        
+
     @classmethod
     def from_login(cls, username=None, password=None, environment=None):
         return cls(username=username, encrypted_password=encrypt(password), environment=environment)
@@ -123,40 +123,40 @@ class WebUser(UserMixin):
     @property
     def irods_env(self):
         return current_app.config["IRODS_ENVS"].get(self.environment, None)
-    
+
     @property
     def irods_server(self):
         return self.irods_env.get('host')
-    
+
     @property
     def irods_zone(self):
         return self.irods_env.get('zone')
-    
+
     @property
     def refdata_coll(self):
         return self.irods_env.get('refdata_collection', None)
-    
+
     @flaskcache.cache.memoize(timeout=5, make_name=flaskcache.dep_userzone)
     def feature(self, name):
         default = FEATURES.get(name, (None, 'false'))[1]
         return self.settings.get(f'feature::{name}', default) == 'true'
-    
+
     @property
     def minilims_db(self):
         self.minilims_db = self.irods_env.get('minilims_db', 'sqlite://')
-    
-# Authentication properties        
+
+# Authentication properties
 
     @property
     def is_authenticated(self):
         if self._is_authenticated is None:
             self.validate_irods_session()
         return self._is_authenticated
-    
+
     @property
     def password(self):
         return decrypt(self._encrypted_password)
-   
+
     @property
     def native_password(self):
         if self._encrypted_native_password is None:
@@ -176,7 +176,7 @@ class WebUser(UserMixin):
                     self._is_admin = None
                     return False
         return self._is_admin
-    
+
     @flaskcache.cache.memoize(timeout=3600, make_name=flaskcache.dep_userzone)
     def groups(self):
         with irods_manager.session() as session:
@@ -195,7 +195,7 @@ class WebUser(UserMixin):
             my_projects = list(set([ r[UserMeta.value] for r in usr_groups ]))
 
         return my_projects
-        
+
     @property
     def fullname(self):
         if self._fullname is None or self._fullname == self.username:
@@ -236,7 +236,7 @@ class WebUser(UserMixin):
             else:
                 return None
         return None
-        
+
     def delete(self):
         """Delete user from Flask session."""
         if 'user_data' in session:
@@ -252,7 +252,7 @@ class WebUser(UserMixin):
         try:
             # we cannot use the session in the sessionmanager, as it is identified by the username only
             # to check the credentials, we need to make a new session with the password of this webuser.
-            
+
             # Create iRODS session and verify if root collection can be retrieved
             check_pw_session = create_session(current_app.config["IRODS_ENVS"].get(self.environment, None), self, use_pam=True)
             # Get the temporary password from our custom Connection class
@@ -264,7 +264,7 @@ class WebUser(UserMixin):
             # Remove old sessions
             irods_manager.remove(self)
             return True
-        except:
+        except Exception as e:
             logging.info(f"Authentication (session validation) failed for user {self.username} on {self.environment}")
             irods_manager.remove(self)
         return False
