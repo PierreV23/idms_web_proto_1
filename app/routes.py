@@ -2,14 +2,14 @@ from flask import Blueprint
 import logging
 import requests
 from requests.auth import HTTPBasicAuth
-from flask import flash, jsonify, redirect, render_template, request, url_for, current_app
+from flask import jsonify, render_template, request, current_app
 from flask_login import current_user, login_required
 import subprocess
 from app.auth import auth_endpoint
 from .irodssessions import irods_manager
 from .constants import FEATURES
 
-#from . import flaskcache
+from .flaskcache import cache
 from . import messages
 from . import auth
 
