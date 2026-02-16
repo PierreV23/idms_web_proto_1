@@ -17,6 +17,7 @@ from graphviz import Digraph
 from . import iqry
 from app.constants import ATTR_METADATA_PREFIX, ATTR_SCHEMA_IN_USE, ATTR_REFERENCE_SUFFIX
 from app.irodssessions import irods_manager
+from app.contacts_manager import refdata_permissions
 from .projectdb_api import EPOCH, iso2dt, search, rest_call, add_checkbox
 from datetime import datetime
 from os import path
@@ -24,12 +25,6 @@ from os import path
 bp = Blueprint('reference', __name__, url_prefix='/reference')
 
 reference_change_allowed = [ 'description', 'synchronize_command', 'synchronization_frequency', 'repository', 'tag', 'is_active', 'execution_environment']
-
-
-# def refdata_permissions(refdata):
-#     """Return True if current_user is manager of reference dataset, for now return True until apropriate endpoint is available
-#     """
-#     return { 'managers': True, 'users': True}
 
 def get_referencelist():
     referencelist_raw, status_code = rest_call('GET', 'reference')
