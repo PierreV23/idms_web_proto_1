@@ -585,6 +585,21 @@ ul {
   background-color: rgb(141, 141, 141);
 }
 
+/* Targeting the container within your specific ID */
+.custom-coll .container {
+    display: flex;          /* Align children horizontally */
+    gap: 8px;               /* Space between the dot and the text */
+}
+
+.custom-coll .container::before {
+    content: "\25AA";
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    color: #000000;
+    vertical-align: top;
+}
+
 .vertical-center {
   margin: 0;
   position: absolute;

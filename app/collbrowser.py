@@ -1690,9 +1690,9 @@ def add_custom_items(meta_attrs, path, active_path, active_collection):
     for r in fields:
         if r['type'] == 'collection':
             if r['name'] == active_collection:
-                classes = 'path-active '
+                classes = 'path-active custom-coll '
             else:
-                classes = ' '
+                classes = 'custom-coll '
             children = ''
         else:
             current_path = path + [r['name']]

@@ -1183,7 +1183,7 @@ menuname='collectionbrowser'
       maxHeight = mainHeight - 100
       vHeight = Math.max(100, vHeight)
       vHeight = Math.min(maxHeight, vHeight)
-      document.getElementById("main-window").style.gridTemplateRows = `${vHeight}px [v1] 4px [v2] ${mainHeight - vHeight - 10}px`;
+      document.getElementById("main-window").style.gridTemplateRows = `${vHeight}px [v1] 4px [v2] ${mainHeight - vHeight - 75}px`;
       if (vposSettingIdObj !== 0) clearTimeout(vposSettingIdObj);
       vposSettingIdObj = setTimeout(storeVPosLevelObj, 1000);
 
