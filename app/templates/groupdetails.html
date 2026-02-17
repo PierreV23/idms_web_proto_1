@@ -7,6 +7,7 @@ Details of group <B>{{ group }}</B>
 {% endblock %}
 
 {% block content %}
+<div class="h-100 scroll">
 <TABLE class="table">
 <THEAD class="thead-dark">
 
@@ -27,12 +28,25 @@ Details of group <B>{{ group }}</B>
 {% endfor %}
 </TABLE>
 <hr>
-Service accounts in group {{ group }}:<br>
+
+<H2>Service accounts in group {{ group }}:</H2><br>
+
+<TABLE class="table">
+<THEAD class="thead-dark">
+
+<TR>
+   <TH>Username</TH>
+</TR>  
+<THEAD>
 {% for key, value in ginfo.items()|sort %}
 {% if value["serviceaccount"] == True %} 
-   - {{ key }}<br>
+<TR>
+   <TD> {{ key }} </TD>
+</TR>
 {% endif %}
 {% endfor %}
+</TABLE>
 
+</div>
 {% endblock %}
 

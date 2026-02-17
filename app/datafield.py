@@ -257,8 +257,8 @@ class data_irods_collection(data_base):
         return '<div class="container"><a href="{0}?path={1}" data-toggle="tooltip" title="{1}">{2}</A></div>'.format(format(url_for('collbrowser.collbrowser')), self.value, displaystring)
     
     def htmlshort2(self, classes="", maxlen=MAXLEN):
-        displaystring = self.displaystring(maxlen=maxlen)
-        return '<div class="container"><a href="{0}?path={1}" data-toggle="tooltip" title="{1}"><span class="{3}">{2}</span></A></div>'.format(format(url_for('collbrowser.collbrowser')), self.value, displaystring, classes)
+        class_string = f'class="{classes}"' if classes else ""
+        return '<div class="container"><a href="{0}?path={1}" data-toggle="tooltip" title="{1}"><span {3}>{2}</span></A></div>'.format(format(url_for('collbrowser.collbrowser')), self.value, self.basename, class_string)
     
     @property
     def collentry(self):
