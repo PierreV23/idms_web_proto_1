@@ -78,8 +78,8 @@ def show_projects():
     # TODO: refactor passing of arguments
     page = request.args.get('page', 'projects')
 
-    project = request.args.get('project', '')
-    process = request.args.get('process', '')
+    project = request.args.get('project', current_user.settings.get('last_project', ''))
+    process = request.args.get('process', current_user.settings.get('last_process', ''))
     activetabname = request.args.get('activetabname', '')
     processgroup = request.args.get('processgroup', '')
     processlist = get_process2list()
