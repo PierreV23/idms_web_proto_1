@@ -241,9 +241,7 @@ function update_process(sourceElem, destElem) {
           {% for group in projectdetails.groups %}
             <tr>
               <td>
-                <a href="/userinfo/groupdetails?group={{group}}">
-                  {{ group }}
-                </a>
+                {{ group.htmlshort | safe }}
               </td>
             </tr>
           {% endfor %}

@@ -36,8 +36,19 @@ menuname='processes'
     });
   });
 
-  $(window).on('load', function () {
-    $("li[data-processname='{{ process }}']").trigger('click');
+  $(document).ready(function () {
+    const $row = $(".processname[data-processname='{{ process }}']");
+    const $container = $('.fixed-table-body');
+    if ($row.length > 0) {
+      $row.trigger('click');
+
+      // Calculate the distance from the top of the container to the row
+      var targetOffset = $row.position().top + $container.scrollTop() - $container.height()/3;
+
+      $container.animate({
+          scrollTop: targetOffset
+      }, 200); 
+    }
   });
 
 
@@ -76,7 +87,7 @@ menuname='processes'
 <div class="selectgrid h100">
   <div class="card selectlist">
     <div class="nopadding card-body scroll ">
-      <table 
+      <table id="process-table"
       data-toggle="table"
       data-search="true">
     <thead>
