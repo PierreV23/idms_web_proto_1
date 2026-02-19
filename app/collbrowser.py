@@ -1673,7 +1673,7 @@ def get_values(fields, values):
             if type == 'link':
                 results.append({ 'name': d['v0'], 'link': d['v0'], 'type': type })
             else:
-                results.append({ 'name': d['v0'][1: -1], 'link': datafield('collection', d['v0'][1: -1], 'irods_collection').htmlshort2(maxlen=20), 'type': type })
+                results.append({ 'name': d['v0'], 'link': datafield('collection', d['v0'], 'irods_collection').htmlshort2(maxlen=20), 'type': type })
     return results
 
 @cache.memoize(timeout=60, make_name=dep_zone)
