@@ -1683,7 +1683,7 @@ def add_custom_items(meta_attrs, path, active_path, active_collection):
     path_label = f'data-path-{len(path)}'
     itemid = '_'.join(path)
     if len(path) < len(meta_attrs):
-        rs = f'<span class="font-weight-bold meta-attr"><ul>{meta_attrs[len(path)][0]}</ul></span>'
+        rs = f'<span class="font-weight-bold meta-attr">{meta_attrs[len(path)][0]}</span>'
     else:
         rs = ''
     for r in fields:
