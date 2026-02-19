@@ -133,7 +133,10 @@ body {
   z-index: 10; /* Ensure it's on top */
 }
 
-
+.meta-attr {
+  color: #7c1720;
+  display: flex;
+}
 
 .browsergrid {
   display: grid;
