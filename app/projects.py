@@ -392,7 +392,7 @@ def pgaction():
             f'projects/{project}/processgroups/{group}/processes/{process}/dependencies/{depend}')
 
     #return the success/error state
-    if status_code != 200:
+    if status_code not in [200, 201]:
         action_result = action_result_ERROR
         if pl and 'message' in pl:
             action_result["message"] = pl['message']
