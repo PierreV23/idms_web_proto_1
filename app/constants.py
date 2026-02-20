@@ -34,6 +34,11 @@ DATA_KEY_MAP = {
     'owner_name': DataObject.owner_name
 }
 
+ACTIVE_RUNSHEET_STATES = [ 'incoming', 'depends', 'choose', 'prepare',
+                     'stage', 'spacecheck', 'download', 'queued', 
+                     'active', 'finishing', 'postprocessing', 'distribute',
+                     'notify', 'waiting']
+
 # iRODS path to store metadata schemata
 SCHEMATA_BASE_PATH = 'system/schemata'
 DATASET_SCHEMATA_PATH = 'datasets'
@@ -259,6 +264,19 @@ LAYOUT = {    # ordered like in jobengine queue (errors 50+)
         LABEL: 'Postprocessing',
         TOOLTIP: 'Postprocessing Collection',
     },
+    'distribute': {
+        ORDER: '29',
+        TYPE: 'node',
+        SHAPE: 'underline',
+        SHAPE_PROCESS: 'cds',
+        FILLCOLOR: '#e3caa1',
+        COLOR: DEFAULT_COLOR,
+        STYLE: 'filled',
+        PENWIDTH: DEFAULT_PENWIDTH,        
+        TABLECLASS : 'table-distribute',
+        LABEL: 'Distributing',
+        TOOLTIP: 'Distribute data to projects',
+    },    
     'notify': {
         ORDER: '30',
         TYPE: 'node',

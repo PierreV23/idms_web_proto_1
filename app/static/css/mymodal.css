@@ -716,6 +716,13 @@ ul {
   background-color: #99ffcc;
 }
 
+.table-distribute,
+.table-distribute>td,
+.table-distribute>th {
+  background-color: #e3caa1;
+}
+
+
 .table-notify,
 .table-notify>td,
 .table-notify>th {
