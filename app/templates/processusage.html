@@ -12,7 +12,7 @@
         data-show-toggle="false"
         data-show-columns="true"
         data-sort-name="project"
-        data-url="{{ url_for('main.restcall', rest_endpoint='processes/' + process + '/references' ) }}">
+        data-url="{{ url_for('projects.process_usage_table', process=process) }}">
         <thead>
             <tr>
                 <th data-checkbox="true"></th>

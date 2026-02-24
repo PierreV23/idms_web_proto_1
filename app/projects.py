@@ -78,8 +78,8 @@ def show_projects():
     # TODO: refactor passing of arguments
     page = request.args.get('page', 'projects')
 
-    project = request.args.get('project', '')
-    process = request.args.get('process', '')
+    project = request.args.get('project', current_user.settings.get('last_project', ''))
+    process = request.args.get('process', current_user.settings.get('last_process', ''))
     activetabname = request.args.get('activetabname', '')
     processgroup = request.args.get('processgroup', '')
     processlist = get_process2list()
@@ -107,7 +107,7 @@ def show_projectdetails():
             Criterion('!=', User.type, "rodsuser")).filter(
                 Criterion('=', UserMeta.name, "projectID")).filter(
                     Criterion('=', UserMeta.value, projectname)).order_by(User.name)
-        groups = [u[User.name] for u in query]
+        groups = [ datafield('group', u[User.name], 'irods_group') for u in query ]
     projectdetails['groups'] = groups
     
     # to prevent break if no projectdetails available yet 
@@ -664,6 +664,25 @@ def usermanager():
 def processusage():
     process = request.args.get('process')
     return render_template('processusage.html', process=process)
+
+@bp.route('_processusage_table', methods=['GET'])
+def process_usage_table():
+    process = request.args.get('process')
+    if process is None:
+        return {}
+    output = []
+    data, result = rest_call('GET', f'processes/{process}/references')
+    for record in data:
+        project = record.get('project')
+        processgroup = record.get('processgroup')
+        output.append({
+            'project': datafield('project', project, 'projectid').htmlstring,
+            'processgroup': f'<A HREF={ url_for('projects.show_projects', project=project, processgroup=processgroup, activetabname="processgroups") }>{processgroup}</A>',
+            'name': record.get('name'),
+            'tag': record.get('tag'),
+            'url': record.get('url')
+        })
+    return output
 
 
 

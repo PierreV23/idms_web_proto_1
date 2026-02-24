@@ -32,8 +32,11 @@ $(document).on('click', '.projectname', function() {
   // Scroll to project, in case this is triggered programmatically
   position = $(this).position().top - $('.fixed-table-body').height() / 2
   $('.fixed-table-body').animate({scrollTop: position}, 500)
-
   project=$(this).data('projectname');
+  $.post('{{ url_for("userinfo.usersetting") }}', {
+    attr: 'last_project',
+    value: project
+  })
   $('.projectname').removeClass('highlight')
   $('.processname').removeClass('highlight')
   $('.activeproject').html(project)

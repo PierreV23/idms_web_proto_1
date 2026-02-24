@@ -20,6 +20,7 @@ from . import iqry
 KNOWN_ATTRIBUTES = {
     'Date': 'date',
     'import_timestamp': 'timestamp',
+    'projectID': 'projectid',
     'stage_time': 'timestamp',
     'sys::access_time': 'timestamp',
     'sys::archive::lastrun': 'timestamp',
@@ -34,10 +35,13 @@ KNOWN_ATTRIBUTES = {
     'user::pipeline::input_collection_id': 'collection_id',
     'sys::run::last_move_time': 'timestamp',
     'sys::run::output_collection': 'irods_collection',
+    'sys::run::projectgroup': 'irods_group',
     'sys::runsheet::create_time': 'timestamp',
     'sys::runsheet::depends_on': 'collection_id',
     'sys::runsheet::id': 'runsheet',
     'sys::runsheet::input_collection': 'irods_collection',
+    'sys::runsheet::processgroupid': 'processgroupguid',
+    'sys::runsheet::processID': 'process',
     'sys::runsheet::projectID': 'projectid',
     'sys::runsheet::repo': 'url',
     'reference_dataset::synchronization_time': 'timestamp',
@@ -346,6 +350,15 @@ class data_irods_user(data_base):
     def factory(**kwargs):
         return data_irods_user(**kwargs)
 
+class data_irods_group(data_base):
+    
+    @staticmethod
+    def factory(**kwargs):
+        return data_irods_group(**kwargs)
+    
+    @property
+    def htmlstring(self):
+        return '<a href="{0}">{1}</a>'.format(url_for('userinfo.groupdetails', group=self.value), self.value)
 
 class data_projectid(data_base):
 
