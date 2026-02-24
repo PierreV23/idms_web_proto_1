@@ -14,14 +14,14 @@ import irods.exception
 from Crypto.PublicKey import RSA
 from app.webuser import AuthException
 from .ngsruns import NGSRunsDBUnavailableException
-from .jobs import JobsDBUnavailableException
+from .database import ICATDBUnavailableException
 
 from . import routes, auth, collbrowser, jobs, docviewer, messages, contacts_manager
 from . import projects, cluster, admin, reports, userinfo, referencedatasets
 from . import ngsruns, upload, flaskcache, search, metaedit
 from . import oldjobs
 from .ngsruns import db as ngsruns_db
-from .jobs import db as jobs_db
+from .database import db as jobs_db
 from .irodssessions import irods_manager
 
 #from app.stats import statstore
@@ -156,7 +156,7 @@ def errorhandlers(app):
         flash('NGSRuns Database Unavailable', 'error')
         return redirect(url_for('main.home'))
 
-    @app.errorhandler(JobsDBUnavailableException)
+    @app.errorhandler(ICATDBUnavailableException)
     def handle_bad_jobs_request(e):
         flash('Jobs table unavailable. Reverting to old jobs view ...', 'error')
         return redirect(url_for('oldjobs.show_jobs'))

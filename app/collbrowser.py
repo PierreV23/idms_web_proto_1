@@ -33,7 +33,7 @@ import json
 from app.constants import COLL_KEY_MAP, DATA_KEY_MAP, ATTR_RESOURCE_ONLINE
 from app.auth import auth_endpoint
 from .projectdb_api import rest_call
-from .search import runsql
+from .database import db
 from .constants import *
 from copy import deepcopy
 
@@ -1633,9 +1633,8 @@ def add_items(path, level, active):
 
 @cache.memoize(timeout=60, make_name=dep_zone)
 def cached_sql(sql):
-    with irods_manager.session() as sess:
-        data = runsql(sess, sql)
-    return [{ 'v0': x[0] } for x in data ]
+    query = db.connection().sql(sql)
+    return query
 
 @cache.memoize(timeout=60, make_name=dep_zone)
 def get_values(fields, values):
@@ -1665,7 +1664,7 @@ def get_values(fields, values):
         type = 'link'
     else:
         crit = ' AND '.join([f"coll->'coll_meta'->>'{fields[i][0]}' = '{v}'" for i, v in enumerate(values)])
-        sql = f"SELECT coll->'coll_name' FROM coll_json WHERE {crit} GROUP BY 1 ORDER BY 1"
+        sql = f"SELECT coll->'coll_name' as v0 FROM coll_json WHERE {crit} GROUP BY 1 ORDER BY 1"
         type = 'collection'
     data = cached_sql(sql)
     results = [ ]
@@ -1674,7 +1673,7 @@ def get_values(fields, values):
             if type == 'link':
                 results.append({ 'name': d['v0'], 'link': d['v0'], 'type': type })
             else:
-                results.append({ 'name': d['v0'][1: -1], 'link': datafield('collection', d['v0'][1: -1], 'irods_collection').htmlshort2(maxlen=20), 'type': type })
+                results.append({ 'name': d['v0'], 'link': datafield('collection', d['v0'], 'irods_collection').htmlshort2(maxlen=20), 'type': type })
     return results
 
 @cache.memoize(timeout=60, make_name=dep_zone)
@@ -1684,7 +1683,7 @@ def add_custom_items(meta_attrs, path, active_path, active_collection):
     path_label = f'data-path-{len(path)}'
     itemid = '_'.join(path)
     if len(path) < len(meta_attrs):
-        rs = f'<span class="font-weight-bold">- {meta_attrs[len(path)][0]} -</span>'
+        rs = f'<span class="font-weight-bold meta-attr">{meta_attrs[len(path)][0]}</span>'
     else:
         rs = ''
     for r in fields:

@@ -6,32 +6,25 @@ Created on Mon Nov 18 13:49:12 2019
 @author: wierinve
 """
 
-from flask import Blueprint, render_template, request, url_for, jsonify, redirect, flash, current_app
-from flask_login import current_user, login_required
-from irods.exception import DataObjectDoesNotExist, CAT_NO_ACCESS_PERMISSION
-from irods.models import Collection, CollectionMeta
-from irods.column import Criterion
-from app.datafield import datafield
-from app.settings import JOB_FIELDS, PG_FIELDS, PG_JOB_FIELDS
-from graphviz import Digraph
-import flask
-import greenlet
 import json
 import os
 import sys
-import time
 from datetime import datetime, timezone
-from .flaskcache import cache, dep_zone, key_zone, key_userzone
+from flask import Blueprint, render_template, request, url_for, jsonify, redirect, flash
+from flask_login import current_user
+from irods.exception import DataObjectDoesNotExist, CAT_NO_ACCESS_PERMISSION
+from irods.models import Collection, CollectionMeta
+from irods.column import Criterion
+from graphviz import Digraph
+from app.datafield import datafield
+from app.settings import JOB_FIELDS, PG_FIELDS, PG_JOB_FIELDS
 from app.irodssessions import irods_manager
+from fs_irods import fs_irods
+from .flaskcache import cache, key_zone, key_userzone
 from . import iqry
 from .constants import *
 from .collbrowser import shape
-import psycopg2
-from psycopg2 import pool
-from psycopg2.extras import RealDictCursor
-from fs_irods import fs_irods
-
-from app.stats import TD
+from .database import db
 
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
 
@@ -43,66 +36,6 @@ ATTR_RUNSHEET_PROCESSGROUPGUID = '{}processgroupid'.format(ATTR_RUNSHEET_PREFIX)
 
 MAX_READ_LOG_BYTES = 10000000
 
-
-def my_env():
-    """Return environment the current_user is logged in to 
-       or None if not set
-    Returns:
-        str: environment name
-    """    
-    if hasattr(current_user, 'environment'):
-        return current_user.environment        
-    return None
-class JobsDBUnavailableException(Exception):
-    pass
-
-class DBConnection:
-    
-    def __init__(self, pool):
-        self._pool = pool
-              
-    def sql(self, statement):
-        with self as conn:
-            cursor = conn.cursor(cursor_factory=RealDictCursor)
-            cursor.execute(statement)
-            if cursor.rowcount == 0:
-                return []
-            else:
-                return cursor.fetchall()            
-        
-    def __enter__(self):
-        self._conn = self._pool.getconn()
-        return self._conn
-    
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self._pool.putconn(self._conn)
-
-class DBPools:
-    
-    def __init__(self):
-        self._pools = {}
-
-    def init_app(self, app):
-        pass
-        #app.teardown_request(self.remove_session)
-        
-    def startpool(self):
-        env = my_env()
-        env_params = current_app.config.get('IRODS_ENVS', {}).get(env)
-        db_connect = env_params.get('jobs_db')
-        self._pools[env] = pool.ThreadedConnectionPool(5, 50, db_connect)
-        
-    def connection(self):
-        env = my_env()
-        if not env in self._pools:
-            self.startpool()
-        if env in self._pools:
-            return DBConnection(self._pools.get(env))
-        else:
-            raise JobsDBUnavailableException(f'env={env}')
-
-
-db = DBPools()
 
 # @bp.before_request
 # def before_request_func():
