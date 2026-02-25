@@ -1,6 +1,6 @@
 <div class="container-wide">
     {% if message %}
-    <div class="row card bg-warning "><H3><center>{{ message }}</center></H3></div>
+    <div class="row card bg-warning "><h3><center>{{ message }}</center></h3></div>
     {% endif %}
     {% if selected_details %}
     <div class="row card"><h5>Selected process: <em>{{ selected_details.name }}</em> ({{ selected_process.htmlshort | safe }})</h5> </div>
@@ -14,17 +14,17 @@
             <form>
                 <div class="form-group">
                     <label for="process_name">Process name (optional)</label>
-                    <INPUT TYPE="text" class="form-control form-control-sm" id="process_name"></INPUT>
+                    <input type="text" class="form-control form-control-sm" id="process_name"></input>
                 </div>
                 <div class="form-group">
-                    <SELECT class="form-control form-control-sm" style="width: '100px'" id="process_select">
+                    <select class="form-control form-control-sm" style="width: '100px'" id="process_select">
                         {% for proc in all_processes %}
-                        <OPTION>{{ proc.name }}</OPTION>
+                        <option>{{ proc.name }}</option>
                         {% endfor %}
-                    </SELECT>
+                    </select>
                 </div>
                 
-                <BUTTON type="button" class="btn btn-sm btn-primary" onClick='pgadd_process()''>Add Process</BUTTON>
+                <button type="button" class="btn btn-sm btn-primary" onClick='pgadd_process()''>Add Process</button>
             </form>
         </div>
         {% endif %}
@@ -47,17 +47,17 @@
                     </select>
                 </div>
                 {% if project_permissions.users %}
-                <BUTTON type="button" class="btn btn-sm btn-primary disabled" id="update_processtag_button">Submit</BUTTON>
+                <button type="button" class="btn btn-sm btn-primary disabled" id="update_processtag_button">Submit</button>
                 {% endif %}
             </form>
             <form action="{{ url_for('projects.pgaction') }}">
                 <div class="form-group">
                     <label for="process_name">LSF queue</label>
-                    <INPUT TYPE="text" class="form-control input-sm" id="lsf_queue" value="{{ selected_details.lsf_queue }}" {% if project_permissions.users is sameas false %}disabled{% endif %}>
+                    <input type="text" class="form-control input-sm" id="lsf_queue" value="{{ selected_details.lsf_queue }}" {% if project_permissions.users is sameas false %}disabled{% endif %}>
                 </div>
                 {% if project_permissions.users %}
-                <BUTTON type="button" class="btn btn-sm btn-primary disabled" id="update_process_button">Submit</BUTTON>
-                <BUTTON type="button" class="btn btn-sm btn-primary" id="update_allprocs_button">Set for all processes</BUTTON>
+                <button type="button" class="btn btn-sm btn-primary disabled" id="update_process_button">Submit</button>
+                <button type="button" class="btn btn-sm btn-primary" id="update_allprocs_button">Set for all processes</button>
                 {% endif %}
             </form>
             {% endif %}
@@ -67,8 +67,8 @@
             <h5>Process-Dependencies</h5>
             {% if project_permissions.users %}
             <div>
-            <BUTTON type="button" class="btn btn-sm btn-primary" id="add_dep">Add dependency</BUTTON>
-            <BUTTON type="button" class="btn btn-sm btn-danger disabled" id="del_dep">Delete dependency</BUTTON>
+            <button type="button" class="btn btn-sm btn-primary" id="add_dep">Add dependency</button>
+            <button type="button" class="btn btn-sm btn-danger disabled" id="del_dep">Delete dependency</button>
             </div>
             <hr>
             {% endif %}

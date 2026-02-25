@@ -1,7 +1,7 @@
 {% extends 'base2.html' %}
 
 {% block heading %}
-<H3><b>NGS Run overview</b></H3>
+<h3><b>NGS Run overview</b></h3>
 {% endblock %}
 
 {%block menuname %}
@@ -19,7 +19,7 @@ As soon as a collection is found that has a matching flowcell, it will be shown 
 The project column will display <b>Multiple</b> if the sample sheet contains samples for multiple projects.<p>
 Selecting a row will display the barcodes on the right hand side, with options to <b>Delete</b> or <b>Edit</b> the sample sheet, 
 for example disabling specific barcodes.<p>
-Use the <A HREF="{{ url_for('ngsruns.run_form')}}">New run</A> menu item to create a new samplesheet.
+Use the <a href="{{ url_for('ngsruns.run_form')}}">New run</a> menu item to create a new samplesheet.
 
 {% endblock %}
 
@@ -28,7 +28,7 @@ Use the <A HREF="{{ url_for('ngsruns.run_form')}}">New run</A> menu item to crea
 <div class="row h-100">
    <div class="h-100 card border-primary col-md-4 scroll">
       <div class="card-header">
-         <H2 class="inline">List of all runs</H2>
+         <h2 class="inline">List of all runs</h2>
          <div class="inline float-right runtable-toolbar"></div>
       </div>
       <div class="card-body">

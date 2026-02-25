@@ -101,7 +101,7 @@ $('.action-tabs').on('shown.bs.tab', function(event){
     $(activetab).html(data)
   })
   .fail(function(){
-    $(activetab).html('<CENTER>Error retrieving content</CENTER>')
+    $(activetab).html('<center>Error retrieving content</center>')
   })
 })
 
@@ -228,7 +228,7 @@ $('#shareButton').on('click', function(){
 </div>
 <div class="card-body">
 {% if coll_state.dataset_field %}
-<CENTER>Go to dataset:<p>{{ coll_state.dataset_field.htmlshort | safe }}</CENTER>
+<center>Go to dataset:<p>{{ coll_state.dataset_field.htmlshort | safe }}</center>
 {% endif %}
 </div>  
 {% endif %}

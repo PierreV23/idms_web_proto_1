@@ -1,7 +1,7 @@
 {% extends 'base2.html' %}
 
 {% block heading %}
-<H2>Resource settings</H2>
+<h2>Resource settings</h2>
 {% endblock %}
 
 {%block menuname %}
@@ -10,10 +10,10 @@ menuname='resources'
 
 {% block content %}
 <div class="card card-body">
-<FORM action="{{ url_for('admin.update_resources') }}" method = "POST" enctype = "multipart/form-data">
-<TABLE class="table">
-    <THEAD class="thead-dark">
-        <TR>
+<form action="{{ url_for('admin.update_resources') }}" method = "POST" enctype = "multipart/form-data">
+<table class="table">
+    <thead class="thead-dark">
+        <tr>
             <th><div><span>
                 Name
             </span></div></th>
@@ -26,33 +26,33 @@ menuname='resources'
                     {{ columns[column].label }}
                 </span></div></th>
             {% endfor %}
-        </TR>
-    </THEAD>
-    <TBODY>
+        </tr>
+    </thead>
+    <tbody>
         {% for resource in resources | sort %}
-        <TR>
-            <TD id="{{resource}}">{{ resource }}</TD>
+        <tr>
+            <td id="{{resource}}">{{ resource }}</td>
             {% for property in columns %}
                 {% if columns[property].type == 'text' %}
-                    <TD>
+                    <td>
                         <input 
                             type="text" 
                             class="form-control" 
                             name="{{ resource }}__{{ property }}"
                             value="{{ resources[resource].get(property, '') }}"
                         >
-                    </TD>
+                    </td>
                 {% elif columns[property].type == 'number' %}
-                    <TD>
+                    <td>
                         <input 
                             type="number" 
                             class="form-control" 
                             name="{{ resource }}__{{ property }}"
                             value="{{ resources[resource].get(property, '') }}"
                         >
-                    </TD>
+                    </td>
                 {% elif columns[property].type == 'bool' %}
-                    <TD>
+                    <td>
                         <input class="checkbx" type="checkbox"
                             name="{{ resource }}__{{ property }}"
                             value="true"
@@ -61,9 +61,9 @@ menuname='resources'
                             title="{{ columns[property].get('help') }}"
                             {% endif %} 
                         >
-                    </TD>
+                    </td>
                 {% elif columns[property].type == 'select' %}
-                    <TD>
+                    <td>
                         <select class="form-control" name="{{ resource }}__{{ property }}" style="width:auto">
                             {% for value in columns[property].options %}
                                 <option value="{{ value }}" {% if value == resources[resource].get(property, '') %}selected{% endif %}>
@@ -71,9 +71,9 @@ menuname='resources'
                                 </option>
                             {% endfor %}
                         </select>
-                    </TD>
+                    </td>
                 {% elif columns[property].type == 'status' %}
-                    <TD>
+                    <td>
                         <center>
                             {% if resources[resource].get(property) == 'true' %}
                             <i class="fa-solid fa-square-check fa-lg" style="color:green"></i>
@@ -83,15 +83,15 @@ menuname='resources'
                             <input type="hidden" name="{{ resource }}__{{ property }}" value="false">
                             {% endif %}
                         </center>
-                    </TD>
+                    </td>
                 {% endif %}
             {% endfor %}
-        </TR>
+        </tr>
         {% endfor %}
-    </TBODY>
-</TABLE>
+    </tbody>
+</table>
 <button type=submit class="btn btn-primary">Submit</button>
-</FORM>
+</form>
 </div>
 
 <script>

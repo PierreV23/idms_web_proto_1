@@ -1,7 +1,7 @@
 {% extends 'base2.html' %}
 
 {% block heading %}
-<H3>Sequencers</H3>
+<h3>Sequencers</h3>
 {% endblock %}
 
 {%block menuname %}
@@ -9,7 +9,7 @@ menuname='sequencers'
 {% endblock %}
 
 {% block content %}
-<div id="sequencer_table"><center><IMG SRC="{{ url_for('static', filename='img/loading.gif') }}" width="30%"></IMG><center></div>
+<div id="sequencer_table"><center><img src="{{ url_for('static', filename='img/loading.gif') }}" width="30%"></img><center></div>
 <script>
 $('document').ready(function(){
     $.get("{{ url_for('reports.sequencer_data') }}", function(data) {

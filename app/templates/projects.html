@@ -41,7 +41,7 @@ $(document).on('click', '.projectname', function() {
   $('.processname').removeClass('highlight')
   $('.activeproject').html(project)
   $(this).addClass("highlight")
-  $('#details').html('<center><IMG SRC="{{ url_for('static', filename='img/loading.gif') }}" width="30%"></IMG><center>')
+  $('#details').html('<center><img src="{{ url_for('static', filename='img/loading.gif') }}" width="30%"></img><center>')
   $.get('{{ url_for('projects.show_projectdetails') }}', {
     name: project,
     project_name: project,
@@ -87,8 +87,8 @@ $(document).on('click', '#select_input_button', function(){
         <div class="form-group">
           <div class="modal-body">
             <label for="new_pname" class="col-form-label">Project identifier (no spaces)</label>
-            <INPUT TYPE="text" class="form-control menuexpand" id='new_pname' name="project">
-            <INPUT TYPE="hidden" name="action" value="add_project">
+            <input type="text" class="form-control menuexpand" id='new_pname' name="project">
+            <input type="hidden" name="action" value="add_project">
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
@@ -105,7 +105,7 @@ $(document).on('click', '#select_input_button', function(){
 
   <div class="card selectlist">
     <div class="card-body nopadding scroll">
-      <TABLE id="projects-table"
+      <table id="projects-table"
       data-toggle="table"
       data-search="true"
       >
@@ -114,9 +114,9 @@ $(document).on('click', '#select_input_button', function(){
       </thead>
       <tbody>
       {% for project in projects | sort %}
-      <TR><TD class="projectname" data-projectname="{{ project }}">{{ project }}</TD></TR>
+      <tr><td class="projectname" data-projectname="{{ project }}">{{ project }}</td></tr>
       {% endfor %}</tbody>
-      </TABLE>
+      </table>
     </div>
   </div>
 

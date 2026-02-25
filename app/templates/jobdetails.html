@@ -1,7 +1,7 @@
 {% extends 'jobdetailmenu.html' %}
 
 {% block heading %}
-<H3>Job details for {{ jobnaam.htmlstring | safe }}</H3>
+<h3>Job details for {{ jobnaam.htmlstring | safe }}</h3>
 {% endblock %}
 
 {% block menuname %}
@@ -42,32 +42,32 @@ menuname='jobdetails'
       <div class="card-title">Job Parameters</div>
     </div>
     <div class="card-body h100 autoscroll">
-      <TABLE id="jobdetails" 
+      <table id="jobdetails" 
         data-toggle="table" 
         data-striped="true"
         data-detail-view="true"
         data-detail-filter="detailFilter">
         <thead>
-          <TR>
-            <TH scope="col">Attribute</TH>
-            <TH scope="col">Value</TH>
-          </TR>
+          <tr>
+            <th scope="col">Attribute</th>
+            <th scope="col">Value</th>
+          </tr>
         </thead>
         <tbody>
           {% for entry in details %}
-          <TR>
-            <TD>{{ entry }}</TD>
-            <TD>{{ details[entry].htmlstring | safe }}</TD>
-          </TR>
+          <tr>
+            <td>{{ entry }}</td>
+            <td>{{ details[entry].htmlstring | safe }}</td>
+          </tr>
           {% endfor %}
           {% for entry in multi %}
-          <TR DATA-MULTI={{ multi[entry] | length }}>
-            <TD>{{ entry }}</TD>
-            <TD>{% if multi[entry] | length == 1 %}{{ multi[entry][0] | safe }}{% endif %}</TD>
-          </TR>
+          <tr DATA-MULTI={{ multi[entry] | length }}>
+            <td>{{ entry }}</td>
+            <td>{% if multi[entry] | length == 1 %}{{ multi[entry][0] | safe }}{% endif %}</td>
+          </tr>
           {% endfor %}
         </tbody>
-      </TABLE>
+      </table>
     </div>
   </div>
   {% if processgroupid != '' %}

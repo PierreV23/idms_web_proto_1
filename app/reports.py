@@ -119,7 +119,7 @@ def get_space_usage():
 @login_required
 def space_report():
     if not current_user.is_admin:
-        return('<TR><TD COLSPAN=3>Access denied</TD></TR>')
+        return('<tr><td colspan=3>Access denied</td></tr>')
     projectlist, resources = get_space_usage()
     return render_template('report_space.html', projectlist=projectlist, 
                            resources=resources)
@@ -144,7 +144,7 @@ def inter2(a, b):
 @login_required
 def sequencer_data():
     if not current_user.is_admin:
-        return('<TR><TD COLSPAN=3>Access denied</TD></TR>')
+        return('<tr><td colspan=3>Access denied</td></tr>')
     with irods_manager.session() as session:
         # FIND SERIALS
         qry = session.query(CollectionMeta.value).filter(

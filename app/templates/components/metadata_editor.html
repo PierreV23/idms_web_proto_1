@@ -26,12 +26,12 @@
     <table id="{{ id }}-schemata-table" data-toggle='table' data-multi-sort="true" data-sort-name="order" data-sort-order="asc"
       data-url="{{ schemata_data_url }}" data-checkbox-header="false">
       <thead>
-        <TR>
-          <TH data-field="selected" data-checkbox="true" title="Check the box first, then select field to display the form"></TH>
-          <TH data-field="schema" data-sortable="true">Schema Name</TH>
-          <TH data-field="schemapath" data-visible="false"></TH>
-          <TH data-field="order" data-visible="false"></TH>
-        </TR>
+        <tr>
+          <th data-field="selected" data-checkbox="true" title="Check the box first, then select field to display the form"></th>
+          <th data-field="schema" data-sortable="true">Schema Name</th>
+          <th data-field="schemapath" data-visible="false"></th>
+          <th data-field="order" data-visible="false"></th>
+        </tr>
       </thead>
     </table>
   </div>
@@ -40,7 +40,7 @@
       <div class="card-title">Metadata editor</div>
     </div>
     <div class="card-body autoscroll">
-      <div id="{{ id }}-reactform"><CENTER>SELECT A SCHEMA FILE...</CENTER></div>
+      <div id="{{ id }}-reactform"><center>SELECT A SCHEMA FILE...</center></div>
     </div>
     <div class="card-footer">    
       <button class="btn btn-primary formsubmit" type="submit" name="save" form="{{ id }}-metaForm" {% if edit_allowed == 'false' %}hidden{% else %}disabled{% endif %}>Save</button>

@@ -256,7 +256,7 @@ function insert_search_modal() {
 
             <div class="col-md-9">
               <div>
-                <INPUT class="form-control" id="searchtext" placeholder="Enter your search text" tabindex="3">
+                <input class="form-control" id="searchtext" placeholder="Enter your search text" tabindex="3">
               </div>
               <div class="divider" id="progress-bar"></div>
             </div>

@@ -48,43 +48,43 @@ $(document).ready(function(){
     </div>
   </div>
 <div class="card-body scroll">
-<TABLE class="table table-striped table-hover table-sm">
+<table class="table table-striped table-hover table-sm">
 <thead class="thead-dark">
-<TR>
+<tr>
 {% for column in columns %}
-<TH scope="col">{{ column }}</TH>
+<th scope="col">{{ column }}</th>
 {% endfor %}
 <!--
-<TH>Actions</TH>
-</TR>
+<th>Actions</th>
+</tr>
 -->
 </thead>
 <tbody>
 {% for entry in joblist %}
   {% if "Result" in entry and entry["Result"].value != 0 %}
-    <TR class="table-danger">
+    <tr class="table-danger">
   {% else %}
     {% if entry.State.value in LAYOUT %}
-      <TR class="{{ LAYOUT[entry.State.value].tableclass }}">
+      <tr class="{{ LAYOUT[entry.State.value].tableclass }}">
     {% else %}
-      <TR class="table-white">
+      <tr class="table-white">
     {% endif %}
   {% endif %}
     {% for column in columns %}    
-        <TD>
+        <td>
         {% if column in entry %}
           {% if '/jobs' in entry[column].htmlshort %}
             {{ entry[column].htmlshort | striptags }}
           {% else %}
             {{ entry[column].htmlshort | safe }}
           {% endif %}
-        {% endif %}</TD>
+        {% endif %}</td>
         
     {% endfor %}
-    </TR>
+    </tr>
 {% endfor %}
 </tbody>
- </TABLE>
+ </table>
 </div>
 
 </div>

@@ -12,7 +12,7 @@ menuname='processes'
 {% block menuitems %}
 <li class="nav-header">ACTIONS</li>
 <li class="nav-item">
-  <A class="nav-link" data-toggle="modal" data-target="#processModal">
+  <a class="nav-link" data-toggle="modal" data-target="#processModal">
     <i class="fas fa-plus nav-icon"></i>
     Add new process
   </a>
@@ -28,7 +28,7 @@ menuname='processes'
     $.post('{{ url_for("userinfo.usersetting") }}', {
       attr: 'last_process',
       value: process
-    })    
+    })
     $('.processname').removeClass('highlight')
     $(this).addClass("highlight")
     $('#details').html('<div class="card">Loading settings for ' + process + " ... </div>")
@@ -47,71 +47,68 @@ menuname='processes'
       $row.trigger('click');
 
       // Calculate the distance from the top of the container to the row
-      var targetOffset = $row.position().top + $container.scrollTop() - $container.height()/3;
+      var targetOffset = $row.position().top + $container.scrollTop() - $container.height() / 3;
 
       $container.animate({
-          scrollTop: targetOffset
-      }, 200); 
+        scrollTop: targetOffset
+      }, 200);
     }
   });
-
-
 </script>
 
-<div class="modal fade" id="processModal">
-  <div class="modal-dialog modal-dialog-centered" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <div class="modal-title">
-          Add process
+<div>
+  <div class="modal fade" id="processModal">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-title">
+            Add process
+          </div>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
         </div>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
+        <form class="form" action="{{ url_for('projects.update_projectsettings') }}" method="post">
+          <div class="form-group">
+            <div class="modal-body">
+              <label for="new_procname" class="col-form-label">Process name</label>
+              <input type="text" class="form-control menuexpand" id='new_procname' name="process">
+              <input type="hidden" name="action" value="add_process2">
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+              <button type=submit class="btn btn-primary">Submit</button>
+            </div>
+          </div>
+        </form>
       </div>
-      <form class="form" action="{{ url_for('projects.update_projectsettings') }}" method="post">
-        <div class="form-group">
-          <div class="modal-body">
-            <label for="new_procname" class="col-form-label">Process name</label>
-            <INPUT TYPE="text" class="form-control menuexpand" id='new_procname' name="process">
-            <INPUT TYPE="hidden" name="action" value="add_process2">
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-            <button type=submit class="btn btn-primary">Submit</button>
-          </div>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-
-
-<div class="selectgrid h100">
-  <div class="card selectlist">
-    <div class="nopadding card-body scroll ">
-      <table id="process-table"
-      data-toggle="table"
-      data-search="true">
-    <thead>
-      <tr><th>Process</th></tr>
-    </thead><tbody>
-        {% for process in processes | sort %}
-      <TR><TD class="processname" data-processname="{{ process }}">{{ process }}</TD></TR>
-      {% endfor %}
-    </tbody></table>
     </div>
   </div>
 
-  <div class="card selectdetail">
-    <div class="card-body" id="details"></div>
+  <div class="selectgrid h100">
+    <div class="card selectlist">
+      <div class="nopadding card-body scroll ">
+        <table id="process-table" data-toggle="table" data-search="true">
+          <thead>
+            <tr>
+              <th>Process</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for process in processes | sort %}
+            <tr>
+              <td class="processname" data-processname="{{ process }}">{{ process }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card selectdetail">
+      <div class="card-body" id="details"></div>
+    </div>
   </div>
-
-
 </div>
-
-</div>
-
 
 {% endblock %}

@@ -157,7 +157,7 @@ def pending_uploads():
             name = iqry.qcollmetaval(coll, ATTR_UPLOADNAME, default=coll)
             name_url = url_for('upload.upload_settings', coll=coll)
             if state == UploadType.Pending:
-                namestr = f'<A HREF="{ name_url }">{name}</A>'
+                namestr = f'<a href="{ name_url }">{name}</a>'
             else:
                 namestr = name
 

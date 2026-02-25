@@ -1,7 +1,7 @@
 {% extends 'base2.html' %}
 
 {% block heading %}
-<H3>About</H3>
+<h3>About</h3>
 {% endblock %}
 {% block menuname %}
 menuname='about'
@@ -13,11 +13,10 @@ menuname='about'
         Contacts
     </div>
     <div class="card-body">
-        <P>Authors:</P>
+        <p>Authors:</p>
         <ul>
-            <li>Erwin van Wieringen (erwin.van.wieringen@rivm.nl)</LI>
+            <li>Erwin van Wieringen (erwin.van.wieringen@rivm.nl)</li>
             <li>Jan-Erek Thiede (jan.erek.thiede@rivm.nl)</li>
-            <li>Mark Kroon (mark.kroon@rivm.nl)</li>
             <li>Robert Verhagen (robert.verhagen@rivm.nl)</li>
             <li>Eva Deutekom (eva.deutekom@rivm.nl)</li>
             <li>Remie Janssen (remie.janssen@rivm.nl)</li>
@@ -40,11 +39,10 @@ menuname='about'
     </div>
     <div class="card-body">
         <ul>
-            <li>git commit hash: <A href="https://gitlab.rivm.nl/bioinformatics/ngsweb/-/tree/{{ ngsweb_version }}"</a>{{ ngsweb_version[:8] }}</A></li>
-            <li>git branch name: <A href="https://gitlab.rivm.nl/bioinformatics/ngsweb/-/tree/{{ ngsweb_branch }}"</a>{{ ngsweb_branch }}</A></li>
+            <li>git commit hash: <a href="https://gitlab.rivm.nl/bioinformatics/ngsweb/-/tree/{{ ngsweb_version }}">{{ ngsweb_version[:8] }}</a></li>
+            <li>git branch name: <a href="https://gitlab.rivm.nl/bioinformatics/ngsweb/-/tree/{{ ngsweb_branch }}">{{ ngsweb_branch }}</a></li>
         </ul>
     </div>
 </div>
-
 
 {% endblock %}

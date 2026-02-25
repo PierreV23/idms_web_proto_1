@@ -12,7 +12,7 @@ menuname='reference-datasets'
 {% block menuitems %}
 <li class="nav-header">ACTIONS</li>
 <li class="nav-item">
-  <A class="nav-link" data-toggle="modal" data-target="#referenceModal">
+  <a class="nav-link" data-toggle="modal" data-target="#referenceModal">
     <i class="fas fa-plus nav-icon"></i>
     Add new reference dataset
   </a>
@@ -37,7 +37,7 @@ $(document).on('click', '.referencename', function() {
   $('.processname').removeClass('active')
   $('.activereferencedataset').html(reference)
   $(this).addClass("active")
-  $('#details').html('<center><IMG SRC="{{ url_for('static', filename='img/loading.gif') }}" width="30%"></IMG><center>')
+  $('#details').html('<center><img src="{{ url_for('static', filename='img/loading.gif') }}" width="30%"></img><center>')
   $.get('{{ url_for("reference.show_reference_details") }}', {
     name: reference,
     processgroup: "{{ processgroup }}"

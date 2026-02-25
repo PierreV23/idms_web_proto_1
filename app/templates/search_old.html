@@ -1,7 +1,7 @@
 {% extends 'base2.html' %}
 
 {% block heading %}
-<H3><b>Simple search</b></H3>
+<h3><b>Simple search</b></h3>
 {% endblock %}
 
 {% block menuname %}
@@ -18,7 +18,7 @@ var search_id = Date.now()
     <div class="card-body">
         <div class="form-group row">
             <div class="col-sm-10">
-                <INPUT TYPE="text" id="search-text" minlength=5 data-trigger="manual" data-placement="top" data-content="minimum length of 5 characters" required>
+                <input type="text" id="search-text" minlength=5 data-trigger="manual" data-placement="top" data-content="minimum length of 5 characters" required>
                 <button id="btnSearch" type="button" class="btn btn-primary">Search</button>
             </div>
         </div>
