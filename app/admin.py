@@ -21,6 +21,7 @@ from app.datafield import datafield
 from app.irodssessions import irods_manager
 from app.settings import RESOURCE_PROPS
 from app.auth import auth_endpoint
+from app.constants import ACTIVE_RUNSHEET_STATES
 from . import flaskcache
 from app.accounting_page import *
 
@@ -221,7 +222,7 @@ def admin():
         return render_template('denied.html')
     queues = {}
     with irods_manager.session() as session:
-        for q in ['incoming', 'depends', 'choose', 'prepare', 'stage', 'spacecheck', 'download', 'queued', 'active', 'finishing', 'postprocessing', 'notify', 'waiting']:
+        for q in ACTIVE_RUNSHEET_STATES:
             enabled = True
             path = f'/{current_user.irods_zone}/system/runsheet'
             metaquery = session.query(CollectionMeta.value).filter(
