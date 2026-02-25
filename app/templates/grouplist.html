@@ -6,16 +6,16 @@
 {% endblock %}
 
 {% block content %}
-<H2>Group List</H2>
-<TABLE class="table table-striped table-hover table-sm">
-<TR>
-<TH>Group name</TH>
-</TR>
+<h2>Group List</h2>
+<table class="table table-striped table-hover table-sm">
+<tr>
+<th>Group name</th>
+</tr>
 {% for entry in groups %}
    <td>
      {{ entry }}
-   </TD>
-</TR>
+   </td>
+</tr>
 {% endfor %}
- </TABLE>
+ </table>
 {% endblock %}

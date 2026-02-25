@@ -1,7 +1,7 @@
 {% extends 'base2.html' %}
 
 {% block heading %}
-<H3><b>New NGS Run by {{ current_user.username }}</b></H3>
+<h3><b>New NGS Run by {{ current_user.username }}</b></h3>
 {% endblock %}
 
 {%block menuname %}
@@ -37,13 +37,13 @@ th {
 }
 </style>
 <table>
-    <TR>
+    <tr>
         <th>Column</th><th>Description</th>
     </tr>
     <tr><td>Checkboxes</td><td>The checkboxes can be used to edit multiple entries at once. Shift-click or Ctrl-click can also be used here.</td></tr>
-    <tr><td>Enabled</td><td>ONLY when <b>editing</b> the samplesheet by selecting it in <A HREF="{{ url_for('ngsruns.run_list')}}">Run list</A>. Specific barcodes can be enabled or disabled. This is stored for the specific sample sheet, and can be reverted in another edit.</td></tr>
+    <tr><td>Enabled</td><td>ONLY when <b>editing</b> the samplesheet by selecting it in <a href="{{ url_for('ngsruns.run_list')}}">Run list</a>. Specific barcodes can be enabled or disabled. This is stored for the specific sample sheet, and can be reverted in another edit.</td></tr>
     <tr><td>ID</td><td>Contains the sample ID. The <b>ID List</b> button can be used to paste a list of IDs from another document.</td>
-    <tr><td>Virus Target</td><td>Fill in the Virus Target. Usage depends on your downstream pipeline. Use <b>Copy down</b> to fill the first field and copy the value to the whole column. </B></td>
+    <tr><td>Virus Target</td><td>Fill in the Virus Target. Usage depends on your downstream pipeline. Use <b>Copy down</b> to fill the first field and copy the value to the whole column. </b></td>
     <tr><td>Primer Set</td><td>Fill in the Primer Set. Usage depends on your downstream pipeline.</td></tr>
     <tr><td>Kit</td><td>Fill in the Kit. Usage depends on your downstream pipeline. There is a dropdown available for kits. If your value is not in the list you can add it to the field manually, and it will be added to the list for future selectivity.</td></tr>
     <tr><td>Description</td><td>Optional description. Usage depends on your downstream pipeline.</td></tr>

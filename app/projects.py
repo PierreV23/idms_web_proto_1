@@ -677,7 +677,7 @@ def process_usage_table():
         processgroup = record.get('processgroup')
         output.append({
             'project': datafield('project', project, 'projectid').htmlstring,
-            'processgroup': f'<A HREF={ url_for('projects.show_projects', project=project, processgroup=processgroup, activetabname="processgroups") }>{processgroup}</A>',
+            'processgroup': f'<a href={ url_for('projects.show_projects', project=project, processgroup=processgroup, activetabname="processgroups") }>{processgroup}</a>',
             'name': record.get('name'),
             'tag': record.get('tag'),
             'url': record.get('url')

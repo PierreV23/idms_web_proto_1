@@ -37,7 +37,7 @@ menuname='messages'
   </div>
   <div class="card-footer">
     <button type="submit" class="btn btn-primary" id="formsubmit" disabled>Save</button>
-    <INPUT type="button" class="btn btn-primary add-row" value="Add row">
+    <input type="button" class="btn btn-primary add-row" value="Add row">
   </div>
   </form>
 </div>
@@ -54,7 +54,7 @@ menuname='messages'
         </button>
       </div>
       <div class="modal-body" id="editdiv">
-        <TEXTAREA id="modal-text"></TEXTAREA>
+        <textarea id="modal-text"></textarea>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
@@ -171,39 +171,39 @@ menuname='messages'
     formrow = '<div class="form-row" id="row_' + index + '">'
     formrow += '<input name=' + index + '_key type=hidden value=' + index + '>'
     formrow += '<div class="form-group col-md-1">' +
-      '<SELECT class="form-control form-change clselect" data-index=' + index + ' name="' + index + '_category">'
+      '<select class="form-control form-change clselect" data-index=' + index + ' name="' + index + '_category">'
     categories.forEach((category_option) => {
-      formrow = formrow + '<OPTION '
+      formrow = formrow + '<option '
       if (category_option == category) {
         formrow += ' SELECTED '
       }
-      formrow += '>' + category_option + '</OPTION>'
+      formrow += '>' + category_option + '</option>'
     })
-    formrow += '</SELECT></div>'
+    formrow += '</select></div>'
     formrow += '<div class="form-group col-md-3"><div class="input-group">' +
       '<div class="input-group-prepend"><div class="input-group-text"><span style="color:' + color + '" class="fas fa-circle"></span></div></div>' +
-      '<INPUT type="text" class="form-control form-change date " id="' + id_time + '" name="' + id_time + '" VALUE="' + range + '">' +
+      '<input type="text" class="form-control form-change date " id="' + id_time + '" name="' + id_time + '" value="' + range + '">' +
       '</div></div>'
     formrow += '<div class="form-group col-md-5"><div class="input-group">'
-    formrow += '<TEXTAREA class="form-control form-change" id="' + index + '_msg" name="' + index + '_msg" data-index=' + index + '">' + msg + '</TEXTAREA>'
+    formrow += '<textarea class="form-control form-change" id="' + index + '_msg" name="' + index + '_msg" data-index=' + index + '">' + msg + '</textarea>'
     formrow += '<button class="btn btn-outline-secondary button-editor" type="button" data-for="' + index + '_msg">Edit</button></div></div>'
     formrow += '<div class="form-group col-md-1">' +
-      '<SELECT class="form-control form-change bgselect" data-index=' + index + ' name="' + index + '_class">'
+      '<select class="form-control form-change bgselect" data-index=' + index + ' name="' + index + '_class">'
     messageclasses.forEach((messageclass) => {
-      formrow += '<OPTION CLASS="' + messageclass + '"'
+      formrow += '<option class="' + messageclass + '"'
       if (messageclass == bgclass) {
         formrow += ' SELECTED '
       }
-      formrow += '>' + messageclass + '</OPTION>'
+      formrow += '>' + messageclass + '</option>'
     })
-    formrow += '</SELECT></DIV>'
+    formrow += '</select></div>'
     formrow += '<div class="form-group col-md-1">'
-    formrow += '<div><BUTTON CLASS="button btn-secondary preview" data-index=' + index + '>Preview</BUTTON></div></div>'
+    formrow += '<div><button class="button btn-secondary preview" data-index=' + index + '>Preview</button></div></div>'
     formrow += '<div class="form-group col-md-1">'
     if (deletebutton == true) {
-      formrow += '<div class="form-group col-md-1"><BUTTON CLASS="button btn-danger deleterow" data-index=' + index + '>Delete</BUTTON></div>'
+      formrow += '<div class="form-group col-md-1"><button class="button btn-danger deleterow" data-index=' + index + '>Delete</button></div>'
     }
-    formrow += '</DIV>'
+    formrow += '</div>'
     return formrow
   }
 
@@ -242,7 +242,7 @@ menuname='messages'
         remove_preview(i);
       } else {
         msgclass = $('select[name=' + i + '_class]').find(':selected').val();
-        $('#previewpane').append('<DIV id="preview' + i + '" class="flash_bar previewbar ' + msgclass + '">' + $('textarea#' + i + '_msg').val() + '</DIV>')
+        $('#previewpane').append('<div id="preview' + i + '" class="flash_bar previewbar ' + msgclass + '">' + $('textarea#' + i + '_msg').val() + '</div>')
         $(this).removeClass('btn-secondary').addClass('btn-success')
         previews.add(i)
       }

@@ -15,28 +15,28 @@ menuname='archiveissues'
 </script>
 <div class="card card-body autoscroll h-100">
     <table class="table">
-        <THEAD>
-            <TR>
-                <TD>Collection</TD>
-                <TD>Status</TD>
-                <TD>Message</TD>
-                <TD>Actions</TD>
-            </TR>
-        </THEAD>
+        <thead>
+            <tr>
+                <td>Collection</td>
+                <td>Status</td>
+                <td>Message</td>
+                <td>Actions</td>
+            </tr>
+        </thead>
         {% for item in items %}
-        <TR>
-            <TD>{{ item['collection'].htmlstring | safe }}</TD>
-            <TD>{{ item['status'] }}</TD>
-            <TD>{{ item['statusmsg'] }}</TD>
-            <TD>
+        <tr>
+            <td>{{ item['collection'].htmlstring | safe }}</td>
+            <td>{{ item['status'] }}</td>
+            <td>{{ item['statusmsg'] }}</td>
+            <td>
                 <button class="button btn-primary archive-action" data-path='{{ item["collection"].value }}'
                     data-action='clear_status'>Clear status</button>
                 {% if item["allow_remove"] is sameas True %}
                 <button class="button btn-danger archive-action" data-path='{{ item["collection"].value }}'
                     data-action='remove_archive'>Remove Manifest & Archive</button>
                 {% endif %}
-            </TD>
-        </TR>
+            </td>
+        </tr>
         {% endfor %}
     </table>
 </div>

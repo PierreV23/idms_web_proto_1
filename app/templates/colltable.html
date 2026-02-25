@@ -109,7 +109,7 @@
                 img = "{{ url_for('static', filename='img/download-button.png' ) }}"
                 path = encodeURIComponent(row['path'])
                 displayname = encodeURIComponent(row['displayname'])
-                res = `<a onClick="download_wrapper('${path}','${displayname}')"><IMG src="${img}" class="mybutton"></A>`
+                res = `<a onClick="download_wrapper('${path}','${displayname}')"><img src="${img}" class="mybutton"></a>`
                 return res;
             }
             if (field == 'view') {
@@ -117,7 +117,7 @@
                 path = encodeURIComponent(row['path'])
                 displayname = encodeURIComponent(row['displayname'])
                 res = `<a onClick="showModal('${path}','${displayname}')">
-                    <IMG src="${img}" class="mybutton"></A>`
+                    <img src="${img}" class="mybutton"></a>`
                 return res;
             }
             if (field == 'delete') {
@@ -125,7 +125,7 @@
                 path = row['path']
                 displayname = row['displayname']
                 res = `<a onClick="confirmDelete('${path}','${displayname}')">
-                    <IMG src="${img}" class="mybutton"></A>`
+                    <img src="${img}" class="mybutton"></a>`
                 return res;
             }
         }

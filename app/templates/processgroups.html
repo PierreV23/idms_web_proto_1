@@ -103,11 +103,11 @@ $(window).on('load', function() {
         <label for="groupselect">Processgroup</label>
       </div>
       <div class="col-4">
-        <SELECT class="form-control" id="groupselect">
+        <select class="form-control" id="groupselect">
           {% for pg in processgroups %}
-          <OPTION {% if processgroup == pg %}SELECTED{% endif %}>{{ pg }}</OPTION>
+          <option {% if processgroup == pg %}SELECTED{% endif %}>{{ pg }}</option>
           {% endfor %}
-        </SELECT>        
+        </select>        
       </div>
       <div class="col-2">
         <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -123,7 +123,7 @@ $(window).on('load', function() {
   </form>
   <hr>
   <div class="h30">
-      <CENTER id="pg_graph">Loading process group graph ...</CENTER>
+      <center id="pg_graph">Loading process group graph ...</center>
   </div>
   <hr>
   
@@ -132,7 +132,7 @@ $(window).on('load', function() {
      <button type="button" class="close" data-bs-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
    </div>
   <div id="pg_details">
-      <CENTER >Loading process group details ...</CENTER>
+      <center >Loading process group details ...</center>
   </div>
 </div>
 
@@ -167,7 +167,7 @@ $(window).on('load', function() {
           <div class="modal-body">
             <center>
               Are you sure you want to remove:
-              <B class="groupname"></B>
+              <b class="groupname"></b>
             </center>
           </div>
           <div class="modal-footer">

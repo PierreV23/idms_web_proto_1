@@ -252,17 +252,17 @@ class data_irods_collection(data_base):
     @property
     def htmlstring(self):
         displaystring = self.displaystring()
-        return '<a href="{0}?path={1}">{2}</A>'.format(
+        return '<a href="{0}?path={1}">{2}</a>'.format(
             url_for('collbrowser.collbrowser'), self.value, displaystring)
 
     @property
     def htmlshort(self):
         displaystring = self.displaystring(maxlen=MAXLEN)
-        return '<div class="container"><a href="{0}?path={1}" data-toggle="tooltip" title="{1}">{2}</A></div>'.format(format(url_for('collbrowser.collbrowser')), self.value, displaystring)
+        return '<div class="container"><a href="{0}?path={1}" data-toggle="tooltip" title="{1}">{2}</a></div>'.format(format(url_for('collbrowser.collbrowser')), self.value, displaystring)
     
     def htmlshort2(self, classes="", maxlen=MAXLEN):
         class_string = f'class="{classes}"' if classes else ""
-        return '<div class="container"><a href="{0}?path={1}" data-toggle="tooltip" title="{1}"><span {3}>{2}</span></A></div>'.format(format(url_for('collbrowser.collbrowser')), self.value, self.basename, class_string)
+        return '<div class="container"><a href="{0}?path={1}" data-toggle="tooltip" title="{1}"><span {3}>{2}</span></a></div>'.format(format(url_for('collbrowser.collbrowser')), self.value, self.basename, class_string)
     
     @property
     def collentry(self):
@@ -296,7 +296,7 @@ class data_collection_id(data_base):
     def htmlstring(self):
         if self.ref_col is None:
             return self.value
-        return '<a href="{0}?path={1}">{1}</A>'.format(
+        return '<a href="{0}?path={1}">{1}</a>'.format(
             url_for('collbrowser.collbrowser'), self.ref_col)
 
     @staticmethod

@@ -1,5 +1,5 @@
-<UL class="list-unstyled card-columns" style="column-count: {{ columns }}" >
+<ul class="list-unstyled card-columns" style="column-count: {{ columns }}">
 {% for project in projectdetails | sort %}
-<LI><A HREF="{{ url_for('collbrowser.collbrowser') }}?path={{ projectdetails[project] }}">{{ project }}</A></LI>
+<li><a href="{{ url_for('collbrowser.collbrowser') }}?path={{ projectdetails[project] }}">{{ project }}</a></li>
 {% endfor %}
-</UL>
+</ul>

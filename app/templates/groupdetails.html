@@ -1,51 +1,51 @@
 {% extends 'base2.html' %}
   
 {% block heading %}
-<H2>
-Details of group <B>{{ group }}</B>
-</H2>
+<h2>
+Details of group <b>{{ group }}</b>
+</h2>
 {% endblock %}
 
 {% block content %}
 <div class="h-100 scroll">
-<TABLE class="table">
-<THEAD class="thead-dark">
+<table class="table">
+<thead class="thead-dark">
 
-<TR>
-   <TH>Username</TH>
-   <TH>email address</TH>
-   <TH>Department</TH>
-</TR>  
-<THEAD>
+<tr>
+   <th>Username</th>
+   <th>email address</th>
+   <th>Department</th>
+</tr>  
+<thead>
 {% for key, value in ginfo.items()|sort %}
 {% if value["serviceaccount"] == False %} 
-<TR>
-   <TD> {{ key }} </TD>
-   <TD> {{ value["sys::ad::mail"] }} </TD>
-   <TD> {{ value["sys::ad::department"] }} </TD>
-</TR>
+<tr>
+   <td> {{ key }} </td>
+   <td> {{ value["sys::ad::mail"] }} </td>
+   <td> {{ value["sys::ad::department"] }} </td>
+</tr>
 {% endif %}
 {% endfor %}
-</TABLE>
+</table>
 <hr>
 
-<H2>Service accounts in group {{ group }}:</H2><br>
+<h2>Service accounts in group {{ group }}:</h2><br>
 
-<TABLE class="table">
-<THEAD class="thead-dark">
+<table class="table">
+<thead class="thead-dark">
 
-<TR>
-   <TH>Username</TH>
-</TR>  
-<THEAD>
+<tr>
+   <th>Username</th>
+</tr>  
+<thead>
 {% for key, value in ginfo.items()|sort %}
 {% if value["serviceaccount"] == True %} 
-<TR>
-   <TD> {{ key }} </TD>
-</TR>
+<tr>
+   <td> {{ key }} </td>
+</tr>
 {% endif %}
 {% endfor %}
-</TABLE>
+</table>
 
 </div>
 {% endblock %}

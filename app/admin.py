@@ -48,13 +48,13 @@ DATA_REPL_STATUS = {
 @bp.route('/_issues')
 def query_issues():
     if not current_user.is_admin:
-        return('<TR><TD COLSPAN=3>Access denied</TD></TR>')
+        return('<tr><td colspan=3>Access denied</td></tr>')
     data = ''
     with irods_manager.session() as session:
         query = SpecificQuery(session, alias='checksums_differ')
         for result in query:
             base, name = os.path.split(result[0])
-            data = '{}<TR><TD COLSPAN=5><A HREF="{}?path={}">{}</A></TD></TR>'.format(data, url_for("collbrowser.collbrowser"), base, result[0])
+            data = '{}<tr><td colspan=5>a href="{}?path={}">{}</a></td></tr>'.format(data, url_for("collbrowser.collbrowser"), base, result[0])
             q = session.query(DataObject.path,
                                 DataObject.resource_name,
                                 DataObject.size,
@@ -62,7 +62,7 @@ def query_issues():
                 Criterion('=', Collection.name, base)).filter(
                 Criterion('=', DataObject.name, name))
             for objfile in q:
-                data = '{}<TR><td></td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></TR>'.format(data,
+                data = '{}<tr><td></td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>'.format(data,
                                                                 objfile[DataObject.path],
                                                                 objfile[DataObject.resource_name],
                                                                 objfile[DataObject.size],

@@ -195,7 +195,7 @@ def serve_object():
             return output
         # Handle image files
         if file_extension in [".jpg", ".png"]:
-            output = '<IMG HEIGHT="100%" SRC="' + url_for('docviewer.serve_image') +  "?path=" + path + '">'
+            output = '<img height="100%" src="' + url_for('docviewer.serve_image') +  "?path=" + path + '">'
             return output
         # Handle text files
         if file_extension in [".re", ".cfg", ".xml", ".out", ".yml", ".yaml", ".err", ".log", ".metrics", ".vcf" ]:
