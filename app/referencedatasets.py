@@ -195,7 +195,9 @@ def update_reference_settings():
             flash( 'update successful', 'info')
         location=f'reference_dataset={reference}'
     elif action == 'add_reference':
+        category = requestdata.get('reference_category')
         response, result = rest_call('POST', 'reference', data={'name': reference, 
+                                                                'category': category,
                                                                 'owner': current_user.username, 
                                                                 'is_active': 0})
         if result == 201:
