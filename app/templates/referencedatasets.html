@@ -68,9 +68,16 @@ $(window).on('load', function() {
       <form class="form" action="{{ url_for('reference.update_reference_settings') }}" method="post">
         <div class="form-group">
           <div class="modal-body">
-            <label for="new_pname" class="col-form-label">Reference dataset identifier (no spaces)</label>
-            <INPUT TYPE="text" class="form-control menuexpand" id='new_pname' name="reference">
-            <INPUT TYPE="hidden" name="action" value="add_reference">
+            <label for="new_rname" class="col-form-label">Reference dataset identifier (no spaces)</label>
+            <input type="text" class="form-control menuexpand" id='new_rname' name="reference">
+            <label for="new_rcategory" class="col-form-label">Category</label>
+            <select class="form-control"  class="form-control menuexpand" id='new_rcategory' name="reference_category">
+                <option value=" " selected>Unknown</option>
+                <option value="Reference Genome">Reference Genome</option>
+                <option value="Container/Tools">Container/Tools</option>
+                <option value="Test">Test</option>
+            </select>
+            <input type="hidden" name="action" value="add_reference">
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
