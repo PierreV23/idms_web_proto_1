@@ -1,0 +1,28 @@
+const path = require('path');
+
+module.exports = {
+  entry: './src/index.jsx',
+  output: {
+    path: path.resolve(__dirname, '../app/static/js'), // Flask's static js folder
+    filename: 'rjsf_bundle.js',
+  },
+  module: {
+    rules: [
+      {
+        test: /\.jsx?$/,
+        exclude: /node_modules/,
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: ['@babel/preset-env', '@babel/preset-react'],
+            sourceType: "unambiguous",
+          },
+        },
+      },
+    ],
+  },
+  resolve: {
+    extensions: ['.js', '.jsx'],
+  },
+  mode: 'production', // or development
+};
