@@ -43,7 +43,7 @@
       <div id="{{ id }}-reactform"><center>SELECT A SCHEMA FILE...</center></div>
     </div>
     <div class="card-footer">
-      <button class="btn btn-primary formsubmit" type="submit" name="save" form="{{ id }}-metaForm" {% if edit_allowed == 'false' %}hidden{% else %}disabled{% endif %}>Save</button>
+      <button class="btn btn-primary formsubmit" type="submit" name="save" formnovalidate form="{{ id }}-metaForm" {% if edit_allowed == 'false' %}hidden{% else %}disabled{% endif %}>Save</button>
       <!--button class="btn btn-primary formsubmit" type="submit" name="continue" form="{{ id }}-metaForm" disabled>Save & Continue</button-->
     </div>
   </div>
@@ -124,7 +124,7 @@
     const reactFormContainer = document.getElementById('{{ id }}-reactform');
 
     if (reactFormContainer) {
-      window.unmountJsonSchemaForm('{{ id }}-reactform');
+      window.unmountJsonSchemaForm({elementId: '{{ id }}-reactform'});
     }
     selectedSchema = null;
   };
@@ -209,8 +209,8 @@
             $('.formsubmit').removeAttr('disabled');
           },
       onSubmit: formSubmit,
-      onError: function (errors) {console.log("errors: ", errors)},
-      formId: "{{ id }}-metaform",
+      onError: log("Form errors:"),
+      formId: "{{ id }}-metaForm",
       afterInitFunction: afterFormInit
     });
   }
