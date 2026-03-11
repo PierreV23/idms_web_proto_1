@@ -10,8 +10,8 @@ const roots = {};
 const formRef = React.createRef();
 
 function DescriptionFieldTemplate(props) {
-    const { description, id, uiSchema } = props;
-    const tooltipText = uiSchema["ui:tooltip"];
+    const { description, id, schema } = props;
+    const tooltipText = schema["tooltip"];
     return (
         <div id={id}>
             {description}
