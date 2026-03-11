@@ -206,8 +206,7 @@ menuname='collectionbrowser'
   var selected_object = "{{ selected_object }}";
   var waiting = '<div class="overlay"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>'
   activetab = localStorage.getItem('activetab')
-  activetab ??= "#archive"
-
+  
   // Events to trigger the function that centers the graphs on the selected element
   const graph_coll_loaded_event = new Event("graph_coll_loaded");
   const graph_obj_loaded_event = new Event("graph_obj_loaded");
@@ -521,6 +520,10 @@ menuname='collectionbrowser'
       $('#collapse-actions').html(data)
       $('#collection').val(collection)
       $('.action-tabs li a[href="' + activetab + '"]').tab('show')
+      // If no tab is active, activate 'archive' or 'noactions'
+      if ($('ul.action-tabs li a.active').length == 0) {
+        $('.action-tabs li a#archive-tab, .action-tabs li a#noactions-tab').tab('show');
+      }
     });
   }
 
