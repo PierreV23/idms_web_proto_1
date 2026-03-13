@@ -346,7 +346,8 @@ def pending_tiering_page():
         { "field": "desired_state", "title": "Desired state", "sortable": True },
         { "field": "status", "title": "Status", "sortable": True }
     ]
-    return render_template('pending_tiering.html', columns=columns)
+    return render_template('tiering_jobs.html', columns=columns, tablename='pending_jobs', url=url_for('admin.pending_tiering_ops'), 
+                           pagetitle='Pending Data Migration Jobs', menuname='pendingtiering')
 
 @flaskcache.cache.memoize(timeout=120, make_name=flaskcache.dep_zone)
 @bp.route('/tiering/_pending')
@@ -381,7 +382,8 @@ def active_tiering_page():
         { "field": "state", "title": "State", "sortable": True },
         { "field": "desired_state", "title": "Desired state", "sortable": True }
     ]
-    return render_template('active_tiering.html', columns=columns)
+    return render_template('tiering_jobs.html', columns=columns, tablename='active_jobs', url=url_for('admin.active_tiering_ops'),
+                           pagetitle='Active Data Migration Jobs', menuname='activetiering')
 
 @bp.route('/tiering/_active')
 def active_tiering_ops():
