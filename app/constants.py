@@ -520,7 +520,7 @@ LAYOUT = {    # ordered like in jobengine queue (errors 50+)
         COLOR: DEFAULT_COLOR,
         STYLE: 'dashed',
         PENWIDTH: DEFAULT_PENWIDTH,
-        TABLECLASS : 'table-error',
+        TABLECLASS : 'table-invalid',
         LABEL: 'Empty',
         TOOLTIP: 'Empty Collection',
     },
