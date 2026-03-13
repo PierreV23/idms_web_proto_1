@@ -512,7 +512,7 @@ def actions_tabs():
     collection = request.args.get('collection', type=str)
     tabname = request.args.get('tabname', type=str)
     coll_state = CollectionState(collection)
-    TABS = ['archive', 'settings', 'pipeline', 'validity', 'provenance', 'sharing']
+    TABS = ['archive', 'settings', 'pipeline', 'validity', 'provenance', 'sharing', 'noactions']
     if tabname in TABS:
         return render_template(f'actions_{tabname}.html', coll_state=coll_state)
     else:
