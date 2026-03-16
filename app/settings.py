@@ -14,11 +14,13 @@ JOB_FIELDS = {
 
 PG_FIELDS = {
     'processgroupguid': {'title': 'Group ID', 'format': 'processgroupguid', 'field': 'processgroupid', 'sortable': 'true', 'visible': 'true'},
+    'processgroup': {'title': 'Group', 'format': 'text', 'field': 'processgroup', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
     'state': {'title': 'Group state', 'format': 'text', 'field': 'state', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
     'states': {'title': 'Process states', 'format': 'text', 'field': 'states', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'input'},
     'exit_code': {'title': 'Result', 'format': 'int', 'field': 'exit_code', 'sortable': 'false', 'visible': 'true'},
     'process_count': {'title': '#', 'format': 'int', 'field': 'count', 'sortable': 'true', 'visible': 'true'},
     'project': {'title': 'Project', 'format': 'projectid', 'field': 'projectid', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
+    'requesting_user': {'title': 'User', 'format': 'text', 'field': 'requesting_user', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
     'create_time': {'title': 'Create time', 'format': 'timestamp', 'field': 'create_time', 'sortable': 'true', 'visible': 'true'},
     'start': {'title': 'Start Time', 'format': 'timestamp', 'field': 'start_time', 'sortable': 'true', 'visible': 'true'},
     'finish': {'title': 'End Time', 'format': 'timestamp', 'field': 'finish_time', 'sortable': 'true', 'visible': 'true'},
