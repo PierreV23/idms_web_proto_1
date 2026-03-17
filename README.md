@@ -126,6 +126,7 @@ This is done with npm/npx and webpack.
   mamba env update -f envs/rjsf_bundler.source.yaml
   conda activate rjsf_bundler
   cd rjsf
+  npm install
   npx webpack
 ```
 The resulting bundle is put in the static/js folder directly.

@@ -1,5 +1,0 @@
-{
-  "dependencies": {
-    "@rjsf/validator-ajv8": "^6.4.1"
-  }
-}

@@ -2,7 +2,7 @@
 // Please refer to the README for a guide on how to do this.
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import Form from "@rjsf/core";
+import Form from "@rjsf/react-bootstrap";
 import validator from '@rjsf/validator-ajv8';
 
 // Store roots by element id
