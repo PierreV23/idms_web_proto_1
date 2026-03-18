@@ -2,20 +2,20 @@
 
 <script>
   var formaction = 'default';
-  
+
   // edit_allowed can be a string or a boolean, for uniform handling:
   {% set edit_allowed = edit_allowed|string|lower %}
 </script>
 
-<!-- for testing, uncomment these 
+<!-- for testing, uncomment these
 <h5>ID: {{ id }}</h5>
 <h5>Prefix for metadata: {{ prefix }}</h5>
 <h5>Project Name: {{ project_name }}</h5>
 <h5>Collection to store values on: {{ collection }}</h5>
 <h5>Collection to read default values from: {{ meta_default_values_collection }}</h5>
 <h5>edit_allowed: {{ edit_allowed }}</h5>
-<h5>data url to get schemata: {{ schemata_data_url }}</h5> 
-<h5>attribute type: {{ attribute_type }}</h5> 
+<h5>data url to get schemata: {{ schemata_data_url }}</h5>
+<h5>attribute type: {{ attribute_type }}</h5>
 -->
 
 <div class="selectgrid h-100">
@@ -42,8 +42,8 @@
     <div class="card-body autoscroll">
       <div id="{{ id }}-reactform"><center>SELECT A SCHEMA FILE...</center></div>
     </div>
-    <div class="card-footer">    
-      <button class="btn btn-primary formsubmit" type="submit" name="save" form="{{ id }}-metaForm" {% if edit_allowed == 'false' %}hidden{% else %}disabled{% endif %}>Save</button>
+    <div class="card-footer">
+      <button class="btn btn-primary formsubmit" type="submit" name="save" formnovalidate form="{{ id }}-metaForm" {% if edit_allowed == 'false' %}hidden{% else %}disabled{% endif %}>Save</button>
       <!--button class="btn btn-primary formsubmit" type="submit" name="continue" form="{{ id }}-metaForm" disabled>Save & Continue</button-->
     </div>
   </div>
@@ -51,9 +51,7 @@
 
 <!---------------------------------------------------------------------------------------------------------->
 
-<script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
-<script src="https://unpkg.com/react-jsonschema-form@1.8.1/dist/react-jsonschema-form.js" crossorigin></script>
+<script src="{{ url_for('static', filename='js/rjsf_bundle.js') }}" crossorigin></script>
 <script src="{{ url_for('static', filename='js/bootstrap-table.min.js') }}"></script>
 
 <script>
@@ -61,9 +59,9 @@
 
 (() => {
   var selectedSchema = "";
-  let isFormChanged = false; 
+  let isFormChanged = false;
   let isFormInitialized = false;
-  
+
   // Warning if form is changed (only when edit allowed)
   function confirmIfChanged() {
     if (isFormChanged) {
@@ -76,7 +74,7 @@
     }
     return true;
   }
-  
+
   // Update the collection when a schema is enabled or disabled
   const toggleRow = function (schemapath, schema_action) {
     // console.log('TOGGLE', '{{ collection }}', schemapath, schema_action )
@@ -84,7 +82,7 @@
       method: "POST",
       url: "{{ url_for('metaedit.set_schemata_for_collection') }}",
       contentType: "application/json; charset=utf-8",
-      dataType: "json",      
+      dataType: "json",
       data: JSON.stringify({
         collection: "{{ collection }}",
         schemapath: schemapath,
@@ -117,19 +115,20 @@
       error: function(request, status, error) {
         console.log(status)
       }
-      
+
     })
   }
-  // currently displayed form
-  const reactFormContainer = document.getElementById('{{ id }}-reactform');
+
   // Unmount current form
   const unmountSchemaForm = function () {
+    const reactFormContainer = document.getElementById('{{ id }}-reactform');
+
     if (reactFormContainer) {
-      ReactDOM.unmountComponentAtNode(reactFormContainer);
+      window.unmountJsonSchemaForm({elementId: '{{ id }}-reactform'});
     }
     selectedSchema = null;
   };
-  
+
   // Install bootstraptable event handlers
   $('#{{ id }}-schemata-table').bootstrapTable({
     // On Row Click
@@ -177,49 +176,43 @@
     }
   })
 
-  const Form = JSONSchemaForm.default;
   const log = (type) => console.log.bind(console, type);
   let metaForm;
 
-  function renderFormFunction(schema, uiSchema, data, element) {
-    ReactDOM.render(
-      React.createElement(
-        Form,
-        {
-          id: "{{ id }}-metaForm",
-          schema: schema,
-          uiSchema: uiSchema,
-          formData: data,
-          onChange: function () {
+  function afterFormInit() {
+    isFormInitialized = true;
+
+    // Disable Save button for non default metadata
+    {% if prefix != 'default_metadata::' %}
+    $('.formsubmit').prop("disabled", true);
+    {% endif %}
+
+    // Disable form entries when editing is not allowed
+    {% if edit_allowed == 'false' %}
+    const frm = $("#{{ id }}-metaForm");
+    frm.find("input, select, textarea, button").prop("disabled", true);
+    frm.find("a").addClass("disabled-link");
+    {% endif %}
+  }
+
+  function renderFormFunction(schema, uiSchema, data, elementId) {
+    window.renderJsonSchemaForm({
+      schema: schema,
+      uiSchema: uiSchema,
+      formData: data,
+      elementId: elementId,
+      onChange: function () {
             if (!isFormInitialized) return;
             // Mark the form as changed
             isFormChanged = true;
             // Enable the Save button
             $('.formsubmit').removeAttr('disabled');
           },
-          onSubmit: formSubmit,
-          ref: form => metaForm = form,
-          onError: log("errors")
-        },
-        React.createElement("div", null)
-      ),
-      document.getElementById(element),
-      () => {
-        isFormInitialized = true;
-        
-        // Disable Save button for non default metadata
-        {% if prefix != 'default_metadata::' %}
-        $('.formsubmit').prop("disabled", true);
-        {% endif %}
-
-        // Disable form entries when editing is not allowed
-        {% if edit_allowed == 'false' %}
-        const frm = $("#{{ id }}-metaForm");
-        frm.find("input, select, textarea, button").prop("disabled", true);
-        frm.find("a").addClass("disabled-link");
-        {% endif %}
-      }
-    );
+      onSubmit: formSubmit,
+      onError: log("Form errors:"),
+      formId: "{{ id }}-metaForm",
+      afterInitFunction: afterFormInit
+    });
   }
 
   // Disable checkbox in schemata list when edit not allowed
@@ -228,7 +221,7 @@
       $('#{{ id }}-schemata-table .bs-checkbox input').addClass('disabled-checkbox').prop('disabled', true);
   });
   {% endif %}
-  
+
   $('#{{ id }}-metaForm.formsubmit').on('click', function () {
     formaction = $(this).attr('name');
   })

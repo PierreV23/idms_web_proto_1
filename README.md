@@ -107,7 +107,7 @@ processgroups
 
 {% block helptext %}
 This page shows an overview of <emp>processgroups</emp>. Processgroups are groups of pipelines that act on a specific collection
-or the output of a previous pipeline. For each project, one ore more processgroups can be configured using the processgroup tab in the 
+or the output of a previous pipeline. For each project, one ore more processgroups can be configured using the processgroup tab in the
 <a href="/projects">project configuration</a>
 {% endblock %}
 
@@ -117,3 +117,16 @@ or the output of a previous pipeline. For each project, one ore more processgrou
 ```
 
 
+## React JSONschema forms (rjsf)
+
+New versions of React jsonschema forms (RJSF) cannot directly be imported in html through the script tag.
+To be able to import them in flask templates, we first build a small js bundle that has the relevant functions.
+This is done with npm/npx and webpack.
+```
+  mamba env update -f envs/rjsf_bundler.source.yaml
+  conda activate rjsf_bundler
+  cd rjsf
+  npm install
+  npx webpack
+```
+The resulting bundle is put in the static/js folder directly.
