@@ -154,6 +154,56 @@ function update_process(sourceElem, destElem) {
             %}disabled{% endif %}>
         </div>
 
+        <div class="form-group">
+          <label>Department</label>
+
+          <!-- Dropdown container for Department selection-->
+          <div class="dropdown department-dropdown" data-target-input="department_{{ projectdetails.name }}">
+            <!-- Button to open dropdown -->
+            <button class="btn btn-light btn-block dropdown-toggle text-left" type="button" data-toggle="dropdown"
+              data-flip="false" {% if not project_permissions.managers %}disabled{% endif %}>
+              <span class="selected-text">
+                {% if projectdetails.department %}
+                {{ projectdetails.department }}
+                {% else %}
+                Select a department
+                {% endif %}
+              </span>
+            </button>
+
+            <!-- Dropdown menu -->
+            <div class="dropdown-menu w-100 p-2">
+              <!-- Search input -->
+              <input type="text" class="form-control mb-2 search-input" placeholder="Type to search...">
+
+              <!-- Options list -->
+              <div class="options-list" style="max-height: 200px; overflow-y: auto;">
+                <!-- Blank option -->
+                <div class="dropdown-item option-item" data-value="">
+                  -- Select a department --
+                </div>
+
+                <!-- Standard departments -->
+                {% for department in departments %}
+                <div class="dropdown-item option-item" data-value="{{ department }}">
+                  <span class="option-label">{{ department }}</span>
+                </div>
+                {% endfor %}
+
+                <!-- Disable entry if department not in list -->
+                {% if projectdetails.department not in departments and projectdetails.department %}
+                <div class="dropdown-item option-item" data-value="{{ projectdetails.department }}">
+                  <span class="option-label" disabled></span> {{ projectdetails.department }}</span>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Hidden input for form submission -->
+          <input type="hidden" name="department" id="department_{{ projectdetails.name }}"
+            value="{{ projectdetails.department }}">
+        </div>
         <div class="form-check">
           <input type="checkbox" class="form-check-input" name="public" id="public_{{ projectdetails.name }}" placeholder="Public Data"
             value="1" {% if projectdetails.public %}checked {% endif %} {% if not project_permissions.managers %}disabled{% endif %}>
@@ -196,6 +246,7 @@ function update_process(sourceElem, destElem) {
           )
       }}
     </div>
+
 
     <!-- Dataset Default Metadata -->
     <div class="tab-pane h-100" id="datasetmeta" role="tabpanel" aria-labelledby="datasetmeta-tab">
@@ -334,6 +385,43 @@ function update_process(sourceElem, destElem) {
 </div>
 
 <script>
+  
+// Code used to control the department dropdown menu
+document.querySelectorAll('.department-dropdown').forEach(dropdown => {
+  const searchInput = dropdown.querySelector('.search-input');
+  const options = dropdown.querySelectorAll('.option-item');
+  const selectedText = dropdown.querySelector('.selected-text');
+  const hiddenInputId = dropdown.getAttribute('data-target-input');
+  const hiddenInput = document.getElementById(hiddenInputId);
+
+  // Filter options on typing
+  searchInput.addEventListener('keyup', function () {
+    const filter = this.value.toLowerCase();
+    options.forEach(option => {
+      const text = option.textContent.toLowerCase();
+      option.style.display = text.includes(filter) ? '' : 'none';
+    });
+  });
+
+  // Select option
+  options.forEach(option => {
+    option.addEventListener('click', function () {
+      const value = this.getAttribute('data-value');
+      const text = this.querySelector('.option-label') ? 
+                   this.querySelector('.option-label').textContent : 
+                   this.textContent;
+
+      selectedText.textContent = text;
+      hiddenInput.value = value;
+
+      // Close dropdown
+      dropdown.querySelector('.dropdown-toggle').click();
+    });
+  });
+
+  // Prevent dropdown from closing when typing
+  dropdown.querySelector('.dropdown-menu').addEventListener('click', e => e.stopPropagation());
+});
 
 function load_users() {
     usertype = $("ul#projecttabs li a.active").data('usertype')
@@ -365,6 +453,7 @@ function load_users() {
     $('#contacts').addClass('pending')
     load_contacts();
   });
+
 
   $('#project-settings-form').on('submit', function(event) {
     $('#settings').addClass('pending')
