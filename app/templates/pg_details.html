@@ -53,7 +53,12 @@
             <form action="{{ url_for('projects.pgaction') }}">
                 <div class="form-group">
                     <label for="process_name">LSF queue</label>
-                    <input type="text" class="form-control input-sm" id="lsf_queue" value="{{ selected_details.lsf_queue }}" {% if project_permissions.users is sameas false %}disabled{% endif %}>
+                    <select class="form-control form-control-sm" id="lsf_queue" {% if project_permissions.users is sameas false %}disabled{% endif %}>
+                        <option disabled selected value> -- select a queue -- </option>
+                        {% for lsf_queue in list_of_lsf_queue_options %}
+                        <option {% if lsf_queue == selected_details.lsf_queue %}selected{% endif %}>{{ lsf_queue }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
                 {% if project_permissions.users %}
                 <button type="button" class="btn btn-sm btn-primary disabled" id="update_process_button">Submit</button>
