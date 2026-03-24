@@ -1,3 +1,7 @@
+<link rel="stylesheet" href="{{ url_for('static', filename='css/select2.min.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/select2-bootstrap4.min.css') }}">
+<script src="{{ url_for('static', filename='js/select2.min.js') }}"></script>
+
 <div class="container-wide">
     {% if message %}
     <div class="row card bg-warning "><h3><center>{{ message }}</center></h3></div>
@@ -13,17 +17,17 @@
             <h5>Add Process</h5>
             <form>
                 <div class="form-group">
-                    <label for="process_name">Process name (optional)</label>
-                    <input type="text" class="form-control form-control-sm" id="process_name"></input>
-                </div>
-                <div class="form-group">
-                    <select class="form-control form-control-sm" style="width: '100px'" id="process_select">
+                    <select class="form-control" style="width: '100px'" id="process_select">
+                        <option disabled selected value> -- select a process -- </option>
                         {% for proc in all_processes %}
                         <option>{{ proc.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                
+                <div class="form-group">
+                    <label for="process_name">Process name (optional)</label>
+                    <input type="text" class="form-control form-control-sm" id="process_name" placeholder="Optional name for the process"></input>
+                </div>
                 <button type="button" class="btn btn-sm btn-primary" onClick='pgadd_process()''>Add Process</button>
             </form>
         </div>
@@ -340,11 +344,11 @@ function build_reference_data_table() {
 }
 
 $( document ).ready(function() {
-   if( selected_processref ) { build_reference_data_table() }
+    if( selected_processref ) { build_reference_data_table() };
+    $('#process_select').select2({
+        theme: 'bootstrap4',
+        allowClear: true,
+        width: 'style'
+    });
 })
-
-
-
-
-
 </script>

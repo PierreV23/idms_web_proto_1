@@ -7,7 +7,7 @@ Created on Tue Nov 19 09:05:26 2019
 """
 
 import json
-from flask import abort, flash, Blueprint, render_template, redirect, request, url_for
+from flask import abort, flash, Blueprint, render_template, redirect, request, url_for, current_app
 from flask_login import current_user, login_required
 from flask import jsonify
 from .flaskcache import cache, key_zone, key_userzone, dep_zone, dep_userzone
@@ -610,13 +610,12 @@ def pg_details():
     connected_reference_datasets = []
     selected_process = datafield('process', 'NOT FOUND', 'base')
     list_of_lsf_queue_options = [
-        "bio-prio-acc",
-        "bio-prio",
-        "bio-gpu-v100",
-        "bio-gpu-m10",
-        "bio-gpu-h100",
-        "bio-acc",
-        "bio"
+        queue
+        for _, cluster_contents in current_app.config["SITES_AND_CLUSTERS"]["RIVM"][
+            "clusters"
+        ].items()
+        if cluster_contents.get("queues") is not None
+        for queue in cluster_contents.get("queues")
     ]
     if selected_processref:
         sel_list = search(pl, lambda x: x.get('name'), selected_processref)
