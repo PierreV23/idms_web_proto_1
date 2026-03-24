@@ -46,9 +46,6 @@
                         {% endfor %}
                     </select>
                 </div>
-                {% if project_permissions.users %}
-                <button type="button" class="btn btn-sm btn-primary disabled" id="update_processtag_button">Submit</button>
-                {% endif %}
             </form>
             <form action="{{ url_for('projects.pgaction') }}">
                 <div class="form-group">
@@ -119,12 +116,12 @@ function pgadd_process() {
     });
 }
 
-$('#lsf_queue').on('input', function(){
-    $('#update_process_button').removeClass('disabled')
-})
+function enableButton(buttonID) {
+    $('#update_process_button').removeClass('disabled');
+}
 
-$('#git_tag').on('change', function(){
-    $('#update_processtag_button').removeClass('disabled')
+$('#lsf_queue, #git_tag').on('change', function(){
+    enableButton('#update_process_button');
 })
 
 $('#update_allprocs_button').on('click', function(){
@@ -145,19 +142,8 @@ $('#update_process_button').on('click', function(){
         group: "{{ group }}",
         action: 'update_process',
         process: selected_processref,
-        lsf_queue: $('#lsf_queue').val()    
-    }, function(data) {
-        load_pgpage( data );
-    });
-})
-
-$('#update_processtag_button').on('click', function(){
-    $.get('{{ url_for("projects.pgaction") }}', {
-        project: "{{ project }}",
-        group: "{{ group }}",
-        action: 'update_process',
-        process: selected_processref,
-        tag: $('#git_tag option:selected').text()    
+        lsf_queue: $('#lsf_queue').val(),
+        tag: $('#git_tag option:selected').text()
     }, function(data) {
         load_pgpage( data );
     });
