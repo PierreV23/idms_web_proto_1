@@ -30,12 +30,6 @@
         {% endif %}
         <div class="col col-mb-3">
             {% if selected_details %}
-            {% if project_permissions.users %}
-            <h5>Actions</h5>
-            <button type="button" class="btn btn-sm btn-primary" id="select_input_button">Select input</button>
-            <button type="button" class="btn btn-sm btn-danger  "id="delete_process_button">Delete selected</button>
-            <hr>
-            {% endif %}
             <form action="{{ url_for('projects.pgaction') }}">
                 <div class="form-group">
                     <label for="process_name">GIT Tag</label>
@@ -67,6 +61,12 @@
         </div>
         <div class="col col-mb-3">
             {% if selected_details %}
+            {% if project_permissions.users %}
+            <h5>Actions</h5>
+            <button type="button" class="btn btn-sm btn-primary" id="select_input_button">Select input</button>
+            <button type="button" class="btn btn-sm btn-danger  "id="delete_process_button">Delete selected</button>
+            <hr>
+            {% endif %}
             <h5>Process-Dependencies</h5>
             {% if project_permissions.users %}
             <div>
