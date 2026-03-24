@@ -181,6 +181,7 @@ def pglist():
     filters = json.loads(request.args.get('filter', '{}'))
     order = request.args.get('order', 'desc')
     sort = request.args.get('sort', 'create_time')
+    search = request.args.get('search')
     processgroupid = request.args.get('processgroupid', None, type=str)
     current_user.settings['default_project'] = filters.get('projectid', '')
 
@@ -200,10 +201,15 @@ def pglist():
             where_clause = f"{where_clause} and {field_name}='{filter_value}'"
         if filter_control == 'input':
             where_clause = f"{where_clause} and {field_name} like('%{filter_value}%')"
-
+    if search:
+        where_clause = (
+            f"inner join rivm_mat_jobtable on rivm_v_processgroups.processgroupid=rivm_mat_jobtable.processgroupid "
+            f"where rivm_mat_jobtable::text LIKE '%{search}%' "
+            f"or rivm_v_processgroups::text LIKE '%{search}%'"
+        )
     # fieldlist = { PG_FIELDS[v]['field'] for v in PG_FIELDS.keys() }
     # fields = ','.join(fieldlist)
-    sqlj = f'select *, count(*) OVER () AS total_count from rivm_v_processgroups {where_clause} order by {sort} {order} offset {offset} limit {limit}'
+    sqlj = f'select distinct rivm_v_processgroups.*, count(rivm_v_processgroups.*) OVER () AS total_count from rivm_v_processgroups {where_clause} order by {sort} {order} offset {offset} limit {limit}'
 
     pgs_query = db.connection().sql(sqlj)
     count_processgroups = pgs_query[0]['total_count'] if len(pgs_query) else 0

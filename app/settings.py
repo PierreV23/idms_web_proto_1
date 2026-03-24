@@ -15,6 +15,7 @@ JOB_FIELDS = {
 PG_FIELDS = {
     'processgroupguid': {'title': 'Group ID', 'format': 'processgroupguid', 'field': 'processgroupid', 'sortable': 'true', 'visible': 'true'},
     'processgroup': {'title': 'Group', 'format': 'text', 'field': 'processgroup', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
+    'description':  {'title': 'Description', 'format': 'text', 'field': 'description', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'input'},
     'state': {'title': 'Group state', 'format': 'text', 'field': 'state', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
     'states': {'title': 'Process states', 'format': 'text', 'field': 'states', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'input'},
     'exit_code': {'title': 'Result', 'format': 'int', 'field': 'exit_code', 'sortable': 'false', 'visible': 'true'},
@@ -38,7 +39,7 @@ PG_JOB_FIELDS = {
     'sys::runsheet::projectID': {'title': 'Project', 'format': 'projectid', 'field': 'projectid', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
     'user::run::exit_code': {'title': 'Exit Code', 'format': 'int', 'field': 'exit_code', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
     'sys::run::result': {'title': 'Result', 'format': 'text', 'field': 'result', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'select'},
-    'sys::runsheet::input_collection': {'title': 'Input Collection', 'format': 'irods_collection', 'field': 'input_collection', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'input'},
+    'output_collection': {'title': 'Output Collection', 'format': 'collection_id', 'field': 'dataset_id', 'sortable': 'false', 'visible': 'true', 'filtercontrol': 'input'}    
 }
 
 NGSRUN_FIELDS = {
