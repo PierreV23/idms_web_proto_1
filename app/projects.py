@@ -93,14 +93,14 @@ def show_projects():
 
 @bp.route('/details')
 def show_projectdetails():
-    """ 
+    """
     Shows page with project settings, metadata and processes belonging to a project
     """
     projectname = request.args.get('project_name', '', type=str)
     processname = request.args.get('process', '', type=str)
     processgroup = request.args.get('processgroup', 'default', type=str)
     projectdetails, result = rest_call('GET', 'projects/{}'.format(projectname))
-    
+
     # Retrieve groups associated with project
     with irods_manager.session() as session:
         query = session.query(User.name).filter(
@@ -109,20 +109,20 @@ def show_projectdetails():
                     Criterion('=', UserMeta.value, projectname)).order_by(User.name)
         groups = [ datafield('group', u[User.name], 'irods_group') for u in query ]
     projectdetails['groups'] = groups
-    
-    # to prevent break if no projectdetails available yet 
+
+    # to prevent break if no projectdetails available yet
     try:
         metadata_collection=projectdetails['default_collection']
     except Exception as e:
         print(e)
         metadata_collection=''
-    
+
     processing = iso2dt(projectdetails.get('last_updated', EPOCH)) > iso2dt(projectdetails.get('last_verified', EPOCH))
     return render_template('projectdetails.html', projectdetails=projectdetails, processing=processing,
                            processname=processname, processgroup=processgroup, project_permissions=project_permissions(projectname),
-                           metadata_collection=metadata_collection, 
-                           metadata_prefix=ATTR_METADATA_PREFIX, upload_default_prefix=ATTR_UPLOAD_DEFAULT_PREFIX, 
-                           attribute_type_project=ATTR_SCHEMA_IN_USE + ATTR_PROJECT_SUFFIX, 
+                           metadata_collection=metadata_collection,
+                           metadata_prefix=ATTR_METADATA_PREFIX, upload_default_prefix=ATTR_UPLOAD_DEFAULT_PREFIX,
+                           attribute_type_project=ATTR_SCHEMA_IN_USE + ATTR_PROJECT_SUFFIX,
                            attribute_type_dataset_default=ATTR_SCHEMA_IN_USE + ATTR_DATASET_DEFAULT_SUFFIX)
 
 @bp.route('_projectcolls')
@@ -320,12 +320,12 @@ def pgaction():
     group = request.args.get('group')
     action = request.args.get('action')
 
-    # Set the default results for success and error 
+    # Set the default results for success and error
     action_result = { 'success': True }
     action_result_ERROR = { 'success': False,
                             'message': "Unknown error",
                             'category': "error" }
-    
+
     if action == 'add_process':
         process = request.args.get('process')
         name = request.args.get('name')
@@ -368,7 +368,7 @@ def pgaction():
         pl, status_code = rest_call('GET', f'projects/{project}/processgroups/{group}/processes')
         if status_code == 200:
             for procref in pl:
-                _, status_code = rest_call('PUT', f'projects/{project}/processgroups/{group}/processes/{procref.get("id")}', 
+                _, status_code = rest_call('PUT', f'projects/{project}/processgroups/{group}/processes/{procref.get("id")}',
                     data = { 'lsf_queue': lsf_queue })
     elif action == 'delete_process':
         process = request.args.get('process')
@@ -376,7 +376,7 @@ def pgaction():
     elif action == 'set_input':
         process = request.args.get('process')
         input = request.args.get('input')
-        pl, status_code = rest_call('PUT', 
+        pl, status_code = rest_call('PUT',
             f'projects/{project}/processgroups/{group}/processes/{process}',
             { 'input': input})
     elif action == 'add_dependency':
