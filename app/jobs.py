@@ -185,11 +185,16 @@ def pglist():
     processgroupid = request.args.get('processgroupid', None, type=str)
     current_user.settings['default_project'] = filters.get('projectid', '')
 
-    where_clause = 'where 1=1'
-
+    where_clause = 'WHERE 1=1'
+    join_clause = ''
+    
     if processgroupid:
-        where_clause = f'{where_clause} and processgroupid={processgroupid}'
-   
+        where_clause += f' AND processgroupid = {processgroupid}'
+    
+    if search:
+        join_clause = "JOIN rivm_mat_jobtable AS jt USING(processgroupid)"
+        where_clause += f" AND (jt::text LIKE '%{search}%' OR pg::text LIKE '%{search}%')"
+    
     # Apply filters on pgs_query ('select' and 'input')
     for _, field_attrs in PG_FIELDS.items():
         field_name = field_attrs['field']
@@ -198,19 +203,17 @@ def pglist():
         if not filter_value or filter_control is None:
             continue
         if filter_control == 'select':
-            where_clause = f"{where_clause} and {field_name}='{filter_value}'"
+            where_clause += f" AND pg.{field_name} = '{filter_value}'"
         if filter_control == 'input':
-            where_clause = f"{where_clause} and {field_name} like('%{filter_value}%')"
-    if search:
-        where_clause = (
-            f"inner join rivm_mat_jobtable on rivm_v_processgroups.processgroupid=rivm_mat_jobtable.processgroupid "
-            f"where rivm_mat_jobtable::text LIKE '%{search}%' "
-            f"or rivm_v_processgroups::text LIKE '%{search}%'"
-        )
-    # fieldlist = { PG_FIELDS[v]['field'] for v in PG_FIELDS.keys() }
-    # fields = ','.join(fieldlist)
-    sqlj = f'select distinct rivm_v_processgroups.*, count(rivm_v_processgroups.*) OVER () AS total_count from rivm_v_processgroups {where_clause} order by {sort} {order} offset {offset} limit {limit}'
+            where_clause += f" AND pg.{field_name} LIKE '%{filter_value}%'"
 
+    sqlj = f"""SELECT DISTINCT pg.*, COUNT(pg.*) OVER () AS total_count 
+                FROM rivm_v_processgroups AS pg
+                {join_clause}
+                {where_clause} 
+                ORDER BY {sort} {order} 
+                OFFSET {offset} LIMIT {limit}"""
+    print(sqlj)
     pgs_query = db.connection().sql(sqlj)
     count_processgroups = pgs_query[0]['total_count'] if len(pgs_query) else 0
 
@@ -230,12 +233,12 @@ def pglist():
 
 @bp.route('_jobrefresh')
 def jobs_refresh():
-    sql = 'select max(refresh_time) from rivm_mat_jobtable'
+    sql = 'SELECT refresh_time FROM rivm_mat_jobtable LIMIT 1'
     result = db.connection().sql(sql)
     if not result:
         return jsonify('unknown')
     else:
-        return jsonify(datafield('refresh_time', float(result[0]['max']), 'timestamp').htmlshort)
+        return jsonify(datafield('refresh_time', float(result[0]['refresh_time']), 'timestamp').htmlshort)
  
 
 @bp.route('_pgjobs')
@@ -245,7 +248,7 @@ def pgjobs():
 
     result = []
 
-    sql = f"select * from rivm_mat_jobtable where processgroupid='{processgroupid}'"
+    sql = f"SELECT * FROM rivm_mat_jobtable WHERE processgroupid = '{processgroupid}'"
 
     jobs_query = db.connection().sql(sql)
 
