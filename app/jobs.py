@@ -166,7 +166,7 @@ def pglist():
                 {where_clause} 
                 ORDER BY {sort} {order} 
                 OFFSET {offset} LIMIT {limit}"""
-    print(sqlj)
+
     pgs_query = db.connection().sql(sqlj)
     count_processgroups = pgs_query[0]['total_count'] if len(pgs_query) else 0
 
