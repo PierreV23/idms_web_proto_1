@@ -103,14 +103,6 @@ def processgroupprocs():
     return { 'rows': result }
     
     
-@bp.route('jobpage')
-def jobpage():
-    preferred_page = current_user.settings.setdefault('jobs::view', 'jobs')
-    if preferred_page == 'processgroups':
-        return redirect(url_for('jobs.show_pg'))
-    return redirect(url_for('jobs.show_jobs')) 
-
-
 @bp.route('_filterdata')
 @cache.cached(timeout=60, key_prefix=key_zone)
 def filterdata():
@@ -311,7 +303,7 @@ def jobdetails():
         q = iqry.qcollbystaticmeta(ATTR_RUNSHEET_PROCESSGROUPGUID, processgroupguid)
     if len(q) < 1:
         flash(f'Cannot find unique job collection for {jobnaam}', 'error')
-        return redirect(url_for('jobs.show_jobs'))
+        return redirect(url_for('jobs.show_pg'))
     runsheet = q[0][Collection.name]
     if not jobnaam:
         jobnaam = iqry.qcollmetaval(runsheet, ATTR_RUNSHEET_ID)
