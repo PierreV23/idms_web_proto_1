@@ -23,7 +23,7 @@ menuname="jobqueues"
 <tbody>
 {% for entry in queues %}
     <td>{{ entry }}</td>
-    <td><a href="{{ url_for('jobs.show_jobs') }}?items={{ entry }}">{{ queues[entry]['count'] }}</a></td>
+    <td>{{ queues[entry]['count'] }}</td>
     <td>
 
 {% if queues[entry]['enabled'] == True %}
