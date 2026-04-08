@@ -7,7 +7,7 @@ Created on Tue Nov 19 09:05:26 2019
 """
 
 import json
-from flask import abort, flash, Blueprint, render_template, redirect, request, url_for
+from flask import abort, flash, Blueprint, render_template, redirect, request, url_for, current_app
 from flask_login import current_user, login_required
 from flask import jsonify
 from .flaskcache import cache, key_zone, key_userzone, dep_zone, dep_userzone
@@ -198,9 +198,10 @@ def show_processdetails():
     """
     Shows page with process settings
     """
+    sites_and_clusters = current_app.config.get('IRODS_ENVS', {}).get(current_user.environment, {}).get('sites_and_clusters', {})
     processname = request.args.get('name', '', type=str)
     pl, result = rest_call('GET', f'processes/{processname}')
-    return render_template('processdetails.html', details=pl)
+    return render_template('processdetails.html', details=pl, sites_and_clusters=sites_and_clusters)
 
 
 @bp.route('/update_project', methods=['GET', 'POST'])

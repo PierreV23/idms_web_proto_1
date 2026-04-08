@@ -42,6 +42,22 @@
         </div>
 
         <div class="form-group">
+          <label for="compatible_clusters_{{process}}">Compatible clusters</label>
+          <select class="form-control" name="compatible_clusters" id="compatible_clusters_{{process}}" multiple>
+          {% for site, site_dict in sites_and_clusters.items() %}
+            <optgroup label="{{ site }}">
+            {% for cluster, cluster_dict in site_dict["clusters"].items() %}
+              <option value="{{ cluster }}" {% if cluster in details["compatible_clusters"] %}selected{% endif %}>
+                {{ cluster }} (type: {{ cluster_dict["type"] }})
+              </option>
+            {% endfor %}
+            </optgroup>
+          {% endfor %}
+          </select>
+        </div>
+
+
+        <div class="form-group">
           <label for="max_runtime_{{process}}">Maximum Runtime (s) (0 to disable)</label>
           <input type="number" class="form-control" name="max_runtime" id="max_runtime_{{process}}" placeholder="Max Runtime"
             value="{{ details['max_runtime'] }}">
@@ -159,7 +175,7 @@
       process: '{{ details['name'] }}'
     }, function(data) {
       $('#usage-content').html(data).removeClass('pending')
-    });  
+    });
   }
 
   $('#usage-tab').on('shown.bs.tab', function (e) {
@@ -173,7 +189,7 @@
       process: '{{ details['id'] }}'
     }, function(data) {
       $('#refdata-content').html(data).removeClass('pending')
-    });  
+    });
   }
 
   $('#refdata-tab').on('shown.bs.tab', function (e) {
