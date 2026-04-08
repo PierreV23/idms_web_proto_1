@@ -611,6 +611,7 @@ def pg_details():
     all_reference_datasets = []
     connected_reference_datasets = []
     selected_process = datafield('process', 'NOT FOUND', 'base')
+    list_of_lsf_queue_options = current_app.config.get('IRODS_ENVS', {}).get(current_user.environment, {}).get('lsf_queues', [])
     if selected_processref:
         sel_list = search(pl, lambda x: x.get('name'), selected_processref)
         selected_details  = sel_list[0] if sel_list else None
@@ -630,7 +631,9 @@ def pg_details():
         message =f'Please select a required process for {selected_processref}'
     return render_template('pg_details.html', project=project, group=group,
         all_processes=all_processes, pg_processes=pl, selected_details=selected_details,
-        selected_tags = selected_tags, selected_process=selected_process,
+        selected_tags=selected_tags,
+        list_of_lsf_queue_options=list_of_lsf_queue_options,
+        selected_process=selected_process,
         dependencies=dependency_names,
         all_reference_datasets=all_reference_datasets, connected_reference_datasets=connected_reference_datasets ,
         message=message, project_permissions=project_permissions(project))
