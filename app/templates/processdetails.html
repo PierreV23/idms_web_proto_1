@@ -52,7 +52,7 @@
           {% for site, site_dict in sites_and_clusters.items() %}
             <optgroup label="{{ site }}">
             {% for cluster, cluster_dict in site_dict["clusters"].items() %}
-              <option value="{{ cluster }}" {% if cluster in details["compatible_clusters"] %}selected{% endif %}>
+              <option value="{{ cluster }}" {% if cluster in (details.get("compatible_clusters") or  []) %}selected{% endif %}>
                 {{ cluster }} (type: {{ cluster_dict["type"] }})
               </option>
             {% endfor %}
