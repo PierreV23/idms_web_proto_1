@@ -102,62 +102,7 @@ def processgroupprocs():
         result.append(job)
     return { 'rows': result }
     
-@bp.route('jobpage')
-def jobpage():
-    preferred_page = current_user.settings.setdefault('jobs::view', 'jobs')
-    if preferred_page == 'processgroups':
-        return redirect(url_for('jobs.show_pg'))
-    return redirect(url_for('jobs.show_jobs')) 
-
-@bp.route('_jobs')
-def jobs():
-# populate jobtable
-    offset = request.args.get('offset', 0, type=int)
-    limit = request.args.get('limit', 999, type=int)
-    filters = json.loads(request.args.get('filter', '{}'))
-    sort = request.args.get('sort', 'create_time')
-    order = request.args.get('order', 'desc')
     
-    current_user.settings['default_project'] = filters.get('projectid', '')
-
-    where_clause = 'where 1=1'
-    
-    # Apply filters on jobs_query ('select' and 'input')
-    for _, field_attrs in JOB_FIELDS.items():
-        field_name = field_attrs['field']
-        filter_value = filters.get(field_name)
-        filter_control = field_attrs.get('filtercontrol')
-        if not filter_value or filter_control is None:
-            continue
-        if filter_control == 'select':
-            where_clause = f"{where_clause} and {field_name}='{filter_value}'"
-        if filter_control == 'input':
-            where_clause = f"{where_clause} and {field_name} like('%{filter_value}%')"
-    
-    # order; default second order by start_time desc, after filter takes less time
-
-    sqlj = f'select *, count(*) over () as total_count from rivm_mat_jobtable {where_clause} order by {sort} {order}, create_time desc, start_time desc offset {offset} limit {limit}'
-
-    jobs_query = db.connection().sql(sqlj)
-    
-    # count, offset, limit data
-    count_jobs = jobs_query[0]['total_count'] if len(jobs_query) else 0
-
-    # format data jobs_query
-    result = []
-    for job in jobs_query:
-        record = {}
-        for f in JOB_FIELDS:
-            dbkey = JOB_FIELDS[f]['field']
-            val = job.get(dbkey, None)
-            if val is not None:
-                formatted = datafield(dbkey, val, JOB_FIELDS[f]['format'])
-                record |= { dbkey: formatted.htmlshort, f'_{dbkey}': formatted.value }
-        result.append(record)
-    
-    return { 'rows': result, 'filters': filters, 'total': count_jobs }
-
-
 @bp.route('_filterdata')
 @cache.cached(timeout=60, key_prefix=key_zone)
 def filterdata():
@@ -181,14 +126,20 @@ def pglist():
     filters = json.loads(request.args.get('filter', '{}'))
     order = request.args.get('order', 'desc')
     sort = request.args.get('sort', 'create_time')
+    search = request.args.get('search')
     processgroupid = request.args.get('processgroupid', None, type=str)
     current_user.settings['default_project'] = filters.get('projectid', '')
 
-    where_clause = 'where 1=1'
-
+    where_clause = 'WHERE 1=1'
+    join_clause = ''
+    
     if processgroupid:
-        where_clause = f'{where_clause} and processgroupid={processgroupid}'
-   
+        where_clause += f' AND processgroupid = {processgroupid}'
+    
+    if search:
+        join_clause = "JOIN rivm_mat_jobtable AS jt USING(processgroupid)"
+        where_clause += f" AND (jt::text LIKE '%{search}%' OR pg::text LIKE '%{search}%')"
+    
     # Apply filters on pgs_query ('select' and 'input')
     for _, field_attrs in PG_FIELDS.items():
         field_name = field_attrs['field']
@@ -197,13 +148,16 @@ def pglist():
         if not filter_value or filter_control is None:
             continue
         if filter_control == 'select':
-            where_clause = f"{where_clause} and {field_name}='{filter_value}'"
+            where_clause += f" AND pg.{field_name} = '{filter_value}'"
         if filter_control == 'input':
-            where_clause = f"{where_clause} and {field_name} like('%{filter_value}%')"
+            where_clause += f" AND pg.{field_name} LIKE '%{filter_value}%'"
 
-    # fieldlist = { PG_FIELDS[v]['field'] for v in PG_FIELDS.keys() }
-    # fields = ','.join(fieldlist)
-    sqlj = f'select *, count(*) OVER () AS total_count from rivm_v_processgroups {where_clause} order by {sort} {order} offset {offset} limit {limit}'
+    sqlj = f"""SELECT DISTINCT pg.*, COUNT(pg.*) OVER () AS total_count 
+                FROM rivm_v_processgroups AS pg
+                {join_clause}
+                {where_clause} 
+                ORDER BY {sort} {order} 
+                OFFSET {offset} LIMIT {limit}"""
 
     pgs_query = db.connection().sql(sqlj)
     count_processgroups = pgs_query[0]['total_count'] if len(pgs_query) else 0
@@ -224,12 +178,12 @@ def pglist():
 
 @bp.route('_jobrefresh')
 def jobs_refresh():
-    sql = 'select max(refresh_time) from rivm_mat_jobtable'
+    sql = 'SELECT refresh_time FROM rivm_mat_jobtable LIMIT 1'
     result = db.connection().sql(sql)
     if not result:
         return jsonify('unknown')
     else:
-        return jsonify(datafield('refresh_time', float(result[0]['max']), 'timestamp').htmlshort)
+        return jsonify(datafield('refresh_time', float(result[0]['refresh_time']), 'timestamp').htmlshort)
  
 
 @bp.route('_pgjobs')
@@ -239,7 +193,7 @@ def pgjobs():
 
     result = []
 
-    sql = f"select * from rivm_mat_jobtable where processgroupid='{processgroupid}'"
+    sql = f"SELECT * FROM rivm_mat_jobtable WHERE processgroupid = '{processgroupid}'"
 
     jobs_query = db.connection().sql(sql)
 
@@ -276,15 +230,7 @@ def show_pg():
     current_user.settings['jobs::view'] = 'processgroups'
     return render_template('pglist.html', default_project=default_project
                             , processgroupguid=processgroupguid, columns=PG_FIELDS, visible_columns=visible_columns)
-
-
-@bp.route('/')
-def show_jobs():
-    default_project = current_user.settings.get('default_project', '')
-    visible_columns = current_user.settings.get('jobs::columns', [v["field"] for v in JOB_FIELDS.values()])
-    current_user.settings['jobs::view'] = 'jobs'
-    return render_template('jobs.html', default_project=default_project, columns=JOB_FIELDS, visible_columns=visible_columns)
-    
+   
 NAME_LENGTH = 15
 
 def shortname(name,l):
@@ -357,7 +303,7 @@ def jobdetails():
         q = iqry.qcollbystaticmeta(ATTR_RUNSHEET_PROCESSGROUPGUID, processgroupguid)
     if len(q) < 1:
         flash(f'Cannot find unique job collection for {jobnaam}', 'error')
-        return redirect(url_for('jobs.show_jobs'))
+        return redirect(url_for('jobs.show_pg'))
     runsheet = q[0][Collection.name]
     if not jobnaam:
         jobnaam = iqry.qcollmetaval(runsheet, ATTR_RUNSHEET_ID)

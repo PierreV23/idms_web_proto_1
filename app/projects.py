@@ -17,7 +17,7 @@ from irods.column import Criterion
 from app.datafield import datafield
 from graphviz import Digraph
 from . import iqry
-from app.constants import COLL_KEY_MAP, ATTR_UPLOAD_DEFAULT_PREFIX, ATTR_METADATA_PREFIX, ATTR_SCHEMA_IN_USE, ATTR_PROJECT_SUFFIX, ATTR_DATASET_DEFAULT_SUFFIX
+from app.constants import COLL_KEY_MAP, ATTR_UPLOAD_DEFAULT_PREFIX, ATTR_METADATA_PREFIX, ATTR_SCHEMA_IN_USE, ATTR_PROJECT_SUFFIX, ATTR_DATASET_DEFAULT_SUFFIX, DEPARTMENTS
 from app.irodssessions import irods_manager
 from .projectdb_api import EPOCH, iso2dt, search, rest_call, add_checkbox
 
@@ -123,7 +123,8 @@ def show_projectdetails():
                            metadata_collection=metadata_collection,
                            metadata_prefix=ATTR_METADATA_PREFIX, upload_default_prefix=ATTR_UPLOAD_DEFAULT_PREFIX,
                            attribute_type_project=ATTR_SCHEMA_IN_USE + ATTR_PROJECT_SUFFIX,
-                           attribute_type_dataset_default=ATTR_SCHEMA_IN_USE + ATTR_DATASET_DEFAULT_SUFFIX)
+                           attribute_type_dataset_default=ATTR_SCHEMA_IN_USE + ATTR_DATASET_DEFAULT_SUFFIX,
+                           departments=DEPARTMENTS)
 
 @bp.route('_projectcolls')
 def projectcolls():
@@ -251,7 +252,7 @@ def update_projectsettings():
         location=f'project={project}&activetabname=processgroups'
     elif action == 'update_project':
         data = { 'pipelines': '0', 'public': '0' }
-        for attr in ['description', 'default_collection', 'service_account', 'pipelines', 'public']:
+        for attr in ['description', 'default_collection', 'service_account', 'pipelines', 'public', 'department']:
             if attr in requestdata:
                 data[attr] = requestdata[attr]
         rest_call('PUT', 'projects/{}'.format(project), data=data)

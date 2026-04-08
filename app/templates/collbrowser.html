@@ -455,7 +455,7 @@ menuname='collectionbrowser'
           }
           $('#project-home-button').data('path', selected_projectpath)
           $('#treeview').append(
-            `<div class="path-change dataobject-change ${classname}" data-path="${path}" data-project="${project}">${project}</div>`
+            `<div class="path-change ${classname}" data-path="${path}" data-project="${project}">${project}</div>`
           )
         };
       }
@@ -1182,11 +1182,11 @@ menuname='collectionbrowser'
 
 
     const updateWindows = () => {
-      mainHeight = Math.round($('.content-wrapper').height())
+      mainHeight = Math.round($('.content').height())
       maxHeight = mainHeight - 100
       vHeight = Math.max(100, vHeight)
       vHeight = Math.min(maxHeight, vHeight)
-      document.getElementById("main-window").style.gridTemplateRows = `${vHeight}px [v1] 4px [v2] ${mainHeight - vHeight - 75}px`;
+      document.getElementById("main-window").style.gridTemplateRows = `${vHeight}px [v1] 4px [v2] ${mainHeight - vHeight - 5}px`;
       if (vposSettingIdObj !== 0) clearTimeout(vposSettingIdObj);
       vposSettingIdObj = setTimeout(storeVPosLevelObj, 1000);
 
