@@ -18,6 +18,7 @@ from flask_login import current_user, login_required
 from irods.models import Collection, CollectionMeta, DataObject, DataObjectMeta
 from irods.exception import CAT_NO_ROWS_FOUND, CAT_NO_ACCESS_PERMISSION, CollectionDoesNotExist, DataObjectDoesNotExist
 from irods.column import Criterion
+from app.cluster import get_site_and_cluster_by_name
 from app.datafield import AVU2data, datafield
 from app.irods_helper import getmetaitem
 from app.irodssessions import irods_manager
@@ -584,6 +585,12 @@ def shared_collections_table():
 @bp.route('_startprocess')
 def startprocess():
     collection = request.args.get('collection')
+
+    cluster_name = request.args.get('cluster')
+    if cluster_name:
+        site, _ = get_site_and_cluster_by_name()
+        iqry.scollmetaval(collection, ATTR_USER_RUN_SITE, site)
+        iqry.scollmetaval(collection, ATTR_USER_RUN_CLUSTER, cluster_name)
 
     processid = request.args.get('processid')
     processgroupid = request.args.get('processgroupid')

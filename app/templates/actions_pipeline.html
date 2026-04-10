@@ -28,6 +28,11 @@
       <option {% if p == coll_state.processid %}selected{% endif %}>{{ p }}</option>
       {% endfor %}
     </select>
+    <select class="custom-select" style="width:100%;" id="clusterSelect">
+      {% for clustername in coll_state.compatible_clusters %}
+      <option value="{{ clustername }}">{{ clustername }}</option>
+      {% endfor %}
+    </select>
     <div><button class="btn btn-outline-secondary btn-small button12" {% if not coll_state.available_processes %}disabled{% endif %} onClick="startProcess()">Start process</button></div>
 
 {% endif %}
