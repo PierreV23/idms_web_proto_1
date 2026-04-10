@@ -47,7 +47,7 @@ def get_processlist(project):
     pl, result = rest_call('GET', f'projects/{project}/processes')
     processes = []
     if result == 200:
-        processes = [ p['name'] for p in pl ]
+        processes = {p["name"]: p for p in pl}
     return processes
 
 def get_processgrouplist(project):

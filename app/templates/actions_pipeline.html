@@ -23,9 +23,9 @@
     </div>
 
 <div class="top5"><b>Start Single process</b></div>
-    <select class="custom-select" style="width:100%;" id="processSelect">
+    <select class="custom-select" style="width:100%;" id="processSelect" onChange="setClusterDropdown()">
       {% for p in coll_state.available_processes | sort %}
-      <option {% if p == coll_state.processid %}selected{% endif %}>{{ p }}</option>
+      <option value="{{p}}" {% if p == coll_state.processid %}selected{% endif %}>{{ p }}</option>
       {% endfor %}
     </select>
     Run on cluster:
@@ -37,3 +37,20 @@
     <div><button class="btn btn-outline-secondary btn-small button12" {% if not coll_state.available_processes %}disabled{% endif %} onClick="startProcess()">Start process</button></div>
 
 {% endif %}
+
+<script>
+  function setClusterDropdown() {
+    const process_dict = JSON.parse('{{ coll_state.available_processes | tojson | safe}}');
+    const process_id = $("#processSelect").val();
+    const clusterSelect = $("#clusterSelect");
+
+    console.log(process_id);
+    console.log(typeof process_id);
+    console.log(process_dict);
+    clusterSelect.innerHTML = '';
+    console.log(process_dict[process_id]);
+    process_dict[process_id]["compatible_clusters"].forEach(function(item) {
+      clusterSelect.append($('<option>', {value: item, text: item}));
+    });
+  }
+</script>
