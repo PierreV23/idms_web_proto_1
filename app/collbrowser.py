@@ -36,6 +36,7 @@ from app.auth import auth_endpoint
 from .projectdb_api import rest_call
 from .database import db
 from .constants import *
+from instance.constants import ATTR_USER_JOB_SITE, ATTR_USER_JOB_CLUSTER
 from copy import deepcopy
 
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
@@ -588,9 +589,9 @@ def startprocess():
 
     cluster_name = request.args.get('cluster')
     if cluster_name:
-        site, _ = get_site_and_cluster_by_name()
-        iqry.scollmetaval(collection, ATTR_USER_RUN_SITE, site)
-        iqry.scollmetaval(collection, ATTR_USER_RUN_CLUSTER, cluster_name)
+        site, _ = get_site_and_cluster_by_name(cluster_name)
+        iqry.scollmetaval(collection, ATTR_USER_JOB_SITE, site)
+        iqry.scollmetaval(collection, ATTR_USER_JOB_CLUSTER, cluster_name)
 
     processid = request.args.get('processid')
     processgroupid = request.args.get('processgroupid')

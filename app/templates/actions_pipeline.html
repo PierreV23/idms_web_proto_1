@@ -44,11 +44,7 @@
     const process_id = $("#processSelect").val();
     const clusterSelect = $("#clusterSelect");
 
-    console.log(process_id);
-    console.log(typeof process_id);
-    console.log(process_dict);
     clusterSelect.innerHTML = '';
-    console.log(process_dict[process_id]);
     process_dict[process_id]["compatible_clusters"].forEach(function(item) {
       clusterSelect.append($('<option>', {value: item, text: item}));
     });

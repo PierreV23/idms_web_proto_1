@@ -15,8 +15,8 @@ bp = Blueprint('cluster', __name__, url_prefix='/cluster')
 
 def get_site_and_cluster_by_name(clustername):
     sites_and_clusters = current_app.config.get('IRODS_ENVS', {}).get(current_user.environment, {}).get('sites_and_clusters', {})
-    for site, site_dict in sites_and_clusters:
-        for cluster, cluster_dict in site_dict:
+    for site, site_dict in sites_and_clusters.items():
+        for cluster, cluster_dict in site_dict["clusters"].items():
             if cluster == clustername:
                 return site, cluster_dict
     return None, None
