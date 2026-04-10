@@ -61,6 +61,11 @@
           </select>
         </div>
 
+        <div class="form-group">
+          <label for="required_memory_{{process}}">Required memory (MB)</label>
+          <input type="number" class="form-control" name="required_memory" id="required_memory_{{process}}" placeholder="Required memory"
+            value="{{ details['required_memory'] }}">
+        </div>
 
         <div class="form-group">
           <label for="max_runtime_{{process}}">Maximum Runtime (s) (0 to disable)</label>

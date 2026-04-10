@@ -28,6 +28,7 @@
       <option {% if p == coll_state.processid %}selected{% endif %}>{{ p }}</option>
       {% endfor %}
     </select>
+    Run on cluster:
     <select class="custom-select" style="width:100%;" id="clusterSelect">
       {% for clustername in coll_state.compatible_clusters %}
       <option value="{{ clustername }}">{{ clustername }}</option>
