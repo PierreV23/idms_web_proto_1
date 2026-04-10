@@ -48,7 +48,7 @@
 
         <div class="form-group">
           <label for="compatible_clusters_{{process}}">Compatible clusters</label>
-          <select class="form-control compatible-clusters-select2" name="compatible_clusters" id="compatible_clusters_{{process}}" multiple>
+          <select class="form-control compatible-clusters-select2" name="compatible_clusters" id="compatible_clusters_{{process}}" multiple required>
           {% for site, site_dict in sites_and_clusters.items() %}
             <optgroup label="{{ site }}">
             {% for cluster, cluster_dict in site_dict["clusters"].items() %}
