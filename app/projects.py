@@ -276,6 +276,7 @@ def update_process():
     """
     """
     requestdata = request.form.to_dict()
+    requestdata["compatible_clusters"] = request.form.getlist("compatible_clusters")
     data = {}
     procid = requestdata.get('procid')
     process = requestdata.get('process')
