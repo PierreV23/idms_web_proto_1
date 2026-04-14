@@ -161,21 +161,29 @@ menuname='settings'
                     </div>
                     <div class="card-body">
                         {% for cluster, cluster_dict in site_dict["clusters"].items() %}
-                        <h3>{{cluster}}</h3>
-                        <form method="POST" action="/save-ssh-key">
-                            <div class="mb-3">
-                                <label for="username" class="form-label">User name</label>
-                                <input type="text" class="form-control" id="username" name="username" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="sshkey" class="form-label">Private SSH Key</label>
-                                <textarea class="form-control" id="sshkey" name="sshkey" rows="6"
-                                    placeholder="Paste your private SSH key here" required></textarea>
-                            </div>
-                            <button type="submit" class="btn btn-primary">Save</button>
-                        </form>
+                        <a class="btn btn-light card-header d-flex justify-content-between align-items-center collapsable-content-button"
+                            data-toggle="collapse" href="#collapse-{{ cluster }}" role="button" aria-expanded="true"
+                            aria-controls="collapse-{{ cluster }}" style="cursor: pointer;">
+                            <i class="fas fa-chevron-down rotate" id="collapseIcon"></i>
+                            <span class="card-title mb-0">{{ cluster }}</span>
+                        </a>
+                        <div class="collapse" id="collapse-{{ cluster }}">
+                            <form method="POST" action="#" data-cluster="{{ cluster }}"
+                                class="user-cluster-settings-form">
+                                <div class="mb-3">
+                                    <label for="username" class="form-label">User name</label>
+                                    <input type="text" class="form-control" id="username" name="username" value="{{ cluster_config[cluster]['username'] }}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="sshkey" class="form-label">Private SSH Key</label>
+                                    <textarea class="form-control" id="sshkey" name="sshkey" rows="6"
+                                        placeholder="Paste your private SSH key here (currently{{ ' not' if cluster_config[cluster]['sshkey_path'] == None  }} set{{' in '+cluster_config[cluster]['sshkey_path'] if cluster_config[cluster]['sshkey_path'] != None}})" required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Save</button>
+                            </form>
+                        </div>
                         {% if not loop.last %}
-                          <hr>
+                        <hr>
                         {% endif %}
                         {% endfor %}
                     </div>
@@ -208,8 +216,6 @@ menuname='settings'
                 </div>`;
 
         var all_settings = {{ current_user.settings.items() | tojson }};
-        console.log(all_settings);
-
 
         function load_table() {
             data = []
@@ -396,7 +402,6 @@ menuname='settings'
         })
 
         $('a[data-hash="tab"]').on('shown.bs.tab', function (e) {
-            console.log("hallo");
             var hash = $(e.target).attr('href');
             window.location.hash = hash;
         });
@@ -407,6 +412,44 @@ menuname='settings'
                 $('a[href="' + hash + '"]').tab('show');
             }
         });
+
+        $('.collapse').on('show.bs.collapse', function () {
+            var header = $('a[href="#' + this.id + '"]');
+            header.find('.fa-chevron-down').removeClass('rotate');
+        });
+
+        $('.collapse').on('hide.bs.collapse', function () {
+            var header = $('a[href="#' + this.id + '"]');
+            header.find('.fa-chevron-down').addClass('rotate');
+        });
+
+        $(document).on('submit', '.user-cluster-settings-form', function (e) {
+            const keys = $("input.customview-attr").map(function () { return $(this).val(); }).get();
+            e.preventDefault();
+
+            var $form = $(this);
+            var cluster = $form.data('cluster');
+            var username = $form.find('[name="username"]').val();
+            var sshkey = $form.find('[name="sshkey"]').val();
+
+            $.ajax({
+                url: '{{ url_for("userinfo.save_cluster_config") }}',
+                method: 'POST',
+                data: {
+                    cluster: cluster,
+                    username: username,
+                    sshkey: sshkey
+                },
+                success: function (response) {
+                    $form.append('<div class="alert alert-success mt-2">SSH key saved!</div>');
+                },
+                error: function (xhr) {
+                    $form.append('<div class="alert alert-danger mt-2">Error saving SSH key.</div>');
+                }
+            });
+        });
+
+
 
     </script>
     {% endblock %}

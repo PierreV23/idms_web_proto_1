@@ -11,8 +11,15 @@ from flask_login import login_user, current_user, login_required
 import sys
 import subprocess
 from app.irodssessions import irods_manager
+from fs_irods import fs_irods
+from app.collbrowser import contents_changed
+from . import iqry
 
 bp = Blueprint('userinfo', __name__, url_prefix='/userinfo')
+
+ATTR_CLUSTER_USERNAME_TEMPLATE = "cluster::{}::username"
+ATTR_CLUSTER_SSHKEY_TEMPLATE = "cluster::{}::sshkey_path"
+
 
 @bp.route('/api/setting', methods=['GET', 'POST', 'DELETE'])
 def usersetting():
@@ -63,10 +70,55 @@ def groupinfo(group):
             ginfo[n.name] = userinfo(n.name)
             ginfo[n.name].update({"serviceaccount": False})
     return(ginfo)
- 
+
 @bp.route('/groupdetails')
 @login_required
-def groupdetails(): 
+def groupdetails():
     group = request.args.get('group','', type=str)
     ginfo = groupinfo(group)
     return render_template('groupdetails.html', group=group, ginfo=ginfo)
+
+def cluster_config():
+    clusters = {}
+    for _, site_dict in current_user.irods_env["sites_and_clusters"].items():
+        for cluster in site_dict["clusters"]:
+            homeColl = f"/{ current_user.irods_zone }/home/{current_user.username}"
+            cluster_username_attr = ATTR_CLUSTER_USERNAME_TEMPLATE.format(cluster)
+            cluster_sshkey_attr = ATTR_CLUSTER_SSHKEY_TEMPLATE.format(cluster)
+            clusters[cluster] = {
+                "username": iqry.qcollmetaval(homeColl, cluster_username_attr),
+                "sshkey_path": iqry.qcollmetaval(homeColl, cluster_sshkey_attr)
+            }
+    return clusters
+
+
+
+@bp.route('/api/userclusterconfig', methods=['POST'])
+def save_cluster_config():
+    formdata = request.form.to_dict()
+    cluster = formdata["cluster"]
+    username = formdata["username"]
+    sshkey = formdata["sshkey"]
+
+    homeColl = f"/{ current_user.irods_zone }/home/{current_user.username}/"
+    secretiObjFolder = f"/{ current_user.irods_zone }/home/{current_user.username}/.secret/"
+    secretiObjName = f"/{ current_user.irods_zone }/home/{current_user.username}/.secret/{ cluster }_sshkey"
+
+    with irods_manager.session() as session:
+        try:
+            fs_irods(session=session).mkdir(secretiObjFolder)
+        except Exception as e:
+            pass
+        with fs_irods(session=session).open(secretiObjName, 'w') as iObj:
+            iObj.write(sshkey.encode('utf-8'))
+            contents_changed()
+
+    cluster_username_attr = ATTR_CLUSTER_USERNAME_TEMPLATE.format(cluster)
+    cluster_sshkey_attr = ATTR_CLUSTER_SSHKEY_TEMPLATE.format(cluster)
+
+    iqry.rmallcollmetaattr(homeColl, cluster_username_attr)
+    iqry.scollmetaval(homeColl, cluster_username_attr, username)
+    iqry.rmallcollmetaattr(homeColl, cluster_sshkey_attr)
+    iqry.scollmetaval(homeColl, cluster_sshkey_attr, secretiObjName)
+
+    return { 'result': 'OK' }, 200
