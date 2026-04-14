@@ -152,17 +152,42 @@ menuname='settings'
             </div>
             <div class="tab-pane fade" id="user-settings-tabs-cluster" role="tabpanel"
                 aria-labelledby="user-settings-tabs-cluster-tab">
-                <div class="card">
-                    My content
+                {% for site, site_dict in current_user.irods_env["sites_and_clusters"].items() if site != "RIVM" %}
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            {{ site }}
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        {% for cluster, cluster_dict in site_dict["clusters"].items() %}
+                        <h3>{{cluster}}</h3>
+                        <form method="POST" action="/save-ssh-key">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">User name</label>
+                                <input type="text" class="form-control" id="username" name="username" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="sshkey" class="form-label">Private SSH Key</label>
+                                <textarea class="form-control" id="sshkey" name="sshkey" rows="6"
+                                    placeholder="Paste your private SSH key here" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save</button>
+                        </form>
+                        {% if not loop.last %}
+                          <hr>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
                 </div>
+                {% endfor %}
             </div>
         </div>
     </div>
-</div>
 
-<script>
+    <script>
 
-    const newRowUrl = (rowIndex, attr, value) => `<div id="customview-row-${rowIndex}" data-rowid="${rowIndex}" class="form-row mb-3 align-items-center customview-row">
+        const newRowUrl = (rowIndex, attr, value) => `<div id="customview-row-${rowIndex}" data-rowid="${rowIndex}" class="form-row mb-3 align-items-center customview-row">
                     <div class="col-md-4">
                         <label class="sr-only">Attribute</label>
                         <input type="text" class="form-control customview-attr" value="${attr}" placeholder="Attribute Name">
@@ -182,119 +207,119 @@ menuname='settings'
                     </div>
                 </div>`;
 
-    var all_settings = {{ current_user.settings.items() | tojson }};
-    console.log(all_settings);
+        var all_settings = {{ current_user.settings.items() | tojson }};
+        console.log(all_settings);
 
 
-    function load_table() {
-        data = []
-        for (var i = 0; i < all_settings.length; i++) {
-            if (all_settings[i][0].startsWith('customview::')) {
-                data.push({
-                    'label': all_settings[i][0].substring(12),
-                    'name': all_settings[i][1]['name'],
-                    'delete': '<button type="button" class="btn btn-outline-danger btn-block remove-cv-button" title="Remove">&times;</button>'
-                })
+        function load_table() {
+            data = []
+            for (var i = 0; i < all_settings.length; i++) {
+                if (all_settings[i][0].startsWith('customview::')) {
+                    data.push({
+                        'label': all_settings[i][0].substring(12),
+                        'name': all_settings[i][1]['name'],
+                        'delete': '<button type="button" class="btn btn-outline-danger btn-block remove-cv-button" title="Remove">&times;</button>'
+                    })
+                }
             }
+            $('#views-table').bootstrapTable({
+                data: data,
+                onClickRow: function (row, $element, field) {
+                    if (field == 'name') {
+                        $element.addClass('highlight').siblings().removeClass('highlight')
+                        load_customview(row.label)
+                        selectedView = row.label
+                        selectedViewName = row.name
+                    }
+                    if (field == 'delete') {
+                        $.ajax({
+                            url: '{{ url_for("userinfo.usersetting") }}',
+                            type: 'DELETE',
+                            contentType: 'application/json',
+                            data: JSON.stringify({ attr: 'customview::' + row.label }),
+                            success: function (response) {
+                                // Example: remove the row from your Bootstrap Table visually
+                                $element.fadeOut();
+                            }
+                        });
+                    }
+                }
+            })
         }
-        $('#views-table').bootstrapTable({
-            data: data,
-            onClickRow: function (row, $element, field) {
-                if (field == 'name') {
-                    $element.addClass('highlight').siblings().removeClass('highlight')
-                    load_customview(row.label)
-                    selectedView = row.label
-                    selectedViewName = row.name
+
+        load_table();
+
+        function load_customview(label) {
+            $.get(encodeURI('{{ url_for("userinfo.usersetting", )}}?attr=customview::' + label), function (data) {
+                cvform = $('#customview-rows')
+                cvform.empty()
+                attrlist = data.value.attrs
+                for (var i = 0, len = attrlist.length; i < len; i++) {
+                    cvform.append(newRowUrl(i, attrlist[i][0], attrlist[i][1]))
                 }
-                if (field == 'delete') {
-                    $.ajax({
-                        url: '{{ url_for("userinfo.usersetting") }}',
-                        type: 'DELETE',
-                        contentType: 'application/json',
-                        data: JSON.stringify({ attr: 'customview::' + row.label }),
-                        success: function (response) {
-                            // Example: remove the row from your Bootstrap Table visually
-                            $element.fadeOut();
-                        }
-                    });
-                }
-            }
-        })
-    }
+                $('#add-attr-form').attr('hidden', false)
+            })
+        }
 
-    load_table();
-
-    function load_customview(label) {
-        $.get(encodeURI('{{ url_for("userinfo.usersetting", )}}?attr=customview::' + label), function (data) {
-            cvform = $('#customview-rows')
-            cvform.empty()
-            attrlist = data.value.attrs
-            for (var i = 0, len = attrlist.length; i < len; i++) {
-                cvform.append(newRowUrl(i, attrlist[i][0], attrlist[i][1]))
-            }
-            $('#add-attr-form').attr('hidden', false)
-        })
-    }
-
-    function save_customview() {
-        const keys = $("input.customview-attr").map(function () { return $(this).val(); }).get();
-        const values = $("input.customview-value").map(function () { return $(this).val(); }).get();
-        const result = keys.reduce((obj, key, index) => {
-            if (key) obj.push([key, values[index]]);
-            return obj;
-        }, []);
-        $.ajax({
-            url: '{{ url_for('userinfo.usersetting') }}',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({
-                'attr': `customview::${selectedView}`,
-                'value': {
-                    name: selectedViewName,
-                    attrs: result
-                }
-            }),
-            dataType: 'json'
-        })
-    }
-    // arbitrary large number
-    var rowIndex = 100
-
-    $('#add-cv-button').on('click', function () {
-        name = $('#new-cv-name').val()
-        tableData = $('#views-table').bootstrapTable('getData')
-        nextid = 0
-        tableData.forEach(item => {
-            if (!isNaN(item.label)) {
-                nextid = Math.max(nextid, item.label) + 1
-            }
-        });
-        if (name) {
+        function save_customview() {
+            const keys = $("input.customview-attr").map(function () { return $(this).val(); }).get();
+            const values = $("input.customview-value").map(function () { return $(this).val(); }).get();
+            const result = keys.reduce((obj, key, index) => {
+                if (key) obj.push([key, values[index]]);
+                return obj;
+            }, []);
             $.ajax({
                 url: '{{ url_for('userinfo.usersetting') }}',
                 type: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify({
-                    'attr': `customview::${nextid}`,
+                    'attr': `customview::${selectedView}`,
                     'value': {
-                        name: name,
-                        attrs: []
+                        name: selectedViewName,
+                        attrs: result
                     }
                 }),
                 dataType: 'json'
-            }).done(function () {
-                // TODO: Reload not required, just insert a row in the table and select it
-                window.location.reload();
             })
         }
-    })
+        // arbitrary large number
+        var rowIndex = 100
 
-    $('.add-button').on('click', function (event) {
-        $('.down-button').prop('disabled', false)
-        attr = $('#new-attr').val()
-        value = $('#new-value').val()
-        if (attr != "") {
-            const newRow = `<div id="customview-row-${rowIndex}" data-rowid="${rowIndex}" class="form-row mb-3 align-items-center customview-row">
+        $('#add-cv-button').on('click', function () {
+            name = $('#new-cv-name').val()
+            tableData = $('#views-table').bootstrapTable('getData')
+            nextid = 0
+            tableData.forEach(item => {
+                if (!isNaN(item.label)) {
+                    nextid = Math.max(nextid, item.label) + 1
+                }
+            });
+            if (name) {
+                $.ajax({
+                    url: '{{ url_for('userinfo.usersetting') }}',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        'attr': `customview::${nextid}`,
+                        'value': {
+                            name: name,
+                            attrs: []
+                        }
+                    }),
+                    dataType: 'json'
+                }).done(function () {
+                    // TODO: Reload not required, just insert a row in the table and select it
+                    window.location.reload();
+                })
+            }
+        })
+
+        $('.add-button').on('click', function (event) {
+            $('.down-button').prop('disabled', false)
+            attr = $('#new-attr').val()
+            value = $('#new-value').val()
+            if (attr != "") {
+                const newRow = `<div id="customview-row-${rowIndex}" data-rowid="${rowIndex}" class="form-row mb-3 align-items-center customview-row">
                     <div class="col-md-4">
                         <label class="sr-only">Attribute</label>
                         <input type="text" class="form-control customview-attr" value="${attr}" placeholder="Attribute Name">
@@ -313,75 +338,75 @@ menuname='settings'
                         <button type="button" class="btn btn-outline-danger btn-block remove-button" data-rowid="${rowIndex}" title="Remove" id="cv_del_${rowIndex}">&times;</button>
                     </div>
                 </div>`
-            rowIndex += 1
-            $('#customview-rows').append(newRow)
-            $('.new-data').val('')
-            save_customview()
-        }
-    })
-
-    $(document).on('click', '.remove-button', function (event) {
-        $('.customview-row[data-rowid="' + $(event.target).data('rowid') + '"]').remove()
-        save_customview()
-    })
-
-    $(document).on('click', '.up-button', function () {
-        var current = $(this).parent().parent();
-        var previous = current.prev();
-
-        if (previous.length !== 0) {
-            current.insertBefore(previous);
-        }
-        $('.up-button').prop('disabled', false)
-        $('.down-button').prop('disabled', false)
-        $('#customview-rows .customview-row').first().find('button.up-button').prop('disabled', true)
-        $('#customview-rows .customview-row').last().find('button.down-button').prop('disabled', true)
-        save_customview()
-    });
-
-    $(document).on('click', '.down-button', function () {
-        var current = $(this).parent().parent();
-        var next = current.next()
-
-        if (next.length !== 0) {
-            current.insertAfter(next);
-        }
-        $('.up-button').prop('disabled', false)
-        $('.down-button').prop('disabled', false)
-        $('#customview-rows .customview-row').first().find('button.up-button').prop('disabled', true)
-        $('#customview-rows .customview-row').last().find('button.down-button').prop('disabled', true)
-        save_customview()
-    })
-
-    $(document).on('change', '.customview-attr', function () {
-        save_customview()
-    })
-
-    $(document).on('change', '.customview-value', function () {
-        save_customview()
-    })
-
-    $('.usersetting').on('change', function () {
-        attr = $(this).data('attr')
-        value = $(this).is(':checked') ? 'true' : 'false'
-        $.post('{{ url_for("userinfo.usersetting") }}', {
-            attr: attr,
-            value: value
+                rowIndex += 1
+                $('#customview-rows').append(newRow)
+                $('.new-data').val('')
+                save_customview()
+            }
         })
-    })
 
-    $('a[data-hash="tab"]').on('shown.bs.tab', function (e) {
-        console.log("hallo");
-        var hash = $(e.target).attr('href');
-        window.location.hash = hash;
-    });
+        $(document).on('click', '.remove-button', function (event) {
+            $('.customview-row[data-rowid="' + $(event.target).data('rowid') + '"]').remove()
+            save_customview()
+        })
 
-    $(document).ready(function () {
-        var hash = window.location.hash;
-        if (hash) {
-            $('a[href="' + hash + '"]').tab('show');
-        }
-    });
+        $(document).on('click', '.up-button', function () {
+            var current = $(this).parent().parent();
+            var previous = current.prev();
 
-</script>
-{% endblock %}
+            if (previous.length !== 0) {
+                current.insertBefore(previous);
+            }
+            $('.up-button').prop('disabled', false)
+            $('.down-button').prop('disabled', false)
+            $('#customview-rows .customview-row').first().find('button.up-button').prop('disabled', true)
+            $('#customview-rows .customview-row').last().find('button.down-button').prop('disabled', true)
+            save_customview()
+        });
+
+        $(document).on('click', '.down-button', function () {
+            var current = $(this).parent().parent();
+            var next = current.next()
+
+            if (next.length !== 0) {
+                current.insertAfter(next);
+            }
+            $('.up-button').prop('disabled', false)
+            $('.down-button').prop('disabled', false)
+            $('#customview-rows .customview-row').first().find('button.up-button').prop('disabled', true)
+            $('#customview-rows .customview-row').last().find('button.down-button').prop('disabled', true)
+            save_customview()
+        })
+
+        $(document).on('change', '.customview-attr', function () {
+            save_customview()
+        })
+
+        $(document).on('change', '.customview-value', function () {
+            save_customview()
+        })
+
+        $('.usersetting').on('change', function () {
+            attr = $(this).data('attr')
+            value = $(this).is(':checked') ? 'true' : 'false'
+            $.post('{{ url_for("userinfo.usersetting") }}', {
+                attr: attr,
+                value: value
+            })
+        })
+
+        $('a[data-hash="tab"]').on('shown.bs.tab', function (e) {
+            console.log("hallo");
+            var hash = $(e.target).attr('href');
+            window.location.hash = hash;
+        });
+
+        $(document).ready(function () {
+            var hash = window.location.hash;
+            if (hash) {
+                $('a[href="' + hash + '"]').tab('show');
+            }
+        });
+
+    </script>
+    {% endblock %}
