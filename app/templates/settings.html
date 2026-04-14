@@ -26,6 +26,11 @@ menuname='settings'
                     href="#user-settings-tabs-collection-browser" role="tab"
                     aria-controls="user-settings-tabs-collection-browser" aria-selected="false">Collection browser</a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link" id="user-settings-tabs-cluster-tab" data-toggle="pill" data-hash="tab"
+                    href="#user-settings-tabs-cluster" role="tab" aria-controls="user-settings-tabs-cluster"
+                    aria-selected="false">Cluster configuration</a>
+            </li>
         </ul>
     </div>
     <div class="card-body">
@@ -100,9 +105,9 @@ menuname='settings'
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            <div class="col-md-3">
-                                <div class="row">
-                                    <div class="col">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <div class="table-responsive">
                                         <table id="views-table" class="table" data-toggle="table">
                                             <thead>
                                                 <tr>
@@ -114,26 +119,17 @@ menuname='settings'
                                         </table>
                                     </div>
                                 </div>
-                                <div class="row">
-                                    <form>
-                                        <div class="form-row">
-                                            <div class="col-md-9">
-                                                <input type="text" class="form-control font-italic new-data"
-                                                    placeholder="New custom view" id="new-cv-name">
-                                            </div>
-                                            <div class="col-md-3">
-                                                <button type="button" class="btn btn-success btn-block"
-                                                    id="add-cv-button">+</button>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </div>
+                                <form>
+                                    <input type="text" class="form-control font-italic new-data"
+                                        placeholder="New custom view" id="new-cv-name">
+                                    <button type="button" class="btn btn-success btn-block"
+                                        id="add-cv-button">+</button>
+                                </form>
                             </div>
-                            <div class="col-md-9">
+                            <div class="col-md-8">
                                 <form id="attribute-form">
                                     <div id="customview-rows">
                                     </div>
-                                    <hr>
                                     <div class="form-row mb-4" hidden id="add-attr-form">
                                         <div class="col-md-4">
                                             <input type="text" class="form-control font-italic new-data"
@@ -152,6 +148,12 @@ menuname='settings'
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="user-settings-tabs-cluster" role="tabpanel"
+                aria-labelledby="user-settings-tabs-cluster-tab">
+                <div class="card">
+                    My content
                 </div>
             </div>
         </div>
