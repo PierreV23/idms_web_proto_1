@@ -444,22 +444,6 @@ ul {
   overflow-y: scroll;
 }
 
-.myheader ul {
-  display: flex;
-  justify-content: space-between;
-  align-content: stretch;
-  row-gap: 8px;
-}
-
-.myheader li {
-  flex-grow: 1;
-}
-
-.myheader button {
-  display: block;
-  width: 100%;
-}
-
 .sort-change {
   cursor: pointer;
   color: blue;
