@@ -80,15 +80,14 @@ def groupdetails():
 
 def cluster_config():
     clusters = {}
-    for _, site_dict in current_user.irods_env["sites_and_clusters"].items():
-        for cluster in site_dict["clusters"]:
-            homeColl = f"/{ current_user.irods_zone }/home/{current_user.username}"
-            cluster_username_attr = ATTR_CLUSTER_USERNAME_TEMPLATE.format(cluster)
-            cluster_sshkey_attr = ATTR_CLUSTER_SSHKEY_TEMPLATE.format(cluster)
-            clusters[cluster] = {
-                "username": iqry.qcollmetaval(homeColl, cluster_username_attr),
-                "sshkey_path": iqry.qcollmetaval(homeColl, cluster_sshkey_attr)
-            }
+    for cluster in current_user.irods_env["sites_and_clusters"]["clusters"]:
+        homeColl = f"/{ current_user.irods_zone }/home/{current_user.username}"
+        cluster_username_attr = ATTR_CLUSTER_USERNAME_TEMPLATE.format(cluster)
+        cluster_sshkey_attr = ATTR_CLUSTER_SSHKEY_TEMPLATE.format(cluster)
+        clusters[cluster] = {
+            "username": iqry.qcollmetaval(homeColl, cluster_username_attr),
+            "sshkey_path": iqry.qcollmetaval(homeColl, cluster_sshkey_attr)
+        }
     return clusters
 
 
