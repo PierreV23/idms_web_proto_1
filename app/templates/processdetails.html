@@ -49,7 +49,7 @@
         <div class="form-group">
           <label for="compatible_clusters_{{process}}">Compatible clusters</label>
           <select class="form-control compatible-clusters-select2" name="compatible_clusters" id="compatible_clusters_{{process}}" multiple required>
-          {% for site in sites_and_clusters["sites"].items() %}
+          {% for site in sites_and_clusters["sites"] %}
             <optgroup label="{{ site }}">
             {% for cluster, cluster_dict in sites_and_clusters["clusters"].items() if cluster_dict["site"] == site %}
               <option value="{{ cluster }}" {% if cluster in (details.get("compatible_clusters") or []) %}selected{% endif %}>
