@@ -588,8 +588,9 @@ def startprocess():
 
     cluster_name = request.args.get('cluster')
     if cluster_name:
-        site = current_user.irods_env["sites_and_clusters"]["clusters"][cluster_name]["site"]
-        iqry.scollmetaval(collection, ATTR_USER_JOB_SITE, site)
+        site = current_user.irods_env.get("sites_and_clusters",{}).get("clusters", {}).get(cluster_name,{}).get("site")
+        if site:
+            iqry.scollmetaval(collection, ATTR_USER_JOB_SITE, site)
         iqry.scollmetaval(collection, ATTR_USER_JOB_CLUSTER, cluster_name)
 
     processid = request.args.get('processid')

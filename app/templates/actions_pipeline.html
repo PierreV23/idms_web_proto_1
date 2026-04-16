@@ -28,12 +28,11 @@
       <option value="{{p}}" {% if p == coll_state.processid %}selected{% endif %}>{{ p }}</option>
       {% endfor %}
     </select>
-    Run on cluster:
-    <select class="custom-select" style="width:100%;" id="clusterSelect">
-      {% for clustername in coll_state.compatible_clusters %}
-      <option value="{{ clustername }}">{{ clustername }}</option>
-      {% endfor %}
-    </select>
+    <div id="clusterSelectFormElement">
+      Run on cluster:
+      <select class="custom-select" style="width:100%;" id="clusterSelect">
+      </select>
+    </div>
     <div><button class="btn btn-outline-secondary btn-small button12" {% if not coll_state.available_processes %}disabled{% endif %} onClick="startProcess()">Start process</button></div>
 
 {% endif %}
@@ -43,11 +42,16 @@
     const process_dict = JSON.parse('{{ coll_state.available_processes | tojson | safe}}');
     const process_id = $("#processSelect").val();
     const clusterSelect = $("#clusterSelect");
-
-    clusterSelect.empty();
-    process_dict[process_id]["compatible_clusters"].forEach(function(item) {
-      clusterSelect.append($('<option>', {value: item, text: item}));
-    });
+    const compatible_clusters = process_dict[process_id]?.compatible_clusters
+    if (compatible_clusters) {
+      $('#clusterSelectFormElement').attr('hidden', false)
+      clusterSelect.empty();
+      compatible_clusters.forEach(function(item) {
+        clusterSelect.append($('<option>', {value: item, text: item}));
+      });
+    } else {
+      $('#clusterSelectFormElement').attr('hidden', true)
+    }
   }
 
   $(document).ready(function(){

@@ -200,7 +200,7 @@ def show_processdetails():
     """
     processname = request.args.get('name', '', type=str)
     pl, result = rest_call('GET', f'processes/{processname}')
-    return render_template('processdetails.html', details=pl, sites_and_clusters=current_user.irods_env["sites_and_clusters"])
+    return render_template('processdetails.html', details=pl, sites_and_clusters=current_user.irods_env.get("sites_and_clusters", {}))
 
 
 @bp.route('/update_project', methods=['GET', 'POST'])

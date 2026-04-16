@@ -45,21 +45,22 @@
           <input type="text" class="form-control" name="repo" id="repo_{{process}}" placeholder="GIT Repo"
             value="{{ details['repo'] }}">
         </div>
-
+        {% if sites_and_clusters %}
         <div class="form-group">
           <label for="compatible_clusters_{{process}}">Compatible clusters</label>
           <select class="form-control compatible-clusters-select2" name="compatible_clusters" id="compatible_clusters_{{process}}" multiple required>
-          {% for site in sites_and_clusters["sites"] %}
+          {% for site in sites_and_clusters.get("sites", {}) %}
             <optgroup label="{{ site }}">
-            {% for cluster, cluster_dict in sites_and_clusters["clusters"].items() if cluster_dict["site"] == site %}
+            {% for cluster, cluster_dict in sites_and_clusters.get("clusters",{}).items() if cluster_dict.get("site") == site %}
               <option value="{{ cluster }}" {% if cluster in (details.get("compatible_clusters") or []) %}selected{% endif %}>
-                {{ cluster }} (type: {{ cluster_dict["type"] }})
+                {{ cluster }} (type: {{ cluster_dict.get("type","unknown") }})
               </option>
             {% endfor %}
             </optgroup>
           {% endfor %}
           </select>
         </div>
+        {% endif %}
 
         <div class="form-group">
           <label for="required_memory_{{process}}">Required memory (MB)</label>
