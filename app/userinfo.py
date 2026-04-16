@@ -80,7 +80,7 @@ def groupdetails():
 
 def cluster_config():
     clusters = {}
-    for cluster in current_user.irods_env["sites_and_clusters"]["clusters"]:
+    for cluster in current_user.irods_env.get("sites_and_clusters", {}).get("clusters", {}):
         homeColl = f"/{ current_user.irods_zone }/home/{current_user.username}"
         cluster_username_attr = ATTR_CLUSTER_USERNAME_TEMPLATE.format(cluster)
         cluster_sshkey_attr = ATTR_CLUSTER_SSHKEY_TEMPLATE.format(cluster)
