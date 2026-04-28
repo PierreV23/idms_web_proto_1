@@ -23,6 +23,7 @@ from . import oldjobs
 from .ngsruns import db as ngsruns_db
 from .database import db as jobs_db
 from .irodssessions import irods_manager
+from .branding import get_branding
 
 #from app.stats import statstore
 
@@ -115,6 +116,10 @@ def create_app():
     @login_manager.user_loader
     def load_user(userid):
         return WebUser.retrieve(userid)
+    
+    @app.context_processor
+    def inject_branding():
+        return dict(branding=get_branding(app))
 
     @app.context_processor
     def inject_header_message():

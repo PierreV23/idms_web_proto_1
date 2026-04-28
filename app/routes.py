@@ -8,6 +8,7 @@ import subprocess
 from app.auth import auth_endpoint
 from .irodssessions import irods_manager
 from .constants import FEATURES
+from app.userinfo import cluster_config
 
 from .flaskcache import cache
 from . import messages
@@ -56,8 +57,9 @@ def settings():
             'description': description,
             'value': current_user.feature(feature)
         })
+    cluster_config_dict = cluster_config()
 
-    return render_template('settings.html', features=features)
+    return render_template('settings.html', features=features, cluster_config=cluster_config_dict)
 
 
 @bp.route('/_brs/<path:rest_endpoint>', methods=['GET', 'PUT', 'POST', 'DELETE'])
@@ -76,7 +78,7 @@ def restcall(rest_endpoint):
     else:
         data = None
     if (hostname := current_app.config.get('API_HOST')) is None:
-        hostname = current_user.irods_server        
+        hostname = current_user.irods_server
     url = 'http://{}/api/1.0/{}'.format(hostname, rest_endpoint)
     auth = HTTPBasicAuth(current_user.username, current_user.password)
     return_data = {}
@@ -89,5 +91,5 @@ def restcall(rest_endpoint):
     if request.method != 'GET':
         #cache is defined as global in flaskcache.py
         cache.delete_memoized(restcall)
-    return jsonify(return_data), response.status_code    
+    return jsonify(return_data), response.status_code
 

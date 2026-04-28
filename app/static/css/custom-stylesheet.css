@@ -1,29 +1,31 @@
 th.rotated-text {
-    height: 80px;
-    white-space: nowrap;
-    padding: 0 !important;
+  height: 80px;
+  white-space: nowrap;
+  padding: 0 !important;
 }
 
-th.rotated-text > div {
-    transform:
-        translate(-2px, 0px)
-        rotate(290deg);
-    width: 30px;
+th.rotated-text>div {
+  transform:
+    translate(-2px, 0px) rotate(290deg);
+  width: 30px;
 }
 
-th.rotated-text > div > span {
-    padding: 5px 10px;
+th.rotated-text>div>span {
+  padding: 5px 10px;
 }
 
 #loading-spinner {
   position: absolute;
-  bottom: 10px;   /* adjust spacing from bottom */
+  bottom: 10px;
+  /* adjust spacing from bottom */
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(255, 255, 255, 0.7); /* optional translucent background */
+  background: rgba(255, 255, 255, 0.7);
+  /* optional translucent background */
   padding: 6px;
   border-radius: 50%;
-  z-index: 10; /* make sure it stays above IGV */
+  z-index: 10;
+  /* make sure it stays above IGV */
 }
 
 .spinner {
@@ -36,15 +38,22 @@ th.rotated-text > div > span {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .irods-collection-wrapper {
   display: flex;
-  justify-content: left; /* to the left */
-  white-space: wrap;     
-  text-overflow: ellipsis;   /* adds ... if too long */
+  justify-content: left;
+  /* to the left */
+  white-space: wrap;
+  text-overflow: ellipsis;
+  /* adds ... if too long */
 }
 
 .selectgrid {
@@ -67,7 +76,7 @@ th.rotated-text > div > span {
   flex-direction: column;
   min-height: 0;
   grid-area: selectlist;
-  height: 100%;  
+  height: 100%;
 }
 
 /* RIGHT card fills all remaining space */
@@ -77,7 +86,7 @@ th.rotated-text > div > span {
   flex-direction: column;
   min-height: 0;
   grid-area: selectdetail;
-  height: 100%;  
+  height: 100%;
 }
 
 /* Body fills vertical space + scrolls */
@@ -95,23 +104,48 @@ th.rotated-text > div > span {
 .disabled-checkbox {
   opacity: 0.5;
   cursor: not-allowed;
-  pointer-events: none;  
+  pointer-events: none;
 }
 
 .disabled-link {
-    pointer-events: none;
-    opacity: 0.5;
-    cursor: default;
+  pointer-events: none;
+  opacity: 0.5;
+  cursor: default;
 }
 
 /* to prevent linebreaks on - or / in the runtable */
 #runtable a {
-    display: inline-block;
-    max-width: 100%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  display: inline-block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 
-    direction: ltr;
-    text-align: left;
+  direction: ltr;
+  text-align: left;
+}
+
+.card-header-tabs ul {
+  display: flex;
+  justify-content: space-between;
+  align-content: stretch;
+  row-gap: 8px;
+}
+
+.card-header-tabs li {
+  flex-grow: 1;
+}
+
+.card-header-tabs button {
+  display: block;
+  width: 100%;
+}
+
+
+
+.fa-chevron-down {
+    transition: transform 0.3s ease;
+}
+.fa-chevron-down.rotate {
+    transform: rotate(180deg);
 }
