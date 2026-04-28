@@ -11,9 +11,9 @@
   -->
 
   <!-- favicon -->
-  <link rel="shortcut icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.ico') }}">
-
-  <title>iDMS</title>
+  <link rel="shortcut icon" type="image/svg+xml" href="{{ url_for('static', filename=branding.FAVICON_URL) }}">
+  
+  <title>{{ branding.APP_NAME_LONG}}</title>
 
   {% block meta %}
 
@@ -29,11 +29,13 @@
   <!-- FontAwesome -->
   <link rel="stylesheet" href="{{ url_for('static', filename='font-awesome-6.2.1/css/all.min.css') }}">
 
-  <!-- Rijkshuisstijl Font and colors
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/custom-rijkshuisstijl.css') }}">
-  -->
+  
+  <!-- branding CSS (e.g. Rijkshuisstyle etc.) -->
+  {% if branding.CUSTOM_CSS is not none %}
+  <link rel="stylesheet" href="{{ url_for('static', filename=branding.CUSTOM_CSS) }}">
+  {% endif %}
 
-  <!-- MyCustomCss -->
+  <!-- generic styling changes-->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/custom-stylesheet.css') }}">
 
 
@@ -125,8 +127,8 @@
       <a href="/" class="logo-xl" style="width:100px">
         <!-- <img src="dist/img/AdminLTELogo.png" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity: .8"> -->
         <span class="brand-link" ">
-          <img src="/static/files/beeldmerk-rijksoverheid-desktop_44.svg" alt="logo" width="44", height="44" />
-          RIVM iDMS
+          <img src="{{ url_for('static', filename=branding.LOGO_URL ) }}"  alt="logo" width="44", height="44" />
+          {{ branding.APP_NAME_SHORT }} 
         </span>
       </a>
       <!-- Hamburger Menu-->
