@@ -119,3 +119,15 @@ IRODS_ENVS = {
         ]
     }
 }
+
+
+#
+BRANDING = {
+    "APP_NAME_SHORT": "RIVM iDMS",     
+    "APP_NAME_LONG": "RIVM iDMS Web Portal",
+    "LOGO_URL": "rivm_rijkshuisstyle/beeldmerk-rijksoverheid-desktop_44.svg",
+    "FAVICON_URL": "rivm_rijkshuisstyle/favicons/favicon_D.ico",
+    "FOOTER_TEXT": "",
+    "CUSTOM_CSS": None, #"rivm_rijkshuisstyle/css/custom-rijkshuisstijl.css",
+    "CONTACT_EMAIL": "bir-list@rivm.nl"
+}

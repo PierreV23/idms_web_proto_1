@@ -1,6 +1,12 @@
 stages:
   - deploy
 
+variables:
+  ASSETS_TOKEN: "glpat-vbRwqqXN0DO5wAV8ecT67G86MQp1OjE4agk.01.0z0wsyla2"
+  ASSETS_REPO_URL: "https://oauth2:${ASSETS_TOKEN}@gitlab.rivm.nl/bioinformatics/ngsweb_rivm_assets.git"
+  #ASSETS_REPO_URL: git@gitlab.rivm.nl:bioinformatics/ngsweb_rivm_assets.git
+
+
 deploy_minilims:
   stage: deploy
   script:
@@ -18,6 +24,12 @@ deploy_test:
   stage: deploy
   script:
   - sudo cp -r ${CI_PROJECT_DIR}/. /opt/ngsweb
+  #copy all assets needed for branding parallel to 'white_label'
+  - sudo rm -rf /tmp/temp_branding
+  - git clone $ASSETS_REPO_URL /tmp/temp_branding
+  - sudo cp -rf /tmp/temp_branding/* /opt/ngsweb/app/static/
+  - sudo rm -rf /tmp/temp_branding
+  # finally restart
   - sudo /bin/systemctl restart ngsweb.service
   only:
     refs:
@@ -25,22 +37,37 @@ deploy_test:
   tags:
     - test
 
+
 deploy_acc:
   stage: deploy
   script:
   - sudo cp -r ${CI_PROJECT_DIR}/. /opt/ngsweb
+  #copy all assets needed for branding parallel to 'white_label'
+  - sudo rm -rf /tmp/temp_branding
+  - git clone $ASSETS_REPO_URL /tmp/temp_branding
+  - sudo cp -rf /tmp/temp_branding/* /opt/ngsweb/app/static/
+  - sudo rm -rf /tmp/temp_branding
+  # finally restart
   - sudo /bin/systemctl restart ngsweb.service
   only:
     - master
   tags:
     - acc
 
+
 deploy_production:
   stage: deploy
   script:
   - sudo cp -r ${CI_PROJECT_DIR}/. /opt/ngsweb
+  #copy all assets needed for branding parallel to 'white_label'
+  - sudo rm -rf /tmp/temp_branding
+  - git clone $ASSETS_REPO_URL /tmp/temp_branding
+  - sudo cp -rf /tmp/temp_branding/* /opt/ngsweb/app/static/
+  - sudo rm -rf /tmp/temp_branding
+  # finally restart
   - sudo /bin/systemctl restart ngsweb.service
   only:
     - release
   tags:
     - prod
+
