@@ -35,7 +35,12 @@ from app.auth import auth_endpoint
 from .projectdb_api import rest_call
 from .database import db
 from .constants import *
-from instance.constants import ATTR_USER_JOB_SITE, ATTR_USER_JOB_CLUSTER
+from instance.constants import (
+    ATTR_PROCESSREQUEST,
+    ATTR_PROCESSREQUEST_CLUSTER,
+    ATTR_PROCESSREQUEST_PROCESSGROUPID,
+    ATTR_PROCESSREQUEST_PROCESSID
+)
 from copy import deepcopy
 
 bp = Blueprint('collbrowser', __name__, url_prefix='/collbrowser')
@@ -56,8 +61,6 @@ MAX_TREEVIEW_COLLS = 150
 ATTR_DATASETID = 'sys::dataset_id'
 ATTR_DATAOBJECTID = 'sys::object_id'
 ATTR_PROJECTID = 'projectID'
-ATTR_PROCESSID = 'processID'
-ATTR_PROCESSGROUPID = 'processgroupID'
 ATTR_USER_STATE = 'user::data::state'
 ATTR_SYS_STATE = 'sys::data::state'
 ATTR_RUNSHEET_PROCESSGROUPGUID = 'sys::runsheet::processgroupid'
@@ -74,7 +77,6 @@ ATTR_ARCHIVE_DESIREDSTATE = f'{ATTR_ARCHIVE_PREFIX}desired_state'
 ATTR_ARCHIVE_KEEP_ONLINE = f'{ATTR_ARCHIVE_PREFIX}keep_online'
 ATTR_ARCHIVE_KEEP_ONLINE_TILL = f'{ATTR_ARCHIVE_USR_PREFIX}keep_online_till'
 ATTR_ARCHIVE_LOCAL = f'{ATTR_ARCHIVE_PREFIX}local'
-ATTR_PROCESSREQUEST = 'processrequest'
 ATTR_ARCHIVE_STATE = f'{ATTR_ARCHIVE_PREFIX}state'
 ATTR_ARCHIVE_MINCOPIES = f'{ATTR_ARCHIVE_PREFIX}min_copies'
 ATTR_ARCHIVE_CREATERETENTION = f'{ATTR_ARCHIVE_PREFIX}create_retention'
@@ -447,11 +449,11 @@ class CollectionState():
 
     @property
     def processgroupid(self):
-        return self._meta(ATTR_PROCESSGROUPID, "")
+        return self._meta(ATTR_PROCESSREQUEST_PROCESSGROUPID, "")
 
     @property
     def processid(self):
-        return self._meta(ATTR_PROCESSID, "")
+        return self._meta(ATTR_PROCESSREQUEST_PROCESSID, "")
 
     @property
     def processrequest(self):
@@ -588,20 +590,18 @@ def startprocess():
 
     cluster_name = request.args.get('cluster')
     if cluster_name:
-        site = current_user.irods_env.get("sites_and_clusters",{}).get("clusters", {}).get(cluster_name,{}).get("site")
-        if site:
-            iqry.scollmetaval(collection, ATTR_USER_JOB_SITE, site)
-        iqry.scollmetaval(collection, ATTR_USER_JOB_CLUSTER, cluster_name)
+        iqry.scollmetaval(collection, ATTR_PROCESSREQUEST_CLUSTER, cluster_name)
 
     processid = request.args.get('processid')
     processgroupid = request.args.get('processgroupid')
     processgroupguid = request.args.get('processgroupguid')
+    iqry.rmallcollmetaattr(collection, ATTR_PROCESSREQUEST_PROCESSID)
+    iqry.rmallcollmetaattr(collection, ATTR_PROCESSREQUEST_PROCESSGROUPID)
     if processid:
-        iqry.scollmetaval(collection, ATTR_PROCESSID, processid)
+        iqry.scollmetaval(collection, ATTR_PROCESSREQUEST_PROCESSID, processid)
         iqry.scollmetaval(collection, ATTR_PROCESSREQUEST, current_user.username)
     elif processgroupid:
-        iqry.rmallcollmetaattr(collection, ATTR_PROCESSID)
-        iqry.scollmetaval(collection, ATTR_PROCESSGROUPID, processgroupid)
+        iqry.scollmetaval(collection, ATTR_PROCESSREQUEST_PROCESSGROUPID, processgroupid)
         iqry.scollmetaval(collection, ATTR_PROCESSREQUEST, current_user.username)
     elif processgroupguid:
         # Restart all NOTRUN tasks of current processgroup
