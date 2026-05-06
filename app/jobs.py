@@ -329,6 +329,8 @@ def jobdetails():
         'sys::run::requestinguser': ('Requesting user', 'irods_user'),
         'sys::run::pipeline_dir': ('Pipeline run directory', 'directory'),
         'sys::run::run_dir': ('Pipeline run directory', 'directory'),
+        'sys::run::site': ('Site', 'text'),
+        'sys::run::cluster': ('Cluster', 'text'),
         'sys::run::useprojectaccount': ('Use project service account', 'boolean'),
         'sys::runsheet::repo': ('Git repository', 'url'),
         'sys::runsheet::tag': ('Git tag', 'tag'),

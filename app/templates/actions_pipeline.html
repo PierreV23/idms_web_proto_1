@@ -43,14 +43,16 @@
     const process_id = $("#processSelect").val();
     const clusterSelect = $("#clusterSelect");
     const compatible_clusters = process_dict[process_id]?.compatible_clusters
+    clusterSelect.empty();
     if (compatible_clusters) {
-      $('#clusterSelectFormElement').attr('hidden', false)
-      clusterSelect.empty();
       compatible_clusters.forEach(function(item) {
         clusterSelect.append($('<option>', {value: item, text: item}));
       });
-    } else {
-      $('#clusterSelectFormElement').attr('hidden', true)
+      if (compatible_clusters.length > 1) {
+        $('#clusterSelect').attr('disabled', false)
+      } else {
+        $('#clusterSelect').attr('disabled', true)
+      }
     }
   }
 
