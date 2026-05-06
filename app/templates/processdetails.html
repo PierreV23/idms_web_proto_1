@@ -45,7 +45,7 @@
           <input type="text" class="form-control" name="repo" id="repo_{{process}}" placeholder="GIT Repo"
             value="{{ details['repo'] }}">
         </div>
-        {% if sites_and_clusters %}
+        {% if 'sites' in sites_and_clusters %}
         <div class="form-group">
           <label for="compatible_clusters_{{process}}">Compatible clusters</label>
           <select class="form-control compatible-clusters-select2" name="compatible_clusters" id="compatible_clusters_{{process}}" multiple required>
@@ -63,7 +63,7 @@
         {% endif %}
 
         <div class="form-group">
-          <label for="required_memory_{{process}}">Required memory (MB)</label>
+          <label for="required_memory_{{process}}">Required memory (GB)</label>
           <input type="number" class="form-control" name="required_memory" id="required_memory_{{process}}" placeholder="Required memory"
             value="{{ details['required_memory'] }}">
         </div>
