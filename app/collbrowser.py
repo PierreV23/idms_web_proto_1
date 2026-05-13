@@ -1736,6 +1736,14 @@ def colltree():
     rs = add_items(current, level, active)
     return('<ul id="{}">{}</ul>'.format(current, rs))
 
+@bp.route('/_is_dataset')
+def is_dataset():
+    collection = request.args.get('path')
+    if collection is None:
+        return {'result': False }
+    coll_state = CollectionState(collection)
+    return {'result': coll_state.is_dataset}
+
 @bp.route('/')
 @login_required
 def collbrowser():
