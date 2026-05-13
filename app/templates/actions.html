@@ -205,6 +205,13 @@ $('#shareButton').on('click', function(){
         Settings
       </a>
     </li>
+    <li class="nav-item mx-2">
+      <a class="nav-link" id="admin-tab"
+        data-toggle="tab" href="#admin" role="tab"
+        aria-controls="admin" aria-selected="false">
+        Admin
+      </a>
+    </li>
     {% endif %}  
   </ul>
 </div>
@@ -227,6 +234,7 @@ $('#shareButton').on('click', function(){
   <div class="tab-pane h-100" id="noactions" role="tabpanel" aria-labelledby="noactions-tab"></div>    
 {% endif %}
   <div class="tab-pane h-100" id="settings" role="tabpanel" aria-labelledby="settings-tab"></div>
+  <div class="tab-pane h-100" id="admin" role="tabpanel" aria-labelledby="admin-tab"></div>
 </div>
 
   <!-- New share form -->

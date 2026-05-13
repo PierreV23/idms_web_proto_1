@@ -19,6 +19,7 @@ import uuid
 from app import projects, iqry
 from app.datafield import datafield
 from app.projectdb_api import rest_call
+from app.irods_helper import get_or_set_uid
 import randomname
 import json
 import re
@@ -172,16 +173,6 @@ def pending_uploads():
     }
     return json.dumps(response)
 
-def get_or_set_uid(coll_obj):
-    """If the referred collection has no dataset_id, generate one
-    Return the dataset_id
-    """
-    uid = getmetaitem(coll_obj, ATTR_DATASETID)
-    if not uid:
-        uid = str(uuid.uuid4())
-        coll_obj.metadata[ATTR_DATASETID] = iRODSMeta(ATTR_DATASETID, uid)
-    return uid
-
 @bp.route('_uploadsettings', methods=['GET', 'POST'])
 def upload_settings():
     FIELDS = {
@@ -316,9 +307,9 @@ def new_upload():
 
     # Now generate a collection for the upload
     coll = unique_coll(os.path.join('/', current_user.irods_zone, 'home', current_user.username), prefix=name)
+    get_or_set_uid(coll)
     with irods_manager.session() as session:
         collobj = session.collections.get(coll)
-        get_or_set_uid(collobj)
         iqry.scollmetaval(coll, ATTR_UPLOADNAME, name)
         iqry.scollmetaval(coll, ATTR_UPLOAD, UploadType.Pending)
         if not (parent := request.args.get('parent')) is None:

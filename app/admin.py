@@ -7,22 +7,27 @@ Created on Wed Apr 15 10:46:50 2020
 """
 import json
 import os
+import time
 import irods.exception
-from datetime import date, timedelta
 from flask import Blueprint, render_template, redirect, jsonify, request, url_for, current_app
 from flask_login import current_user, login_required
 from irods.meta import iRODSMeta
-from irods.models import Collection, CollectionMeta, DataObject, Resource, ResourceMeta, DataObjectMeta, RuleExec
+from irods.models import Collection, CollectionMeta, DataObject, Resource, DataObjectMeta, RuleExec
 from irods.column import Criterion
 from irods.query import SpecificQuery
 from fs_irods import fs_irods
-from app.irods_helper import getmetaitem
+from app.irods_helper import getmetaitem, get_or_set_uid
 from app.datafield import datafield
 from app.irodssessions import irods_manager
 from app.settings import RESOURCE_PROPS
 from app.auth import auth_endpoint
 from app.constants import ACTIVE_RUNSHEET_STATES
-from . import flaskcache
+from instance.constants import (
+    ATTR_LOCK, ATTR_CONSISTENCY_PREFIX, 
+    ATTR_COLLSIZE, ATTR_COLLSIZE_TIME,
+    ATTR_ARCHIVE_LASTCHECK, ATTR_ARCHIVE_LASTRUN
+)
+from . import flaskcache, iqry
 from app.accounting_page import *
 
 ATTR_ARCHIVE_STATUS = "sys::archive::status"
@@ -436,3 +441,34 @@ def get_dates():
             main_chartdata = prepChartdata(main_display)
         )
     )
+
+@bp.route('/collection_actions', methods= ["POST"])
+def collection_actions():
+    data = request.form.to_dict()
+    collection = data.get('collection')
+    action = data.get('action')
+    if not collection or not action:
+        return { "Result": "Failed" }, 400
+    if action == 'remove-locks':
+        meta = iqry.qcollmetadict(collection)
+        for m in meta:
+            if m.startswith(ATTR_LOCK):
+                iqry.rmallcollmetaattr(collection, m)
+    if action == 'rerun-tiering':
+        desired_state = iqry.qcollmetaval(collection, ATTR_ARCHIVE_DESIREDSTATE)
+        if desired_state:
+            iqry.scollmetaval(collection, ATTR_ARCHIVE_DESIREDSTATE, desired_state, force=True, atomic=False)
+    if action == 'remove-state':
+        meta = iqry.qcollmetadict(collection)
+        for prefix in (ATTR_CONSISTENCY_PREFIX, ATTR_COLLSIZE, ATTR_COLLSIZE_TIME):
+            for m in meta:
+                if m.startswith(prefix):
+                    iqry.rmallcollmetaattr(collection, m)
+    if action == 'reset-archive':
+        iqry.rmallcollmetaattr(collection, ATTR_ARCHIVE_LASTCHECK)
+        iqry.rmallcollmetaattr(collection, ATTR_ARCHIVE_LASTRUN)
+    if action == 'make-dataset':
+        get_or_set_uid(collection)
+    # Add a short delay, otherwise the removed metadata will still be visible
+    time.sleep(0.2)
+    return { "Result": "OK" }
