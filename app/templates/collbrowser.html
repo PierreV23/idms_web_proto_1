@@ -31,7 +31,7 @@ menuname='collectionbrowser'
 {% block menuitems %}
 <li class="nav-header">ACTIONS</li>
 {% if current_user.feature('provenance') %}
-<li class="nav-item">
+<li class="nav-item dataset-only">
   <a href="#" class="nav-link" onClick="uploadDownstream()">
     <i class="fas fa-plus nav-icon"></i>
     Upload downstream data
@@ -527,6 +527,20 @@ menuname='collectionbrowser'
     });
   }
 
+  function handle_datasets() {
+    $.get('{{ url_for('collbrowser.is_dataset') }}', {
+      path: collection
+    }, function (data) {
+      if (data.result) {
+        $('.dataset-only').attr('hidden', false)
+        console.log('IS DATASET')
+      } else  {
+        $('.dataset-only').attr('hidden', true)
+        console.log('NO DATASET')
+      }
+    });    
+  }
+
   function set_path() {
     $('.collist').popover('dispose')
     load_list(true);
@@ -534,6 +548,7 @@ menuname='collectionbrowser'
     load_meta();
     tree_active();
     load_actions();
+    handle_datasets();
   }
 
   function load_meta() {
