@@ -18,7 +18,7 @@ from .database import ICATDBUnavailableException
 
 from . import routes, auth, collbrowser, jobs, docviewer, messages, contacts_manager
 from . import projects, cluster, admin, reports, userinfo, referencedatasets
-from . import ngsruns, upload, flaskcache, search, metaedit
+from . import ngsruns, upload, flaskcache, search, metaedit, irods_api
 from . import oldjobs
 from .ngsruns import db as ngsruns_db
 from .database import db as jobs_db
@@ -106,6 +106,7 @@ def create_app():
     app.register_blueprint(search.bp)
     app.register_blueprint(metaedit.bp)
     app.register_blueprint(contacts_manager.bp)
+    app.register_blueprint(irods_api.bp)
 
     flaskcache.init(app)
 

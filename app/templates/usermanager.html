@@ -26,12 +26,32 @@
     </table>
     <hr>
     {% if can_modify | default(true) %}
-    <input id="{{ usertype }}-username-input" type="text">
+    <input class="form-control userSelect" id="{{ usertype }}-username-input" type="text" autocomplete="off">
     <button class="user-add btn-primary">Add user</button>
     <hr>
     <button class="user-delete btn-danger" disabled>Delete Selected</button>
     {% endif %}
     <script>
+
+        $('.userSelect').autoComplete({
+            resolver: 'custom',
+            formatResult: function (item) {
+                return {
+                    value: item.account,
+                    text: item.account,
+                    html: item.label
+                };
+            },
+            events: {
+                search: function (qry, callback) {
+                    $.ajax(
+                        '{{ url_for("irods_api.usersearch") }}?q=' + qry
+                    ).done(function (res) {
+                        callback(res)
+                    });
+                }
+            }                   
+        });
 
         $('.userTable').bootstrapTable({
             onClickRow: function (row, $element, field) {
