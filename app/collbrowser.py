@@ -515,7 +515,7 @@ def actions_tabs():
     collection = request.args.get('collection', type=str)
     tabname = request.args.get('tabname', type=str)
     coll_state = CollectionState(collection)
-    TABS = ['archive', 'settings', 'pipeline', 'validity', 'provenance', 'sharing', 'noactions']
+    TABS = ['archive', 'settings', 'pipeline', 'validity', 'provenance', 'sharing', 'noactions', 'admin']
     if tabname in TABS:
         return render_template(f'actions_{tabname}.html', coll_state=coll_state)
     else:
@@ -526,6 +526,7 @@ def coll_actions():
     collection = request.args.get('path','/', type=str)
     coll_state = CollectionState(collection)
     return render_template('actions.html', coll_state=coll_state, collection=collection, admin=current_user.is_admin)
+
 @bp.route('_sharetable')
 def sharetable():
     collection = request.args.get('collection')
@@ -1743,6 +1744,14 @@ def colltree():
     level = 1
     rs = add_items(current, level, active)
     return('<ul id="{}">{}</ul>'.format(current, rs))
+
+@bp.route('/_is_dataset')
+def is_dataset():
+    collection = request.args.get('path')
+    if collection is None:
+        return {'result': False }
+    coll_state = CollectionState(collection)
+    return {'result': coll_state.is_dataset}
 
 @bp.route('/')
 @login_required
