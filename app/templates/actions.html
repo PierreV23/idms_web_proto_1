@@ -23,9 +23,11 @@
 
     function startProcess() {
       var processid = $("#processSelect").val()
+      var cluster = $("#clusterSelect").val()
       $.get('{{ url_for('collbrowser.startprocess') }}', {
         collection: '{{ collection }}',
-        processid: processid
+        processid: processid,
+        cluster: cluster
       }, function(data) {
         load_meta();
         load_actions();
@@ -186,17 +188,17 @@ $('#shareButton').on('click', function(){
         aria-controls="sharing" aria-selected="false">
         Sharing
       </a>
-    </li>        
+    </li>
     {% endif %}
 {% else %}
   <li class="nav-item mx-2">
-    <a class="nav-link" id="noactions-tab" 
-      data-toggle="tab" href="#noactions" role="tab" 
+    <a class="nav-link" id="noactions-tab"
+      data-toggle="tab" href="#noactions" role="tab"
       aria-controls="noactions" aria-selected="false">
         No dataset selected
     </a>
   </li>
-{% endif %}  
+{% endif %}
     {% if admin is sameas True %}
     <li class="nav-item mx-2">
       <a class="nav-link" id="settings-tab"
@@ -212,7 +214,7 @@ $('#shareButton').on('click', function(){
         Admin
       </a>
     </li>
-    {% endif %}  
+    {% endif %}
   </ul>
 </div>
 
@@ -231,7 +233,7 @@ $('#shareButton').on('click', function(){
   <div class="tab-pane autoscroll-y h-100" id="provenance" role="tabpanel" aria-labelledby="provenance-tab"></div>
   <div class="tab-pane autoscroll-y h-100" id="sharing" role="tabpanel" aria-labelledby="sharing-tab"></div>
 {% else %}
-  <div class="tab-pane h-100" id="noactions" role="tabpanel" aria-labelledby="noactions-tab"></div>    
+  <div class="tab-pane h-100" id="noactions" role="tabpanel" aria-labelledby="noactions-tab"></div>
 {% endif %}
   <div class="tab-pane h-100" id="settings" role="tabpanel" aria-labelledby="settings-tab"></div>
   <div class="tab-pane h-100" id="admin" role="tabpanel" aria-labelledby="admin-tab"></div>
@@ -261,13 +263,13 @@ $('#shareButton').on('click', function(){
             </div>
             <div class="form-group hidden results" id="shareresult">
               <label for="idResult">Result</label>
-              <input type="text" class="form-control" name="result" id="idResult" readonly></textarea>              
+              <input type="text" class="form-control" name="result" id="idResult" readonly></textarea>
               <label for="idURL">URL</label>
               <input type="text" class="form-control" name="url" id="idURL" readonly></textarea>
             </div>
             <div class="form-group hidden results">
                 <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
-            </div>                     
+            </div>
             <div class="form-group" id="shareGroup">
               <button type="button" id="shareButton" class="btn btn-primary">Share</button>
               <button type="button" class="btn btn-primary" data-dismiss="modal">Cancel</button>

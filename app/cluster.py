@@ -6,12 +6,13 @@ Created on Tue Nov 19 15:23:56 2019
 @author: wierinve
 """
 
-from flask import Blueprint, render_template, redirect, request, url_for
+from flask import Blueprint, render_template, redirect, request, url_for, current_app
 from flask_login import login_user, current_user, login_required
 import sys
 import subprocess
 
 bp = Blueprint('cluster', __name__, url_prefix='/cluster')
+
 
 def getinfo(command, splitchar):
     z=subprocess.getoutput(command)
@@ -31,8 +32,8 @@ def test_if_lsf_installed():
 
 @bp.route('/info')
 @login_required
-def info(): 
-    test_if_lsf_installed()  
+def info():
+    test_if_lsf_installed()
 
     bhosts=getinfo("bhosts -w bioinfo", "")
     bhostsh=bhosts[0]

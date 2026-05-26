@@ -911,3 +911,8 @@ svg text{
     pointer-events: none;
     transition: opacity 0.2s ease-in-out;
 }
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: #bfcad6 !important; /* Often changed together */
+    color: black !important;
+}

@@ -47,7 +47,7 @@ def get_processlist(project):
     pl, result = rest_call('GET', f'projects/{project}/processes')
     processes = []
     if result == 200:
-        processes = [ p['name'] for p in pl ]
+        processes = {p["name"]: p for p in pl}
     return processes
 
 def get_processgrouplist(project):
@@ -200,7 +200,7 @@ def show_processdetails():
     """
     processname = request.args.get('name', '', type=str)
     pl, result = rest_call('GET', f'processes/{processname}')
-    return render_template('processdetails.html', details=pl)
+    return render_template('processdetails.html', details=pl, sites_and_clusters=current_user.irods_env.get("sites_and_clusters", {}))
 
 
 @bp.route('/update_project', methods=['GET', 'POST'])
@@ -275,10 +275,11 @@ def update_process():
     """
     """
     requestdata = request.form.to_dict()
+    requestdata["compatible_clusters"] = request.form.getlist("compatible_clusters")
     data = {}
     procid = requestdata.get('procid')
     process = requestdata.get('process')
-    for attr in ['description', 'repo', 'tag', 'concurrency_limit', 'max_runtime']:
+    for attr in ['description', 'repo', 'tag', 'concurrency_limit', 'max_runtime', 'compatible_clusters', 'required_memory']:
         if attr in requestdata:
             data[attr] = requestdata[attr]
     add_checkbox(data, requestdata, 'do_staging', negate=True, key='omit_staging')
