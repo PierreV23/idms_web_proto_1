@@ -1,6 +1,3 @@
-
-
-
 #from logging import FileHandler
 import os
 import redis
@@ -8,22 +5,25 @@ from flask import Flask, redirect, url_for, request, flash
 from flask_login import LoginManager
 from flask_session import Session
 from cachelib.file import FileSystemCache
-from app.webuser import WebUser
+
+from .components import contacts_manager, docviewer
+from .utils import auth, cluster, flaskcache
+from app.utils.webuser import WebUser
 import logging.config
 import irods.exception
 from Crypto.PublicKey import RSA
-from app.webuser import AuthException
+from app.utils.webuser import AuthException
 from .ngsruns import NGSRunsDBUnavailableException
-from .database import ICATDBUnavailableException
+from .utils.database import ICATDBUnavailableException
 
-from . import routes, auth, collbrowser, jobs, docviewer, messages, contacts_manager
-from . import projects, cluster, admin, reports, userinfo, referencedatasets
-from . import ngsruns, upload, flaskcache, search, metaedit, irods_api
-from . import oldjobs
+from . import collbrowser, routes, jobs, messages
+from . import projects, admin, reports, userinfo, referencedatasets
+from . import ngsruns, upload, search, metaedit, irods_api
 from .ngsruns import db as ngsruns_db
-from .database import db as jobs_db
-from .irodssessions import irods_manager
+from .utils.database import db as jobs_db
+from idms.common.irods.irods_sessions import irods_manager
 from .branding import get_branding
+
 
 #from app.stats import statstore
 
@@ -69,7 +69,7 @@ def create_app():
         from uwsgidecorators import postfork
         @postfork
         def init_dbs_wrapper():
-           init_dbs(app)
+            init_dbs(app)
         init_dbs_wrapper()
     except ModuleNotFoundError:
         init_dbs( app )
@@ -101,7 +101,6 @@ def create_app():
     app.register_blueprint(ngsruns.bp)
     app.register_blueprint(upload.bp)
     app.register_blueprint(userinfo.bp)
-    app.register_blueprint(oldjobs.bp)
     app.register_blueprint(messages.bp)
     app.register_blueprint(search.bp)
     app.register_blueprint(metaedit.bp)
@@ -136,25 +135,25 @@ def errorhandlers(app):
     @app.errorhandler(irods.exception.PAM_AUTH_PASSWORD_FAILED)
     def invalid_session0(e):
         """Session may be stale. Destroy it and redirect to login page."""
-        logging.info(f"Invalid session")
+        logging.info("Invalid session")
         return auth.logout()
 
     @app.errorhandler(irods.exception.CAT_INVALID_AUTHENTICATION)
     def invalid_session1(e):
         """Session may be stale. Destroy it and redirect to login page."""
-        logging.info(f"Invalid session")
+        logging.info("Invalid session")
         return auth.logout()
 
     @app.errorhandler(AuthException)
     def auth_failed(e):
         """Destroy session and redirect to login page."""
-        logging.info(f"Auth Exception")
+        logging.info("Auth Exception")
         return redirect(url_for('auth.login', next=request.full_path))
 
     @app.errorhandler(AttributeError)
     def handle_attribute_error(e):
         """Destroy session and redirect to login page."""
-        logging.info(f"AttributeError")
+        logging.exception(f"AttributeError: {e}")
         return redirect(url_for('auth.login', next=request.full_path))  
 
     @app.errorhandler(NGSRunsDBUnavailableException)
@@ -162,11 +161,6 @@ def errorhandlers(app):
         flash('NGSRuns Database Unavailable', 'error')
         return redirect(url_for('main.home'))
 
-    @app.errorhandler(ICATDBUnavailableException)
-    def handle_bad_jobs_request(e):
-        flash('Jobs table unavailable. Reverting to old jobs view ...', 'error')
-        return redirect(url_for('oldjobs.show_jobs'))
-    
     @app.errorhandler(irods.exception.CAT_INVALID_USER)
     def invalid_user(e):
         """Connection to iRODS failing. Redirect to login page"""
@@ -175,9 +169,10 @@ def errorhandlers(app):
 
 
 def init_dbs(app):
-        ngsruns_db.init_app(app)
-        jobs_db.init_app(app)
-        irods_manager.init_app(app)
+    ngsruns_db.init_app(app)
+    jobs_db.init_app(app)
+    irods_manager.init_app(app.config.get('IRODS_ENVS', {}), 
+                            app.config.get('conn_refresh_time', 120))
 
 
 def create_keys(app):

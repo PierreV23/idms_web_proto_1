@@ -3,47 +3,40 @@
 """Data upload interface voor iDMS
 """
 
-import csv
-import io
 import os
-from pathlib import Path
 import shutil
-import sys
 import logging
 import time
 import jsonavu
-from flask import Blueprint, render_template, redirect, request, url_for, session, current_app, flash
-from flask import jsonify
+from flask import Blueprint, render_template, redirect, request, url_for, flash
 from flask_login import current_user, login_required
-import uuid
-from app import projects, iqry
-from app.datafield import datafield
-from app.projectdb_api import rest_call
-from app.irods_helper import get_or_set_uid
+from app.utils.datafield import datafield
+from app.utils.projectdb_api import rest_call
+from idms.common.irods.irods_helper import get_or_set_uid
 import randomname
 import json
 import re
 from irods.models import Collection, CollectionMeta
 from irods.column import Criterion
-from irods.meta import iRODSMeta
 
-from app.irodssessions import irods_manager
-from ast import literal_eval
-from fs_irods import fs_irods
 
-from app.constants import ( 
+from idms.common.irods.irods_sessions import irods_manager
+from idms.common.filesys.fs_irods import fs_irods
+
+from idms.common.constants.attribute_names import ( 
         ATTR_PROJECTID,
         ATTR_UPLOAD,
         ATTR_UPLOADNAME,
         ATTR_UPLOADPARENT,
-        ATTR_DATASETID,
         ATTR_UPLOADSETTINGS ,
         ATTR_UPLOADMETA, 
         ATTR_SCHEMA_IN_USE,
         ATTR_DATASET_DEFAULT_SUFFIX,
-        META_SUFFIX,
+        META_SUFFIXLENGTH,
         AVU2JSON_PREFIX
         )
+
+from app.utils import cached_iqry
 
 
 # remove spacial characters, but there is no need to only allow [a-zA-Z_], quotes, paranthesis, "@" are all valid characters
@@ -74,12 +67,13 @@ def collection_basename(coll):
     """
 
     name = os.path.basename(coll)
-    sl = iqry.qcollmetaval(coll, META_SUFFIX)
+    sl = cached_iqry.qcollmetaval(coll, META_SUFFIXLENGTH)
     if sl:
         name = name[:-int(sl)-1]
     return name
 
 
+#there is a generate_unique_dataset_from in irods_helper
 def unique_coll(base_coll, prefix=None, use_date=False):
     """Create a collection with a unique collection name
 
@@ -114,7 +108,7 @@ def unique_coll(base_coll, prefix=None, use_date=False):
         collname = os.path.join(base_coll, f'{fullprefix}')
         fullprefix = f'{fullprefix}_'
     i = 1
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         while session.collections.exists(collname):
             collname = os.path.join(base_coll, f'{fullprefix}{i:04}')
             i += 1
@@ -135,27 +129,20 @@ def show_uploads():
     return render_template('uploads.html')
 
 
-# TODO: use the irods_helper instead (role irods_cronjobs)
-def getmetaitem(irods_obj, attr, default=None):
-    try:
-        value = irods_obj.metadata.get_one(attr).value
-    except KeyError:
-        value = default
-    return value
 
 @bp.route('_pendinguploads')
 def pending_uploads():
     state = request.args.get('state', UploadType.Pending)
     pending = []
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         query = session.query(Collection).filter( \
             Criterion('=', Collection.owner_name, current_user.username)).filter( \
             Criterion('=', CollectionMeta.name, ATTR_UPLOAD)).filter( \
             Criterion('=', CollectionMeta.value, state))
         for c in query:
             coll = c[Collection.name]
-            projectID = iqry.qcollmetaval(coll, f'{ATTR_UPLOADSETTINGS}projectID', default='')
-            name = iqry.qcollmetaval(coll, ATTR_UPLOADNAME, default=coll)
+            projectID = cached_iqry.qcollmetaval(coll, f'{ATTR_UPLOADSETTINGS}projectID', default='')
+            name = cached_iqry.qcollmetaval(coll, ATTR_UPLOADNAME, default=coll)
             name_url = url_for('upload.upload_settings', coll=coll)
             if state == UploadType.Pending:
                 namestr = f'<a href="{ name_url }">{name}</a>'
@@ -186,19 +173,19 @@ def upload_settings():
             return redirect(url_for('upload.show_uploads'))
         name = os.path.basename(coll)
         my_projects = current_user.projects()
-        meta = iqry.qcollmetadict(coll)
+        meta = cached_iqry.qcollmetadict(coll)
         data = { k: meta.get(f'{ATTR_UPLOADSETTINGS}{k}', '') for k in FIELDS }
         return render_template('upload_settings.html', name=name, coll=coll, projects=my_projects, fields=FIELDS, data=data)
     if request.method == 'POST':
         data = request.form.to_dict()
         coll = data.get('coll')
         projectID = data.get('projectID')
-        projectID_meta_current = iqry.qcollmetadict(coll).get(f'{ATTR_UPLOADSETTINGS}projectID', None)
+        projectID_meta_current = cached_iqry.qcollmetadict(coll).get(f'{ATTR_UPLOADSETTINGS}projectID', None)
         if projectID_meta_current is not None and projectID != projectID_meta_current:
             unset_upload_meta(coll)
         for k, v in data.items():
             if k in FIELDS and v:
-                iqry.scollmetaval(coll, f'{ATTR_UPLOADSETTINGS}{k}', str(v).strip())
+                cached_iqry.scollmetaval(coll, f'{ATTR_UPLOADSETTINGS}{k}', str(v).strip())
         if data.get('submitbutton', 'save') == 'next':
             return redirect(url_for('upload.upload_meta', coll=coll))
         else:
@@ -212,7 +199,7 @@ def upload_meta():
         name = os.path.basename(collection)
         if collection is None:
             return redirect(url_for('upload.show_uploads'))
-        project_name = iqry.qcollmetaval(collection, f'{ATTR_UPLOADSETTINGS}projectID')
+        project_name = cached_iqry.qcollmetaval(collection, f'{ATTR_UPLOADSETTINGS}projectID')
         
         meta_default_values_collection = None
         # schemata for datasets in this project are here:
@@ -220,11 +207,11 @@ def upload_meta():
             project_details, _ = rest_call('GET', 'projects/{}'.format(project_name))
             meta_default_values_collection = project_details['default_collection']
         
-        metadata = iqry.qcollmeta(collection) #the typed version tries reading the unit field as a python type
-        metadict = iqry.qcollmetadict(collection)
+        metadata = cached_iqry.qcollmeta(collection) #the typed version tries reading the unit field as a python type
+        metadict = cached_iqry.qcollmetadict(collection)
         avudata = [ { 'a': avu[CollectionMeta.name][len(ATTR_UPLOADMETA):], 'v': avu[CollectionMeta.value], 'u': avu[CollectionMeta.units] } for avu in metadata if avu[CollectionMeta.name].startswith(ATTR_UPLOADMETA) ]
         data = jsonavu.avu2json(avudata, AVU2JSON_PREFIX)
-        metadict = iqry.qcollmetadict(collection) # no unit here, not needed
+        metadict = cached_iqry.qcollmetadict(collection) # no unit here, not needed
         selectedSchema = metadict.get(ATTR_SCHEMA_IN_USE + ATTR_DATASET_DEFAULT_SUFFIX, None)        
         return render_template('upload_meta.html',
                                 coll=collection,   #This is for the menu! Just so we dont lose which collection we are working on when we switch inside the menu between upload_settings, upload_meta and upload_data
@@ -237,13 +224,13 @@ def upload_meta():
 
 
 def unset_upload_meta(collection):
-    metadata = iqry.qcollmeta(collection) 
+    metadata = cached_iqry.qcollmeta(collection) 
     avudata = [ { 'a': avu[CollectionMeta.name], 'v': avu[CollectionMeta.value], 'u': avu[CollectionMeta.units] } for avu in metadata ]
     for avu in avudata:
         if avu['a'].startswith(ATTR_UPLOADMETA):
-            iqry.delcollmeta(collection, avu['a'], avu['v'], avu['u'] )
+            cached_iqry.delcollmeta(collection, avu['a'], avu['v'], avu['u'] )
         if avu['a'] == [ATTR_SCHEMA_IN_USE + ATTR_DATASET_DEFAULT_SUFFIX]:
-            iqry.delcollmeta(collection, avu['a'], avu['v'], avu['u'] )
+            cached_iqry.delcollmeta(collection, avu['a'], avu['v'], avu['u'] )
 
 
 @bp.route('_uploaddata', methods=['GET', 'POST'])
@@ -261,12 +248,12 @@ def upload_data():
             fullPath = f.filename
         filename = os.path.join(coll, fullPath)
         filepath = os.path.dirname(filename)
-        with irods_manager.session() as session:
+        with irods_manager.session(current_user) as session:
             if not fs_irods(session=session).folderexists(filepath):
                 fs_irods(session=session).mkdir(filepath)
             with fs_irods(session=session).open(filename, 'w') as d:
                 shutil.copyfileobj(f, d)
-        iqry.invalidate(coll)
+        cached_iqry.invalidate(coll)
         return 'OK'
 
 @bp.route('_actions', methods=['GET'])
@@ -275,17 +262,17 @@ def upload_actions():
     coll = request.args.get('coll')
     if action == 'finalize':
         # show error message when metadata schema is not selected
-        list_of_used_schemata = [key for key in iqry.qcollmetadict(coll).keys() if key.startswith(ATTR_UPLOADMETA)]
+        list_of_used_schemata = [key for key in cached_iqry.qcollmetadict(coll).keys() if key.startswith(ATTR_UPLOADMETA)]
         if len(list_of_used_schemata) == 0:
-            flash(f'No metadata schema was selected.', 'error')
+            flash('No metadata schema was selected.', 'error')
             return redirect(url_for('upload.upload_meta', coll=coll))
-        iqry.scollmetaval(coll, ATTR_UPLOAD, UploadType.Ready)
+        cached_iqry.scollmetaval(coll, ATTR_UPLOAD, UploadType.Ready)
         return redirect(url_for('upload.show_uploads'))
     elif action == 'cancel':
         if not coll.startswith( os.path.join( '/', current_user.irods_zone, 'home', current_user.username ) ):
-            flash(f'Unauthorized action!', 'error')
+            flash('Unauthorized action!', 'error')
             return redirect(url_for('upload.show_uploads'))
-        with irods_manager.session() as session:
+        with irods_manager.session(current_user) as session:
             fs_irods(session=session).rmdir(coll, recurse=True, force=True)
         return redirect(url_for('upload.show_uploads'))
     flash(f'Unknown request: {action}', 'error')
@@ -299,7 +286,7 @@ def new_upload():
     unique = False
     while not unique:
         name = randomname.get_name()
-        with irods_manager.session() as session:
+        with irods_manager.session(current_user) as session:
             q = session.query(CollectionMeta.value).filter(\
                 Criterion('=', CollectionMeta.name, ATTR_UPLOADNAME)).filter(\
                 Criterion('=', CollectionMeta.value, name))
@@ -308,18 +295,19 @@ def new_upload():
     # Now generate a collection for the upload
     coll = unique_coll(os.path.join('/', current_user.irods_zone, 'home', current_user.username), prefix=name)
     get_or_set_uid(coll)
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         collobj = session.collections.get(coll)
-        iqry.scollmetaval(coll, ATTR_UPLOADNAME, name)
-        iqry.scollmetaval(coll, ATTR_UPLOAD, UploadType.Pending)
-        if not (parent := request.args.get('parent')) is None:
-            iqry.scollmetaval(coll, ATTR_UPLOADPARENT, parent)
-            projectID = iqry.qcollmetaval(parent, ATTR_PROJECTID)
+        get_or_set_uid(collobj)
+        cached_iqry.scollmetaval(coll, ATTR_UPLOADNAME, name)
+        cached_iqry.scollmetaval(coll, ATTR_UPLOAD, UploadType.Pending)
+        if (parent := request.args.get('parent')) is not None:
+            cached_iqry.scollmetaval(coll, ATTR_UPLOADPARENT, parent)
+            projectID = cached_iqry.qcollmetaval(parent, ATTR_PROJECTID)
             if projectID:
-                iqry.scollmetaval(coll, f'{ATTR_UPLOADSETTINGS}projectID', projectID)
+                cached_iqry.scollmetaval(coll, f'{ATTR_UPLOADSETTINGS}projectID', projectID)
                 suggested_name = collection_basename(parent)
                 if suggested_name:
-                    iqry.scollmetaval(coll, f'{ATTR_UPLOADSETTINGS}collection', suggested_name)
+                    cached_iqry.scollmetaval(coll, f'{ATTR_UPLOADSETTINGS}collection', suggested_name)
 
     return redirect(url_for('upload.upload_settings', coll=coll ))
 

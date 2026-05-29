@@ -10,16 +10,17 @@ import json
 from flask import abort, flash, Blueprint, render_template, redirect, request, url_for, current_app
 from flask_login import current_user, login_required
 from flask import jsonify
-from .flaskcache import cache, key_zone, key_userzone, dep_zone, dep_userzone
+from .utils.flaskcache import cache, dep_userzone
 from irods.models import Collection, CollectionMeta, User, UserMeta
 from irods.exception import CAT_NO_ROWS_FOUND
 from irods.column import Criterion
-from app.datafield import datafield
+from app.utils.datafield import datafield
 from graphviz import Digraph
-from . import iqry
-from app.constants import COLL_KEY_MAP, ATTR_UPLOAD_DEFAULT_PREFIX, ATTR_METADATA_PREFIX, ATTR_SCHEMA_IN_USE, ATTR_PROJECT_SUFFIX, ATTR_DATASET_DEFAULT_SUFFIX, DEPARTMENTS
-from app.irodssessions import irods_manager
-from .projectdb_api import EPOCH, iso2dt, search, rest_call, add_checkbox
+from .utils import cached_iqry
+from idms.common.constants.attribute_names import  ATTR_UPLOAD_DEFAULT_PREFIX, ATTR_METADATA_PREFIX, ATTR_SCHEMA_IN_USE, ATTR_PROJECT_SUFFIX, ATTR_DATASET_DEFAULT_SUFFIX
+from app.utils.constants import COLL_KEY_MAP, DEPARTMENTS
+from idms.common.irods.irods_sessions import irods_manager
+from .utils.projectdb_api import EPOCH, iso2dt, search, rest_call, add_checkbox
 
 bp = Blueprint('projects', __name__, url_prefix='/projects')
 
@@ -102,7 +103,7 @@ def show_projectdetails():
     projectdetails, result = rest_call('GET', 'projects/{}'.format(projectname))
 
     # Retrieve groups associated with project
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         query = session.query(User.name).filter(
             Criterion('!=', User.type, "rodsuser")).filter(
                 Criterion('=', UserMeta.name, "projectID")).filter(
@@ -172,7 +173,7 @@ def projectcolls():
                 'create_time': datafield('create_time', coll[Collection.create_time], 'timestamp').htmlstring,
                 'owner_name': coll[Collection.owner_name]
             }
-            objdict['type'] = iqry.qcollmetaval(coll[Collection.name], 'sys::data::type', default='')
+            objdict['type'] = cached_iqry.qcollmetaval(coll[Collection.name], 'sys::data::type', default='')
             results['rows'].append(objdict)
     except CAT_NO_ROWS_FOUND:
         pass
@@ -230,7 +231,7 @@ def update_projectsettings():
                 flash(response.get('message'), 'error')
                 location = f'page=processes&process={process}'
             else:
-                location = f'page=processes'
+                location = 'page=processes'
     elif action == 'add_processgroup':
         name = requestdata.get('name')
         if project and name:

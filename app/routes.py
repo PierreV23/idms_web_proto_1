@@ -1,18 +1,17 @@
 from flask import Blueprint
-import logging
 import requests
 from requests.auth import HTTPBasicAuth
 from flask import jsonify, render_template, request, current_app
 from flask_login import current_user, login_required
 import subprocess
-from app.auth import auth_endpoint
-from .irodssessions import irods_manager
-from .constants import FEATURES
+from app.utils.auth import auth_endpoint
 from app.userinfo import cluster_config
 
-from .flaskcache import cache
+from idms.common.irods.irods_sessions import irods_manager
+from .utils.constants import FEATURES
+
+from .utils.flaskcache import cache
 from . import messages
-from . import auth
 
 
 bp = Blueprint('main', __name__, url_prefix=None)
@@ -42,7 +41,7 @@ def msgconfirm():
 def about():
     ngsweb_version = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode('utf-8')
     ngsweb_branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).strip().decode('utf-8')
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         irods_version = '.'.join(map(str, session.server_version))
     return render_template('about.html', irods_version=irods_version, ngsweb_version=ngsweb_version, ngsweb_branch=ngsweb_branch)
 

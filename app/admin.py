@@ -15,47 +15,34 @@ from irods.meta import iRODSMeta
 from irods.models import Collection, CollectionMeta, DataObject, Resource, DataObjectMeta, RuleExec
 from irods.column import Criterion
 from irods.query import SpecificQuery
-from fs_irods import fs_irods
-from app.irods_helper import getmetaitem, get_or_set_uid
-from app.datafield import datafield
-from app.irodssessions import irods_manager
+from idms.common.irods.irods_helper import getmetaitem, get_or_set_uid
+from app.utils.datafield import datafield
+from idms.common.irods.irods_sessions import irods_manager
 from app.settings import RESOURCE_PROPS
-from app.auth import auth_endpoint
-from app.constants import ACTIVE_RUNSHEET_STATES
-from instance.constants import (
+from app.utils.auth import auth_endpoint
+from idms.common.constants.attribute_names import (
     ATTR_LOCK, ATTR_CONSISTENCY_PREFIX, 
     ATTR_COLLSIZE, ATTR_COLLSIZE_TIME,
-    ATTR_ARCHIVE_LASTCHECK, ATTR_ARCHIVE_LASTRUN
+    ATTR_ARCHIVE_LASTCHECK, ATTR_ARCHIVE_LASTRUN,
+    ATTR_ARCHIVE_STATUS, ATTR_ARCHIVE_STATUSMSG,
+    ATTR_ARCHIVE_STATE, ATTR_ARCHIVE_DESIREDSTATE,
+    ATTR_ARCHIVE_TARFILE, ATTR_ARCHIVE_MANIFESTFILE
 )
-from . import flaskcache, iqry
+from idms.common.constants.constants import (
+    DATA_REPL_STATUS, ACTIVE_RUNSHEET_STATES
+)
+from app.utils import cached_iqry 
+from .utils import flaskcache
 from app.accounting_page import *
 
-ATTR_ARCHIVE_STATUS = "sys::archive::status"
-ATTR_ARCHIVE_STATUSMSG = "sys::archive::statusmsg"
-ATTR_ARCHIVE_LASTCHECK = "sys::archive::lastcheck"
-ATTR_ARCHIVE_STATE = "sys::archive::state"
-ATTR_ARCHIVE_DESIREDSTATE = "sys::archive::desired_state"
-
-ATTR_ARCHIVE_TARFILE = 'sys::archive::tarfile'
-ATTR_ARCHIVE_MANIFESTFILE = 'sys::archive::manifest'
-
 bp = Blueprint('admin', __name__, url_prefix='/admin')
-
-
-DATA_REPL_STATUS = {
-    '0': 'STALE_REPLICA',
-    '1': 'GOOD_REPLICA',
-    '2': 'INTERMEDIATE_REPLICA',
-    '3': 'READ_LOCKED',
-    '4': 'WRITE_LOCKED'
-}
 
 @bp.route('/_issues')
 def query_issues():
     if not current_user.is_admin:
         return('<tr><td colspan=3>Access denied</td></tr>')
     data = ''
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         query = SpecificQuery(session, alias='checksums_differ')
         for result in query:
             base, name = os.path.split(result[0])
@@ -77,7 +64,7 @@ def query_issues():
 @bp.route('/_consistency')
 def data_consistency():
     # Handy to have the resource hosts in the table:
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         query = session.query(Resource)
         resources = { r[Resource.name]: r[Resource.location] for r in query }
         query = session.query(Collection.name, CollectionMeta.name, CollectionMeta.value).filter(
@@ -95,7 +82,7 @@ def data_consistency():
 def data_replstate():
     """Get objects that have a replication state other than GOOD_REPLICA
     """
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         results = []
         for value in ('0', '2', '3', '4'):
             query = session.query(Collection.name, DataObject.name, DataObject.replica_number).filter(
@@ -123,7 +110,7 @@ def consistency_details():
     data = []
     if collection:
         for criterium in criteria:
-            with irods_manager.session() as session:
+            with irods_manager.session(current_user) as session:
                 q = session.query(Collection.name, DataObject.name, DataObject.path, DataObject.replica_number, DataObjectMeta).filter(criterium).filter(
                     Criterion('like', DataObjectMeta.name, f'{attr}%')).filter(
                     Criterion('=', DataObject.resource_name, resource)
@@ -171,7 +158,7 @@ def archive_action():
     requestdata = request.form.to_dict()
     action = requestdata.get('action')
     collection = requestdata.get('collection')
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         try:
             collobj = session.collections.get(collection)
         except irods.exception.CollectionDoesNotExist:
@@ -184,7 +171,7 @@ def archive_action():
                 return jsonify({'message': 'Cannot remove last data copy in collection'})
             for attr in (ATTR_ARCHIVE_TARFILE, ATTR_ARCHIVE_MANIFESTFILE):
                 filename = getmetaitem(collobj, attr)
-                if filename and fs_irods(session=session).fileexists(filename):
+                if filename and cached_iqry.qpathobjecttype(filename) == 'dataobject':
                     session.data_objects.unlink(filename)
                     collobj.metadata.remove(iRODSMeta(attr, filename))
         if action in ('clear_status', 'remove_archive') :
@@ -198,7 +185,7 @@ def archive_action():
 @auth_endpoint
 def archive_issues():
     # Get issue collections
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         query = session.query(Collection.name, CollectionMeta.value).filter(
             Criterion('=', CollectionMeta.name, ATTR_ARCHIVE_STATUS)).filter(
             Criterion('!=', CollectionMeta.value, 'OK'))
@@ -226,7 +213,7 @@ def admin():
     if not current_user.is_admin:
         return render_template('denied.html')
     queues = {}
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         for q in ACTIVE_RUNSHEET_STATES:
             enabled = True
             path = f'/{current_user.irods_zone}/system/runsheet'
@@ -256,7 +243,7 @@ def resource_data_cached():
     
 def resource_data():
     resources =  {}    
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         q = session.query(Resource.name)
         for r in q:
             resources[r[Resource.name]] = {}
@@ -289,7 +276,7 @@ def resources():
 @bp.route('/_update_resources', methods=['POST'])
 @auth_endpoint
 def update_resources():
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         data = request.form.to_dict()
         # Create a dict of the form data
         new_settings = {}
@@ -336,7 +323,7 @@ def modify():
         value = 'true' if action == 'enable' else 'false'
         new_meta = iRODSMeta(f'sys::enable::{queue}', value)
         coll = os.path.join('/', current_user.irods_zone, 'system/runsheet')
-        with irods_manager.session() as session:
+        with irods_manager.session(current_user) as session:
             collobj = session.collections.get(coll)
             collobj.metadata[new_meta.name] = new_meta
 
@@ -358,7 +345,7 @@ def pending_tiering_page():
 @bp.route('/tiering/_pending')
 def pending_tiering_ops():
     result = []
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         q = session.query(Collection.name, CollectionMeta.value).filter( \
             Criterion('=', CollectionMeta.name, ATTR_ARCHIVE_STATE))
         states = { r[Collection.name]: r[CollectionMeta.value] for r in q}
@@ -393,7 +380,7 @@ def active_tiering_page():
 @bp.route('/tiering/_active')
 def active_tiering_ops():
     result = []
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         q = session.query(RuleExec.name)
         rules = [ r[RuleExec.name] for r in q if 'collection_tiering' in r[RuleExec.name] ]
         colls = { c.split("'")[1]: "" for c in rules }
@@ -450,23 +437,23 @@ def collection_actions():
     if not collection or not action:
         return { "Result": "Failed" }, 400
     if action == 'remove-locks':
-        meta = iqry.qcollmetadict(collection)
+        meta = cached_iqry.qcollmetadict(collection)
         for m in meta:
             if m.startswith(ATTR_LOCK):
-                iqry.rmallcollmetaattr(collection, m)
+                cached_iqry.rmallcollmetaattr(collection, m)
     if action == 'rerun-tiering':
-        desired_state = iqry.qcollmetaval(collection, ATTR_ARCHIVE_DESIREDSTATE)
+        desired_state = cached_iqry.qcollmetaval(collection, ATTR_ARCHIVE_DESIREDSTATE)
         if desired_state:
-            iqry.scollmetaval(collection, ATTR_ARCHIVE_DESIREDSTATE, desired_state, force=True, atomic=False)
+            cached_iqry.scollmetaval(collection, ATTR_ARCHIVE_DESIREDSTATE, desired_state, force=True, atomic=False)
     if action == 'remove-state':
-        meta = iqry.qcollmetadict(collection)
+        meta = cached_iqry.qcollmetadict(collection)
         for prefix in (ATTR_CONSISTENCY_PREFIX, ATTR_COLLSIZE, ATTR_COLLSIZE_TIME):
             for m in meta:
                 if m.startswith(prefix):
-                    iqry.rmallcollmetaattr(collection, m)
+                    cached_iqry.rmallcollmetaattr(collection, m)
     if action == 'reset-archive':
-        iqry.rmallcollmetaattr(collection, ATTR_ARCHIVE_LASTCHECK)
-        iqry.rmallcollmetaattr(collection, ATTR_ARCHIVE_LASTRUN)
+        cached_iqry.rmallcollmetaattr(collection, ATTR_ARCHIVE_LASTCHECK)
+        cached_iqry.rmallcollmetaattr(collection, ATTR_ARCHIVE_LASTRUN)
     if action == 'make-dataset':
         get_or_set_uid(collection)
     # Add a short delay, otherwise the removed metadata will still be visible

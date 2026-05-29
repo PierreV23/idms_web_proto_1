@@ -2,13 +2,11 @@ import os
 import json
 import jsonavu
 import logging
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, request, jsonify
 from flask_login import current_user
-from app import iqry
-from app.constants import (SCHEMATA_BASE_PATH, 
-                            DATASET_SCHEMATA_PATH, 
-                            PROJECT_SCHEMATA_PATH, 
-                            REFERENCE_DATASET_SCHEMATA_PATH,
+from app.utils import cached_iqry
+from app.utils.constants import SCHEMATA_BASE_PATH, DATASET_SCHEMATA_PATH, PROJECT_SCHEMATA_PATH, REFERENCE_DATASET_SCHEMATA_PATH
+from idms.common.constants.attribute_names import (
                             ATTR_SCHEMA_IN_USE,
                             ATTR_PROJECT_SUFFIX,
                             ATTR_DATASET_DEFAULT_SUFFIX,
@@ -18,7 +16,7 @@ from app.constants import (SCHEMATA_BASE_PATH,
                             ATTR_UPLOAD_PREFIX,
                             AVU2JSON_PREFIX
                         )
-from app.irodssessions import irods_manager
+from idms.common.irods.irods_sessions import irods_manager
 from irods.models import CollectionMeta
 from irods.exception import CollectionDoesNotExist
 from pathlib import Path
@@ -46,7 +44,7 @@ def get_schemata( schema_collection ):
     
     schema_collection_path = Path('/', current_user.irods_zone, schema_collection)
     
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         
         while schema_collection_path != '/' and schema_collection_path != Path('/', current_user.irods_zone, SCHEMATA_BASE_PATH).parent: 
             try:
@@ -120,7 +118,7 @@ def schemata(meta_schemata_collection :str, meta_values_collection :str, suffix 
     schemata = get_schemata(meta_schemata_collection)
 
     # Get schemata in use for the collection (specific suffix -> type)
-    schemata_in_use = [a[CollectionMeta.value] for a in iqry.qcollmetavals(meta_values_collection, ATTR_SCHEMA_IN_USE + suffix)]
+    schemata_in_use = [a[CollectionMeta.value] for a in cached_iqry.qcollmetavals(meta_values_collection, ATTR_SCHEMA_IN_USE + suffix)]
 
     rows = [
         {'schema': k, 'selected': v in schemata_in_use, 'schemapath': v, 'order': v.count('/')} for k, v in schemata.items()
@@ -170,7 +168,7 @@ def set_schemata_for_collection():
         return jsonify({}), 500
     if action == 'add':
         try:
-            iqry.addcollmetaval(collection, attr_type, schemapath)
+            cached_iqry.addcollmetaval(collection, attr_type, schemapath)
             return jsonify({ 'result': 'OK' }), 200
         except Exception as e:
             logging.error(f'Not allowed to add schemata: {e}')
@@ -178,7 +176,7 @@ def set_schemata_for_collection():
     if action == 'remove':
         # Remove the related metadata
         try:
-            iqry.delcollmeta(collection, attr_type, schemapath)
+            cached_iqry.delcollmeta(collection, attr_type, schemapath)
             store_collection_metadata_structured(collection, None, schemapath, prefix)
             remove_collection_metadata(collection, prefix + schemapath)
             return jsonify({ 'result': 'OK' }), 200
@@ -241,7 +239,7 @@ def get_schema_and_data():
     meta_values_collection = request.args.get('collection')
     if not (schemapath):
         return jsonify({}), 500
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         obj = session.data_objects.get(schemapath)
         with obj.open('r') as f:
             schema = f.read().decode('UTF-8')
@@ -286,7 +284,7 @@ def get_collection_metadata_structured(collection :str, prefix :str) -> dict:
         Use jsonavu package to retrieve metadata structure
     """
     start = len(prefix)
-    collection_metadata = iqry.qcollmeta(collection)
+    collection_metadata = cached_iqry.qcollmeta(collection)
     jsonavu_metadata = [
         {
             'a': record[CollectionMeta.name][start:],
@@ -301,10 +299,10 @@ def get_collection_metadata_structured(collection :str, prefix :str) -> dict:
 def remove_collection_metadata(collection, prefix):
     """ Remove metadata with a specified prefix from collection   
     """
-    metadata = iqry.qcollmeta(collection)
+    metadata = cached_iqry.qcollmeta(collection)
     for record in metadata:
         if record[CollectionMeta.name].startswith(prefix):
-            iqry.delcollmeta(collection, record[CollectionMeta.name])
+            cached_iqry.delcollmeta(collection, record[CollectionMeta.name])
 
 
 def store_collection_metadata_structured(collection, data, schemapath, prefix):
@@ -319,4 +317,4 @@ def store_collection_metadata_structured(collection, data, schemapath, prefix):
     jsonavu_metadata = jsonavu.json2avu(existing_data, AVU2JSON_PREFIX)
     remove_collection_metadata(collection, prefix)
     for avu in jsonavu_metadata:
-        iqry.scollmetaval(collection, f"{prefix}{avu['a']}", avu['v'], avu['u'])
+        cached_iqry.scollmetaval(collection, f"{prefix}{avu['a']}", avu['v'], avu['u'])

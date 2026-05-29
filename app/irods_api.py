@@ -1,11 +1,11 @@
 """API Functions accessing iRODS
 """
 from flask import Blueprint, request
+from flask_login import current_user
 from irods.models import User, UserMeta
 from irods.column import Criterion
-from app.irodssessions import irods_manager
-from . import iqry
-from .flaskcache import cache, key_zone
+from idms.common.irods.irods_sessions import irods_manager
+from .utils.flaskcache import cache, key_zone
 
 bp = Blueprint('irods_api', __name__, url_prefix='/irods_api')
 
@@ -24,7 +24,7 @@ def usersearch():
     if len(query) < 3:
         return []
 
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         q = session.query(User, UserMeta, case_sensitive=False).filter(
             Criterion('like', User.name, f'%{query}%')
         ).filter(Criterion('=', UserMeta.name, 'sys::ad::displayName'))

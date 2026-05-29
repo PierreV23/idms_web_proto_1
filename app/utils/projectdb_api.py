@@ -9,8 +9,8 @@ Created on Tue Nov 19 09:05:26 2019
 import requests
 from requests.auth import HTTPBasicAuth
 from flask import current_app
-from flask_login import current_user, login_required
-from .flaskcache import cache, dep_zone, dep_userzone, key_zone
+from flask_login import current_user
+from .flaskcache import cache
 from dateutil import parser as dateparser
 
 REQUESTS_METHODS = {

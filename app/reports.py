@@ -6,24 +6,24 @@ Created on Mon Jun  8 11:01:32 2020
 @author: wierinve
 """
 
-import math
 import io
 import json
-from flask import Blueprint, render_template, url_for, send_file, jsonify
+from flask import Blueprint, render_template, send_file, jsonify
 from flask_login import current_user, login_required
 from irods.models import Collection, CollectionMeta, Resource
 from irods.column import Criterion
 from app.projects import get_projectlist
-from app.datafield import datafield
-from app.irodssessions import irods_manager
-from app import iqry, stats
+from app.utils.datafield import datafield
+
+from idms.common.irods.irods_sessions import irods_manager
+from app.utils import cached_iqry
 
 RESOURCES_OMIT = ('demoResc', 'bundleResc')
 
 bp = Blueprint('reports', __name__, url_prefix='/reports')
 
 def collection_size(coll, resource, timeout=86400):
-    with irods_manager.session() as irods_session:
+    with irods_manager.session(current_user) as irods_session:
         size_attr = 'sys::collection_size::{}'.format(resource)
         query = irods_session.query(CollectionMeta.value).filter(
             Criterion('=', Collection.name, coll)).filter(
@@ -35,7 +35,7 @@ def collection_size(coll, resource, timeout=86400):
 
 def projectdata_in_resource(project, resource):
     # Find all collections with a specific projectid
-    with irods_manager.session() as irods_session:
+    with irods_manager.session(current_user) as irods_session:
         query = irods_session.query(Collection.name).filter(
                 Criterion('=', CollectionMeta.name, 'projectID')).filter(
                 Criterion('=', CollectionMeta.value, project))
@@ -93,7 +93,7 @@ def get_space_usage():
     projectinfo = get_projectlist()
           
     #query resources
-    with irods_manager.session() as irods_session:
+    with irods_manager.session(current_user) as irods_session:
         query = irods_session.query(Resource.name)
         resources = [ r[Resource.name] for r in query if not r[Resource.name] in RESOURCES_OMIT ]
         # query projects
@@ -145,27 +145,27 @@ def inter2(a, b):
 def sequencer_data():
     if not current_user.is_admin:
         return('<tr><td colspan=3>Access denied</td></tr>')
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         # FIND SERIALS
         qry = session.query(CollectionMeta.value).filter(
             Criterion('=', CollectionMeta.name, 'sequencing::serial')
         )
         serials = { s[CollectionMeta.value] for s in qry }
         # Find last import
-        imports = iqry.qcollbymetaattr('ID')
+        imports = cached_iqry.qcollbymetaattr('ID')
         sequencer_data = []
         for serial in serials:
             record = {
                 'serial': serial
             }
-            mycolls = iqry.qcollbymeta('sequencing::serial', serial)
+            mycolls = cached_iqry.qcollbymeta('sequencing::serial', serial)
             rootcolls = inter2(imports, mycolls)
             rootcolls = sorted(rootcolls, key = lambda x: x[Collection.create_time])
             if rootcolls:
                 newest = rootcolls[-1]
                 record['time'] = newest[Collection.create_time].strftime('%Y-%m-%d %H:%M:%S')
                 for f in [ 'brand', 'host', 'platform' ]:
-                    record[f] = iqry.qcollmetaval(newest[Collection.name], f'sequencing::{f}')
+                    record[f] = cached_iqry.qcollmetaval(newest[Collection.name], f'sequencing::{f}')
             record['runs'] = len(rootcolls)
             sequencer_data.append(record)
         columns = [

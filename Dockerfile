@@ -8,7 +8,7 @@ RUN apt-get install -y iputils-ping
 RUN ping -c 1 dns.google
 
 # Install the package as normal:
-COPY myflask.yaml .
+COPY envs/myflask.yaml .
 RUN mamba env create -f myflask.yaml
 
 # Install conda-pack:
