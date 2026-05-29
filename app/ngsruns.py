@@ -1,24 +1,20 @@
-from flask import Flask, current_app, Blueprint, flash, render_template, request, jsonify, redirect, url_for, session
+from flask import current_app, Blueprint, flash, render_template, request, jsonify, redirect, url_for
 from flask_login import current_user, login_required
 from flask_marshmallow import Marshmallow
-from marshmallow import Schema, fields, validate
+from marshmallow import fields, validate
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy import ForeignKey, create_engine, Column, Integer, String, TIMESTAMP, func, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import OperationalError, ArgumentError, MultipleResultsFound, NoResultFound
-from sqlalchemy.ext.hybrid import hybrid_property
-from irods.models import Collection, CollectionMeta, User
-from irods.column import Criterion
-from app.datafield import datafield
-import flask
-from .flaskcache import cache, key_zone
+from irods.models import Collection
+from app.utils.datafield import datafield
+from .utils.flaskcache import cache, key_zone
 import greenlet
 import json
 import requests
 from requests.auth import HTTPBasicAuth
 from app.projects import get_projectlist
-from app.iqry import qcollbystaticmeta, qcollmetaval
-from app.irodssessions import irods_manager
+from app.utils.cached_iqry import qcollbystaticmeta, qcollmetaval
 from app.settings import NGSRUN_FIELDS, BARCODE_FIELDS
 
 Base = declarative_base()

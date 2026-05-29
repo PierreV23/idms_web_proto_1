@@ -6,28 +6,23 @@ Created on Tue Nov 12 16:39:47 2019
 @author: wierinve
 """
 
-import base64
-import binascii
-import hashlib
 import json
-import ssl
-import time
 import logging
 
 from Crypto.Hash import MD4
-from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
 from flask_login import UserMixin
 from flask import session, current_app
 from flask_login import current_user
 from irods.models import User, Group, UserMeta
 from irods.column import Criterion
-from fs_irods import fs_irods
+from idms.common.filesys.fs_irods import fs_irods
 from . import flaskcache
-from . import iqry
-from app.irodssessions import irods_manager, create_session
-from app.iconnect import Connection2
-from app.constants import FEATURES
+from . import cached_iqry
+
+from idms.common.irods.irods_sessions import irods_manager, create_session
+from app.utils.iconnect import Connection2
+from app.utils.constants import FEATURES
 
 ATTR_DISPLAYNAME = 'sys::ad::displayName'
 
@@ -52,13 +47,13 @@ class IRSettings:
         self.prefix = prefix
 
     def __getitem__(self, key):
-        val = iqry.qcollmetaval(f'/{current_user.irods_zone}/home/{current_user.username}', f'{self.prefix}{key}')
+        val = cached_iqry.qcollmetaval(f'/{current_user.irods_zone}/home/{current_user.username}', f'{self.prefix}{key}')
         if val is None:
             raise KeyError
         return json.loads(val)
 
     def __setitem__(self, key, value):
-        iqry.scollmetaval(f'/{current_user.irods_zone}/home/{current_user.username}', f'{self.prefix}{key}', json.dumps(value))
+        cached_iqry.scollmetaval(f'/{current_user.irods_zone}/home/{current_user.username}', f'{self.prefix}{key}', json.dumps(value))
 
     def get(self, key, default=None):
         try:
@@ -69,10 +64,10 @@ class IRSettings:
     
     def delete(self, key):
         attr = f'{self.prefix}{key}'
-        iqry.rmallcollmetaattr(f'/{current_user.irods_zone}/home/{current_user.username}', attr)
+        cached_iqry.rmallcollmetaattr(f'/{current_user.irods_zone}/home/{current_user.username}', attr)
 
     def items(self):
-        meta = iqry.qcollmetadict(f'/{current_user.irods_zone}/home/{current_user.username}')
+        meta = cached_iqry.qcollmetadict(f'/{current_user.irods_zone}/home/{current_user.username}')
         keys = [ k[len(self.prefix):] for k in meta if k.startswith(self.prefix) ]
         return [ (k, self[k]) for k in keys ]
 
@@ -169,7 +164,7 @@ class WebUser(UserMixin):
             self._is_admin = False
             if self._is_authenticated:
                 try:
-                    with irods_manager.session() as session:
+                    with irods_manager.session(current_user) as session:
                         user = session.users.get(self.username)
                         self._is_admin = user.type == 'rodsadmin'
                 except:
@@ -179,14 +174,14 @@ class WebUser(UserMixin):
 
     @flaskcache.cache.memoize(timeout=3600, make_name=flaskcache.dep_userzone)
     def groups(self):
-        with irods_manager.session() as session:
+        with irods_manager.session(current_user) as session:
             q = session.query(Group).filter( User.name == self.username )
             result = [ r[Group.name] for r in q ]
         return result
 
     @flaskcache.cache.memoize(timeout=3600, make_name=flaskcache.dep_userzone)
     def projects(self):
-        with irods_manager.session() as session:
+        with irods_manager.session(current_user) as session:
             q = session.query(Group.name, UserMeta.value).filter(\
                 Criterion('=', UserMeta.name, 'projectID'))
             grps = self.groups()
@@ -199,7 +194,7 @@ class WebUser(UserMixin):
     @property
     def fullname(self):
         if self._fullname is None or self._fullname == self.username:
-            self._fullname = iqry.qusermetaval(self.username, ATTR_DISPLAYNAME, self.username)
+            self._fullname = cached_iqry.qusermetaval(self.username, ATTR_DISPLAYNAME, self.username)
         return self._fullname
 
     @property
@@ -243,10 +238,6 @@ class WebUser(UserMixin):
             del session['user_data']
         irods_manager.remove(self)
 
-
-    @property
-    def ifs(self):
-        return fs_irods(session=irods_manager.session())
 
     def validate_irods_session(self):
         try:

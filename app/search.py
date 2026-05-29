@@ -1,15 +1,15 @@
 import time
 from flask import jsonify, render_template, request, Blueprint
-from irods.column import Criterion
-from irods.models import Collection, CollectionMeta
 from irods.query import SpecificQuery
 from irods.exception import CAT_NO_ROWS_FOUND, CAT_SQL_ERR
-from app.irodssessions import irods_manager
-from app.flaskcache import cache, dep_zone
-from app.datafield import datafield
 
-'''
-Input structures:
+from idms.common.irods.irods_sessions import irods_manager
+from app.utils.flaskcache import cache, dep_zone
+from app.utils.datafield import datafield
+from flask_login import current_user
+
+
+""" Input structures:
 
 searchdata: {
     'keywords': [
@@ -21,7 +21,8 @@ searchdata: {
     }
 }
 
-'''
+"""
+
 bp = Blueprint('search', __name__, url_prefix='/search')
 
 class Const:
@@ -172,7 +173,7 @@ def _search_attrs_by_sorted_collection_ids(ids):
         result = _search_attrs_by_sorted_collection_ids(ids[:splitpoint])
         result.update(_search_attrs_by_sorted_collection_ids(ids[splitpoint:]))
         return result
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         result = set()
         for i in range(0, len(ids), CHUNK_SIZE):
             sql = f"""
@@ -194,7 +195,7 @@ def _search_values_by_sorted_collection_ids_and_attr(ids, attr):
         result = _search_values_by_sorted_collection_ids_and_attr(ids[:splitpoint], attr)
         result.update(_search_values_by_sorted_collection_ids_and_attr(ids[splitpoint:], attr))
         return result
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         result = set()
         for i in range(0, len(ids), CHUNK_SIZE):
             sql = f"""
@@ -237,7 +238,7 @@ def runsql(session, sql):
 
 @cache.memoize(timeout=3600, make_name=dep_zone)
 def collections_by_meta(attr, value):
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         sql = f"""
 select coll_id, coll_name from { Tables.coll } C
 inner join { Tables.metamap } OM on C.coll_id=OM.object_id
@@ -258,7 +259,7 @@ def datasets_with_text(text):
 
 @cache.memoize(timeout=3600, make_name=dep_zone)
 def _datasets_with_text(text):
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
 
         sql = f"""
 select coll_id, coll_name from { Tables.coll } C
@@ -272,7 +273,7 @@ where meta_attr_name = 'sys::dataset_id' and coll_name like '%{text}%';
 
 @cache.memoize(timeout=3600, make_name=dep_zone)
 def _datasets_by_text_with_meta(text):
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
 
         sql = f"""
 select coll_id, coll_name, meta_attr_name, meta_attr_value
@@ -298,7 +299,7 @@ def all_datasets_meta(meta, key):
         Const.VALUE: 'meta_attr_value'
     }
     column = columns.get(key)
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         sql = f"""
 select coll_id, coll_name from (select coll_id, coll_name from { Tables.coll } C
 inner join { Tables.metamap } M on C.coll_id = M.object_id
@@ -313,7 +314,7 @@ where M.meta_id in
 @cache.memoize(timeout=600, make_name=dep_zone)
 @bp.route('_allmeta')
 def all_meta_attrs():
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         sql = f"select distinct meta_attr_name from { Tables.meta } where meta_attr_name not like 'sys%';"
         result = [ x[0] for x in runsql(session, sql) ]
     return result
@@ -321,7 +322,7 @@ def all_meta_attrs():
 @cache.memoize(timeout=600, make_name=dep_zone)
 @bp.route('_allmeta')
 def all_collection_meta_attrs():
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         sql = f"""
 select distinct meta_attr_name from { Tables.meta } M
 inner join { Tables.metamap } O on M.meta_id=O.meta_id
@@ -337,7 +338,7 @@ order by meta_attr_name;
 
 @cache.memoize(timeout=3600, make_name=dep_zone)
 def dataset_attr_values(attr):
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         sql = f"""
 select distinct meta_attr_value from { Tables.meta } EE inner join { Tables.metamap } MM on EE.meta_id = MM.meta_id inner join (select coll_id from { Tables.coll } C
 inner join { Tables.metamap } M on C.coll_id = M.object_id

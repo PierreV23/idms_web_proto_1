@@ -6,14 +6,13 @@ Created on Tue Nov 19 15:23:56 2019
 @author: wierinve
 """
 
-from flask import Blueprint, render_template, redirect, request, url_for
-from flask_login import login_user, current_user, login_required
-import sys
-import subprocess
-from app.irodssessions import irods_manager
-from fs_irods import fs_irods
+from flask import Blueprint, render_template, request
+from flask_login import current_user, login_required
+
+from idms.common.irods.irods_sessions import irods_manager
+from idms.common.filesys import fs_irods
 from app.collbrowser import contents_changed
-from . import iqry
+from .utils import cached_iqry as iqry
 
 bp = Blueprint('userinfo', __name__, url_prefix='/userinfo')
 
@@ -47,7 +46,7 @@ def usersetting():
             return {'result': 'OK'}, 200
 
 def userinfo(user):
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         userinfo = session.users.get(user)
         input_meta = { x.name: x.value for x in userinfo.metadata.items()}
     return(input_meta)
@@ -56,7 +55,7 @@ def userinfo(user):
 def groupinfo(group):
     ginfo={}
     try:
-        with irods_manager.session() as session:
+        with irods_manager.session(current_user) as session:
             gobj = session.user_groups.get(group)
     except:
         ginfo["None"] = {'sys::ad::mail': None, 'sys::ad::department': None}

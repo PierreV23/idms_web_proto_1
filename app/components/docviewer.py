@@ -13,9 +13,9 @@ from flask import Blueprint, Response, render_template, request, url_for, send_f
 from flask_login import current_user, login_required
 import urllib.parse
 from irods.exception import CAT_NO_ACCESS_PERMISSION, SYS_FILE_DESC_OUT_OF_RANGE
-from app.irodssessions import irods_manager
-from fs_irods import fs_irods
-from app.constants import INDEX_FORMATS
+from idms.common.irods.irods_sessions import irods_manager
+from idms.common.filesys.fs_irods import fs_irods
+from app.utils.constants import INDEX_FORMATS
 
 bp = Blueprint('docviewer', __name__, url_prefix='/docviewer')
 
@@ -36,7 +36,7 @@ def mdconvert(fobj):
 @bp.route('/serve_image')
 def serve_image():
     path = urllib.parse.unquote(request.args.get('path', '/', type=str))
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         obj = fs_irods(session=session).getfile(path)
         imagefile = obj.open('r')
     return send_file(imagefile, download_name=os.path.split(path)[1],
@@ -45,7 +45,7 @@ def serve_image():
 @bp.route('_access')
 def test_access():
     path = urllib.parse.unquote(request.args.get('path', '/', type=str))
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         obj = fs_irods(session=session).getfile(path)
         try:
             objectfile = obj.open('r')
@@ -60,7 +60,7 @@ def test_access():
 @bp.route('/download_object')
 def download_object():
     path = urllib.parse.unquote(request.args.get('path', '/', type=str))
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         objectfile = fs_irods(session=session).getfile(path).open('r')
         AA = send_file(objectfile, download_name=os.path.split(path)[1],
                          as_attachment=True)
@@ -77,7 +77,7 @@ def serve_file():
     """
     path = urllib.parse.unquote(request.args.get('path', '/', type=str))
     range_header = request.headers.get('Range')
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         try:
             obj = fs_irods(session=session).getfile(path)
         except:
@@ -138,7 +138,7 @@ def find_index():
     filename, file_extension = os.path.splitext(path.lower())
     format = file_extension.strip(".")
     
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
 
         # Handle IGV extensions        
         if format in INDEX_FORMATS:           
@@ -164,7 +164,7 @@ def serve_object():
     path = urllib.parse.unquote(request.args.get('path', '/', type=str))
     filename, file_extension = os.path.splitext(path.lower())
     coll, dataobject = os.path.split(path)
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
 
         # Handle IGV extensions        
         if file_extension in [".bam", ".cram"]:

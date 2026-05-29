@@ -10,10 +10,9 @@ import logging
 
 from datetime import timedelta
 from flask import Blueprint, flash, render_template, redirect, request, url_for, current_app, jsonify
-from flask_login import login_user, logout_user, current_user, login_required
-from app.webuser import WebUser
-from . import messages
-from .ngsruns import db
+from flask_login import login_user, logout_user, current_user
+from app.utils.webuser import WebUser
+from .. import messages
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 

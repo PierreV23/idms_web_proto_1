@@ -6,8 +6,8 @@ Created on Tue Nov 19 15:23:56 2019
 @author: wierinve
 """
 
-from flask import Blueprint, render_template, redirect, request, url_for, current_app
-from flask_login import login_user, current_user, login_required
+from flask import Blueprint, render_template
+from flask_login import login_required
 import sys
 import subprocess
 
@@ -26,9 +26,9 @@ def getinfo(command, splitchar):
 
 def test_if_lsf_installed():
     try:
-       subprocess.getoutput("bhosts -h")
+        subprocess.getoutput("bhosts -h")
     except:
-       sys.exit("LFS is not installed")
+        sys.exit("LFS is not installed")
 
 @bp.route('/info')
 @login_required

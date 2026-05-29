@@ -7,18 +7,14 @@ Created on Tue Nov 19 09:05:26 2019
 """
 
 import json
-from flask import abort, flash, Blueprint, render_template, redirect, request, url_for
+from flask import flash, Blueprint, render_template, redirect, request, url_for
 from flask_login import current_user, login_required
-from flask import jsonify
 from irods.models import Collection, CollectionMeta
-from irods.column import Criterion
-from app.datafield import datafield
-from graphviz import Digraph
-from . import iqry
-from app.constants import ATTR_METADATA_PREFIX, ATTR_SCHEMA_IN_USE, ATTR_REFERENCE_SUFFIX
-from app.irodssessions import irods_manager
-from app.contacts_manager import refdata_permissions
-from .projectdb_api import EPOCH, iso2dt, search, rest_call, add_checkbox
+from app.utils.datafield import datafield
+from .utils import cached_iqry
+from idms.common.constants.attribute_names import ATTR_METADATA_PREFIX, ATTR_SCHEMA_IN_USE, ATTR_REFERENCE_SUFFIX
+from app.components.contacts_manager import refdata_permissions
+from .utils.projectdb_api import rest_call
 from datetime import datetime
 from os import path
 
@@ -261,7 +257,7 @@ def versions_table():
     #additionally get the collections
     refdata_coll = current_user.refdata_coll 
 
-    q1 = iqry.qcollchildren( f"/{current_user.irods_zone}/{refdata_coll}/{refdb_name}")
+    q1 = cached_iqry.qcollchildren( f"/{current_user.irods_zone}/{refdata_coll}/{refdb_name}")
     version_colls = { path.basename(c[Collection.name]): 
                         {
                             "irods_path": c[Collection.name],
@@ -274,7 +270,7 @@ def versions_table():
     #and their metadata
     REFDATA_META = ( 'reference_dataset', 'sys::data::type', 'sys::dataset_id'  )
     for key, items in version_colls.items():
-        q2 = iqry.qcollmeta(items["irods_path"])
+        q2 = cached_iqry.qcollmeta(items["irods_path"])
         meta_of_c = { m[CollectionMeta.name]: m[CollectionMeta.value] for m in q2  if m[CollectionMeta.name].startswith( REFDATA_META ) }
         version_colls[key]["irods_metadata"] = meta_of_c
 
@@ -282,7 +278,7 @@ def versions_table():
     def add_irods_data(db_version):
         key = str(db_version["version"]) #this is the basename of the irods collection
         if key in version_colls:
-           return db_version | version_colls[key]
+            return db_version | version_colls[key]
         return db_version
 
     data_ext = list(map( add_irods_data, db_versions))

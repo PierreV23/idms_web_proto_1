@@ -16,15 +16,17 @@ from irods.exception import DataObjectDoesNotExist, CAT_NO_ACCESS_PERMISSION
 from irods.models import Collection, CollectionMeta
 from irods.column import Criterion
 from graphviz import Digraph
-from app.datafield import datafield
-from app.settings import JOB_FIELDS, PG_FIELDS, PG_JOB_FIELDS
-from app.irodssessions import irods_manager
-from fs_irods import fs_irods
-from .flaskcache import cache, key_zone, key_userzone
-from . import iqry
-from .constants import *
+from app.utils.datafield import datafield
+from app.settings import PG_FIELDS, PG_JOB_FIELDS
+from idms.common.irods.irods_sessions import irods_manager
+from idms.common.filesys.fs_irods import fs_irods
+from .utils.flaskcache import cache, key_zone, key_userzone
+from .utils import cached_iqry
+from .utils.constants import (
+    JOB_PAGE_SIZE
+)
 from .collbrowser import shape
-from .database import db
+from .utils.database import db
 
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
 
@@ -53,7 +55,7 @@ def pagebuttons(page_size, count, current_page, max_buttons, template):
     pagebuttons = []
     pages = count // page_size + 1
     for buttonnr in range(0, pages):
-        button = { 'text': '{} - {}'.format(buttonnr*constants.JOB_PAGE_SIZE+1, min((buttonnr+1)*constants.JOB_PAGE_SIZE, count)),
+        button = { 'text': '{} - {}'.format(buttonnr * JOB_PAGE_SIZE + 1, min((buttonnr+1) * JOB_PAGE_SIZE, count)),
                    'button': True, 'ref': template.format(buttonnr+1), 'class': 'btn-success'}
         if buttonnr == current_page-1:
             button['class'] = 'btn-outline-success'
@@ -90,10 +92,10 @@ def processgroupprocs():
         'sys::run::finish_time': ('end', 'timestamp'),
     }
     processgroupguid = request.args.get('processgroupguid')
-    q = iqry.qcollbymeta('sys::runsheet::processgroupid', processgroupguid)
+    q = cached_iqry.qcollbymeta('sys::runsheet::processgroupid', processgroupguid)
     result = []
     for r in q:
-        metadata = iqry.qcollmetadict(r[Collection.name])
+        metadata = cached_iqry.qcollmetadict(r[Collection.name])
         job = {}
         for field in PGFIELDS:
             if metadata.get(field):
@@ -246,31 +248,31 @@ def processgraph():
     graph = Digraph('processgraph')
 
     # We need the processgroupID
-    processgroupid = iqry.qcollmetavalstatic(runsheet_coll, 'sys::runsheet::processgroupid') 
-    q = iqry.qcollbymeta('sys::runsheet::processgroupid', processgroupid)
+    processgroupid = cached_iqry.qcollmetavalstatic(runsheet_coll, 'sys::runsheet::processgroupid') 
+    q = cached_iqry.qcollbymeta('sys::runsheet::processgroupid', processgroupid)
     colls = [ r[Collection.name] for r in q ]
     
     for coll in colls:
-        state = iqry.qcollmetaval(coll, 'sys::runsheet::state', default='unknown').lower()
+        state = cached_iqry.qcollmetaval(coll, 'sys::runsheet::state', default='unknown').lower()
 
         if state == 'done':
-            state = iqry.qcollmetaval(coll, 'sys::run::result').lower() 
+            state = cached_iqry.qcollmetaval(coll, 'sys::run::result').lower() 
 
         # draw the nodes
         penwidth = '3' if runsheet_coll == coll else '1'
         layout, legends = shape(state, penwidth=penwidth)
         
-        graph.node(coll, label=iqry.qcollmetavalstatic(coll, 'sys::runsheet::description'), margin = '0.1, 0', style=layout['style'], penwidth=layout['penwidth'], 
-            shape=layout['shape_process'], fillcolor=layout['fillcolor'], URL=url_for('jobs.jobdetails', name=iqry.qcollmetaval(coll, ATTR_RUNSHEET_ID)))
+        graph.node(coll, label=cached_iqry.qcollmetavalstatic(coll, 'sys::runsheet::description'), margin = '0.1, 0', style=layout['style'], penwidth=layout['penwidth'], 
+            shape=layout['shape_process'], fillcolor=layout['fillcolor'], URL=url_for('jobs.jobdetails', name=cached_iqry.qcollmetaval(coll, ATTR_RUNSHEET_ID)))
         
     for coll in colls:
-        ir = iqry.qcollmetaval(coll, 'sys::pipeline::input_collection_id')
-        input_colls = [ c for c in colls if iqry.qcollmetavalstatic(c, 'sys::dataset_id') == ir ]
+        ir = cached_iqry.qcollmetaval(coll, 'sys::pipeline::input_collection_id')
+        input_colls = [ c for c in colls if cached_iqry.qcollmetavalstatic(c, 'sys::dataset_id') == ir ]
         if input_colls: 
             for input_coll in input_colls:
                 graph.edge(input_coll, coll)
         else:
-            q = iqry.qcollbystaticmeta('sys::dataset_id', ir)
+            q = cached_iqry.qcollbystaticmeta('sys::dataset_id', ir)
             src = None
             for r in q:
                 src = r[Collection.name]
@@ -298,16 +300,16 @@ def jobdetails():
     # the jobnaam is refering to metainfo on a collection
     q = []
     if jobnaam:
-        q = iqry.qcollbystaticmeta(ATTR_RUNSHEET_ID, jobnaam)
+        q = cached_iqry.qcollbystaticmeta(ATTR_RUNSHEET_ID, jobnaam)
     elif processgroupguid:
-        q = iqry.qcollbystaticmeta(ATTR_RUNSHEET_PROCESSGROUPGUID, processgroupguid)
+        q = cached_iqry.qcollbystaticmeta(ATTR_RUNSHEET_PROCESSGROUPGUID, processgroupguid)
     if len(q) < 1:
         flash(f'Cannot find unique job collection for {jobnaam}', 'error')
         return redirect(url_for('jobs.show_pg'))
     runsheet = q[0][Collection.name]
     if not jobnaam:
-        jobnaam = iqry.qcollmetaval(runsheet, ATTR_RUNSHEET_ID)
-    metadata = iqry.qcollmetadict(runsheet)
+        jobnaam = cached_iqry.qcollmetaval(runsheet, ATTR_RUNSHEET_ID)
+    metadata = cached_iqry.qcollmetadict(runsheet)
     details['Runsheet collection'] = datafield('runsheet',  runsheet, 'irods_collection')
     details['Create time'] = datafield('create_time', float(metadata[ATTR_RUNSHEET_CREATETIME]), 'timestamp')
 
@@ -353,11 +355,11 @@ def jobdetails():
             details[FIELDS[field][0]] = datafield(field, metadata[field], FIELDS[field][1])
     multi = {}
     for field, attrs in MULTI_FIELDS.items():
-        values = iqry.qcollmetavals(runsheet, field)
+        values = cached_iqry.qcollmetavals(runsheet, field)
         datavalues = [ datafield(field, value[CollectionMeta.value], attrs[1]).htmlstring for value in values ]
         multi[attrs[0]] = datavalues
     for field, attrs in MULTI_PLACEHOLDER_FIELDS.items():
-        values = iqry.qcollmetavals_with_placeholder(runsheet, field)
+        values = cached_iqry.qcollmetavals_with_placeholder(runsheet, field)
         datavalues = [ datafield(field, value[CollectionMeta.value], attrs[1]).htmlstring for value in values ]
         multi[attrs[0]] = datavalues
     processgroupid = metadata.get('sys::runsheet::processgroupid', '')
@@ -367,7 +369,7 @@ def jobdetails():
 @bp.route('joblogs')
 def job_logs():
     jobnaam = request.args.get('name', '', type=str)
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
 
         # the jobnaam is refering to metainfo on a collection
         query = session.query(Collection.name, CollectionMeta).filter( 
@@ -396,7 +398,7 @@ def job_logs():
 def _get_logfiles(location, subdir=''):
     logs = {}
     currentdir = os.path.join(location, subdir)
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         for subdir2 in fs_irods(session=session).lsdirnames(currentdir):
             logs.update(_get_logfiles(location, subdir=os.path.join(subdir, subdir2)))
         logs.update({ os.path.join(subdir, filename): os.path.join(currentdir, filename) for filename in fs_irods(session=session).lsfilenames(currentdir) }) 
@@ -415,7 +417,7 @@ def show_logfile():
 
     path = request.args.get('path', '', type=str)
     filename = path.split("/")[-1]
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         try:
             obj = fs_irods(session=session).getfile(path)
         except DataObjectDoesNotExist:

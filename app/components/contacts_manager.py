@@ -10,14 +10,13 @@ import json
 from flask import abort, flash, Blueprint, render_template, redirect, request, url_for
 from flask_login import current_user, login_required
 from flask import jsonify
-from .flaskcache import cache, key_zone, key_userzone, dep_zone, dep_userzone
+from app.utils.flaskcache import cache, key_zone, key_userzone, dep_zone, dep_userzone
 from irods.models import Collection, CollectionMeta, User, UserMeta
 from irods.column import Criterion
-from app.datafield import datafield
-from . import iqry
-from app.constants import COLL_KEY_MAP
-from app.irodssessions import irods_manager
-from .projectdb_api import EPOCH, iso2dt, search, rest_call, add_checkbox
+from app.utils.datafield import datafield
+from app.utils.cached_iqry import *
+from idms.common.irods.irods_sessions import irods_manager
+from app.utils.projectdb_api import EPOCH, iso2dt, search, rest_call, add_checkbox
 
 bp = Blueprint('contacts', __name__, url_prefix='/contacts')
 
@@ -55,9 +54,9 @@ def delete_contact():
 
     result, status = None, 500
     if objecttype in ['projects', 'processes']:   
-       result, status = rest_call('DELETE', f"projects/{entity_id}/contacts/{contact_id}")
+        result, status = rest_call('DELETE', f"projects/{entity_id}/contacts/{contact_id}")
     elif objecttype in ['reference_data']:   
-       result, status = rest_call('DELETE', f"reference/{entity_id}/contacts/{contact_id}")
+        result, status = rest_call('DELETE', f"reference/{entity_id}/contacts/{contact_id}")
 
     ret = {}
     if status == 200:
@@ -77,9 +76,9 @@ def update_contact():
 
     result, status = None, 500
     if objecttype in ['projects', 'processes']:   
-       result, status = rest_call('PUT', f"projects/{entity_id}/contacts/{contact_id}", contact)
+        result, status = rest_call('PUT', f"projects/{entity_id}/contacts/{contact_id}", contact)
     elif objecttype in ['reference_data']:   
-       result, status = rest_call('PUT', f"reference/{entity_id}/contacts/{contact_id}", contact)
+        result, status = rest_call('PUT', f"reference/{entity_id}/contacts/{contact_id}", contact)
 
     ret = {}
     if status == 200:
@@ -98,9 +97,9 @@ def create_contact():
     
     result, status = None, 500
     if objecttype in ['projects', 'processes']:   
-       result, status = rest_call('POST', f"projects/{entity_id}/contacts", contact)
+        result, status = rest_call('POST', f"projects/{entity_id}/contacts", contact)
     elif objecttype in ['reference_data']:   
-       result, status = rest_call('POST', f"reference/{entity_id}/contacts", contact)
+        result, status = rest_call('POST', f"reference/{entity_id}/contacts", contact)
 
     ret = {}
     if status == 201:

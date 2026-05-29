@@ -9,37 +9,59 @@ Created on Mon Nov 18 10:54:56 2019
 import logging
 import os
 import time
-import logging
-from datetime import datetime, timezone
+from datetime import datetime
 from functools import cached_property
 from dateutil.relativedelta import relativedelta
 from flask import Blueprint, render_template, redirect, request, url_for, jsonify, flash, current_app, render_template_string
 from flask_login import current_user, login_required
 from irods.models import Collection, CollectionMeta, DataObject, DataObjectMeta
-from irods.exception import CAT_NO_ROWS_FOUND, CAT_NO_ACCESS_PERMISSION, CollectionDoesNotExist, DataObjectDoesNotExist
+from irods.exception import CAT_NO_ROWS_FOUND, CAT_NO_ACCESS_PERMISSION
 from irods.column import Criterion
-from app.datafield import AVU2data, datafield
-from app.irods_helper import getmetaitem
-from app.irodssessions import irods_manager
+from app.utils.datafield import AVU2data, datafield
+from idms.common.irods.irods_sessions import irods_manager
 from graphviz import Digraph
-from irods.meta import iRODSMeta
 from urllib.parse import urlparse
-from fs_irods import fs_irods
+from idms.common.filesys.fs_irods import fs_irods
 from . import projects
-from . import iqry
-from . import irods_objects
-from .flaskcache import cache, key_zone, key_userzone, dep_zone, dep_userzone
+from .utils import cached_iqry
+import idms.common.irods.irods_objects as irods_objects
+from .utils.flaskcache import cache, key_zone, dep_zone, dep_userzone
 import json
-from app.constants import COLL_KEY_MAP, DATA_KEY_MAP, ATTR_RESOURCE_ONLINE
-from app.auth import auth_endpoint
-from .projectdb_api import rest_call
-from .database import db
-from .constants import *
-from instance.constants import (
+from app.utils.constants import (
+    COLL_KEY_MAP, DATA_KEY_MAP,
+    ATTR_GRAPH_FONT, DEFAULT_FONTSIZE_BIG, DEFAULT_FONTSIZE, SELECTED_FONTSIZE,
+    DEFAULT_COLOR, DEFAULT_PENWIDTH, SELECTED_PENWIDTH,
+    SYS_INVALID_COLOR, USER_INVALID_COLOR, SELECTED_FILE_IN_COLL_PENWIDTH,
+    LAYOUT, DEFAULT_SHAPE, SVG_PATH
+)
+from app.utils.auth import auth_endpoint
+from .utils.projectdb_api import rest_call
+from .utils.database import db
+from idms.common.constants.attribute_names import (
+    ATTR_ARCHIVE_CREATERETENTION,
+    ATTR_ARCHIVE_DESIREDSTATE,
+    ATTR_ARCHIVE_ENABLE,
+    ATTR_ARCHIVE_KEEP_ONLINE,
+    ATTR_ARCHIVE_KEEP_ONLINE_TILL,
+    ATTR_ARCHIVE_LASTUSERETENTION,
+    ATTR_ARCHIVE_LOCAL,
+    ATTR_ARCHIVE_MINCOPIES,
+    ATTR_ARCHIVE_STATE,
+    ATTR_DATAOBJECTID,
+    ATTR_DATASETID,
+    ATTR_PIPELINE_INPUT_COLLECTION_ID,
+    ATTR_PROJECTID,
+    ATTR_RULES_OBJECTIDS,
+    ATTR_RUNSHEET_ID,
+    ATTR_RUNSHEET_PROCESSGROUPGUID,
+    ATTR_RUNSHEET_STATE,
+    ATTR_SYS_STATE,
     ATTR_PROCESSREQUEST,
     ATTR_PROCESSREQUEST_CLUSTER,
     ATTR_PROCESSREQUEST_PROCESSGROUPID,
-    ATTR_PROCESSREQUEST_PROCESSID
+    ATTR_PROCESSREQUEST_PROCESSID,
+    ATTR_RESOURCE_ONLINE,
+    ATTR_USER_DATA_STATE
 )
 from copy import deepcopy
 
@@ -57,47 +79,6 @@ DEFAULT_GRAPH_LEVELS = 3
 # by ... above/below the list
 
 MAX_TREEVIEW_COLLS = 150
-
-ATTR_DATASETID = 'sys::dataset_id'
-ATTR_DATAOBJECTID = 'sys::object_id'
-ATTR_PROJECTID = 'projectID'
-ATTR_USER_STATE = 'user::data::state'
-ATTR_SYS_STATE = 'sys::data::state'
-ATTR_RUNSHEET_PROCESSGROUPGUID = 'sys::runsheet::processgroupid'
-ATTR_RUNSHEET_STATE = 'sys::runsheet::state'
-ATTR_RUNSHEET_ID = 'sys::runsheet::id'
-
-#TODO: use constants.py (role irods_cronjobs)
-ATTR_ARCHIVE_PREFIX = 'sys::archive::'
-ATTR_PIPELINE_PREFIX = 'sys::pipeline::'
-ATTR_PIPELINE_INPUT_COLLECTION_ID = f'{ATTR_PIPELINE_PREFIX}input_collection_id'
-ATTR_ARCHIVE_USR_PREFIX = 'user::archive::'
-ATTR_ARCHIVE_ENABLE = f'{ATTR_ARCHIVE_PREFIX}enable'
-ATTR_ARCHIVE_DESIREDSTATE = f'{ATTR_ARCHIVE_PREFIX}desired_state'
-ATTR_ARCHIVE_KEEP_ONLINE = f'{ATTR_ARCHIVE_PREFIX}keep_online'
-ATTR_ARCHIVE_KEEP_ONLINE_TILL = f'{ATTR_ARCHIVE_USR_PREFIX}keep_online_till'
-ATTR_ARCHIVE_LOCAL = f'{ATTR_ARCHIVE_PREFIX}local'
-ATTR_ARCHIVE_STATE = f'{ATTR_ARCHIVE_PREFIX}state'
-ATTR_ARCHIVE_MINCOPIES = f'{ATTR_ARCHIVE_PREFIX}min_copies'
-ATTR_ARCHIVE_CREATERETENTION = f'{ATTR_ARCHIVE_PREFIX}create_retention'
-ATTR_ARCHIVE_LASTUSERETENTION = f'{ATTR_ARCHIVE_PREFIX}lastuse_retention'
-
-
-ATTR_RULES_OBJECTIDS = 'sys::rules::object_ids'
-
-COLL_KEY_MAP = {
-    'displayname': Collection.name,
-    'create_time': Collection.create_time,
-    'size': Collection.name, # Collections do not have a size property
-    'owner_name': Collection.owner_name
-}
-
-DATA_KEY_MAP = {
-    'displayname': DataObject.name,
-    'create_time': DataObject.create_time,
-    'size': DataObject.size,
-    'owner_name': DataObject.owner_name
-}
 
 # CACHE CONTROL FUNCTIONS
 def contents_changed():
@@ -134,11 +115,11 @@ def propagateDownstreamInvalid():
     return jsonify({'msg': 'Propagation successful',}), 200
 
 def _propagateDownstreamInvalid(base_irods_coll, irods_coll):
-    iqry.scollmetaval(irods_coll, ATTR_USER_STATE, "invalid")
+    cached_iqry.scollmetaval(irods_coll, ATTR_USER_DATA_STATE, "invalid")
     logging.info(f"Invalid state propagated from {base_irods_coll} to {irods_coll}")
 
-    irods_coll_id = iqry.qcollmetadict(irods_coll)[ATTR_DATASETID]
-    next_collections = [c[Collection.name] for c in iqry.qcollbymeta(ATTR_PIPELINE_INPUT_COLLECTION_ID, irods_coll_id)]
+    irods_coll_id = cached_iqry.qcollmetadict(irods_coll)[ATTR_DATASETID]
+    next_collections = [c[Collection.name] for c in cached_iqry.qcollbymeta(ATTR_PIPELINE_INPUT_COLLECTION_ID, irods_coll_id)]
 
     downstream_collections = [irods_coll]
     for coll in next_collections:
@@ -149,7 +130,7 @@ def getmetatree(irods_coll, attr, default=None):
     return _getmetatree(irods_coll, attr, irods_coll, default=None)
 
 def _getmetatree(irods_coll, attr, base, default=None):
-    value = iqry.qcollmetaval(irods_coll, attr)
+    value = cached_iqry.qcollmetaval(irods_coll, attr)
     if value is not None:
         return value, datafield('collection', irods_coll, 'irods_collection'), irods_coll == base
     if irods_coll != '/':
@@ -175,7 +156,7 @@ def coll_meta():
 
 # Query for collection metadata
     coll_avu = []
-    query = iqry.qcollmeta(path)
+    query = cached_iqry.qcollmeta(path)
     for coll_metadata in query:
         name = coll_metadata[CollectionMeta.name]
         value = coll_metadata[CollectionMeta.value]
@@ -185,7 +166,7 @@ def coll_meta():
 # Query for object metadata
     object_avu = []
     if selected_object:
-        query = iqry.qdataobjmeta(selected_object)
+        query = cached_iqry.qdataobjmeta(selected_object)
         for object_metadata in query:
             name = object_metadata[DataObjectMeta.name]
             value = object_metadata[DataObjectMeta.value]
@@ -207,7 +188,7 @@ def setKeepOnlineUntil():
         logging.warning( f"unknown selection for _setKeepOnlineUntil: {selectionStr}")
         return('DONE')
     keepOnlineUntil = now + relativedelta(days=days)
-    iqry.scollmetaval(collection, ATTR_ARCHIVE_KEEP_ONLINE_TILL, str(int(datetime.timestamp(keepOnlineUntil))), 'timestamp')
+    cached_iqry.scollmetaval(collection, ATTR_ARCHIVE_KEEP_ONLINE_TILL, str(int(datetime.timestamp(keepOnlineUntil))), 'timestamp')
     return('DONE')
 
 @bp.route('_upstream', methods=['GET'])
@@ -219,7 +200,7 @@ def upstream():
     collection = request.args.get('collection')
     parents = []
     for kind, prefix in types.items():
-        inputs = iqry.qcollmetavals(collection, f'{prefix}input_collection')
+        inputs = cached_iqry.qcollmetavals(collection, f'{prefix}input_collection')
         for i in inputs:
             parents.append({
                 'collection': i[CollectionMeta.value],
@@ -231,9 +212,9 @@ def upstream():
                 'type': kind
             })
     for kind, prefix in types.items():
-        inputs = iqry.qcollmetavals(collection, f'{prefix}input_collection_id')
+        inputs = cached_iqry.qcollmetavals(collection, f'{prefix}input_collection_id')
         for i in inputs:
-            c = iqry.qcollbymeta('sys::dataset_id', i[CollectionMeta.value])
+            c = cached_iqry.qcollbymeta('sys::dataset_id', i[CollectionMeta.value])
             if len(c) == 1:
                 parents.append({
                     'collection': c[0][Collection.name],
@@ -246,9 +227,9 @@ def upstream():
                 })
     #add reference datasets used, there can be several
     kind, prefix = ('refdata', 'sys::pipeline::refdata::[0]::')
-    inputs = iqry.qcollmetavals_with_placeholder(collection, f'{prefix}reference_version_dataset_id')
+    inputs = cached_iqry.qcollmetavals_with_placeholder(collection, f'{prefix}reference_version_dataset_id')
     for i in inputs:
-        c = iqry.qcollbymeta('sys::dataset_id', i[CollectionMeta.value])
+        c = cached_iqry.qcollbymeta('sys::dataset_id', i[CollectionMeta.value])
         if len(c) == 1:
             parents.append({
                 'collection': c[0][Collection.name],
@@ -267,7 +248,7 @@ def addmeta():
     value = request.args.get('value')
     collection = request.args.get('collection')
     if attr and value and collection:
-        iqry.addcollmetaval(collection, attr, value)
+        cached_iqry.addcollmetaval(collection, attr, value)
     collections_changed()
     return 'DONE', 200
 
@@ -277,8 +258,8 @@ def setmeta():
     value = request.args.get('value')
     collection = request.args.get('collection')
     if attr and value and collection:
-        iqry.scollmetaval(collection, attr, value)
-    value = iqry.qcollmetaval(collection, attr)
+        cached_iqry.scollmetaval(collection, attr, value)
+    value = cached_iqry.qcollmetaval(collection, attr)
     collections_changed()
     return { 'value': value, 'result': 'DONE'}, 200
 
@@ -288,7 +269,7 @@ def rmmeta():
     value = request.args.get('value')
     collection = request.args.get('collection')
     if attr and collection:
-        iqry.delcollmeta(collection, attr, value)
+        cached_iqry.delcollmeta(collection, attr, value)
     collections_changed()
     return 'DONE', 200
 
@@ -304,20 +285,22 @@ def setoverride():
             return('DONE')
         try:
             if overrideStr == 'false':
-                iqry.rmallcollmetaattr(collection, attr)
+                cached_iqry.rmallcollmetaattr(collection, attr)
             else:
-                iqry.scollmetaval(collection, attr, value)
+                cached_iqry.scollmetaval(collection, attr, value)
         except CAT_NO_ACCESS_PERMISSION:
-            value = iqry.qcollmetaval(collection, attr)
+            value = cached_iqry.qcollmetaval(collection, attr)
             return { 'value': value , 'result': 'ACCESS DENIED'}, 401
     # Invalidate the cache for the next call to the graph function
     collections_changed(path=collection)
-    value = iqry.qcollmetaval(collection, attr)
+    value = cached_iqry.qcollmetaval(collection, attr)
     return { 'value': value , 'result': 'DONE'}, 200
 
-@cache.memoize(timeout=3600, make_name=dep_zone)
+def session_factory():
+    return irods_manager.session(current_user)
+
 def tiers():
-    return irods_objects.Tierlist('default')
+    return irods_objects.Tierlist(session_factory, 'default')
 
 class CollectionState():
     def __init__(self, collection):
@@ -330,7 +313,7 @@ class CollectionState():
         failed_pg = False
         if self.myprocessgroupguid:
             for coll in self.processgroupcolls:
-                runsheet_state = iqry.qcollmetaval(coll[Collection.name], ATTR_RUNSHEET_STATE, 'OK')
+                runsheet_state = cached_iqry.qcollmetaval(coll[Collection.name], ATTR_RUNSHEET_STATE, 'OK')
                 if runsheet_state == 'notrun':
                     failed_pg = True
                 if runsheet_state not in ['done', 'error', 'notrun']:
@@ -342,7 +325,7 @@ class CollectionState():
         if (attr in self.__metadata):
             result = self.__metadata.get(attr)
         else:
-            result = iqry.qcollmetaval(self.collection, attr, '_MY_DEFAULT_STRING_')
+            result = cached_iqry.qcollmetaval(self.collection, attr, '_MY_DEFAULT_STRING_')
             if result == '_MY_DEFAULT_STRING_':
                 result = default
             else:
@@ -414,7 +397,7 @@ class CollectionState():
 
     @cached_property
     def keep_online_time(self):
-        kot = float(iqry.qcollmetaval(self.collection, ATTR_ARCHIVE_KEEP_ONLINE_TILL, default=0))
+        kot = float(cached_iqry.qcollmetaval(self.collection, ATTR_ARCHIVE_KEEP_ONLINE_TILL, default=0))
         if kot < time.time():
             kot = 0
         return kot
@@ -445,7 +428,7 @@ class CollectionState():
 
     @cached_property
     def processgroupcolls(self):
-        return iqry.qcollbymeta(ATTR_RUNSHEET_PROCESSGROUPGUID, self.myprocessgroupguid)
+        return cached_iqry.qcollbymeta(ATTR_RUNSHEET_PROCESSGROUPGUID, self.myprocessgroupguid)
 
     @property
     def processgroupid(self):
@@ -469,7 +452,7 @@ class CollectionState():
 
     @cached_property
     def state(self):
-        return irods_objects.iState(self.tiers, iqry.qcollmetaval(self.collection, ATTR_ARCHIVE_STATE, "000"))
+        return irods_objects.iState(self.tiers, cached_iqry.qcollmetaval(self.collection, ATTR_ARCHIVE_STATE, "000"))
 
     @cached_property
     def status(self):
@@ -490,7 +473,7 @@ class CollectionState():
 
     @property
     def user_coll_state(self):
-        return self._meta(ATTR_USER_STATE, "")
+        return self._meta(ATTR_USER_DATA_STATE, "")
 
     @property
     def sys_coll_state(self):
@@ -530,7 +513,7 @@ def coll_actions():
 @bp.route('_sharetable')
 def sharetable():
     collection = request.args.get('collection')
-    coll_id = iqry.qcollproperty(collection, 'id')
+    coll_id = cached_iqry.qcollproperty(collection, 'id')
     shares, status = rest_call('GET', f'collections/{ coll_id }/shares', prefix='/external', user=current_user.username, passwd=current_user.password)
     if status != 200:
         return {}
@@ -546,14 +529,13 @@ def sharetable():
 def actions_newshare():
     NEW_SHARE_FIELDS = [ 'description', 'endtime' ]
     formdata = request.form.to_dict()
-    coll_id = iqry.qcollproperty(formdata.get('collection'), 'id')
+    coll_id = cached_iqry.qcollproperty(formdata.get('collection'), 'id')
     requestdata = { k: v for k, v in formdata.items() if k in NEW_SHARE_FIELDS }
     if 'enddate' in formdata:
         try:
             requestdata['endtime'] = int(time.mktime(datetime.strptime(formdata['enddate'], '%d/%m/%Y').timetuple()))
         except:
-            data['result'] = 'Invalid time value'
-            return data
+            return {'result': 'Invalid time value'}
     data, result = rest_call('POST', f'collections/{coll_id}/shares', prefix='/external', data=requestdata, user=current_user.username, passwd=current_user.password)
     data['result'] = result
     data['url'] = generate_external_url(data.get('dataset_id', ''), data.get('string', ''))
@@ -591,25 +573,25 @@ def startprocess():
 
     cluster_name = request.args.get('cluster')
     if cluster_name:
-        iqry.scollmetaval(collection, ATTR_PROCESSREQUEST_CLUSTER, cluster_name)
+        cached_iqry.scollmetaval(collection, ATTR_PROCESSREQUEST_CLUSTER, cluster_name)
 
     processid = request.args.get('processid')
     processgroupid = request.args.get('processgroupid')
     processgroupguid = request.args.get('processgroupguid')
-    iqry.rmallcollmetaattr(collection, ATTR_PROCESSREQUEST_PROCESSID)
-    iqry.rmallcollmetaattr(collection, ATTR_PROCESSREQUEST_PROCESSGROUPID)
+    cached_iqry.rmallcollmetaattr(collection, ATTR_PROCESSREQUEST_PROCESSID)
+    cached_iqry.rmallcollmetaattr(collection, ATTR_PROCESSREQUEST_PROCESSGROUPID)
     if processid:
-        iqry.scollmetaval(collection, ATTR_PROCESSREQUEST_PROCESSID, processid)
-        iqry.scollmetaval(collection, ATTR_PROCESSREQUEST, current_user.username)
+        cached_iqry.scollmetaval(collection, ATTR_PROCESSREQUEST_PROCESSID, processid)
+        cached_iqry.scollmetaval(collection, ATTR_PROCESSREQUEST, current_user.username)
     elif processgroupid:
-        iqry.scollmetaval(collection, ATTR_PROCESSREQUEST_PROCESSGROUPID, processgroupid)
-        iqry.scollmetaval(collection, ATTR_PROCESSREQUEST, current_user.username)
+        cached_iqry.scollmetaval(collection, ATTR_PROCESSREQUEST_PROCESSGROUPID, processgroupid)
+        cached_iqry.scollmetaval(collection, ATTR_PROCESSREQUEST, current_user.username)
     elif processgroupguid:
         # Restart all NOTRUN tasks of current processgroup
-        pg_collections = iqry.qcollbymeta(ATTR_RUNSHEET_PROCESSGROUPGUID, processgroupguid)
+        pg_collections = cached_iqry.qcollbymeta(ATTR_RUNSHEET_PROCESSGROUPGUID, processgroupguid)
         for coll in pg_collections:
-            if iqry.qcollmetaval(coll[Collection.name], ATTR_RUNSHEET_STATE) == 'notrun':
-                iqry.scollmetaval(coll[Collection.name], ATTR_RUNSHEET_STATE, 'depends')
+            if cached_iqry.qcollmetaval(coll[Collection.name], ATTR_RUNSHEET_STATE) == 'notrun':
+                cached_iqry.scollmetaval(coll[Collection.name], ATTR_RUNSHEET_STATE, 'depends')
         flash('RESTART', 'action_panel')
     else:
         return 'FAILED'
@@ -618,7 +600,7 @@ def startprocess():
 @bp.route('_collist')
 def collist():
     path = request.args.get('path', '/', type=str)
-    display_field = iqry.qcollmetaval(path, 'ngsweb::display_field')
+    display_field = cached_iqry.qcollmetaval(path, 'ngsweb::display_field')
     refresh = request.args.get('refresh', 0, type=int)
     if refresh:
         contents_changed()
@@ -648,7 +630,7 @@ def collcontents():
 def _collcontents(path, offset, limit, filterstr, key, order):
 
 # Look for metadate attrs starting with ngsweb:: on the collection
-    q1 = iqry.qcollmeta(path)
+    q1 = cached_iqry.qcollmeta(path)
     display_settings = { m[CollectionMeta.name][8:] : m[CollectionMeta.value] for m in q1 if m[CollectionMeta.name].startswith('ngsweb::') }
 
     display_field = display_settings.get('display_field', '')
@@ -668,7 +650,7 @@ def _collcontents(path, offset, limit, filterstr, key, order):
         qd_filters.append(Criterion('like', DataObject.name, f'%{filters["displayname"]}%'))
 
 # Get item counts
-    with irods_manager.session() as irods_session:
+    with irods_manager.session(current_user) as irods_session:
         qc_count = irods_session.query(Collection.id)
         for qc_filter in qc_filters:
             qc_count = qc_count.filter(qc_filter)
@@ -704,13 +686,13 @@ def _collcontents(path, offset, limit, filterstr, key, order):
                         'create_time': datafield('create_time', coll[Collection.create_time], 'timestamp').htmlstring,
                         'owner_name': coll[Collection.owner_name]
                     }
-                    objdict['type'] = iqry.qcollmetaval(coll[Collection.name], 'sys::data::type', default='')
-                    objdict['state'] = iqry.qcollmetaval(coll[Collection.name], 'sys::data::state', default='')
+                    objdict['type'] = cached_iqry.qcollmetaval(coll[Collection.name], 'sys::data::type', default='')
+                    objdict['state'] = cached_iqry.qcollmetaval(coll[Collection.name], 'sys::data::state', default='')
                     if objdict['state'] != 'valid':
                         objdict['tableclass'] = LAYOUT.get(objdict['state'], DEFAULT_SHAPE)['tableclass']
                     else:
                         objdict['tableclass'] = LAYOUT.get(objdict['type'], DEFAULT_SHAPE)['tableclass']
-                    objdict['display_field'] = iqry.qcollmetaval(coll[Collection.name], display_field, default='')
+                    objdict['display_field'] = cached_iqry.qcollmetaval(coll[Collection.name], display_field, default='')
                     results['rows'].append(objdict)
             except CAT_NO_ROWS_FOUND:
                 pass
@@ -999,7 +981,7 @@ def multi_list_coll():
     resultnames = []
     for attr, byname in params:
         resultnames += related_coll(coll, attr, forward=forward, byname=byname)
-    results = [(iqry.qcollmetaval(r, ATTR_PROJECTID, default=''), datafield('coll', r, 'irods_collection')) for r in resultnames]
+    results = [(cached_iqry.qcollmetaval(r, ATTR_PROJECTID, default=''), datafield('coll', r, 'irods_collection')) for r in resultnames]
     return render_template('small_collist.html', results = results)
 
 def related_coll(coll, attr, forward=True, byname=True):
@@ -1013,13 +995,13 @@ def related_coll(coll, attr, forward=True, byname=True):
     '''
     # Find metadata of <coll>
     collmeta = Dictlist()
-    q = iqry.qcollmeta(coll)
+    q = cached_iqry.qcollmeta(coll)
     for m in q:
         collmeta[m[CollectionMeta.name]] = m[CollectionMeta.value]
 
     if forward:
         search_value = coll if byname else collmeta.get(ATTR_DATASETID)
-        q = iqry.qcollbymeta(attr, search_value)
+        q = cached_iqry.qcollbymeta(attr, search_value)
         result = { c[Collection.name] for c in q }
     else:
         if byname:
@@ -1028,7 +1010,7 @@ def related_coll(coll, attr, forward=True, byname=True):
             result = set()
             values =  collmeta.get_all(attr, [])
             for value in values:
-                q = iqry.qcollbymeta(ATTR_DATASETID, value)
+                q = cached_iqry.qcollbymeta(ATTR_DATASETID, value)
                 result.update([ c[Collection.name] for c in q ])
     return result
 
@@ -1193,7 +1175,7 @@ def _generate_graph_coll(coll, maxlevels, graph_simplify, show_upstream, show_do
     # Start with all the nodes
     for node in sorted(nodes):
         collmeta = Dictlist()
-        q = iqry.qcollmeta(node)
+        q = cached_iqry.qcollmeta(node)
         for m in q:
             collmeta[m[CollectionMeta.name]] = m[CollectionMeta.value]
 
@@ -1249,7 +1231,7 @@ def _generate_graph_coll(coll, maxlevels, graph_simplify, show_upstream, show_do
         projectid = collmeta.get('projectID', '') + '\n'
 
         # determine whether the object type is a collection or dataobject
-        obj_type = iqry.qpathobjecttype(node)
+        obj_type = cached_iqry.qpathobjecttype(node)
 
         # make object clickable
         clss = { 'class' : f'{obj_type}-change' }
@@ -1324,13 +1306,13 @@ def related_dataobj(dataobj, attr, forward=True, byname=True):
 
     # Find metadata of <dataobj>
     dataobjmeta = Dictlist()
-    q = iqry.qdataobjmeta(dataobj)
+    q = cached_iqry.qdataobjmeta(dataobj)
     for m in q:
         dataobjmeta[m[DataObjectMeta.name]] = m[DataObjectMeta.value]
 
     if forward:
         search_value = dataobj if byname else dataobjmeta.get(ATTR_DATAOBJECTID)
-        q = iqry.qdataobjbymeta(attr, search_value)
+        q = cached_iqry.qdataobjbymeta(attr, search_value)
         result = { c[Collection.name] + '/' + c[DataObject.name] for c in q }
     else:
         if byname:
@@ -1339,7 +1321,7 @@ def related_dataobj(dataobj, attr, forward=True, byname=True):
             result = set()
             values =  dataobjmeta.get_all(attr, [])
             for value in values:
-                q = iqry.qdataobjbymeta(ATTR_DATAOBJECTID, value)
+                q = cached_iqry.qdataobjbymeta(ATTR_DATAOBJECTID, value)
                 result.update([ c[Collection.name] + '/' + c[DataObject.name] for c in q ])
     return result
 
@@ -1427,7 +1409,7 @@ def _generate_graph_dataobj(coll, dataobj, maxlevels, provenance_labels, include
         return nodes
 
     if include_all_from_coll == 1:
-        dataobjs = iqry.qcolldataobjectpaths(coll)
+        dataobjs = cached_iqry.qcolldataobjectpaths(coll)
         for do in dataobjs:
             traverse(do, levels=maxlevels)
     else:
@@ -1451,7 +1433,7 @@ def _generate_graph_dataobj(coll, dataobj, maxlevels, provenance_labels, include
     # Start with all the nodes
     for node in nodes:
         dataobjmeta = Dictlist()
-        q = iqry.qdataobjmeta(node)
+        q = cached_iqry.qdataobjmeta(node)
         for m in q:
             dataobjmeta[m[DataObjectMeta.name]] = m[DataObjectMeta.value]
 
@@ -1564,7 +1546,7 @@ def _generate_graph_dataobj(coll, dataobj, maxlevels, provenance_labels, include
 @cache.memoize(timeout=300, make_name=dep_zone)
 def subitems(path):
     count = 0
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         query = session.query(Collection.id).filter(
             Criterion('=', Collection.parent_name, path)).count(Collection.id)
         try:
@@ -1578,7 +1560,7 @@ def subitems(path):
 def add_items(path, level, active):
     result = ''
     parts = active.split('/')
-    colls = [c[Collection.name] for c in iqry.qcollchildren(path)]
+    colls = [c[Collection.name] for c in cached_iqry.qcollchildren(path)]
 
     #
     # Handle very long list of collections
@@ -1730,7 +1712,7 @@ def customview():
     if config is None:
         return { 'result': 'ERROR'}, 500
     # Translate the active_collection to a customview attrs path:
-    meta = iqry.qcollmetadict(active_collection)
+    meta = cached_iqry.qcollmetadict(active_collection)
     active_path = [meta.get(m[0]) for m in config['attrs']] + [active_collection]
     rs = add_custom_items(config['attrs'], path, active_path, active_collection)
     return { 'result': '<ul>{}</ul>'.format(rs) }
@@ -1760,7 +1742,7 @@ def collbrowser():
     selected_object = request.args.get('selected_object', '', type=str)
 
     # Check supplied path for collection or object
-    obj_type = iqry.qpathobjecttype(path) if path else 'not_found'
+    obj_type = cached_iqry.qpathobjecttype(path) if path else 'not_found'
 
     # Get path from user settings or default, revert to collection when dataobject is selected
     if obj_type in ['not_found', 'dataobject']:
@@ -1820,7 +1802,7 @@ def upload_file():
         f = request.files['file']
         # Generate irods file object
         iObjName = requestdata['collection'] + '/' + f.filename
-        with irods_manager.session() as session:
+        with irods_manager.session(current_user) as session:
             iObj = fs_irods(session=session).open(iObjName, 'w')
             f.save(iObj)
             iObj.close()
@@ -1832,7 +1814,7 @@ def delete_file():
     requestdata = request.form.to_dict()
     if 'path' in requestdata:
         path = requestdata['path']
-        with irods_manager.session() as session:
+        with irods_manager.session(current_user) as session:
             fs_irods(session=session).deletefile(path)
         contents_changed()
     return '', 201
@@ -1952,7 +1934,7 @@ CSS_NAME_TO_COLUMN = {
 }
 
 def search_result_query(object_type, filter_dict, search_dict):
-    with irods_manager.session() as irods_session:
+    with irods_manager.session(current_user) as irods_session:
         query = irods_session.query(*OBJECT_TYPES.get(object_type, (Collection, )))
 
         # initial search
@@ -2056,7 +2038,7 @@ def search_result(object_type):
     rows = []
     for obj in query.execute():
         row = dict()
-        obj_meta = iqry.qcollmetadict(obj[Collection.name])
+        obj_meta = cached_iqry.qcollmetadict(obj[Collection.name])
         for col, props in COLUMNS.items():
             if "meta_name" in props:
                 # Use the iRODS name instead of the CSS name of the column
@@ -2149,7 +2131,7 @@ def search_result_old():
         SEARCH_PATTERN = '{}'
         SEARCH_OPTION = '='
 
-    with irods_manager.session() as irods_session:
+    with irods_manager.session(current_user) as irods_session:
         data = list()
 
         if useSearchDatasetNames:
@@ -2220,7 +2202,7 @@ def search_result_old():
 
 @bp.route('_mydatasets')
 def mydatasets():
-    with irods_manager.session() as session:
+    with irods_manager.session(current_user) as session:
         q = session.query(Collection.name).filter(
             Criterion('=', Collection.owner_name, current_user.username)).filter(
             Criterion('=', CollectionMeta.name, ATTR_DATASETID)

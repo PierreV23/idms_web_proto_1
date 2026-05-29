@@ -12,7 +12,7 @@ dependencies:
   - openssl
   - pip
   - pycryptodome
-  - python>3.8
+  - python<3.13
   - python-dateutil
   - pyyaml
   - requests
@@ -29,10 +29,24 @@ dependencies:
   - uwsgi
   - werkzeug
   - pip:
-    - markdown
-    - randomname
-    - python-irodsclient==3.2.0
-    - redis
-    - graphviz
-    - jsonschema
-    - irods_avu_json
+      - markdown
+      - randomname
+      - python-irodsclient==3.2.0
+      - redis
+      - graphviz
+      - jsonschema
+      - irods_avu_json
+      #add extra package repositories for packages hosten on gitlab
+      - "--extra-index-url https://gitlab.rivm.nl/api/v4/projects/4682/packages/pypi/simple"
+      # iDMS_common_irods
+      #- "--extra-index-url https://gitlab.rivm.nl/api/v4/projects/4656/packages/pypi/simple"
+      - idms-common-irods>=0.0.5
+      # iDMS_common_filesys
+      #- "--extra-index-url https://gitlab.rivm.nl/api/v4/projects/4655/packages/pypi/simple"
+      - idms-common-filesys>=0.0.2
+      # iDMS_common_constants
+      #- "--extra-index-url https://gitlab.rivm.nl/api/v4/projects/4654/packages/pypi/simple"
+      - idms-common-constants>=0.0.1
+      # During development it can be usefull to have the packages ediable and locally:
+      # - "-e ../../idms_common/packages/irods"   #only if the other repo is locall checked out at exactly that path....
+      # - "-e ../../idms_common/packages/filesys"

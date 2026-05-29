@@ -58,7 +58,7 @@ class DBPools:
 
     def connection(self):
         env = my_env()
-        if not env in self._pools:
+        if env not in self._pools:
             self.startpool()
         if env in self._pools:
             return DBConnection(self._pools.get(env))

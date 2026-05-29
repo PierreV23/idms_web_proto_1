@@ -4,9 +4,6 @@
 from __future__ import absolute_import
 import socket
 import logging
-import struct
-import os
-import ssl
 import datetime
 import irods.auth
 import re

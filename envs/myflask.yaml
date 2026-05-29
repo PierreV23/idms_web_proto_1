@@ -2,34 +2,33 @@ name: myflask
 channels:
   - conda-forge
 dependencies:
-  - _libgcc_mutex=0.1
   - _openmp_mutex=4.5
   - adwaita-icon-theme=49.0
-  - alembic=1.18.1
-  - apscheduler=3.11.0
+  - alembic=1.18.4
+  - apscheduler=3.11.2
   - at-spi2-atk=2.38.0
   - at-spi2-core=2.40.3
   - atk-1.0=2.38.0
-  - attrs=25.4.0
+  - attrs=26.1.0
   - backports-datetime-fromisoformat=2.0.3
-  - backports.zstd=1.3.0
+  - backports.zstd=1.5.0
   - blinker=1.9.0
   - brotli-python=1.2.0
   - bzip2=1.0.8
   - c-ares=1.34.6
-  - ca-certificates=2026.1.4
-  - cachelib=0.13.0
+  - ca-certificates=2026.5.20
+  - cachelib=0.14.0
   - cairo=1.18.4
-  - certifi=2026.1.4
-  - charset-normalizer=3.4.4
-  - click=8.3.1
+  - certifi=2026.5.20
+  - charset-normalizer=3.4.7
+  - click=8.4.1
   - cyrus-sasl=2.1.28
   - dbus=1.16.2
   - epoxy=1.5.10
-  - flask=3.1.2
+  - flask=3.1.3
   - flask-caching=2.3.1
   - flask-login=0.6.3
-  - flask-marshmallow=1.3.0
+  - flask-marshmallow=1.5.0
   - flask-migrate=4.1.0
   - flask-script=2.0.6
   - flask-session=0.8.0
@@ -38,131 +37,133 @@ dependencies:
   - font-ttf-inconsolata=3.000
   - font-ttf-source-code-pro=2.038
   - font-ttf-ubuntu=0.83
-  - fontconfig=2.15.0
+  - fontconfig=2.18.0
   - fonts-conda-ecosystem=1
   - fonts-conda-forge=1
-  - freetype=2.14.1
   - fribidi=1.0.16
-  - gdk-pixbuf=2.44.4
-  - git=2.52.0
-  - glib-tools=2.86.3
+  - gdk-pixbuf=2.44.6
+  - git=2.54.0
+  - glib-tools=2.88.1
   - gmp=6.3.0
   - graphite2=1.3.14
   - graphviz=14.1.2
-  - greenlet=3.3.1
-  - gtk3=3.24.43
+  - greenlet=3.5.1
+  - gtk3=3.24.52
   - gts=0.7.6
   - h2=4.3.0
-  - harfbuzz=12.3.2
+  - harfbuzz=14.2.0
   - hicolor-icon-theme=0.17
   - hpack=4.1.0
   - hyperframe=6.1.0
-  - icu=78.2
-  - idna=3.11
-  - importlib-metadata=8.7.0
+  - icu=78.3
+  - idna=3.17
+  - importlib-metadata=9.0.0
   - itsdangerous=2.2.0
   - jansson=2.15.0
   - jinja2=3.1.6
   - jsonschema=4.26.0
   - jsonschema-specifications=2025.9.1
   - keyutils=1.6.3
-  - krb5=1.21.3
-  - ld_impl_linux-64=2.45
-  - lerc=4.0.0
+  - krb5=1.22.2
+  - ld_impl_linux-64=2.45.1
+  - lerc=4.1.0
   - libcups=2.3.3
-  - libcurl=8.18.0
+  - libcurl=8.20.0
   - libdeflate=1.25
-  - libdrm=2.4.125
+  - libdrm=2.4.127
   - libedit=3.1.20250104
   - libegl=1.7.0
   - libegl-devel=1.7.0
   - libev=4.33
-  - libexpat=2.7.3
+  - libexpat=2.8.1
   - libffi=3.5.2
-  - libfreetype=2.14.1
-  - libfreetype6=2.14.1
+  - libfreetype=2.14.3
+  - libfreetype6=2.14.3
   - libgcc=15.2.0
   - libgcc-ng=15.2.0
   - libgd=2.3.3
   - libgl=1.7.0
   - libgl-devel=1.7.0
-  - libglib=2.86.3
+  - libglib=2.88.1
   - libglvnd=1.7.0
   - libglx=1.7.0
   - libglx-devel=1.7.0
   - libgomp=15.2.0
   - libiconv=1.18
-  - libjpeg-turbo=3.1.2
-  - liblzma=5.8.2
-  - libmpdec=4.0.0
-  - libnghttp2=1.67.0
+  - libjpeg-turbo=3.1.4.1
+  - liblzma=5.8.3
+  - libnghttp2=1.68.1
+  - libnsl=2.0.1
   - libntlm=1.8
-  - libpciaccess=0.18
-  - libpng=1.6.54
-  - libpq=18.1
-  - librsvg=2.60.0
-  - libsqlite=3.51.2
+  - libpciaccess=0.19
+  - libpng=1.6.58
+  - libpq=18.4
+  - librsvg=2.62.2
+  - libsqlite=3.53.1
   - libssh2=1.11.1
   - libstdcxx=15.2.0
   - libstdcxx-ng=15.2.0
   - libtiff=4.7.1
-  - libuuid=2.41.3
+  - libuuid=2.42.1
   - libwebp-base=1.6.0
   - libxcb=1.17.0
   - libxcrypt=4.4.36
   - libxkbcommon=1.13.1
-  - libxml2=2.15.1
-  - libxml2-16=2.15.1
-  - libzlib=1.3.1
-  - mako=1.3.10
+  - libxml2=2.15.3
+  - libxml2-16=2.15.3
+  - libzlib=1.3.2
+  - mako=1.3.12
   - markupsafe=3.0.3
-  - marshmallow=4.2.1
-  - marshmallow-sqlalchemy=1.4.2
-  - msgspec=0.20.0
-  - ncurses=6.5
-  - openldap=2.6.10
-  - openssl=3.6.1
+  - marshmallow=4.3.0
+  - marshmallow-sqlalchemy=1.5.0
+  - msgspec=0.21.1
+  - ncurses=6.6
+  - openldap=2.6.13
+  - openssl=3.6.2
+  - packaging=26.2
   - pango=1.56.4
   - pcre2=10.47
   - perl=5.32.1
-  - pip=25.3
+  - pip=26.1.1
   - pixman=0.46.4
-  - psycopg2=2.9.11
+  - psycopg2=2.9.12
   - pthread-stubs=0.4
   - pycryptodome=3.23.0
   - pysocks=1.7.1
-  - python=3.13.11
+  - python=3.12.13
   - python-dateutil=2.9.0.post0
-  - python_abi=3.13
+  - python_abi=3.12
   - pyyaml=6.0.3
   - readline=8.3
   - referencing=0.37.0
-  - requests=2.32.5
-  - rpds-py=0.30.0
+  - requests=2.34.2
+  - rpds-py=2026.5.1
+  - setuptools=82.0.1
   - six=1.17.0
   - sqlalchemy=1.4.54
-  - sqlite=3.51.2
+  - sqlite=3.53.1
   - tk=8.6.13
-  - tomli=2.4.0
+  - tomli=2.4.1
   - typing_extensions=4.15.0
   - tzdata=2025c
   - tzlocal=5.3.1
-  - urllib3=2.6.3
+  - urllib3=2.7.0
   - uwsgi=2.0.31
-  - wayland=1.24.0
-  - werkzeug=3.1.5
-  - xkeyboard-config=2.46
+  - wayland=1.25.0
+  - werkzeug=3.1.8
+  - wheel=0.47.0
+  - xkeyboard-config=2.47
   - xorg-libice=1.1.2
   - xorg-libsm=1.2.6
-  - xorg-libx11=1.8.12
+  - xorg-libx11=1.8.13
   - xorg-libxau=1.0.12
-  - xorg-libxcomposite=0.4.6
+  - xorg-libxcomposite=0.4.7
   - xorg-libxcursor=1.2.3
   - xorg-libxdamage=1.1.6
   - xorg-libxdmcp=1.1.5
   - xorg-libxext=1.3.7
   - xorg-libxfixes=6.0.2
-  - xorg-libxi=1.8.2
+  - xorg-libxi=1.8.3
   - xorg-libxinerama=1.1.6
   - xorg-libxrandr=1.5.5
   - xorg-libxrender=0.9.12
@@ -170,19 +171,37 @@ dependencies:
   - xorg-libxxf86vm=1.1.7
   - xorg-xorgproto=2025.1
   - yaml=0.2.5
-  - zipp=3.23.0
+  - zipp=4.1.0
   - zstd=1.5.7
   - pip:
+      - bcrypt==5.0.0
+      - cffi==2.0.0
+      - cryptography==48.0.0
       - defusedxml==0.7.1
       - fire==0.7.1
+      - ftputil==5.2.0
+      - idms-common-constants==0.0.1
+      - idms-common-filesys==0.0.2
+      - idms-common-irods==0.0.5
+      - invoke==3.0.3
       - irods-avu-json==2.2.0
       - jsonpatch==1.33
-      - jsonpointer==3.0.0
-      - markdown==3.10.1
+      - jsonpointer==3.1.1
+      - markdown==3.10.2
+      - paramiko==5.0.0
       - prettytable==3.17.0
+      - pyasn1==0.6.3
+      - pycparser==3.0
+      - pynacl==1.6.2
+      - pysmb==1.2.14
       - graphviz==0.21
       - python-irodsclient==3.2.0
       - randomname==0.2.1
-      - redis==7.1.0
+      - redis==8.0.0
       - termcolor==3.3.0
-      - wcwidth==0.5.0
+      - tqdm==4.67.3
+      - wcwidth==0.7.0
+      - "--extra-index-url https://gitlab.rivm.nl/api/v4/projects/4682/packages/pypi/simple"
+      #- "--extra-index-url https://gitlab.rivm.nl/api/v4/projects/4656/packages/pypi/simple"
+      #- "--extra-index-url https://gitlab.rivm.nl/api/v4/projects/4655/packages/pypi/simple"
+      #- "--extra-index-url https://gitlab.rivm.nl/api/v4/projects/4654/packages/pypi/simple"
