@@ -10,7 +10,7 @@ import json
 from flask import abort, flash, Blueprint, render_template, redirect, request, url_for, current_app
 from flask_login import current_user, login_required
 from flask import jsonify
-from .utils.flaskcache import cache, dep_userzone
+from .utils.flaskcache import cache, dep_userzone, dep_zone
 from irods.models import Collection, CollectionMeta, User, UserMeta
 from irods.exception import CAT_NO_ROWS_FOUND
 from irods.column import Criterion
@@ -18,7 +18,7 @@ from app.utils.datafield import datafield
 from graphviz import Digraph
 from .utils import cached_iqry
 from idms.common.constants.attribute_names import  ATTR_UPLOAD_DEFAULT_PREFIX, ATTR_METADATA_PREFIX, ATTR_SCHEMA_IN_USE, ATTR_PROJECT_SUFFIX, ATTR_DATASET_DEFAULT_SUFFIX
-from app.utils.constants import COLL_KEY_MAP, DEPARTMENTS
+from app.utils.constants import COLL_KEY_MAP
 from idms.common.irods.irods_sessions import irods_manager
 from .utils.projectdb_api import EPOCH, iso2dt, search, rest_call, add_checkbox
 
@@ -65,6 +65,15 @@ def get_process2list():
         processes = [ p['name'] for p in pl ]
     return processes
 
+@cache.memoize(timeout=86400, make_name=dep_zone)
+def get_departments():
+    with irods_manager.session(current_user) as session:
+        query = session.query(UserMeta.value).filter(
+            Criterion('=', UserMeta.name, 'sys::ad::department')).order_by(UserMeta.value).filter(
+            Criterion('!=', UserMeta.value, '*'))
+        departments = [ u[UserMeta.value] for u in query ]
+    return departments
+
 
 @bp.route('/')
 @login_required
@@ -90,7 +99,6 @@ def show_projects():
         projectlist = get_projectlist()
         return render_template('projects.html', projects=projectlist, processes=processlist,
             project=project, process=process, activetabname=activetabname, processgroup=processgroup)
-
 
 @bp.route('/details')
 def show_projectdetails():
@@ -125,7 +133,7 @@ def show_projectdetails():
                            metadata_prefix=ATTR_METADATA_PREFIX, upload_default_prefix=ATTR_UPLOAD_DEFAULT_PREFIX,
                            attribute_type_project=ATTR_SCHEMA_IN_USE + ATTR_PROJECT_SUFFIX,
                            attribute_type_dataset_default=ATTR_SCHEMA_IN_USE + ATTR_DATASET_DEFAULT_SUFFIX,
-                           departments=DEPARTMENTS)
+                           departments=get_departments())
 
 @bp.route('_projectcolls')
 def projectcolls():
