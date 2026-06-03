@@ -46,7 +46,7 @@ dependencies:
       - idms-common-filesys>=0.0.2
       # iDMS_common_constants
       #- "--extra-index-url https://gitlab.rivm.nl/api/v4/projects/4654/packages/pypi/simple"
-      - idms-common-constants>=0.0.1
+      - idms-common-constants>=0.0.2
       # During development it can be usefull to have the packages ediable and locally:
       # - "-e ../../idms_common/packages/irods"   #only if the other repo is locall checked out at exactly that path....
       # - "-e ../../idms_common/packages/filesys"
