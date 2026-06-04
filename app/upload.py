@@ -294,7 +294,6 @@ def new_upload():
 
     # Now generate a collection for the upload
     coll = unique_coll(os.path.join('/', current_user.irods_zone, 'home', current_user.username), prefix=name)
-    get_or_set_uid(coll)
     with irods_manager.session(current_user) as session:
         collobj = session.collections.get(coll)
         get_or_set_uid(collobj)
