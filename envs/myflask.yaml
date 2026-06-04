@@ -180,7 +180,7 @@ dependencies:
       - defusedxml==0.7.1
       - fire==0.7.1
       - ftputil==5.2.0
-      - idms-common-constants==0.0.2
+      - idms-common-constants==0.0.3
       - idms-common-filesys==0.0.2
       - idms-common-irods==0.0.5
       - invoke==3.0.3
