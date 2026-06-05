@@ -99,7 +99,7 @@ dependencies:
   - libpng=1.6.58
   - libpq=18.4
   - librsvg=2.62.3
-  - libsqlite=3.53.1
+  - libsqlite=3.53.2
   - libssh2=1.11.1
   - libstdcxx=15.2.0
   - libstdcxx-ng=15.2.0
@@ -141,7 +141,7 @@ dependencies:
   - setuptools=82.0.1
   - six=1.17.0
   - sqlalchemy=1.4.54
-  - sqlite=3.53.1
+  - sqlite=3.53.2
   - tk=8.6.13
   - tomli=2.4.1
   - typing_extensions=4.15.0
@@ -181,7 +181,7 @@ dependencies:
       - fire==0.7.1
       - ftputil==5.2.0
       - idms-common-constants==0.0.3
-      - idms-common-filesys==0.0.2
+      - idms-common-filesys==0.0.3
       - idms-common-irods==0.0.5
       - invoke==3.0.3
       - irods-avu-json==2.2.0

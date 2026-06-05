@@ -43,7 +43,7 @@ dependencies:
       - idms-common-irods>=0.0.5
       # iDMS_common_filesys
       #- "--extra-index-url https://gitlab.rivm.nl/api/v4/projects/4655/packages/pypi/simple"
-      - idms-common-filesys>=0.0.2
+      - idms-common-filesys>=0.0.3
       # iDMS_common_constants
       #- "--extra-index-url https://gitlab.rivm.nl/api/v4/projects/4654/packages/pypi/simple"
       - idms-common-constants>=0.0.3
