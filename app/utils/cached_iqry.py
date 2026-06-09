@@ -4,7 +4,7 @@ from idms.common.irods.iqry import qusermeta, qresmeta, qcollmeta, qcollchildren
 from idms.common.irods.iqry import qcollbymetaattr, qcollbymeta, qcollbystaticmeta, qcollmetavalstatic
 from idms.common.irods.iqry import qcollproperty, qdataobjmeta, qdataobjbymeta, qcolldataobjectpaths
 #these are the functions we want to shadow / redefine with invalidation logic..
-from idms.common.irods.iqry import delcollmeta as _delcollmeta_raw
+from idms.common.irods.iqry import delcollmeta as _delcollmeta
 from idms.common.irods.iqry import rmallcollmetaattr as _rmallcollmetaattr
 from idms.common.irods.iqry import addcollmetaval as _addcollmetaval
 from idms.common.irods.iqry import scollmetaval as _scollmetaval
@@ -71,6 +71,6 @@ def rmallcollmetaattr(session, coll, attr):
 
 @with_irods_session
 def delcollmeta(session, coll, attr, value=None, unit=None):
-    delcollmeta(session, coll, attr, value, unit )
+    _delcollmeta(session, coll, attr, value, unit )
     cache.delete_memoized(qcollmeta, coll)
 
