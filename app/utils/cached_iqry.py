@@ -51,7 +51,7 @@ qcollmetavals_with_placeholder = with_irods_session( qcollmetavals_with_placehol
 
 @with_irods_session
 def susermetaval(session, user, attr, value, unit=None):
-    _susermetaval(session, user, attr, value, unit )
+    _susermetaval(session, user, attr, value, unit)
     cache.delete_memoized(qusermeta)
 
 @with_irods_session
@@ -71,6 +71,6 @@ def rmallcollmetaattr(session, coll, attr):
 
 @with_irods_session
 def delcollmeta(session, coll, attr, value=None, unit=None):
-    _delcollmeta(session, coll, attr, value, unit )
+    _delcollmeta(session, coll, attr, value, unit)
     cache.delete_memoized(qcollmeta, coll)
 
