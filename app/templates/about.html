@@ -7,7 +7,7 @@
 menuname='about'
 {% endblock %}
 {% block content %}
-
+<div class="container-fluid h100 autoscroll">
 <div class="card">
     <div class="card-header">
         Contact
@@ -38,14 +38,35 @@ menuname='about'
 </div>
 <div class="card">
     <div class="card-header">
-        iDMS
+        iDMS Current commit details
     </div>
     <div class="card-body">
         <ul>
-            <li>git commit hash: <a href="https://gitlab.rivm.nl/bioinformatics/ngsweb/-/tree/{{ ngsweb_version }}">{{ ngsweb_version[:8] }}</a></li>
-            <li>git branch name: <a href="https://gitlab.rivm.nl/bioinformatics/ngsweb/-/tree/{{ ngsweb_branch }}">{{ ngsweb_branch }}</a></li>
+            <li>git commit hash: <a href="https://gitlab.rivm.nl/bioinformatics/ngsweb/-/tree/{{ ngsweb_details.commit }}">{{ ngsweb_details.commit[:8] }}</a></li>
+            <li>git branch name: <a href="https://gitlab.rivm.nl/bioinformatics/ngsweb/-/tree/{{ ngsweb_details.branch }}">{{ ngsweb_details.branch }}</a></li>
+            <li>git commit author: <b>{{ ngsweb_details.author }}</b></li>
+            <li>git commit date: <b>{{ ngsweb_details.date }}</b></li>
         </ul>
     </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        iDMS Commit history
+    </div>
+    <div class="card-body">
+        <table class="table">
+        <tr><th>Commit</th><th>date</th><th>Message</th></tr>
+            {% for line in ngsweb_history %}
+            <tr>
+            <td>{{ line.commit }}</td>
+            <td>{{ line.date }}</td>
+            <td>{{ line.message }}</td>
+            </tr>
+            {% endfor %}            
+        </table>
+    </div>
+</div>
 </div>
 
 {% endblock %}

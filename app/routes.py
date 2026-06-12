@@ -39,11 +39,25 @@ def msgconfirm():
 
 @bp.route('/about')
 def about():
-    ngsweb_version = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode('utf-8')
-    ngsweb_branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).strip().decode('utf-8')
+    ngsweb_details = {}
+    ngsweb_commit = subprocess.check_output(["git", "show", "HEAD"]).strip().decode('utf-8')
+    for line in ngsweb_commit.splitlines():
+        fields = line.split(' ')
+        if fields[0]:
+            ngsweb_details[fields[0].split(':')[0].lower()] = ' '.join(fields[1:]).strip()
+    ngsweb_log = subprocess.check_output(["git", "log", '--pretty=format:%h %ad %s', "--date=short", '--since="4 weeks ago"', '--no-merges']).strip().decode('utf-8')
+    ngsweb_history = []
+    for line in ngsweb_log.splitlines():
+        fields = line.split(' ')
+        ngsweb_history.append(
+            {'commit': fields[0],
+             'date': fields[1],
+             'message': ' '.join(fields[2:])
+             })   
+    ngsweb_details['branch'] = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).strip().decode('utf-8')
     with irods_manager.session(current_user) as session:
         irods_version = '.'.join(map(str, session.server_version))
-    return render_template('about.html', irods_version=irods_version, ngsweb_version=ngsweb_version, ngsweb_branch=ngsweb_branch)
+    return render_template('about.html', irods_version=irods_version, ngsweb_details=ngsweb_details, ngsweb_history=ngsweb_history)
 
 
 @bp.route('/settings')
