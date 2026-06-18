@@ -131,3 +131,8 @@ BRANDING = {
     "CUSTOM_CSS": None, #"rivm_rijkshuisstyle/css/custom-rijkshuisstijl.css",
     "CONTACT_EMAIL": "bir-list@rivm.nl"
 }
+
+# list of keys for a specific metadata form json file that should not have a required constraint
+METADATA_INFERED = {
+    "rivm.json": ['identifier', 'dataset_location']
+}
