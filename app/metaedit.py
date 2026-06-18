@@ -2,7 +2,7 @@ import os
 import json
 import jsonavu
 import logging
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_login import current_user
 from app.utils import cached_iqry
 from app.utils.constants import SCHEMATA_BASE_PATH, DATASET_SCHEMATA_PATH, PROJECT_SCHEMATA_PATH, REFERENCE_DATASET_SCHEMATA_PATH
@@ -185,7 +185,8 @@ def set_schemata_for_collection():
             return jsonify({}), 500
 
 
-def remove_required(schema_json :dict):
+def remove_all_constraints(schema_json :dict) ->dict:
+
     '''
     Recursively remove all `required` constraints from a JSON Schema.
     Also set minItems to 0.
@@ -205,17 +206,58 @@ def remove_required(schema_json :dict):
                 schema_json[key] = 0
             else:
                 # check lower level items (nested)
-                remove_required(value)
+                remove_all_constraints(value)
     
     # check items in a list, and inspect them separately            
     elif isinstance(schema_json, list):
         for item in schema_json:
-            remove_required(item)
+            remove_all_constraints(item)
     
-    # Use for testing, writes the json to a file
-    # with open(Path(__file__).resolve().parent + "/schemata/_schema_development/rivm_test_clean.json", "w", encoding="utf-8") as f:
-    #    f.write(json.dumps(schema_json))
+    return schema_json
+
+
+def remove_specific_constraints(schema_json :dict, keys :list = None) ->dict:
+    '''
+    Recursively remove specific `required` constraints from a JSON Schema if they are in a list of keys
+    This keys can be listed in "required": or have the property "minItems": >0
+    Works for nested objects, as well as the root required field.
+    For use for infered metadata fields, that are not manually iput, but are requirred in the original schema
     
+    input:  schema_json: the json schema
+            keys: list of keys in schema_json to limit the removal of constraints to
+    
+    output: json schema without specific required constraints
+    '''
+    
+    # No keys, return original schema
+    if keys == None or keys == []:
+        return schema_json
+     
+    # check keys on top level
+    if isinstance(schema_json, dict):
+        
+        # Remove specific keys from "required" 
+        if "required" in schema_json and isinstance(schema_json["required"], list):
+            schema_json["required"] = [ field for field in schema_json["required"] if field not in keys ]
+
+        # Traverse properties while knowing the property name, these could be nested!
+        if "properties" in schema_json and isinstance(schema_json["properties"], dict):
+            
+            for prop_name, prop_schema in schema_json["properties"].items():
+                
+                if not prop_name in keys:
+                    continue
+                if "minItems" in prop_schema:
+                    prop_schema["minItems"] = 0
+                
+                # check the nested items for constraints    
+                remove_specific_constraints(prop_schema, keys)
+        
+    # check items in a list of dicts, and inspect them one by one            
+    elif isinstance(schema_json, list):
+        for item in schema_json:
+            remove_specific_constraints(item, keys)
+            
     return schema_json
 
 
@@ -233,6 +275,7 @@ def get_schema_and_data():
     data = "{}"
     prefix = request.args.get('prefix')
     schemapath = request.args.get('schemapath')
+    metadata_infered = current_app.config.get('METADATA_INFERED')
     
     # find collection where project metadata is located
     meta_default_values_collection = request.args.get('meta_default_values_collection')
@@ -244,11 +287,18 @@ def get_schema_and_data():
         with obj.open('r') as f:
             schema = f.read().decode('UTF-8')
             
-            # remove required fields from schema, first turn into json.
+            # remove specific required constraints from schema (if metadata is infered)
+            for schemaname, keys in metadata_infered.items():
+                if schemapath.endswith(schemaname):
+                    schema_json = json.loads(schema)
+                    schema_json = remove_specific_constraints(schema_json, keys)
+                    schema = json.dumps(schema_json)
+            
+            # remove all required constraints from schema (if metadata is default metadata)
             if prefix==ATTR_UPLOAD_DEFAULT_PREFIX:
                 schema_json = json.loads(schema)
-                schema_clean = remove_required(schema_json)
-                schema = json.dumps(schema_clean)
+                schema_json = remove_all_constraints(schema_json)
+                schema = json.dumps(schema_json)
         
         # Find the path to a ui schema file, and check for existing ones (ui_ + file_name)
         uiSchemaPath = os.path.dirname(schemapath) + '/ui/ui_' + os.path.basename(schemapath)
