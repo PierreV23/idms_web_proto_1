@@ -167,7 +167,10 @@ def search_attrs_by_collection_ids(ids):
 
 @cache.memoize(timeout=3600, make_name=dep_zone)
 def _search_attrs_by_sorted_collection_ids(ids):
-    CHUNK_SIZE = 300
+    '''
+    Search unique attribute_names for a selected list of collections
+    '''
+    CHUNK_SIZE = 50
     if len(ids) > CHUNK_SIZE:
         splitpoint = len(ids) // 2
         result = _search_attrs_by_sorted_collection_ids(ids[:splitpoint])
@@ -189,7 +192,10 @@ def search_values_by_collection_ids_and_attr(ids, attr):
 
 @cache.memoize(timeout=3600, make_name=dep_zone)
 def _search_values_by_sorted_collection_ids_and_attr(ids, attr):
-    CHUNK_SIZE = 200
+    '''
+    Select metadata values for a specific attribute and a selected list of collections
+    '''
+    CHUNK_SIZE = 50
     if len(ids) > CHUNK_SIZE:
         splitpoint = len(ids) // 2
         result = _search_values_by_sorted_collection_ids_and_attr(ids[:splitpoint], attr)
