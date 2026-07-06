@@ -533,10 +533,8 @@ menuname='collectionbrowser'
     }, function (data) {
       if (data.result) {
         $('.dataset-only').attr('hidden', false)
-        console.log('IS DATASET')
       } else  {
         $('.dataset-only').attr('hidden', true)
-        console.log('NO DATASET')
       }
     });    
   }
@@ -572,18 +570,32 @@ menuname='collectionbrowser'
     set_path();
   });
 
-  $(document).on('click', '.path-change', function () {
+  // Handle left-click and middle click
+  $(document).on('click', '.path-change', handle_path_change)
+  $(document).on('auxclick', '.path-change', handle_path_change)
+
+  function handle_path_change(event) {
     $('.flash-error').remove()
     selected_project = $(this).data('project') || selected_project;
     selected_object = '';
     collection = (this.nodeName == "g" ? this.id : $(this).data('path'));
-    history.pushState({ "coll": collection }, 'Browse ' + collection, '/collbrowser?path=' + collection);
-    set_path();
-    $.post('{{ url_for("userinfo.usersetting") }}', {
-      attr: 'path',
-      value: collection
-    })
-  });
+    new_url = '/collbrowser?path=' + collection
+    // Check for ctrl-click
+    const isCtrlClick = (event.ctrlKey || event.metaKey) && event.button === 0;
+    // Check for middle mouse click
+    const isMiddleClick = event.button === 1; 
+    if (isCtrlClick || isMiddleClick) {
+      // Open target in new tab on ctrl-click or middle click
+      window.open(new_url, '_blank')
+    } else {
+      history.pushState({ "coll": collection }, 'Browse ' + collection, new_url);
+      set_path();
+      $.post('{{ url_for("userinfo.usersetting") }}', {
+        attr: 'path',
+        value: collection
+      })
+    }
+  };
 
   // Graph simplify
   $(document).on('change', '#graph_simplify_coll', function () {
