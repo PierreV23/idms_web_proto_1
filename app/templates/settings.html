@@ -152,7 +152,7 @@ menuname='settings'
             </div>
             <div class="tab-pane fade" id="user-settings-tabs-cluster" role="tabpanel"
                 aria-labelledby="user-settings-tabs-cluster-tab">
-                {% for site in current_user.irods_env.get("sites_and_clusters",{}).get("sites", {}) if site != "RIVM" %}
+                {% for site in current_user.irods_env.get("sites_and_clusters",{}).get("sites", {}) %}
                 <div class="card mt-4">
                     <div class="card-header">
                         <h3 class="card-title">
