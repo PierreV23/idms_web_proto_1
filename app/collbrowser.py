@@ -51,6 +51,7 @@ from idms.common.constants.attribute_names import (
     ATTR_DATASETID,
     ATTR_PIPELINE_INPUT_COLLECTION_ID,
     ATTR_PROJECTID,
+    ATTR_REFDATA_DATASET,
     ATTR_RULES_OBJECTIDS,
     ATTR_RUNSHEET_ID,
     ATTR_RUNSHEET_PROCESSGROUPGUID,
@@ -961,14 +962,20 @@ PROVATTR = [
 def multi_list_coll():
     # Create a small HTML page with a list of related collections
     #
+    # The parameter tuple elements are:
+    #   1) metadata attribute
+    #   2) does the metadata attr contain a name(True) or a dataset id(False)
+    #   3) is this an indexed attribute. There should be an {index} template in the attr name
+    
     PARAMSETS = {
         'U':[
-            ('user::pipeline::input_collection', True),
-            ('user::pipeline::input_collection_id', False),
-            ('prov:wasDerivedFrom', True)
+            ('user::pipeline::input_collection', True, False),
+            ('user::pipeline::input_collection_id', False, False),
+            ('prov:wasDerivedFrom', True, False)
         ],
         'S':[
-            ('sys::pipeline::input_collection_id', False)
+            ('sys::pipeline::input_collection_id', False, False),
+            ('sys::pipeline::refdata::{index}::reference_version_dataset_id', False, True)
         ]
     }
     # param has format
@@ -979,12 +986,12 @@ def multi_list_coll():
     forward = query_type[0] == 'O'
     params = PARAMSETS.get(query_type[1], ())
     resultnames = []
-    for attr, byname in params:
-        resultnames += related_coll(coll, attr, forward=forward, byname=byname)
-    results = [(cached_iqry.qcollmetaval(r, ATTR_PROJECTID, default=''), datafield('coll', r, 'irods_collection')) for r in resultnames]
+    for attr, byname, indexed in params:
+        resultnames += related_coll(coll, attr, forward=forward, byname=byname, indexed=indexed)
+    results = [(cached_iqry.qcollmetaval(r, ATTR_PROJECTID, default=''), datafield('coll', r, 'irods_collection'), cached_iqry.qcollmetaval(r, ATTR_REFDATA_DATASET, default='')) for r in resultnames]
     return render_template('small_collist.html', results = results)
 
-def related_coll(coll, attr, forward=True, byname=True):
+def related_coll(coll, attr, forward=True, byname=True, indexed=False):
     '''Find collections related to <coll>
     In case forward=True
        Search for collections that have metadata attribute <attr> with the name or dataset_id of coll in the value
@@ -1001,14 +1008,48 @@ def related_coll(coll, attr, forward=True, byname=True):
 
     if forward:
         search_value = coll if byname else collmeta.get(ATTR_DATASETID)
-        q = cached_iqry.qcollbymeta(attr, search_value)
-        result = { c[Collection.name] for c in q }
+        if indexed:
+            result = set()
+            index = 0
+            while True:
+                attrname = attr.format(index=index)
+                q = cached_iqry.qcollbymeta(attrname, search_value)
+                local_results = { c[Collection.name] for c in q }
+                if not local_results:
+                    break
+                result.update(local_results)
+                index += 1
+        else:
+            q = cached_iqry.qcollbymeta(attr, search_value)
+            result = { c[Collection.name] for c in q }
     else:
         if byname:
-            result = set(collmeta.get_all(attr, []))
+            if indexed:
+                result = set()
+                index = 0
+                while True:
+                    attrname = attr.format(index=index)
+                    local_results = set(collmeta.get_all(attrname, []))
+                    if not local_results:
+                        break
+                    result.update(local_results)
+                    index += 1
+            else:
+                result = set(collmeta.get_all(attr, []))
         else:
             result = set()
-            values =  collmeta.get_all(attr, [])
+            if indexed:
+                values = []
+                index = 0
+                while True:
+                    attrname = attr.format(index=index)
+                    local_values = collmeta.get_all(attrname, [])
+                    if not local_values:
+                        break
+                    values += local_values
+                    index += 1
+            else:
+                values = collmeta.get_all(attr, [])
             for value in values:
                 q = cached_iqry.qcollbymeta(ATTR_DATASETID, value)
                 result.update([ c[Collection.name] for c in q ])
