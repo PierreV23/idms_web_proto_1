@@ -989,6 +989,9 @@ def multi_list_coll():
     for attr, byname, indexed in params:
         resultnames += related_coll(coll, attr, forward=forward, byname=byname, indexed=indexed)
     results = [(cached_iqry.qcollmetaval(r, ATTR_PROJECTID, default=''), datafield('coll', r, 'irods_collection'), cached_iqry.qcollmetaval(r, ATTR_REFDATA_DATASET, default='')) for r in resultnames]
+    # sort results (no projectID on bottom)
+    results = sorted(results, key=lambda t: t[1:])
+    results = sorted(results, key=lambda t: t[0], reverse=True) 
     return render_template('small_collist.html', results = results)
 
 def related_coll(coll, attr, forward=True, byname=True, indexed=False):
