@@ -645,9 +645,15 @@ def _collcontents(path, offset, limit, filterstr, key, order):
     filters = json.loads(filterstr)
     qc_filters = [Criterion('=', Collection.parent_name, path)]
     qd_filters = [Criterion('=', Collection.name, path)]
+
     if 'displayname' in filters:
         qc_filters.append(Criterion('like', Collection.name, f'%{filters["displayname"]}%'))
         qd_filters.append(Criterion('like', DataObject.name, f'%{filters["displayname"]}%'))
+        
+    if 'display_field' in filters:
+        display_field_filter = filters.get('display_field', '')
+        qc_filters.append(Criterion('=', CollectionMeta.name, display_field))
+        qc_filters.append(Criterion('like', CollectionMeta.value, f'%{display_field_filter}%'))
 
 # Get item counts
     with irods_manager.session(current_user) as irods_session:
