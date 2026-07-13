@@ -18,6 +18,7 @@ bp = Blueprint('userinfo', __name__, url_prefix='/userinfo')
 
 ATTR_CLUSTER_USERNAME_TEMPLATE = "cluster::{}::username"
 ATTR_CLUSTER_SSHKEY_TEMPLATE = "cluster::{}::sshkey_path"
+ATTR_CLUSTER_CONFIG_REQUEST_TEMPLATE = "cluster::{}::autoconfig"
 
 
 @bp.route('/api/setting', methods=['GET', 'POST', 'DELETE'])
@@ -79,17 +80,26 @@ def groupdetails():
 
 def cluster_config():
     clusters = {}
-    for cluster in current_user.irods_env.get("sites_and_clusters", {}).get("clusters", {}):
+    for cluster, cluster_data in current_user.irods_env.get("sites_and_clusters", {}).get("clusters", {}).items():
         homeColl = f"/{ current_user.irods_zone }/home/{current_user.username}"
         cluster_username_attr = ATTR_CLUSTER_USERNAME_TEMPLATE.format(cluster)
         cluster_sshkey_attr = ATTR_CLUSTER_SSHKEY_TEMPLATE.format(cluster)
+        cluster_autoconf_attr = ATTR_CLUSTER_CONFIG_REQUEST_TEMPLATE.format(cluster)
         clusters[cluster] = {
             "username": iqry.qcollmetaval(homeColl, cluster_username_attr),
-            "sshkey_path": iqry.qcollmetaval(homeColl, cluster_sshkey_attr)
+            "sshkey_path": iqry.qcollmetaval(homeColl, cluster_sshkey_attr),
+            "autoconfig_request":iqry.qcollmetaval(homeColl, cluster_autoconf_attr, default='false')
         }
     return clusters
 
-
+@bp.route('/api/requestclusterconfig', methods=['GET'])
+def request_cluster_config():
+    cluster = request.args.get('cluster')
+    cluster_autoconf_attr = ATTR_CLUSTER_CONFIG_REQUEST_TEMPLATE.format(cluster)
+    homeColl = f"/{ current_user.irods_zone }/home/{current_user.username}"
+    iqry.scollmetaval(homeColl, cluster_autoconf_attr, 'true')
+    return { 'result': 'OK' }, 200
+        
 
 @bp.route('/api/userclusterconfig', methods=['POST'])
 def save_cluster_config():

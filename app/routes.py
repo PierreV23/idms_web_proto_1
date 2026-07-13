@@ -71,8 +71,10 @@ def settings():
             'value': current_user.feature(feature)
         })
     cluster_config_dict = cluster_config()
+    activetab = request.args.get('activetab', None)
+    cluster = request.args.get('cluster', None)
 
-    return render_template('settings.html', features=features, cluster_config=cluster_config_dict)
+    return render_template('settings.html', features=features, cluster_config=cluster_config_dict, activetab=activetab, cluster=cluster)
 
 
 @bp.route('/_brs/<path:rest_endpoint>', methods=['GET', 'PUT', 'POST', 'DELETE'])
