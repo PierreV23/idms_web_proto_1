@@ -126,7 +126,7 @@
       <!-- Brand Logo -->
       <a href="/" class="logo-xl" style="width:100px">
         <!-- <img src="dist/img/AdminLTELogo.png" alt="AdminLTE Logo" class="brand-image img-circle elevation-3" style="opacity: .8"> -->
-        <span class="brand-link" ">
+        <span class="brand-link">
           <img src="{{ url_for('static', filename=branding.LOGO_URL ) }}"  alt="logo" width="44", height="44" />
           {{ branding.APP_NAME_SHORT }} 
         </span>
@@ -191,8 +191,29 @@
           </li>
 
           <li class="nav-item">
-            <a href="{{ url_for('upload.show_uploads') }}" data-menuname="uploads" class="nav-link">
+            <a href="#" class="nav-link">
               <i class="fas fa-upload nav-icon"></i>
+              <p>Dataset Uploads alt</p>
+              <i class="right fas fa-angle-left"></i>
+            </a>
+            <ul class="nav nav-treeview">
+              <li class="nav-item">
+                <a href="{{ url_for('upload.show_uploads') }}" class="nav-link" data-menuname="all-uploads">
+                  <i class="fas fa-list nav-icon"></i>
+                  <p>All Uploads</p>
+                </a>
+              </li>    
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('upload.new_upload') }}" >
+                  <i class="fas fa-plus nav-icon"></i>
+                  New Upload
+                </a>
+              </li>
+            </ul>
+          </li>
+
+          <li class="nav-item">
+            <a href="{{ url_for('upload.show_uploads') }}" data-menuname="uploads" class="nav-link">              <i class="fas fa-upload nav-icon"></i>
               <p>Dataset Uploads</p>
             </a>
           </li>
