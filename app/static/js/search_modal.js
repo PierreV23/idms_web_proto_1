@@ -88,16 +88,23 @@ function SearchModal(data) {
                 data: JSON.stringify(search_data),
                 contentType: 'application/json;charset=UTF-8',
                 success: function (data) {
-                    data.forEach(function (option) {
-                        $('#meta-value-select').append(`
-                            <option class="meta-value-option">${option}</option>`)
-                    })
-                    $('#meta-value-select')
-                        .val("default_value")
-                        .attr('disabled', false)
-                        .selectpicker('refresh')
-                        .focus();
-                        $('#progress-bar').removeClass('show-progress')
+                      $('#meta-value-select')
+                          .find('.meta-value-option')
+                          .remove();
+
+                      data.forEach(function (option) {
+                          $('#meta-value-select').append(
+                              `<option class="meta-value-option">${option}</option>`
+                          );
+                      });
+
+                      $('#meta-value-select')
+                          .val("default_value")
+                          .attr('disabled', false)
+                          .selectpicker('refresh')
+                          .focus();
+
+                      $('#progress-bar').removeClass('show-progress');
                 }
             })
         })

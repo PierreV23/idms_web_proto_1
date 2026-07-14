@@ -1,13 +1,17 @@
 import time
 from flask import jsonify, render_template, request, Blueprint
-from irods.query import SpecificQuery
-from irods.exception import CAT_NO_ROWS_FOUND, CAT_SQL_ERR
 
-from idms.common.irods.irods_sessions import irods_manager
 from app.utils.flaskcache import cache, dep_zone
 from app.utils.datafield import datafield
-from flask_login import current_user
 
+from .utils.database import db
+
+import logging
+
+logging.basicConfig(
+    format='%(filename)s:%(funcName)s:%(lineno)d - %(message)s',
+    level=logging.INFO
+)
 
 """ Input structures:
 
@@ -23,6 +27,15 @@ searchdata: {
 
 """
 
+# specific prefix strings in metadata are excluded. Specific metadata attributes can be included again
+attrs_to_exclude = ['sys::', 'ngsweb::']
+attrs_to_include = ['sys::data::state', 'sys::data::type']
+exclude_string = ",".join(f"'{x}%'" for x in attrs_to_exclude) if attrs_to_exclude else ''
+include_string = ",".join(f"'{x}'" for x in attrs_to_include) if attrs_to_include else ''
+ex_in_filter = f'''AND (meta_attr_name NOT LIKE ALL (ARRAY[{exclude_string}]) 
+                    OR meta_attr_name IN ({include_string}))'''
+########################
+
 bp = Blueprint('search', __name__, url_prefix='/search')
 
 class Const:
@@ -34,37 +47,42 @@ class Const:
     NAME = 'name'
     VALUE = 'value'
     ATTRS = 'attrs'
-    
+
 class TableFormat:
     html = 'html'
-    plain = 'plain'    
+    plain = 'plain'
 
 class Tables:
     coll = 'r_coll_main'
     metamap = 'r_objt_metamap'
     meta = 'r_meta_main'
+    coll_json = 'coll_json'
 
-# class Tables:
-#     coll = 'r_coll_main'
-#     metamap = 'evw_objt_metamap'
-#     meta = 'evw_metamap'
 
 def search_dict(keywords, meta_attrs):
+    '''Dictionary containing search parameters
+    '''
     return {
         Const.KEYWORDS: keywords,
         Const.META: meta_attrs
     }
 
+
 def result_data(collections, dataobjects, id, attrs=[]):
+    '''Dictionary containing search results
+    '''
     return {
         Const.COLLECTIONS: collections,
         Const.DATAOBJECTS: dataobjects,
-        Const.ATTRS: attrs,
-        Const.ID: id
+        Const.ID: id,
+        Const.ATTRS: attrs
     }
+
 
 @bp.route('_searchtable', methods=['POST'])
 def searchtable():
+    '''Result table displaying the collections and specific table parameters
+    '''
     data = request.json
     id = data.get('id', 0)
     tabledef = {
@@ -85,10 +103,13 @@ def searchtable():
     tabledef |= {'columns': columns, 'data': tabledata, 'attrs': attrs}
     return jsonify(tabledef), 200
 
+
 @bp.route('_search')
 def search():
-    """This just fills the search modal"""
+    '''This just fills the search modal
+    '''
     return render_template('search2.html')
+
 
 @bp.route('_x32', methods=['POST'])
 def api_available_attrs():
@@ -100,46 +121,43 @@ def api_available_attrs():
     data = request.json
     keywords = data.get(Const.KEYWORDS)
     meta = data.get(Const.META)
+
     # Handle the case where there is no query yet
     if not(meta or keywords):
-        return jsonify(all_collection_meta_attrs())
+        all_attrs = all_collection_meta_attrs()
+        return jsonify(sorted(all_attrs))
+
     _, _, attrs = search_collections(data)
     return jsonify(attrs)
 
-@bp.route('_searchcolls', methods=['GET'])
-def api_searchcolls_kw():
-    keywords = request.args.get(Const.KEYWORDS, '').split(' ')
-    id = request.args.get(Const.ID, 0)
-    _, colls, attrs = search_collections(search_dict(keywords, {}))
-    return jsonify(result_data(colls, [], id, attrs=attrs))
-
-@bp.route('_attrvalues', methods=['GET'])
-def api_attrvalues():
-    attr = request.args.get('attr')
-    if attr is not None:
-        return jsonify(dataset_attr_values(attr))
-    return jsonify([])
 
 @bp.route('_attrvalues', methods=['POST'])
 def api_attrvalues_for_search():
+    '''Get corresponding attribute values for search result collections
+    '''
     data = request.json
     attr = data.get('attr')
-    ids, colls, attrs = search_collections(data)
+    ids, _, _ = search_collections(data)
     if ids:
-        XX = search_values_by_collection_ids_and_attr(ids, attr)
-        return jsonify(XX)
+        vals = search_values_by_collection_ids_and_attr(ids, attr)
     else:
-        XX = dataset_attr_values(attr)
-        return jsonify(XX)
+        vals = dataset_attr_values(attr)
+    
+    # sort and remove duplicates
+    vals = sorted((x for x in vals if x is not None), key=str.lower)
+   
+    return jsonify(vals)
 
 
 def search_collections(data):
+    '''Search collections for specific search parameters
+    '''
     ids = None
     all_colls = {}
     # Find keywords in collection paths
     for keyword in data.get(Const.KEYWORDS, []):
         if keyword:
-            colls = search_collections_by_keyword(keyword)
+            colls = datasets_with_text(keyword)
             all_colls = all_colls | colls
             if ids is None:
                 ids = set(colls)
@@ -153,203 +171,170 @@ def search_collections(data):
             ids = set(colls)
         else:
             ids = ids & set(colls)
+        ids = sorted(ids)
     if ids is None:
         ids = []
         collections = []
         attrs = all_collection_meta_attrs()
     else:
         collections = [ all_colls.get(id) for id in ids ]
-        attrs = [ a for a in search_attrs_by_collection_ids(list(ids)) if a not in data.get(Const.META, {}).keys() ]
-    return list(ids), list(collections), list(attrs)
+        attrs = sorted([ a for a in search_attrs_by_collection_ids(sorted(ids)) if a not in data.get(Const.META, {}).keys() ])
+    return sorted(ids), sorted(collections), list(attrs)
+
 
 def search_attrs_by_collection_ids(ids):
-    return sorted(list(_search_attrs_by_sorted_collection_ids(sorted(ids[:1000]))))
+    '''Search attributes for list of ids
+    '''
+    start_f = time.perf_counter()
+            
+    # define where clauses
+    coll_id_filter = f"AND coll_id IN ({','.join(ids)})" if ids else ""
+
+    sql = f"""
+            SELECT meta_attr_name
+            FROM {Tables.coll_json}
+            CROSS JOIN LATERAL jsonb_object_keys(coll->'coll_meta') AS meta_attr_name
+            WHERE COALESCE(meta_attr_name, '') <> ''
+            {coll_id_filter}
+            {ex_in_filter} 
+            GROUP BY meta_attr_name
+            ORDER BY meta_attr_name
+        """
+
+    result = { c[0] for c in runsql(sql) }
+    
+    end_f = time.perf_counter()
+
+    logging.info(
+    f"Query search_attrs_by_collection_ids took {end_f - start_f:.6f} seconds")
+
+    return result
+    
 
 @cache.memoize(timeout=3600, make_name=dep_zone)
-def _search_attrs_by_sorted_collection_ids(ids):
-    '''
-    Search unique attribute_names for a selected list of collections
-    '''
-    CHUNK_SIZE = 50
-    if len(ids) > CHUNK_SIZE:
-        splitpoint = len(ids) // 2
-        result = _search_attrs_by_sorted_collection_ids(ids[:splitpoint])
-        result.update(_search_attrs_by_sorted_collection_ids(ids[splitpoint:]))
-        return result
-    with irods_manager.session(current_user) as session:
-        result = set()
-        for i in range(0, len(ids), CHUNK_SIZE):
-            sql = f"""
-select meta_attr_name from { Tables.meta } M
-inner join { Tables.metamap } OM on M.meta_id=OM.meta_id
-where OM.object_id IN({','.join(ids[i:i+CHUNK_SIZE])}) and meta_attr_name not like 'sys%';
-"""
-            result.update({ c[0] for c in runsql(session, sql) })
-    return result
-
 def search_values_by_collection_ids_and_attr(ids, attr):
-    return sorted(list(_search_values_by_sorted_collection_ids_and_attr(sorted(ids), attr)))
+    ''' Search values for a combination of list of collection ids and a given attribute
+    '''
+    start = time.perf_counter()
 
-@cache.memoize(timeout=3600, make_name=dep_zone)
-def _search_values_by_sorted_collection_ids_and_attr(ids, attr):
-    '''
-    Select metadata values for a specific attribute and a selected list of collections
-    '''
-    CHUNK_SIZE = 50
-    if len(ids) > CHUNK_SIZE:
-        splitpoint = len(ids) // 2
-        result = _search_values_by_sorted_collection_ids_and_attr(ids[:splitpoint], attr)
-        result.update(_search_values_by_sorted_collection_ids_and_attr(ids[splitpoint:], attr))
-        return result
-    with irods_manager.session(current_user) as session:
-        result = set()
-        for i in range(0, len(ids), CHUNK_SIZE):
-            sql = f"""
-select meta_attr_value from { Tables.meta } M
-inner join {Tables.metamap } OM on M.meta_id=OM.meta_id
-WHERE M.meta_attr_name = '{attr}' AND
-OM.object_id IN ({','.join(ids[i:i+CHUNK_SIZE])});
-"""
-            result.update({ c[0] for c in runsql(session, sql) })
+    sql = f"""
+            SELECT coll->'coll_meta'->>'{attr}' AS meta_attr_value
+            FROM {Tables.coll_json}
+            WHERE coll_id IN ({','.join(ids)})
+            AND coll->'coll_meta'->>'{attr}' IS NOT NULL
+            ORDER BY meta_attr_value;
+            """
+        
+    result = { c[0] for c in runsql(sql) }
+
+    end = time.perf_counter()
+    logging.info(f'Query _search_attrs_by_sorted_collection_ids took {end - start:.6f} seconds')
+
     return result
-
-
-@cache.memoize(timeout=3600, make_name=dep_zone)
-def search_collections_by_keyword(keyword):
-    colls = datasets_with_text(keyword)
-    # colls = colls.union(set(all_datasets_meta(keyword, Const.NAME)))
-    # colls = colls.union(set(all_datasets_meta(keyword, Const.VALUE)))
-    return colls
-
-
 
 ########################
 # CACHED BASE FUNCTIONS
 ########################
 
-def runsql(session, sql):
-    alias = f'ngsweb_search_{time.time()}'
-    query = SpecificQuery(session, sql, alias)
-    # try:
-    #     query.remove()
-    # except:
-    #     pass
-    query.register()
-    try:
-        result = list(query)
-    except (CAT_NO_ROWS_FOUND, CAT_SQL_ERR):
-        result = []
-    query.remove()
+def runsql(sql):
+    ''' Executes a query
+    '''
+    start = time.perf_counter()
+    
+    with db.connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(sql)
+        result = [ { i: str(n) for i, n in enumerate(r) } for r in cursor.fetchall() ]
+
+    end = time.perf_counter()
+
+    logging.info(f'Query {sql} took {end - start:.6f} seconds')
+
     return result
+
 
 @cache.memoize(timeout=3600, make_name=dep_zone)
 def collections_by_meta(attr, value):
-    with irods_manager.session(current_user) as session:
-        sql = f"""
-select coll_id, coll_name from { Tables.coll } C
-inner join { Tables.metamap } OM on C.coll_id=OM.object_id
-inner join { Tables.meta } M on OM.meta_id = M.meta_id
-where meta_attr_name='{attr}' and meta_attr_value='{value}';
-"""
-        result = { c[0]: c[1] for c in runsql(session, sql) }
+    '''Fetch collections with specific metadata attr, value pair
+    '''
+        
+    sql = f"""
+        SELECT coll_id, coll->>'coll_name' AS coll_name FROM {Tables.coll_json}
+        WHERE coll->'coll_meta'->>'{attr}' = '{value}'
+        GROUP BY 1,2
+        ORDER BY 1;
+        """
+
+    result = { c[0]: c[1] for c in runsql(sql) }
+    
     return result
+
 
 @cache.memoize(timeout=3600, make_name=dep_zone)
 def datasets_with_text(text):
-    if len(text) > 3:
+    '''truncate search string for datasets search
+    '''
+    if len(text) > 10:
         subresults = datasets_with_text(text[:-1])
         results = { k: v for k, v in subresults.items() if text in v }
     else:
         results = _datasets_with_text(text)
     return results
 
+
 @cache.memoize(timeout=3600, make_name=dep_zone)
 def _datasets_with_text(text):
-    with irods_manager.session(current_user) as session:
-
-        sql = f"""
-select coll_id, coll_name from { Tables.coll } C
-inner join { Tables.metamap } M on C.coll_id = M.object_id
-inner join { Tables.meta } E on M.meta_id = E.meta_id
-where meta_attr_name = 'sys::dataset_id' and coll_name like '%{text}%';
-"""
-        result = { c[0]: c[1] for c in runsql(session, sql) }
+    ''' Find datasets containing a string in the name
+    '''
+    
+    sql = f"""
+            SELECT coll_id, coll->>'coll_name' AS coll_name
+            FROM (SELECT * FROM {Tables.coll_json}
+                WHERE coll->'coll_meta'->>'sys::dataset_id' IS NOT NULL) AS datasets
+            WHERE coll->>'coll_name' LIKE '%{text}%';
+            """
+               
+    result = { c[0]: c[1] for c in runsql(sql) }
+    
     return result
 
-
-@cache.memoize(timeout=3600, make_name=dep_zone)
-def _datasets_by_text_with_meta(text):
-    with irods_manager.session(current_user) as session:
-
-        sql = f"""
-select coll_id, coll_name, meta_attr_name, meta_attr_value
-from
-(select coll_id, coll_name from { Tables.coll } C
-inner join { Tables.metamap } M on C.coll_id = M.object_id
-inner join { Tables.meta } E on M.meta_id = E.meta_id
-where meta_attr_name = 'sys::dataset_id' and coll_name like '%{text}%'
-) selected_datasets
-inner join { Tables.metamap } M2 on selected_datasets.coll_id = M2.object_id
-inner join { Tables.meta } E2 on M2.meta_id = E2.meta_id;
-"""
-        results = {}
-        for c in runsql(session, sql):
-            results.setdefault(c[1], {})[c[2]] = c[3]
-    return results
-
-
-@cache.memoize(timeout=3600, make_name=dep_zone)
-def all_datasets_meta(meta, key):
-    columns = {
-        Const.NAME: 'meta_attr_name',
-        Const.VALUE: 'meta_attr_value'
-    }
-    column = columns.get(key)
-    with irods_manager.session(current_user) as session:
-        sql = f"""
-select coll_id, coll_name from (select coll_id, coll_name from { Tables.coll } C
-inner join { Tables.metamap } M on C.coll_id = M.object_id
-inner join { Tables.meta } E on M.meta_id = E.meta_id where meta_attr_name = 'sys::dataset_id') datasets
-inner join { Tables.metamap } M on datasets.coll_id = M.object_id
-where M.meta_id in
-(SELECT meta_id FROM { Tables.meta } where {column} like '%{meta}%');
-"""
-        result = { c[0]: c[1] for c in runsql(session, sql) }
-    return result
 
 @cache.memoize(timeout=600, make_name=dep_zone)
-@bp.route('_allmeta')
-def all_meta_attrs():
-    with irods_manager.session(current_user) as session:
-        sql = f"select distinct meta_attr_name from { Tables.meta } where meta_attr_name not like 'sys%';"
-        result = [ x[0] for x in runsql(session, sql) ]
-    return result
-
-@cache.memoize(timeout=600, make_name=dep_zone)
-@bp.route('_allmeta')
+@bp.route('_allmetacoll')
 def all_collection_meta_attrs():
-    with irods_manager.session(current_user) as session:
-        sql = f"""
-select distinct meta_attr_name from { Tables.meta } M
-inner join { Tables.metamap } O on M.meta_id=O.meta_id
-inner join (select coll_id from { Tables.coll } C
-inner join { Tables.metamap } M on C.coll_id = M.object_id
-inner join { Tables.meta } E on M.meta_id = E.meta_id
-where meta_attr_name = 'sys::dataset_id') C on O.object_id=C.coll_id
-where meta_attr_name not like 'sys%'
-order by meta_attr_name;
-"""
-        result = [ x[0] for x in runsql(session, sql) ]
+    ''' Return all metadata attributes from the metadata of all collections
+    '''
+    sql = f"""
+            SELECT meta_attr_name 
+            FROM (
+                SELECT jsonb_object_keys(coll->'coll_meta') AS meta_attr_name
+                FROM (SELECT * FROM { Tables.coll_json }
+                    WHERE coll->'coll_meta'->>'sys::dataset_id' IS NOT NULL
+                    ) q
+                ) q2
+            WHERE meta_attr_name <> ''
+            {ex_in_filter}
+            GROUP BY meta_attr_name
+            ORDER BY meta_attr_name
+            """
+
+    result = { c[0] for c in runsql(sql) }
+    
     return result
 
-@cache.memoize(timeout=3600, make_name=dep_zone)
+
+@cache.memoize(timeout=600, make_name=dep_zone)
 def dataset_attr_values(attr):
-    with irods_manager.session(current_user) as session:
-        sql = f"""
-select distinct meta_attr_value from { Tables.meta } EE inner join { Tables.metamap } MM on EE.meta_id = MM.meta_id inner join (select coll_id from { Tables.coll } C
-inner join { Tables.metamap } M on C.coll_id = M.object_id
-inner join { Tables.meta } E on M.meta_id = E.meta_id
-where meta_attr_name = 'sys::dataset_id') subq on MM.object_id=subq.coll_id where meta_attr_name='{attr}';
-"""
-        result = [ x[0] for x in runsql(session, sql)]
+    ''' Metadata values for a given attribute
+    '''
+    sql = f"""
+            SELECT coll->'coll_meta'->>'{attr}' AS meta_attr_value
+            FROM ( SELECT * FROM {Tables.coll_json}
+                    WHERE coll->'coll_meta'->>'sys::dataset_id' IS NOT NULL ) datasets
+            WHERE COALESCE(coll->'coll_meta'->>'{attr}', '') <> ''
+            GROUP BY coll->'coll_meta'->>'{attr}'
+            """
+
+    result = { c[0] for c in runsql(sql) }
+   
     return result
