@@ -30,13 +30,15 @@ menuname='collectionbrowser'
 
 {% block menuitems %}
 {% if current_user.feature('provenance') %}
+<div class="dataset-only">
 <li class="nav-header  bg-warning text-center">ACTIONS</li>
-<li class="nav-item dataset-only">
+<li class="nav-item">
   <a href="#" class="nav-link" onClick="uploadDownstream()">
     <i class="fas fa-plus nav-icon"></i>
     Upload downstream data
   </a>
 </li>
+</div>
 {% endif %}
 {% endblock %}
 
