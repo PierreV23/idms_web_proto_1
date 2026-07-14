@@ -455,7 +455,9 @@ def collection_actions():
         cached_iqry.rmallcollmetaattr(collection, ATTR_ARCHIVE_LASTCHECK)
         cached_iqry.rmallcollmetaattr(collection, ATTR_ARCHIVE_LASTRUN)
     if action == 'make-dataset':
-        get_or_set_uid(collection)
+        with irods_manager.session(current_user) as session:
+            collobj = session.collections.get(collection)
+            get_or_set_uid(collobj)
     # Add a short delay, otherwise the removed metadata will still be visible
     time.sleep(0.2)
     return { "Result": "OK" }
