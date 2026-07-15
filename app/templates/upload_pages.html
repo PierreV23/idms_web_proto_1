@@ -1,7 +1,7 @@
 {% extends 'base2.html' %}
 
 {% block menubuttons %}
-<li class="nav-header">UPLOAD SETTINGS</li>
+<li class="nav-header bg-warning text-center">UPLOAD SETTINGS</li>
 <li class="nav-item">
     <a href="{{ url_for('upload.upload_settings', coll=coll) }}" data-menuname="upload_settings" class="nav-link">
         <i class="fas fa-sliders-h nav-icon"></i>
@@ -24,7 +24,7 @@
 {% endblock %}
 
 {% block menuitems %}
-<li class="nav-header">ACTIONS</li>
+<li class="nav-header bg-warning text-center">ACTIONS</li>
 <li class="nav-item">
     <a href="{{ url_for('upload.upload_actions', coll=coll, action='finalize') }}" class="nav-link">
         <i class="fas fa-check nav-icon"></i>
