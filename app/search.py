@@ -171,7 +171,6 @@ def search_collections(data):
             ids = set(colls)
         else:
             ids = ids & set(colls)
-        ids = sorted(ids)
     if ids is None:
         ids = []
         collections = []

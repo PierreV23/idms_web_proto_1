@@ -3,6 +3,5 @@
     "python-envs.defaultPackageManager": "ms-python.python:conda",
     "files.associations": {
         "*.html": "jinja-html",
-        "*.vuerd": "json"
     }
 }
