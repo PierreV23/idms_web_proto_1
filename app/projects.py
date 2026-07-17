@@ -17,10 +17,20 @@ from irods.column import Criterion
 from app.utils.datafield import datafield
 from graphviz import Digraph
 from .utils import cached_iqry
-from idms.common.constants.attribute_names import  ATTR_UPLOAD_DEFAULT_PREFIX, ATTR_METADATA_PREFIX, ATTR_SCHEMA_IN_USE, ATTR_PROJECT_SUFFIX, ATTR_DATASET_DEFAULT_SUFFIX
+from idms.common.constants.attribute_names import  (
+    ATTR_UPLOAD_DEFAULT_PREFIX,
+    ATTR_METADATA_PREFIX,
+    ATTR_SCHEMA_IN_USE,
+    ATTR_PROJECT_SUFFIX,
+    ATTR_DATASET_DEFAULT_SUFFIX,
+    ATTR_PROJECTID,
+    ATTR_RUN_REQUESTINGUSER,
+    ATTR_RUNSHEET_TAG
+)
 from app.utils.constants import COLL_KEY_MAP
 from idms.common.irods.irods_sessions import irods_manager
 from .utils.projectdb_api import EPOCH, iso2dt, search, rest_call, add_checkbox
+from .processstats import runspermonth, runspermetaattr, runtimedist, runtimehist
 
 bp = Blueprint('projects', __name__, url_prefix='/projects')
 
@@ -698,5 +708,50 @@ def process_usage_table():
         })
     return output
 
+@bp.route('_process_stats', methods=['GET'])
+def process_stats():
+    process_id = request.args.get('process')
+    return render_template('process_stats_tabs.html', process_id=process_id)
 
+@bp.route('_process_stats_page', methods=['GET'])
+def process_stats_page():
+    data_url=url_for('projects.process_stats_data', **request.args)
+    return render_template('bargraph.html', data_url=data_url)
 
+@bp.route('_process_stats_data', methods=['GET'])
+def process_stats_data():
+    args = request.args
+    statname = args.get('statname')
+    process_id = args.get('process')
+    if statname == 'proc-stats-history':
+        stats = dict(sorted(runspermonth(process_id).items()))
+        name = 'Runs'
+        title = 'Runs per month'
+    if statname == 'proc-stats-projects':
+        stats = dict(sorted(runspermetaattr(process_id, ATTR_PROJECTID).items()))
+        name = 'Runs'
+        title = 'Runs per project'
+    if statname == 'proc-stats-runtime-dist':
+        stats = dict(sorted(runtimedist(process_id).items()))
+        name = 'Runs'
+        title = 'Runtime distribution'
+    if statname == 'proc-stats-runtime-hist':
+        stats = dict(sorted(runtimehist(process_id).items()))
+        name = 'Seconds (avg)'
+        title = 'Runtime history'
+    if statname == 'proc-stats-versions':
+        stats = dict(sorted(runspermetaattr(process_id, ATTR_RUNSHEET_TAG).items()))
+        name = 'Runs'
+        title = 'Runs per version'
+    if statname == 'proc-stats-users':
+        stats = dict(sorted(runspermetaattr(process_id, ATTR_RUN_REQUESTINGUSER).items()))
+        name = 'Runs'
+        title = 'Requesting users'        
+
+    data = {
+        'labels': list(stats.keys()),
+        'values': list(stats.values()),
+        'name': name,
+        'title': title
+    }
+    return data

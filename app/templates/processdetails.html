@@ -3,7 +3,6 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/select2-bootstrap4.min.css') }}">
 <script src="{{ url_for('static', filename='js/select2.min.js') }}"></script>
 
-
 <div class="card h-100">
   <div class="card-header">
     <ul class="nav nav-tabs nav2">
@@ -25,6 +24,10 @@
           aria-controls="refdata-content" aria-selected="false">ReferenceData</a>
       </li>
       {% endif %}
+      <li class="nav-item mx-2">
+        <a class="nav-link" id="process-stats-tab" data-toggle="tab" href="#process-stats-content" role="tab"
+          aria-controls="process-stats-content" aria-selected="false">Statistics</a>
+      </li>      
     </ul>
   </div>
   <div class="card-body tab-content h-100">
@@ -136,6 +139,9 @@
 
     <div class="tab-pane h-100 overflow-auto" id="refdata-content" role="tabpanel" aria-labelledby="refdata-tab">
     </div>
+
+    <div class="tab-pane h-100 overflow-auto" id="process-stats-content" role="tabpanel" aria-labelledby="process-stats-tab">
+    </div>
   </div>
 </div>
 
@@ -195,7 +201,7 @@
 
 
   function load_refdata() {
-    $('#refdatacontent').html('').addClass('pending')
+    $('#refdata-content').html('').addClass('pending')
     $.get("{{ url_for('projects.process_list_refdata') }}", {
       process: '{{ details['id'] }}'
     }, function(data) {
@@ -206,6 +212,20 @@
   $('#refdata-tab').on('shown.bs.tab', function (e) {
     load_refdata();
   });
+
+  $('#process-stats-tab').on('shown.bs.tab', function (e) {
+    load_process_stats();
+  });
+
+
+  function load_process_stats() {
+    $('#process-stats-content').html('').addClass('pending')
+    $.get("{{ url_for('projects.process_stats') }}", {
+      process: '{{ details['id'] }}'
+    }, function(data) {
+      $('#process-stats-content').html(data).removeClass('pending')
+    });
+  }  
 
   // Disable checkbox 'Download data from iRODS to input directory' in Processes
   function omit_check() {
