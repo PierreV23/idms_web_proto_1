@@ -925,7 +925,7 @@ menuname='collectionbrowser'
     const zoomDisplayColl = document.querySelector("#zoomDisplay_coll"); // Display the zoom percentage
     const fitGraphBtnColl = document.querySelector("#fitGraph_coll"); // Fit Graph button
 
-    let zoomLevelColl = Number("{{ zoomlevel_coll }}"); // Default zoom level in percentage (as a variable)
+    let zoomLevelColl = Number("{{ zoomlevel_coll }}") || 100 ; // Default zoom level in percentage (as a variable)
     let zoomSettingIdColl = 0; // Timeout Request for storing zoom level
     let isDragging = false; // Track whether the user is currently dragging
     let dragStart = { x: 0, y: 0 }; // Store the starting mouse position during the drag operation
@@ -1058,7 +1058,7 @@ menuname='collectionbrowser'
     const zoomDisplayObj = document.querySelector("#zoomDisplay_obj"); // Display the zoom percentage
     const fitGraphBtnObj = document.querySelector("#fitGraph_obj"); // Fit Graph button
 
-    let zoomLevelObj = Number("{{ zoomlevel_obj }}"); // Default zoom level in percentage (as a variable)
+    let zoomLevelObj = Number("{{ zoomlevel_obj }}") || 100; // Default zoom level in percentage (as a variable)
     let zoomSettingIdObj = 0; // Timeout Request for storing zoom level
     let isDragging = false; // Track whether the user is currently dragging
     let dragStart = { x: 0, y: 0 }; // Store the starting mouse position during the drag operation
