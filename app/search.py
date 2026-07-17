@@ -27,13 +27,13 @@ searchdata: {
 
 """
 
-# specific prefix strings in metadata are excluded. Specific metadata attributes can be included again
+# specific prefix strings in metadata are excluded. Specific prefixes can be included again.
 attrs_to_exclude = ['sys::', 'ngsweb::']
-attrs_to_include = ['sys::data::state', 'sys::data::type']
+attrs_to_include = ['sys::data::', 'sys::runsheet::']
 exclude_string = ",".join(f"'{x}%'" for x in attrs_to_exclude) if attrs_to_exclude else ''
-include_string = ",".join(f"'{x}'" for x in attrs_to_include) if attrs_to_include else ''
+include_string = ",".join(f"'{x}%'" for x in attrs_to_include) if attrs_to_include else ''
 ex_in_filter = f'''AND (meta_attr_name NOT LIKE ALL (ARRAY[{exclude_string}]) 
-                    OR meta_attr_name IN ({include_string}))'''
+                    OR meta_attr_name LIKE ANY (ARRAY[{include_string}]))'''
 ########################
 
 bp = Blueprint('search', __name__, url_prefix='/search')
