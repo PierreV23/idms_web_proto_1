@@ -50,6 +50,15 @@ def sanitize(s, strong=False):
         s = re.sub(r"[^ -ÿ]", "", s)
     return s.strip()
 
+def validate_collection_name(s):
+    allowed_set = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-")
+
+    # True if text contains characters outside the allowed set
+    invalid_chars = set(s) - allowed_set
+    is_valid = not bool(invalid_chars)
+
+    return is_valid, invalid_chars
+
 
 class UploadType:
     Pending = 'pending'
@@ -183,6 +192,11 @@ def upload_settings():
         projectID_meta_current = cached_iqry.qcollmetadict(coll).get(f'{ATTR_UPLOADSETTINGS}projectID', None)
         if projectID_meta_current is not None and projectID != projectID_meta_current:
             unset_upload_meta(coll)
+        collection_name = data.get('collection')
+        valid, invalid_chars = validate_collection_name(collection_name)
+        if not valid:
+            flash(f'Invalid characters in collection name ({collection_name}): {' '.join(invalid_chars)}', 'error')
+            return redirect(url_for('upload.upload_settings', coll=coll))        
         for k, v in data.items():
             if k in FIELDS and v:
                 cached_iqry.scollmetaval(coll, f'{ATTR_UPLOADSETTINGS}{k}', str(v).strip())
