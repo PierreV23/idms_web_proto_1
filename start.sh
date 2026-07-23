@@ -2,7 +2,7 @@
 
 source activate myflask
 if [ $? -ne 0 ] ; then
-mamba env create  -f myflask.yaml -q
+mamba env create  -f envs/myflask.yaml -q
 source activate myflask
 fi
 
