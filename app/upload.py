@@ -59,6 +59,20 @@ def validate_collection_name(s):
 
     return is_valid, invalid_chars
 
+def format_invalid_characters(cl):
+    """Show invalid characters in readable format
+
+    Args:
+        cl (iterable): list of invalid characters
+
+    Returns:
+        str: description string
+    """
+    REPLACEMENTS = {
+        ' ': '<SPACE>',
+        '\t': '<TAB>'
+    }
+    return ' '.join([REPLACEMENTS.get(s, s) for s in cl])
 
 class UploadType:
     Pending = 'pending'
@@ -195,7 +209,8 @@ def upload_settings():
         collection_name = data.get('collection')
         valid, invalid_chars = validate_collection_name(collection_name)
         if not valid:
-            flash(f'Invalid characters in collection name ({collection_name}): {' '.join(invalid_chars)}', 'error')
+            invalid_character_string = format_invalid_characters(invalid_chars)
+            flash(f'Please use alphanumeric characters only in collection name. Found invalid characters: {invalid_character_string}', 'error')
             return redirect(url_for('upload.upload_settings', coll=coll))        
         for k, v in data.items():
             if k in FIELDS and v:
