@@ -383,15 +383,13 @@ def job_logs():
                 Criterion('=', Collection.name, runsheet ))
         metadata = {meta[CollectionMeta.name] : meta[CollectionMeta.value] for meta in q2}
 
-        # Find output logs
+        # Find output logs. Search first in __system__/log, then in log
         logfiles = {}
-        try:
-            log_location = '{}/log'.format(metadata['sys::run::output_collection'])
+        for subdir in ('__system__/log', 'log'):
+            log_location = '{}/{}'.format(metadata.get('sys::run::output_collection', '/INVALID_PATH'), subdir)
             if fs_irods(session=session).folderexists(log_location):
                 logfiles = _get_logfiles(log_location)
-        except KeyError:
-            # output collection not set as metadata. Ignore.
-            pass    
+                break
     return render_template('joblogs.html', jobnaam = datafield('jobnaam', jobnaam, 'runsheet'), logs = logfiles)
 
 
