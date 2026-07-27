@@ -366,8 +366,8 @@ def jobdetails():
     return render_template('jobdetails.html', details=details, multi=multi, runsheet=runsheet, processgroupid=processgroupid, jobnaam=datafield('jobnaam', jobnaam, 'runsheet'))
 
 
-@bp.route('joblogs')
-def job_logs():
+@bp.route('alljoblogs')
+def all_job_logs():
     jobnaam = request.args.get('name', '', type=str)
     with irods_manager.session(current_user) as session:
 
@@ -391,6 +391,20 @@ def job_logs():
                 logfiles = _get_logfiles(log_location)
                 break
     return render_template('joblogs.html', jobnaam = datafield('jobnaam', jobnaam, 'runsheet'), logs = logfiles)
+
+@bp.route('joblog')
+def job_log():
+    jobnaam = request.args.get('name', '', type=str)
+    collection = ''    
+    colls = cached_iqry.qcollbymeta('sys::runsheet::id', jobnaam)
+    if len(colls) == 1:
+        with irods_manager.session(current_user) as session:
+            for subdir in ('__system__/log', 'log'):
+                log_location = '{}/{}'.format(colls[0][Collection.name], subdir)
+                if fs_irods(session=session).folderexists(log_location):
+                    collection = log_location
+                    break        
+    return render_template('joblog.html', jobnaam=datafield('jobnaam', jobnaam, 'runsheet'), collection=collection)
 
 
 def _get_logfiles(location, subdir=''):
