@@ -36,7 +36,7 @@ from app.utils.constants import (
 )
 from app.utils.auth import auth_endpoint
 from .utils.projectdb_api import rest_call
-from .utils.database import db
+from .utils.database import jobs_db
 from idms.common.constants.attribute_names import (
     ATTR_ARCHIVE_CREATERETENTION,
     ATTR_ARCHIVE_DESIREDSTATE,
@@ -1674,7 +1674,7 @@ def add_items(path, level, active):
 
 @cache.memoize(timeout=60, make_name=dep_zone)
 def cached_sql(sql):
-    query = db.connection().sql(sql)
+    query = jobs_db.connection().sql(sql)
     return query
 
 @cache.memoize(timeout=60, make_name=dep_zone)
