@@ -181,15 +181,18 @@ def setKeepOnlineUntil():
     selectionStr = request.args.get('selection','None', type=str)
     collection = request.args.get('collection','None', type=str)
 
-    now = datetime.today()
     days = 0
     try:
         days = int(selectionStr)
     except ValueError:
         logging.warning( f"unknown selection for _setKeepOnlineUntil: {selectionStr}")
         return('DONE')
-    keepOnlineUntil = now + relativedelta(days=days)
-    cached_iqry.scollmetaval(collection, ATTR_ARCHIVE_KEEP_ONLINE_TILL, str(int(datetime.timestamp(keepOnlineUntil))), 'timestamp')
+    data = {
+        'collection': collection,
+        'period': f'{days}d'
+    }
+    rest_call('POST', '/keep_online', data, prefix='/irods/1.0')
+    cached_iqry.invalidate(collection)
     return('DONE')
 
 @bp.route('_upstream', methods=['GET'])
