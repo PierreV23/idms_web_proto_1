@@ -26,7 +26,7 @@ from .utils.constants import (
     JOB_PAGE_SIZE
 )
 from .collbrowser import shape
-from .utils.database import db
+from .utils.database import jobs_db
 
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
 
@@ -42,7 +42,7 @@ MAX_READ_LOG_BYTES = 10000000
 # @bp.before_request
 # def before_request_func():
 #     # This ensures the flash error message will show up if the job table is not available
-#     db.connection()
+#     jobs_db.connection()
 
 def utc_to_local(utc_dt):
     return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=None)
@@ -112,7 +112,7 @@ def filterdata():
     field = request.args.get('field', type=str)
     table = request.args.get('table', type=str)
     
-    with db.connection() as conn:
+    with jobs_db.connection() as conn:
         cursor = conn.cursor()
         cursor.execute(f"SELECT DISTINCT {field} FROM {table} WHERE {field} IS NOT NULL")
         results = cursor.fetchall()
@@ -161,7 +161,7 @@ def pglist():
                 ORDER BY {sort} {order} 
                 OFFSET {offset} LIMIT {limit}"""
 
-    pgs_query = db.connection().sql(sqlj)
+    pgs_query = jobs_db.connection().sql(sqlj)
     count_processgroups = pgs_query[0]['total_count'] if len(pgs_query) else 0
 
     # format data pgs_query
@@ -181,7 +181,7 @@ def pglist():
 @bp.route('_jobrefresh')
 def jobs_refresh():
     sql = 'SELECT refresh_time FROM rivm_mat_jobtable LIMIT 1'
-    result = db.connection().sql(sql)
+    result = jobs_db.connection().sql(sql)
     if not result:
         return jsonify('unknown')
     else:
@@ -197,7 +197,7 @@ def pgjobs():
 
     sql = f"SELECT * FROM rivm_mat_jobtable WHERE processgroupid = '{processgroupid}'"
 
-    jobs_query = db.connection().sql(sql)
+    jobs_query = jobs_db.connection().sql(sql)
 
     for job in jobs_query:
         record = {}

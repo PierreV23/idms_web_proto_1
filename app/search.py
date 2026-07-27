@@ -4,7 +4,7 @@ from flask import jsonify, render_template, request, Blueprint
 from app.utils.flaskcache import cache, dep_zone
 from app.utils.datafield import datafield
 
-from .utils.database import db
+from .utils.database import search_db
 
 import logging
 
@@ -240,7 +240,7 @@ def runsql(sql):
     '''
     start = time.perf_counter()
     
-    with db.connection() as conn:
+    with search_db.connection() as conn:
         cursor = conn.cursor()
         cursor.execute(sql)
         result = [ { i: str(n) for i, n in enumerate(r) } for r in cursor.fetchall() ]

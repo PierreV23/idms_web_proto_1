@@ -20,7 +20,7 @@ from . import collbrowser, routes, jobs, messages
 from . import projects, admin, reports, userinfo, referencedatasets
 from . import ngsruns, upload, search, metaedit, irods_api
 from .ngsruns import db as ngsruns_db
-from .utils.database import db as jobs_db
+from .utils.database import jobs_db, search_db
 from idms.common.irods.irods_sessions import irods_manager
 from .branding import get_branding
 
@@ -171,6 +171,7 @@ def errorhandlers(app):
 def init_dbs(app):
     ngsruns_db.init_app(app)
     jobs_db.init_app(app)
+    search_db.init_app(app)
     irods_manager.init_app(app.config.get('IRODS_ENVS', {}), 
                             app.config.get('conn_refresh_time', 120))
 

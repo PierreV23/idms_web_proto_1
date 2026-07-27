@@ -42,8 +42,8 @@ class DBConnection:
         self._pool.putconn(self._conn)
 
 class DBPools:
-
-    def __init__(self):
+    def __init__(self, db_key):
+        self._db_key = db_key
         self._pools = {}
 
     def init_app(self, app):
@@ -52,8 +52,8 @@ class DBPools:
 
     def startpool(self):
         env = my_env()
-        env_params = current_app.config.get('IRODS_ENVS', {}).get(env)
-        db_connect = env_params.get('jobs_db')
+        env_params = current_app.config["IRODS_ENVS"][env]
+        db_connect = env_params[self._db_key]
         self._pools[env] = pool.ThreadedConnectionPool(5, 50, db_connect)
 
     def connection(self):
@@ -65,5 +65,5 @@ class DBPools:
         else:
             raise ICATDBUnavailableException(f'env={env}')
 
-
-db = DBPools()
+jobs_db = DBPools("jobs_db")
+search_db = DBPools("search_db")
