@@ -282,12 +282,16 @@ def runs():
         field_name = field_attrs['field']
         filter_value = filters.get(field_name)
         filter_control = field_attrs.get('filtercontrol')
+        format = field_attrs.get('format')
         if not filter_value or filter_control is None:
             continue
         if filter_control == 'select':
             ngsruns = ngsruns.filter(text(f"{field_name}='{filter_value}'"))
         if filter_control == 'input':
-            ngsruns = ngsruns.filter(text(f"{field_name} like('%{filter_value}%')"))
+            if format == 'int':
+                ngsruns = ngsruns.filter(text(f"{field_name} = {filter_value}"))
+            else:
+                ngsruns = ngsruns.filter(text(f"{field_name} like('%{filter_value}%')"))
 
     ngsruns = ngsruns.order_by(text(f'{sort} {order}'))
 
