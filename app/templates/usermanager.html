@@ -1,5 +1,9 @@
 <script src="{{ url_for('static', filename='js/bootstrap-table.min.js') }}"></script>
-
+{% if external_groups %}
+<div class="bg-info text-white text-center py-2 px-3 fw-semibold fs-6">
+    <strong>This group is linked to external groups: {{ ','.join(external_groups) }}. Members cannot be managed here.</strong>
+</div>
+{% endif %}
 <div class="usermanager">
     <div class="buttons-toolbar"></div>
 
