@@ -43,7 +43,7 @@ PG_JOB_FIELDS = {
 }
 
 NGSRUN_FIELDS = {
-    'id': {'title': 'Run ID', 'format': 'text', 'field': 'id', 'sortable': 'true', 'visible': 'true', 'align': 'center', 'filtercontrol': 'input'},
+    'id': {'title': 'Run ID', 'format': 'int', 'field': 'id', 'sortable': 'true', 'visible': 'true', 'align': 'center', 'filtercontrol': 'input'},
     'creation_date': {'title': 'Creation Date', 'format': 'timestamp', 'field': 'creation_date', 'sortable': 'true', 'visible': 'false'},
     'name': {'title': 'Name', 'format': 'text', 'field': 'name', 'sortable': 'true', 'visible': 'true', 'align': 'center', 'filtercontrol': 'input'},
     'flowcell': {'title': 'Flowcell', 'format': 'text', 'field': 'flowcell', 'sortable': 'true', 'visible': 'true', 'filtercontrol': 'input', 'formatter': 'flowcellFormatter'},
