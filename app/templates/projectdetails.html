@@ -258,7 +258,7 @@ function update_process(sourceElem, destElem) {
             collection=projectdetails.default_collection,
             meta_default_values_collection=projectdetails.default_collection,
             edit_allowed=project_permissions.managers,
-            schemata_data_url=url_for('metaedit.schemata_for_dataset', collection=projectdetails.default_collection, project_name=projectdetails.name),
+            schemata_data_url=url_for('metaedit.schemata_for_dataset_default', collection=projectdetails.default_collection, project_name=projectdetails.name),
             attribute_type=attribute_type_dataset_default
           )
         }}

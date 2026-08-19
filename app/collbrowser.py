@@ -954,6 +954,7 @@ PROVATTR = [
     {'type': 'entity', 'attr': 'user::pipeline::input_collection_id', 'byname': False},
     {'type': 'entity', 'attr': 'sys::pipeline::input_collection', 'byname': True},
     {'type': 'entity', 'attr': 'user::pipeline::input_collection', 'byname': True},
+    {'type': 'entity', 'attr': 'user::pipeline::input_collection_curated_cluster', 'byname': True},
     {'type': 'entity', 'attr': 'prov:wasDerivedFrom'},
     {'type': 'entity', 'attr': 'prov::wasDerivedFrom'},
     {'type': 'activity', 'attr': 'prov:wasGeneratedBy'},
