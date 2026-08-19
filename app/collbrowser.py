@@ -1106,13 +1106,18 @@ def _generate_graph_coll(coll, maxlevels, graph_simplify, show_upstream, show_do
 
         MAX_INPUTS = current_app.config.get('GRAPH_MAX_INPUTS', 3)
         MAX_OUTPUTS = current_app.config.get('GRAPH_MAX_OUTPUTS', 11)
+        # The simplify of graphs is controlled by the value of graph_simplify
+        # but if there are more collections than AUTO_SIMPLIFY
+        # we will always simplify the graph
+        AUTO_SIMPLIFY = current_app.config.get('AUTO_SIMPLIFY', 25)
 
         def handle_neighbours(node, neighbours, edgelist, levels, inputs=True, relation_type='S'):
             '''
             '''
             multi = False
-            if graph_simplify:
-                max_nodes = MAX_INPUTS if inputs else MAX_OUTPUTS
+            combined_graph_simplify = graph_simplify or len(neighbours) > AUTO_SIMPLIFY
+            if combined_graph_simplify:
+                max_nodes = min(MAX_INPUTS if inputs else MAX_OUTPUTS, AUTO_SIMPLIFY)
                 max_nodes -= (maxlevels - levels) * 1
                 prefix = 'I' if inputs else 'O'
                 if len(neighbours) > max_nodes and len(neighbours) > 1:

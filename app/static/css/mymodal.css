@@ -771,6 +771,11 @@ ul {
   max-width: 350px !important;
 }
 
+.popover .popover-body {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
 .hspace {
   margin-left: 5px;
   margin-right: 5px;
