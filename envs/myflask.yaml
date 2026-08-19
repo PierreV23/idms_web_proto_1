@@ -4,24 +4,24 @@ channels:
 dependencies:
   - _openmp_mutex=4.5
   - adwaita-icon-theme=49.0
-  - alembic=1.18.4
-  - apscheduler=3.11.2
+  - alembic=1.18.5
+  - apscheduler=3.11.3
   - at-spi2-atk=2.38.0
   - at-spi2-core=2.40.3
   - atk-1.0=2.38.0
   - attrs=26.1.0
   - backports-datetime-fromisoformat=2.0.3
-  - backports.zstd=1.5.0
+  - backports.zstd=1.6.0
   - blinker=1.9.0
   - brotli-python=1.2.0
   - bzip2=1.0.8
   - c-ares=1.34.6
-  - ca-certificates=2026.5.20
+  - ca-certificates=2026.6.17
   - cachelib=0.14.0
   - cairo=1.18.4
-  - certifi=2026.5.20
-  - charset-normalizer=3.4.7
-  - click=8.4.1
+  - certifi=2026.6.17
+  - charset-normalizer=3.4.9
+  - click=8.4.2
   - cyrus-sasl=2.1.28
   - dbus=1.16.2
   - epoxy=1.5.10
@@ -40,26 +40,27 @@ dependencies:
   - fontconfig=2.18.1
   - fonts-conda-ecosystem=1
   - fonts-conda-forge=1
+  - freetype=2.14.3
   - fribidi=1.0.16
-  - gdk-pixbuf=2.44.6
-  - git=2.54.0
-  - glib-tools=2.88.1
+  - gdk-pixbuf=2.44.7
+  - git=2.55.0
+  - glib-tools=2.88.2
   - gmp=6.3.0
   - graphite2=1.3.15
   - graphviz=14.1.2
-  - greenlet=3.5.1
+  - greenlet=3.5.3
   - gtk3=3.24.52
   - gts=0.7.6
   - h2=4.3.0
   - harfbuzz=14.2.1
   - hicolor-icon-theme=0.17
-  - hpack=4.1.0
+  - hpack=4.2.0
   - hyperframe=6.1.0
   - icu=78.3
-  - idna=3.17
+  - idna=3.18
   - importlib-metadata=9.0.0
   - itsdangerous=2.2.0
-  - jansson=2.15.0
+  - jansson=2.15.1
   - jinja2=3.1.6
   - jsonschema=4.26.0
   - jsonschema-specifications=2025.9.1
@@ -68,7 +69,7 @@ dependencies:
   - ld_impl_linux-64=2.45.1
   - lerc=4.1.0
   - libcups=2.3.3
-  - libcurl=8.20.0
+  - libcurl=8.21.0
   - libdeflate=1.25
   - libdrm=2.4.127
   - libedit=3.1.20250104
@@ -84,13 +85,15 @@ dependencies:
   - libgd=2.3.3
   - libgl=1.7.0
   - libgl-devel=1.7.0
-  - libglib=2.88.1
+  - libglib=2.88.2
   - libglvnd=1.7.0
   - libglx=1.7.0
   - libglx-devel=1.7.0
   - libgomp=15.2.0
+  - libharfbuzz=14.2.1
+  - libharfbuzz-devel=14.2.1
   - libiconv=1.18
-  - libjpeg-turbo=3.1.4.1
+  - libjpeg-turbo=3.2.0
   - liblzma=5.8.3
   - libnghttp2=1.68.1
   - libnsl=2.0.1
@@ -98,13 +101,14 @@ dependencies:
   - libpciaccess=0.19
   - libpng=1.6.58
   - libpq=18.4
+  - libpsl=0.22.0
   - librsvg=2.62.3
-  - libsqlite=3.53.2
+  - libsqlite=3.53.3
   - libssh2=1.11.1
   - libstdcxx=15.2.0
   - libstdcxx-ng=15.2.0
-  - libtiff=4.7.1
-  - libuuid=2.42.1
+  - libtiff=4.7.2
+  - libuuid=2.42.2
   - libwebp-base=1.6.0
   - libxcb=1.17.0
   - libxcrypt=4.4.36
@@ -119,7 +123,7 @@ dependencies:
   - msgspec=0.21.1
   - ncurses=6.6
   - openldap=2.6.13
-  - openssl=3.6.2
+  - openssl=3.6.3
   - packaging=26.2
   - pango=1.56.4
   - pcre2=10.47
@@ -137,22 +141,22 @@ dependencies:
   - readline=8.3
   - referencing=0.37.0
   - requests=2.34.2
-  - rpds-py=2026.5.1
-  - setuptools=82.0.1
+  - rpds-py=2026.6.3
+  - setuptools=83.0.0
   - six=1.17.0
   - sqlalchemy=1.4.54
-  - sqlite=3.53.2
+  - sqlite=3.53.3
   - tk=8.6.13
   - tomli=2.4.1
-  - typing_extensions=4.15.0
+  - typing_extensions=4.16.0
   - tzdata=2025c
-  - tzlocal=5.3.1
+  - tzlocal=5.4.4
   - urllib3=2.7.0
   - uwsgi=2.0.31
   - wayland=1.25.0
   - werkzeug=3.1.8
   - wheel=0.47.0
-  - xkeyboard-config=2.47
+  - xkeyboard-config=2.48
   - xorg-libice=1.1.2
   - xorg-libsm=1.2.6
   - xorg-libx11=1.8.13
@@ -175,12 +179,12 @@ dependencies:
   - zstd=1.5.7
   - pip:
       - bcrypt==5.0.0
-      - cffi==2.0.0
-      - cryptography==48.0.0
+      - cffi==2.1.0
+      - cryptography==49.0.0
       - defusedxml==0.7.1
       - fire==0.7.1
       - ftputil==5.2.0
-      - idms-common-constants==0.0.3
+      - idms-common-constants==0.0.5
       - idms-common-filesys==0.0.3
       - idms-common-irods==0.0.5
       - invoke==3.0.3
@@ -189,18 +193,18 @@ dependencies:
       - jsonpointer==3.1.1
       - markdown==3.10.2
       - paramiko==5.0.0
-      - prettytable==3.17.0
-      - pyasn1==0.6.3
+      - prettytable==3.18.0
+      - pyasn1==0.6.4
       - pycparser==3.0
       - pynacl==1.6.2
       - pysmb==1.2.14
       - graphviz==0.21
       - python-irodsclient==3.2.0
       - randomname==0.2.1
-      - redis==8.0.0
+      - redis==8.0.1
       - termcolor==3.3.0
-      - tqdm==4.67.3
-      - wcwidth==0.7.0
+      - tqdm==4.68.4
+      - wcwidth==0.8.2
       - "--extra-index-url https://gitlab.rivm.nl/api/v4/projects/4682/packages/pypi/simple"
       #- "--extra-index-url https://gitlab.rivm.nl/api/v4/projects/4656/packages/pypi/simple"
       #- "--extra-index-url https://gitlab.rivm.nl/api/v4/projects/4655/packages/pypi/simple"

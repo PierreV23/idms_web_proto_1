@@ -9,6 +9,7 @@ from app.utils.constants import SCHEMATA_BASE_PATH, DATASET_SCHEMATA_PATH, PROJE
 from idms.common.constants.attribute_names import (
                             ATTR_SCHEMA_IN_USE,
                             ATTR_PROJECT_SUFFIX,
+                            ATTR_DATASET_UPLOAD_SUFFIX,
                             ATTR_DATASET_DEFAULT_SUFFIX,
                             ATTR_REFERENCE_SUFFIX,
                             ATTR_METADATA_PREFIX, 
@@ -74,18 +75,25 @@ def schemata_for_project():
     suffix=ATTR_PROJECT_SUFFIX
     return schemata(meta_schemata_collection, meta_values_collection, suffix)
 
+@bp.route('/schemata_dataset_upload')
+def schemata_for_dataset_upload():
+    """ Schemata for a dataset upload
+    """
+    project_name = request.args.get('project_name', '')
+    meta_schemata_collection = Path('/', current_user.irods_zone, SCHEMATA_BASE_PATH, DATASET_SCHEMATA_PATH, project_name)
+    meta_values_collection = request.args.get('collection')
+    suffix=ATTR_DATASET_UPLOAD_SUFFIX
+    return schemata(meta_schemata_collection, meta_values_collection, suffix)
 
-
-@bp.route('/schemata_dataset')
-def schemata_for_dataset():
-    """ Schemata for a dataset, in a project or in the home directory of current user
+@bp.route('/schemata_dataset_default')
+def schemata_for_dataset_default():
+    """ Schemata for a dataset, available as default metadata, used in a dataset upload
     """
     project_name = request.args.get('project_name', '')
     meta_schemata_collection = Path('/', current_user.irods_zone, SCHEMATA_BASE_PATH, DATASET_SCHEMATA_PATH, project_name)
     meta_values_collection = request.args.get('collection')
     suffix=ATTR_DATASET_DEFAULT_SUFFIX
     return schemata(meta_schemata_collection, meta_values_collection, suffix)
-
 
 @bp.route('/schemata_reference')
 def schemata_for_reference_dataset():
@@ -130,13 +138,14 @@ def schemata(meta_schemata_collection :str, meta_values_collection :str, suffix 
 def store_metadata():
     """ Stores the metadata provided by the data structure
         under the schema <schemapath> on a collection
+        data can be empty if deleting all metadata in a form!
     """
     collection = request.json.get('collection')
     data = request.json.get('data')
     schemapath = request.json.get('schemapath')
     prefix = request.json.get('prefix')
    
-    if not (collection and data and schemapath and prefix):
+    if not (collection and schemapath and prefix):
         return jsonify({}), 500
     try:
         store_collection_metadata_structured(collection, data, schemapath, prefix)
@@ -275,7 +284,7 @@ def get_schema_and_data():
     data = "{}"
     prefix = request.args.get('prefix')
     schemapath = request.args.get('schemapath')
-    metadata_infered = current_app.config.get('METADATA_INFERED')
+    metadata_infered = current_app.config.get('METADATA_INFERED', {})
     
     # find collection where project metadata is located
     meta_default_values_collection = request.args.get('meta_default_values_collection')
@@ -310,18 +319,20 @@ def get_schema_and_data():
             except:
                 pass
     default_data = {}
-    
+
     # find default metadata from default values collection
     if meta_default_values_collection:
         default_data = get_collection_metadata_structured(meta_default_values_collection, ATTR_UPLOAD_DEFAULT_PREFIX).get(schemapath, {})
     
-    # The preset default metadata for dataset upload is the project metadata
+    # The default 'Default Metadata' for dataset upload is the 'Project' metadata
     if meta_default_values_collection == meta_values_collection:
+        # The schemapath for datasets (/system/schemata/datasets/name.json) is with the same name under projects (/system/schemata/projects/name.json)
+        schemapath=schemapath.replace('/datasets/', '/projects/')
         default_data = get_collection_metadata_structured(meta_default_values_collection, ATTR_METADATA_PREFIX).get(schemapath, {})
     
-    used_data = get_collection_metadata_structured(meta_values_collection, prefix).get(schemapath, {})
+    used_data = get_collection_metadata_structured(meta_values_collection, prefix).get(schemapath, {}) or {}
+
     # first take all values from default, then add or overwrite values from used data
-    #     
     data = default_data | used_data
     return { 'schema': schema, 'uiSchema': uiSchema, 'data': json.dumps(data) }
 
@@ -367,4 +378,6 @@ def store_collection_metadata_structured(collection, data, schemapath, prefix):
     jsonavu_metadata = jsonavu.json2avu(existing_data, AVU2JSON_PREFIX)
     remove_collection_metadata(collection, prefix)
     for avu in jsonavu_metadata:
-        cached_iqry.scollmetaval(collection, f"{prefix}{avu['a']}", avu['v'], avu['u'])
+        # prevent saving of unwanted residual schema name, if on json top level all schemata are unchecked
+        if avu['u'] != f'{AVU2JSON_PREFIX}_0_z':
+            cached_iqry.scollmetaval(collection, f"{prefix}{avu['a']}", avu['v'], avu['u'])

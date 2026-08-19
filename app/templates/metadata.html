@@ -1,3 +1,5 @@
+{% import 'components/metadata_editor.html' as metadata_widget %}
+
 <script>
 
 $('.meta-tabs').on('shown.bs.tab', function(event){
@@ -75,7 +77,7 @@ $('.unitvalues').css('display', unit);
                     <th>Attribute</th>
                     <th>Value</th>
                     {% if current_user.feature('metadataunits') %}
-                    <th class="unitvalues"  style="display:none;">Unit</th>
+                    <th class="unitvalues" style="display:none;">Unit</th>
                     {% endif %}
                 </tr>
             </thead>

@@ -4,6 +4,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import Form from "@rjsf/react-bootstrap";
 import validator from '@rjsf/validator-ajv8';
+import { getDefaultFormState } from "@rjsf/utils";
 
 // Store roots by element id
 const roots = {};
@@ -37,6 +38,13 @@ window.renderJsonSchemaForm = function ({ schema, uiSchema, formData, elementId,
     if (!roots[elementId]) {
         roots[elementId] = createRoot(el);
     }
+    
+    // Pass the default data to the renderer, to prevent OnChange before entering data
+    const effectiveFormData = getDefaultFormState(
+        validator,
+        schema,
+        formData || {}
+    );
 
     roots[elementId].render(
         React.createElement(
@@ -45,7 +53,7 @@ window.renderJsonSchemaForm = function ({ schema, uiSchema, formData, elementId,
                 id: formId,
                 schema: schema,
                 uiSchema: uiSchema,
-                formData: formData,
+                formData: effectiveFormData,
                 onChange: onChange,
                 templates: { DescriptionFieldTemplate },
                 onSubmit: onSubmit,

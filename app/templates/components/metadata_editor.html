@@ -7,16 +7,8 @@
   {% set edit_allowed = edit_allowed|string|lower %}
 </script>
 
-<!-- for testing, uncomment these
-<h5>ID: {{ id }}</h5>
-<h5>Prefix for metadata: {{ prefix }}</h5>
-<h5>Project Name: {{ project_name }}</h5>
-<h5>Collection to store values on: {{ collection }}</h5>
-<h5>Collection to read default values from: {{ meta_default_values_collection }}</h5>
-<h5>edit_allowed: {{ edit_allowed }}</h5>
-<h5>data url to get schemata: {{ schemata_data_url }}</h5>
-<h5>attribute type: {{ attribute_type }}</h5>
--->
+
+
 
 <div class="selectgrid h-100">
   <div class="card selectlist">
@@ -37,14 +29,27 @@
   </div>
   <div class="card selectdetail">
     <div class="card-header">
-      <div class="card-title">Metadata editor</div>
+      <div class="card-title"><b>Metadata Editor</b></div>
+      
+      <!-- for testing, uncomment these   
+        <h5 class="mt-5"><b>ID: </b>{{ id }}</h5>
+        <h5><b>Prefix for metadata: </b>{{ prefix }}</h5>
+        <h5><b>Project Name: </b>{{ project_name }}</h5>
+        <h5><b>Collection to store values on: </b>{{ collection }}</h5>
+        <h5><b>Collection to read default values from: </b>{{ meta_default_values_collection }}</h5>
+        <h5><b>edit_allowed: </b>{{ edit_allowed }}</h5>
+        <h5><b>data url to get schemata: </b>{{ schemata_data_url }}</h5>
+        <h5><b>attribute type: </b>{{ attribute_type }}</h5>
+     --> 
+      
     </div>
-    <div class="card-body autoscroll">
+    <div class="card-body">
       <div id="{{ id }}-reactform"><center>SELECT A SCHEMA FILE...</center></div>
     </div>
-    <div class="card-footer">
-      <button class="btn btn-primary formsubmit" type="submit" name="save" formnovalidate form="{{ id }}-metaForm" {% if edit_allowed == 'false' %}hidden{% else %}disabled{% endif %}>Save</button>
-      <!--button class="btn btn-primary formsubmit" type="submit" name="continue" form="{{ id }}-metaForm" disabled>Save & Continue</button-->
+    <div class="card-footer sticky-footer">
+      <button class="btn btn-primary formsubmit save_btn" type="submit" name="save" formnovalidate form="{{ id }}-metaForm" {% if edit_allowed == 'false' %}hidden{% else %}disabled{% endif %}>Save</button>
+      <!-- Only display the Continue button for dataset_uploads (never disable!)-->
+      <button class="btn btn-primary formsubmit continue_btn" type="submit" name="continue" form="{{ id }}-metaForm" {% if attribute_type != 'user::schema_in_use::dataset_upload' %}hidden{% else %}enabled{% endif %}>Save & Continue</button>
     </div>
   </div>
 </div>
@@ -66,8 +71,11 @@
   function confirmIfChanged() {
     if (isFormChanged) {
       {% if edit_allowed == 'true' %}
+      const selectedSchemaName = selectedSchema.match(/\/([^/]+)\.json$/)?.[1];
       const proceed = confirm(
-        'You have unsaved changes. If you continue, those changes will be lost. Continue?'
+        `You have unsaved changes in schema '${selectedSchemaName}' \nIf you switch to another schema these changes will be lost
+        \nCancel -> Return and Save to prevent deleting the changed metadata in '${selectedSchemaName}'
+        \nOK -> Proceed, Unsaved metadata in '${selectedSchemaName}' will be deleted!`
       );
       if (!proceed) return false;
       {% endif %}
@@ -77,7 +85,6 @@
 
   // Update the collection when a schema is enabled or disabled
   const toggleRow = function (schemapath, schema_action) {
-    // console.log('TOGGLE', '{{ collection }}', schemapath, schema_action )
     $.ajax({
       method: "POST",
       url: "{{ url_for('metaedit.set_schemata_for_collection') }}",
@@ -96,7 +103,6 @@
 
   // Load the correct schema form when a schema is selected
   const loadSchema = function(schemapath) {
-    console.log('Load schema ' + schemapath)
     $.ajax({
       method: "GET",
       url: '{{ url_for("metaedit.get_schema_and_data") }}',
@@ -111,6 +117,12 @@
       success: function (result) {
         selectedSchema = schemapath;
         renderFormFunction(JSON.parse(result.schema), JSON.parse(result.uiSchema), JSON.parse(result.data), '{{ id }}-reactform');
+        isFormChanged = false;
+        isFormInitialized = true;
+        $('.save_btn').prop("disabled", true);
+        {% if prefix in ('default_metadata::', 'user::upload::metadata::') %}
+          $('.save_btn').prop("disabled", false);
+        {% endif %}
       },
       error: function(request, status, error) {
         console.log(status)
@@ -122,20 +134,24 @@
   // Unmount current form
   const unmountSchemaForm = function () {
     const reactFormContainer = document.getElementById('{{ id }}-reactform');
-
     if (reactFormContainer) {
       window.unmountJsonSchemaForm({elementId: '{{ id }}-reactform'});
     }
-    selectedSchema = null;
+    selectedSchema = "";
+    isFormChanged = false;
+    isFormInitialized = false;
   };
+  
 
   // Install bootstraptable event handlers
   $('#{{ id }}-schemata-table').bootstrapTable({
     // On Row Click
     onClickRow: function (row, $element, field) {
+
       if (row.selected === false) return;
+      // prevent overwrite already filled metadata by clicking selected row
+      if (row.schemapath === selectedSchema) return;
       if (!confirmIfChanged()) return;
-      isFormChanged = false;
       unmountSchemaForm();
       loadSchema(row.schemapath);
       $('#{{ id }}-schemata-table tr').removeClass('highlight');
@@ -148,22 +164,23 @@
           field: 'schemapath',
           values: [row.schemapath]
         });
-        return;
       }
-      isFormChanged = false;
       toggleRow(row.schemapath, 'add');
+      loadSchema(row.schemapath);
+      $('#{{ id }}-schemata-table tr').removeClass('highlight');
+      $element.addClass('highlight');
+      return;
     },
     // On UnCheck
     onUncheck: function (row) {
       {% if edit_allowed == 'true' %}
-      if (!confirm('Unchecking the select box will also delete metadata in this form. Do you want to proceed?')) {
+      if (!confirm('Unchecking the select box will delete ALL metadata in this form. Do you want to proceed?')) {
         $('#{{ id }}-schemata-table').bootstrapTable('checkBy', {
           field: 'schemapath',
           values: [row.schemapath]
         });
         return;
       }
-      isFormChanged = false;
       toggleRow(row.schemapath, 'remove');
 
       // Only hide the form if the unchecked schema is the one currently displayed
@@ -181,11 +198,7 @@
 
   function afterFormInit() {
     isFormInitialized = true;
-
-    // Disable Save button for non default metadata
-    {% if prefix != 'default_metadata::' %}
-    $('.formsubmit').prop("disabled", true);
-    {% endif %}
+    isFormChanged = false;
 
     // Disable form entries when editing is not allowed
     {% if edit_allowed == 'false' %}
@@ -206,7 +219,7 @@
             // Mark the form as changed
             isFormChanged = true;
             // Enable the Save button
-            $('.formsubmit').removeAttr('disabled');
+            $('.save_btn').removeAttr('disabled');
           },
       onSubmit: formSubmit,
       onError: log("Form errors:"),
@@ -221,10 +234,11 @@
       $('#{{ id }}-schemata-table .bs-checkbox input').addClass('disabled-checkbox').prop('disabled', true);
   });
   {% endif %}
-
-  $('#{{ id }}-metaForm.formsubmit').on('click', function () {
-    formaction = $(this).attr('name');
-  })
+  let formaction;
+  // Set a value for formaction
+  $('button.formsubmit[form="{{ id }}-metaForm"]').on('click', function () {
+      formaction = this.name;
+  });
 
   function formSubmit(e) {
     data = {
@@ -233,9 +247,7 @@
       schemapath: selectedSchema,
       prefix: "{{ prefix }}",
       action: formaction
-    },
-    // disable Save button
-    $('.formsubmit').prop("disabled", true);
+    },   
     // store metadata
     $.ajax({
     method: "POST",
@@ -243,10 +255,12 @@
     contentType: "application/json; charset=utf-8",
     dataType: "json",
     data: JSON.stringify(data),
-    success: function () {
+    success: function () {     
+      // disable Save button
+      $('.save_btn').prop("disabled", true);
       isFormChanged = false; // Clear changed-flag
-      if (formaction === 'save') {
-        location.reload();
+      if (formaction === 'continue') {
+        window.location.replace('{{ url_for("upload.upload_data", coll=collection) }}');
       }
     },
     error: function () {
