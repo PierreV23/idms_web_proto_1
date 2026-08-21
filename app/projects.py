@@ -7,6 +7,8 @@ Created on Tue Nov 19 09:05:26 2019
 """
 
 import json
+import os
+import subprocess
 from flask import abort, flash, Blueprint, render_template, redirect, request, url_for, current_app
 from flask_login import current_user, login_required
 from flask import jsonify
@@ -289,6 +291,30 @@ def update_projectsettings():
 
     return redirect(f'{url_for("projects.show_projects")}?{location}')
 
+def is_valid_git_repo(repo_url):
+    """Checks if a remote Git repository exists and is accessible via git ls-remote."""
+    if not repo_url:
+        return False
+    
+    # Prevent popups and username prompts on the server
+    env = os.environ.copy()
+    env["GIT_TERMINAL_PROMPT"] = "0"
+    env.pop("SSH_ASKPASS", None)
+    
+    try:
+        # Runs 'git ls-remote <url> HEAD' with a 5-second timeout
+        subprocess.run(
+            ['git', 'ls-remote', repo_url, 'HEAD'],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=5,
+            env=env
+        )
+        return True
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
+        return False
+
 @bp.route('/_updateproc', methods=['POST'])
 def update_process():
     """
@@ -298,6 +324,13 @@ def update_process():
     data = {}
     procid = requestdata.get('procid')
     process = requestdata.get('process')
+    
+    # Verify git repository
+    git_repo = requestdata.get('repo')
+    if git_repo and not is_valid_git_repo(git_repo):
+        flash(f"Invalid or inaccessible Git repository URL: '{git_repo}'", "error")
+        return redirect(url_for("projects.show_projects", page="processes", process=process))
+
     for attr in ['description', 'repo', 'tag', 'concurrency_limit', 'max_runtime', 'compatible_clusters', 'required_memory']:
         if attr in requestdata:
             data[attr] = requestdata[attr]
