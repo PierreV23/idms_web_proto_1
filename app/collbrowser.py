@@ -1252,8 +1252,9 @@ def _generate_graph_coll(coll, maxlevels, graph_simplify, show_upstream, show_do
             processes.add(node)
 
         # create the collection graph node
-        git = collmeta.get('sys::pipeline::gitrepo')
-        githash = collmeta.get('sys::pipeline::githash')
+        git = collmeta.get('sys::pipeline::gitrepo', '')
+        githash = collmeta.get('sys::pipeline::githash', '')
+        git_tag = collmeta.get('sys::runsheet::tag', '')
         if git:
             n, legends = shape('process', legends)
             repo_url = urlparse(git)
@@ -1262,7 +1263,7 @@ def _generate_graph_coll(coll, maxlevels, graph_simplify, show_upstream, show_do
             link = repo_url._replace(path='{}/tree/{}'.format(repo_url.path.replace('.git', ''), githash))
             label = f"{collmeta.get('sys::runsheet::processID', '')}  \n{git.split('/')[-1]}  " #2 spaces to avoid overlap label text and node border
             git_node = f'GITNODE-{node}'
-            graph_coll.node(git_node, label, shape=n['shape'], fillcolor = n['fillcolor'], style = n['style'], URL=link.geturl(), target = "_blank", fontsize=DEFAULT_FONTSIZE)
+            graph_coll.node(git_node, label, shape=n['shape'], fillcolor = n['fillcolor'], style = n['style'], URL=link.geturl(), target = "_blank", tooltip = f'{label} \n{git_tag}', fontsize=DEFAULT_FONTSIZE)
             graph_coll.edge(git_node, node)
             processes.add(node)
 
