@@ -711,10 +711,12 @@ def usermanager():
     # the rest service will enforce permissions anyway
     can_modify = True
     if objecttype == 'projects':
-        can_modify = project_permissions(objectname).get('managers', True)
+        pl, result = rest_call('GET', f'projects/{objectname}/external/{usertype}/groups')
+        external_groups = pl if result == 200 else []
+        can_modify = project_permissions(objectname).get('managers', True) and not external_groups
     elif objecttype == 'processes':
         can_modify = process_permissions(objectname).get('managers', True)
-    return render_template('usermanager.html', object=objectname, objecttype=objecttype, usertype=usertype, can_modify=can_modify)
+    return render_template('usermanager.html', object=objectname, objecttype=objecttype, usertype=usertype, can_modify=can_modify, external_groups=external_groups)
 
 
 @bp.route('processusage', methods=['GET'])
