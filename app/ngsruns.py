@@ -67,13 +67,16 @@ class NGSRunsAlchemy:
             # Determine DB version
             q = text("select count(*) as versiontables from information_schema.tables where table_name = 'version'")
             column = Column("versiontables", Integer)
+            database_count_version_tables = session.execute(q.columns(column)).all()[0][column]
+            session.commit()
 
-            if session.execute(q.columns(column)).all()[0][column] == 0:
+            if database_count_version_tables == 0:
                 version = 1
             else:
                 q = text("SELECT version FROM version;")
                 column = Column("version", Integer)
                 version = session.execute(q.columns(column)).all()[0][column]
+                session.commit()
             self._sessions[env_name][VERSION] = version
 
         app.teardown_request(self.remove_session)
@@ -259,7 +262,7 @@ def process_param(param, *args, **kwargs):
     if callable(param):
         return param(*args, **kwargs)
     # If not callable, treat it as a constant
-    return param    
+    return param
 
 @bp.route('_runs', methods=['GET'])
 def runs():
@@ -323,9 +326,9 @@ def runs():
         # sort by create_time to get first collection name
         colls = sorted(colls, key = lambda k: k[Collection.create_time])
         # Find import collection. They have data type 'imported'
-        # To distinguish between raw and basecalled data, we check the ID metadata attr. 
+        # To distinguish between raw and basecalled data, we check the ID metadata attr.
         # This is only present on de basecalled data collections
-        import_colls = [ c for c in colls 
+        import_colls = [ c for c in colls
                         if qcollmetaval(c[Collection.name], 'sys::data::type') == 'imported'
                         and qcollmetaval(c[Collection.name], 'ID') is not None ]
         # If there are multiple collections, match the id
@@ -333,7 +336,7 @@ def runs():
             reuse_import_colls = [ c for c in import_colls if qcollmetaval(c[Collection.name], 'minion::sample_id') == run.get('id') ]
             if len(reuse_import_colls):
                 import_colls = reuse_import_colls
-        run['datacoll'] = '<p>'.join([ datafield('collection', c[Collection.name], 'irods_collection').htmlshort for c in import_colls ])              
+        run['datacoll'] = '<p>'.join([ datafield('collection', c[Collection.name], 'irods_collection').htmlshort for c in import_colls ])
 
     return { 'rows': result, 'filters': filters, 'total': count_runs }
 
@@ -478,11 +481,11 @@ def run_update():
             new_barcode.project = f.get(f'project_{barcode}')
             db.session().add(new_barcode)
     db.session().commit()
-    
+
     # determine new kits added in form
     current_kits = get_kits()
     new_kits = {v for k, v in f.items() if k.startswith('kit') and v != '' and v not in current_kits}
-    
+
     # add new kits to the database table for future selectivity
     for nk in new_kits:
         new_kit = Kits(nk)
