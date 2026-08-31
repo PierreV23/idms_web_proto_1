@@ -53,7 +53,8 @@ or
         <form action="{{ url_for('upload.upload_data') }}" class="dropzone Xh-100" id="data-upload">
             <input type="hidden" name="coll" value="{{ coll }}">
             <div class="dropzone-previews"></div>
-            <div class="Xh-100" id="collbrowser"></div>
+            <!-- Hard cap the table container at 45% of viewport height -->
+            <div id="collbrowser" style="max-height: 45vh; overflow-y: auto;"></div>
         </form>
     </div>
 </div>
