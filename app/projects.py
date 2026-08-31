@@ -716,6 +716,7 @@ def usermanager():
         can_modify = project_permissions(objectname).get('managers', True) and not external_groups
     elif objecttype == 'processes':
         can_modify = process_permissions(objectname).get('managers', True)
+        external_groups = []
     return render_template('usermanager.html', object=objectname, objecttype=objecttype, usertype=usertype, can_modify=can_modify, external_groups=external_groups)
 
 
