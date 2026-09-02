@@ -29,6 +29,7 @@ menuname='projects'
 <script>
 
 $(document).on('click', '.projectname', function() {
+  resetUserSelection();
   // Scroll to project, in case this is triggered programmatically
   position = $(this).position().top - $('.fixed-table-body').height() / 2
   $('.fixed-table-body').animate({scrollTop: position}, 500)
@@ -69,6 +70,20 @@ $(document).on('click', '#select_input_button', function(){
     }
     load_pgpage();
 })
+
+// to reset selected users on project change
+let selectedAccount = null;
+let foundUsers = [];
+let existingUsers = [];
+
+function resetUserSelection() {
+    selectedAccount = null;
+    foundUsers = [];
+
+    $('.userSelect').val('');
+    $('.user-add').prop('disabled', true);
+    $('.user-delete').prop('disabled', true);
+}
 
 </script>
 
