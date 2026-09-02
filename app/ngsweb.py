@@ -1,4 +1,4 @@
-#from logging import FileHandler
+import atexit
 import os
 import redis
 from flask import Flask, redirect, url_for, request, flash
@@ -74,6 +74,7 @@ def create_app():
     except ModuleNotFoundError:
         init_dbs( app )
 
+    atexit.register(close_dbs)
 
     try:
         public_key = RSA.import_key(open("instance/receiver.pem").read())
@@ -125,7 +126,7 @@ def create_app():
     def inject_header_message():
         header_messages = messages.load_messages(category='banner', only_current=True)
         return dict(header_messages=header_messages)
-    
+
     errorhandlers(app)
 
     logging.info('iDMS initialized')
@@ -167,13 +168,26 @@ def errorhandlers(app):
         logging.info("Invalid user")
         return auth.logout()
 
+def is_uwsgi_master():
+    try:
+        import uwsgi
+        # Check if running in the master process
+        return uwsgi.worker_id() == 0
+    except ModuleNotFoundError:
+        return False
+
 
 def init_dbs(app):
     ngsruns_db.init_app(app)
     jobs_db.init_app(app)
     search_db.init_app(app)
     irods_manager.init_app(app.config.get('IRODS_ENVS', {}), 
-                            app.config.get('conn_refresh_time', 120))
+                            app.config.get('conn_refresh_time', 120),
+                            background_cleanup=not is_uwsgi_master())
+    
+def close_dbs():
+    logging.debug('Closing dbs ...')
+    irods_manager.close()
 
 
 def create_keys(app):

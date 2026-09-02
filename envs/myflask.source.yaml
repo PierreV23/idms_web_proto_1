@@ -40,7 +40,8 @@ dependencies:
       - "--extra-index-url https://gitlab.rivm.nl/api/v4/projects/4682/packages/pypi/simple"
       # iDMS_common_irods
       #- "--extra-index-url https://gitlab.rivm.nl/api/v4/projects/4656/packages/pypi/simple"
-      - idms-common-irods>=0.0.5
+      - idms-common-irods>=0.0.8
+      #- git+https://gitlab.rivm.nl/bioinformatics/idms_common_irods.git@evw_better_session_handling
       # iDMS_common_filesys
       #- "--extra-index-url https://gitlab.rivm.nl/api/v4/projects/4655/packages/pypi/simple"
       - idms-common-filesys>=0.0.3
