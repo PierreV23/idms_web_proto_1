@@ -165,3 +165,24 @@ select.form-select {
     box-shadow: inset 0 0 0 transparent;
     transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
 }
+
+.userSelect + .dropdown-menu {
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.user-controls {
+    height: 70vh;
+}
+
+.user-add:disabled,
+.user-delete:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.user-add:not(:disabled),
+.user-delete:not(:disabled) {
+    opacity: 1;
+    cursor: pointer;
+}
