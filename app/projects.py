@@ -304,7 +304,7 @@ def is_valid_git_repo(repo_url):
     try:
         # Runs 'git ls-remote <url> HEAD' with a 5-second timeout
         subprocess.run(
-            ['git', 'ls-remote', repo_url, 'HEAD'],
+            ['git', '-c', 'http.sslVerify=false', 'ls-remote', repo_url, 'HEAD'],
             check=True,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
