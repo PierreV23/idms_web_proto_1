@@ -7,3 +7,4 @@ mamba env update -f ${DIR}/myflask.source.yaml
 mamba env export --no-builds -n myflask | grep -v ^prefix | sed 's/python-graphviz/graphviz/' > ${DIR}/myflask.yaml
 
 grep extra-index-url ${DIR}/myflask.source.yaml >> ${DIR}/myflask.yaml
+patch -t ${DIR}/myflask.yaml < ${DIR}/graphviz.patch
