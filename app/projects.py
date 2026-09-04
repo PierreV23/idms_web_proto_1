@@ -603,7 +603,7 @@ def pg_graph():
             label: '<name>', with name being the name from pgprocess
             id: 'proc, id, name'
     """
-    def add_process(name, procid, selected):
+    def add_process(name, tag, procid, selected):
         extra_settings = {}
         if selected:
             extra_settings = {
@@ -612,7 +612,7 @@ def pg_graph():
             }
         nodename = f'n,{procid}'
         nodeid = f'n,{procid},{name}'
-        graph.node(nodename, label=name, shape='cds', id=nodeid, **extra_settings)
+        graph.node(nodename, label=name, shape='cds', id=nodeid, tooltip=tag, **extra_settings)
 
     project = request.args.get('project')
     group = request.args.get('group', 'default')
@@ -621,13 +621,14 @@ def pg_graph():
     if result != 200:
         return ""
     # Create the process group graph
-    graph = Digraph('datagraph')
+    graph = Digraph('processgroup_graph')
     graph.graph_attr['rankdir'] = 'LR'
     # There is always a node for NEW_DATA
-    graph.node('d,0', label="   NEW DATA   ", shape='box', id='d,0')
+    graph.node('d,0', label="   NEW DATA   ", shape='box', id='d,0', tooltip='NEW DATA')
     for process in pl:
         pname = process.get('name')
-        add_process(pname, process.get('id'), pname==selected_processref)
+        ptag = process.get('tag', '')
+        add_process(pname, ptag, process.get('id'), pname==selected_processref)
     # get the dependencies
     pd, r2 = rest_call('GET', f'projects/{project}/processgroups/{group}/dependencies')
     for process in pl:
