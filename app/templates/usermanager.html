@@ -24,7 +24,7 @@
     </table>
     <hr>
     {% if can_modify | default(true) %}
-    <input class="form-control userSelect" id="{{ usertype }}-username-input" type="text" autocomplete="off">
+    <input class="form-control userSelect" id="{{ usertype }}-username-input" type="text" autocomplete="off" placeholder="Enter Username">
     <button class="user-add btn-primary" disabled>Add User</button>
     <hr>
     <button class="user-delete btn-danger" disabled>Delete Selected Users</button>
