@@ -13,7 +13,7 @@ module.exports = {
         resolve: {
           fullySpecified: false,
         },
-      },      
+      },
       {
         test: /\.jsx?$/,
         exclude: /node_modules/,
@@ -24,6 +24,10 @@ module.exports = {
             sourceType: "unambiguous",
           },
         },
+      },
+      {
+        test: /\.css$/,
+        use: ['style-loader', 'css-loader'],   // <- add this
       },
     ],
   },

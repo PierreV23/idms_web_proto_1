@@ -1,14 +1,30 @@
-# iDMS
+# iDMS_web
 
-Test webapplicatie voor toegang tot irods en het lsf rekencluster
+[![fair-software.eu](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8B%20%20%E2%97%8B%20%20%E2%97%8B-orange)](https://fair-software.eu)
+![PEP8](https://badgen.net/badge/pep/8/pink?icon=python)
+![Python Version](https://img.shields.io/badge/python-3.12-blue)
+![License](https://img.shields.io/badge/license-EUPL_v1.2-green)
 
-Maakt gebruik van
+Web application to see the content of IRODs, define and start processes and pipelines on a cluster.
+
+Uses:
 * flask [http://flask.pocoo.org/](http://flask.pocoo.org/)
 * python-irodsclient [https://github.com/irods/python-irodsclient](https://github.com/irods/python-irodsclient)
 * bootstrap library [https://getbootstrap.com/](https://getbootstrap.com/)
 * conda
 
 Start de applicatie met behulp van het script start.sh
+
+## deployment
+
+The application is distributed as the idms-web python-package.
+Its is referenced in the env/idms_web environment file.
+By creating and activating the environment the package is made available and the flask server can be started locally using:
+   start.sh
+
+When deploying on a server we use a docker-image containing the conda environment.
+
+
 
 ## Docker
 ### Docker-compose build
@@ -26,7 +42,7 @@ sudo docker-compose up
 
 to enter the container:
 ```
-sudo docker-compose exec ngsweb bin/bash
+sudo docker-compose exec idms_web bin/bash
 ```
 
 #### Development configuration
@@ -130,3 +146,19 @@ This is done with npm/npx and webpack.
   npx webpack
 ```
 The resulting bundle is put in the static/js folder directly.
+
+
+## Support
+
+
+For questions, bug reports, or feature requests:
+- Open an issue in the idms_common_irods GitHub repository.
+- Reach out to the iDMS maintenance team at BIR-intern@rivm.nl
+
+
+## Contributing
+
+## License
+
+European Union Public Licence (EUPL) v. 1.2
+

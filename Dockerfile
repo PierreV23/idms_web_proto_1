@@ -1,57 +1,43 @@
-# The build-stage image:
-FROM condaforge/mambaforge AS build
+FROM mambaorg/micromamba:1.5 AS base
 
-# test some things
-RUN conda --version
-RUN apt-get update -y
-RUN apt-get install -y iputils-ping
-RUN ping -c 1 dns.google
+USER root
 
-# Install the package as normal:
-COPY envs/myflask.yaml .
-RUN mamba env create -f myflask.yaml
+# Install basic network/debug utilities using apt
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    iputils-ping \
+    bash \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install conda-pack:
-RUN conda install -c conda-forge conda-pack
+USER $MAMBA_USER
 
-# Use conda-pack to create a standalone enviornment
-# in /venv:
-RUN conda-pack -n myflask -o /tmp/env.tar && \
-  mkdir /venv && cd /venv && tar xf /tmp/env.tar && \
-  rm /tmp/env.tar
+# Copy baked-in uWSGI configuration
+COPY --chown=$MAMBA_USER:$MAMBA_USER uwsgi.ini /etc/uwsgi/uwsgi.ini
+COPY --chown=$MAMBA_USER:$MAMBA_USER envs/idms_web.yaml /tmp/idms_web.yaml
 
-# We've put venv in same path it'll be in final image,
-# so now fix up paths:
-RUN /venv/bin/conda-unpack
+RUN micromamba install -y -n base -f /tmp/idms_web.yaml && \
+    micromamba clean --all --yes
 
+# Activate environment for subsequent RUN commands
+ARG MAMBA_DOCKERFILE_ACTIVATE=1
+ARG BRANCH=master
+ARG PORT=3456
 
-# The runtime-stage image; we can use Debian as the
-# base image since the Conda env also includes Python
-# for us.
-FROM ubuntu:focal AS runtime
+ENV PORT=${PORT}
+ENV FLASK_INSTANCE_PATH=/idms_web/instance
 
-RUN apt-get update && \
-    apt-get install -yq tzdata && \
-    ln -fs /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime && \
-    dpkg-reconfigure -f noninteractive tzdata
+RUN pip install --extra-index-url https://gitlab.rivm.nl/api/v4/projects/4682/packages/pypi/simple "git+https://gitlab.rivm.nl/bioinformatics/ngsweb.git@${BRANCH}"
 
-# Set locale
-RUN apt-get install -y locales
+WORKDIR /idms_web
 
 # Set the locale
-RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && \
-    locale-gen
+# RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && \
+#     locale-gen
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
-ENV PATH="/venv/bin:$PATH"
-
-# Copy /venv from the previous stage:
-COPY --from=build /venv /venv
 
 # When image is run, run the code with the environment
 # activated:
-SHELL ["/bin/bash", "-c"]
+# SHELL ["/bin/bash", "-c"]
+ENTRYPOINT [ "/usr/local/bin/_entrypoint.sh", "sh", "-c", "/opt/conda/bin/uwsgi --home /opt/conda --ini /etc/uwsgi/uwsgi.ini --http 0.0.0.0:${PORT}"]
 
-WORKDIR /ngsweb
-COPY . /ngsweb/

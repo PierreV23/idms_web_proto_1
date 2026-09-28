@@ -1,4 +1,5 @@
-version: '3'
+version: '3.8'
+
 services:
 
   # note; symlink docker-compose.development.yml to
@@ -8,38 +9,51 @@ services:
     container_name: redis
     image: redis:latest
     restart: always
-    entrypoint: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    command: >
+      redis-server 
+        --save 60 1
+        --dir /data
+        --dbfilename dump.rdb
+        --maxmemory 512mb 
+        --maxmemory-policy allkeys-lru
     networks:
-      - ngsweb_network
+      - idms_web_network
     ports:
       - "6379:6379"
     volumes:
       - /etc/localtime:/etc/localtime:ro
+      - redis_data:/data
 
-  ngsweb:
-    build: .
-    image: ngsweb
+  idms_web:
+    build:
+      context: .
+      args:
+        BRANCH: ${BRANCH:-master}
+    #image: gitlab.rivm.nl:4567/bioinformatics/idms_web:latest
     environment:
-      TZ: Europe/Amsterdam
-      FLASK_APP: 'app'
-      PORT: '8080'
+      FLASK_APP: 'idms.web:create_app()'
+      FLASK_INSTANCE_PATH: /idms_web/instance
+      PORT: 3456
     depends_on:
       - redis
-    entrypoint: /bin/bash -c ". /venv/bin/activate && uwsgi --ini ngsweb.ini --http 0.0.0.0:3456"
     ports:
       - 3333:3456
     volumes:
-      - ./instance/:/ngsweb/instance/
+      - ./instance/:/idms_web/instance/:ro
     restart: unless-stopped
     logging:
       driver: syslog
       options:
         syslog-address: "unixgram:///dev/log"
-        tag: "ngsweb-docker"
+        tag: "idmsweb-docker"
         syslog-facility: "local6"
     networks:
-      - ngsweb_network
+      - idms_web_network
 
 networks:
-  ngsweb_network:
+  idms_web_network:
     driver: bridge
+
+volumes:
+  redis_data:
+    driver: local

@@ -5,31 +5,14 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 SQLALCHEMY_DATABASE_URI = 'sqlite:///{}/ngsruns.db'.format(basedir)
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-# Configure redis cache
+# Configure cache storage
 
-try:
-    import redis
-    redis_test = redis.Redis('redis')
-    redis_test.set('test', 'value')
-    CACHE_TYPE = "RedisCache"
-    CACHE_REDIS_HOST = 'redis'
-    print('Use REDIS on docker cache')
-except:
-    try:
-        import redis
-        redis_test = redis.Redis()
-        redis_test.set('test', 'value')
-        CACHE_TYPE = "RedisCache"
-        print('Use REDIS cache')
-    except:
-        CACHE_TYPE = "SimpleCache"
-        print('Use Simple cache')
-
-ENV = 'test'
-
+#CACHE_TYPE = 'RedisCache'
+#CACHE_REDIS_HOST = 'redis'
+CACHE_TYPE = 'SimpleCache'
 CACHE_DEFAULT_TIMEOUT = 300
 CACHE_THRESHOLD = 10000
-CACHE_KEY_PREFIX = "ngsweb"
+CACHE_KEY_PREFIX = "idms_web"
 
 GRAPH_MAX_INPUTS = 3
 GRAPH_MAX_OUTPUTS = 11
@@ -38,19 +21,31 @@ LOGCONFIG = {
     'version': 1,
     'formatters': {
         'default': {
-            'format': '[%(asctime)s] %(module)s: %(levelname)s : %(message)s'
-        },
+            'format': '[%(asctime)s] %(levelname)s in %(name)s: %(message)s'
+        }
     },
     'handlers': {
         'wsgi': {
             'class': 'logging.StreamHandler',
-            'formatter': 'default'
-        },
+            'formatter': 'default',
+            'level': 'DEBUG'
+        }
     },
     'root': {
-        'level': 'DEBUG',
+        'level': 'INFO',
         'handlers': ['wsgi']
     },
+    'loggers': {
+        'idms.web.app.utils.webuser': {
+            'level': 'DEBUG'
+        },
+        'idms.common.irods.irods_sessions': {
+            'level': 'DEBUG'
+        },
+        'idms.web.app.ngsweb': {
+            'level': 'DEBUG'
+        }
+    }
 }
 
 # This is the max file upload size in MB
@@ -144,7 +139,8 @@ IRODS_ENVS = {
 }
 
 
-#
+# Branding
+BRANDING_DIRECTORY = '/opt/idms_web/instance/rivm_rijkshuisstyle'
 BRANDING = {
     "APP_NAME_SHORT": "RIVM iDMS",     
     "APP_NAME_LONG": "RIVM iDMS Web Portal",
@@ -159,3 +155,18 @@ BRANDING = {
 METADATA_INFERED = {
     "rivm.json": ['identifier', 'dataset_location']
 }
+
+# iRODS path to store metadata schemata
+SCHEMATA_BASE_PATH = 'system/schemata'
+DATASET_SCHEMATA_PATH = 'datasets'
+PROJECT_SCHEMATA_PATH = 'projects'
+REFERENCE_DATASET_SCHEMATA_PATH = 'referencedata'
+
+TMPDIR = 'tmp'
+
+SECRET_KEY = 'abcdefgabcdefg'
+SERVER_SIDE_ENCRYPTION = True
+SERVER_SIDE_ENCRYPTION_KEY = '123456789'
+
+# DEBUG Options
+DISABLE_PLUGINS = False
