@@ -15,3 +15,6 @@ docker-compose.override.yml
 flask_session/
 metrics/
 rjsf/node_modules/
+src/idms_web.egg-info
+.venv
+.direnv

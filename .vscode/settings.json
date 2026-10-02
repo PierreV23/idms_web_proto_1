@@ -1,7 +1,6 @@
 {
-    "python-envs.defaultEnvManager": "ms-python.python:conda",
-    "python-envs.defaultPackageManager": "ms-python.python:conda",
-    "files.associations": {
-        "*.html": "jinja-html",
-    }
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+  "files.associations": {
+    "*.html": "jinja-html",
+  }
 }
